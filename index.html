@@ -703,9 +703,9 @@ async function getFirebaseWebAuth(){
       import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'),
     ]);
     const { initializeApp, getApps } = appMod;
-    const { getAuth, signInWithPopup, GoogleAuthProvider, OAuthProvider } = authMod;
+    const { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, OAuthProvider } = authMod;
     const app = getApps().length ? getApps()[0] : initializeApp(window.FIREBASE_CONFIG);
-    _fbWebSDK = { auth: getAuth(app), signInWithPopup, GoogleAuthProvider, OAuthProvider };
+    _fbWebSDK = { auth: getAuth(app), signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, OAuthProvider };
     return _fbWebSDK;
   }catch(e){ console.error('Firebase Web SDK:', e); return null; }
 }
@@ -722,23 +722,33 @@ async function appleSignIn(){
       return;
     }catch(e){ console.error('Capacitor Apple:', e); }
   }
-  // محاولة 2: Firebase Web SDK (متصفح)
+  // محاولة 2: Firebase Web SDK (متصفح) — redirect لتفادي popup blocker
   const wb = await getFirebaseWebAuth();
   if(wb){
     try{
       const provider = new wb.OAuthProvider('apple.com');
       provider.addScope('email'); provider.addScope('name');
-      const result = await wb.signInWithPopup(wb.auth, provider);
-      const u = result.user;
-      completeLogin(u.displayName || u.email || 'لاعب', 'apple', u.uid);
-      return;
+      await wb.signInWithRedirect(wb.auth, provider);
+      // الصفحة ستُعاد تحميلها — النتيجة تُعالَج في checkAppleRedirect
     }catch(e){
       console.error('Web Apple:', e);
       showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية أو ادخل باسمك',false);
-      return;
     }
+    return;
   }
   showToast('🍎','الإعداد ناقص','يحتاج Firebase config — ادخل باسمك في الوقت الحالي',false);
+}
+
+async function checkAppleRedirect(){
+  const wb = await getFirebaseWebAuth();
+  if(!wb) return;
+  try{
+    const result = await wb.getRedirectResult(wb.auth);
+    if(result && result.user){
+      const u = result.user;
+      completeLogin(u.displayName || u.email || 'لاعب', 'apple', u.uid);
+    }
+  }catch(e){ console.error('Apple redirect result:', e); }
 }
 
 async function googleSignIn(){
@@ -1697,6 +1707,9 @@ renderTeamNames();
     if(userNameEl) userNameEl.textContent=saved;
   }
 })();
+
+// تحقق من نتيجة Apple redirect عند تحميل الصفحة
+checkAppleRedirect();
 
 </script>
 </body>
