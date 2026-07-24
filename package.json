@@ -9,6 +9,7 @@
     "build:ios": "npx cap sync ios && npx cap open ios"
   },
   "dependencies": {
+    "@revenuecat/purchases-capacitor": "^9.0.0",
     "@capacitor/core": "^6.1.2",
     "@capacitor/ios": "^6.1.2",
     "@capacitor/haptics": "^6.0.2",
