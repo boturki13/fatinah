@@ -722,33 +722,23 @@ async function appleSignIn(){
       return;
     }catch(e){ console.error('Capacitor Apple:', e); }
   }
-  // محاولة 2: Firebase Web SDK (متصفح) — redirect لتفادي popup blocker
+  // محاولة 2: Firebase Web SDK (متصفح) — SDK محمّل مسبقاً فلا يُمنع الـ popup
   const wb = await getFirebaseWebAuth();
   if(wb){
     try{
       const provider = new wb.OAuthProvider('apple.com');
       provider.addScope('email'); provider.addScope('name');
-      await wb.signInWithRedirect(wb.auth, provider);
-      // الصفحة ستُعاد تحميلها — النتيجة تُعالَج في checkAppleRedirect
+      const result = await wb.signInWithPopup(wb.auth, provider);
+      const u = result.user;
+      completeLogin(u.displayName || u.email || 'لاعب', 'apple', u.uid);
+      return;
     }catch(e){
       console.error('Web Apple:', e);
       showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية أو ادخل باسمك',false);
+      return;
     }
-    return;
   }
   showToast('🍎','الإعداد ناقص','يحتاج Firebase config — ادخل باسمك في الوقت الحالي',false);
-}
-
-async function checkAppleRedirect(){
-  const wb = await getFirebaseWebAuth();
-  if(!wb) return;
-  try{
-    const result = await wb.getRedirectResult(wb.auth);
-    if(result && result.user){
-      const u = result.user;
-      completeLogin(u.displayName || u.email || 'لاعب', 'apple', u.uid);
-    }
-  }catch(e){ console.error('Apple redirect result:', e); }
 }
 
 async function googleSignIn(){
@@ -1708,8 +1698,8 @@ renderTeamNames();
   }
 })();
 
-// تحقق من نتيجة Apple redirect عند تحميل الصفحة
-checkAppleRedirect();
+// حمّل Firebase مسبقاً حتى يكون جاهزاً فور ضغط الأزرار (بدون تأخير async)
+getFirebaseWebAuth();
 
 </script>
 </body>
