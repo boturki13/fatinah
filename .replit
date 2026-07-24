@@ -33,3 +33,8 @@ externalPort = 80
 [userenv]
 
 [userenv.shared]
+FIREBASE_APP_ID = "1:508338410340:web:72f2f45f3499a6c0a52071"
+FIREBASE_AUTH_DOMAIN = "fatinah-game.firebaseapp.com"
+FIREBASE_MESSAGING_SENDER_ID = "508338410340"
+FIREBASE_PROJECT_ID = "fatinah-game"
+FIREBASE_STORAGE_BUCKET = "fatinah-game.firebasestorage.app"
