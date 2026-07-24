@@ -217,6 +217,7 @@ class Handler(BaseHTTPRequestHandler):
 
             uid   = (data.get('uid')   or '').strip()
             email = (data.get('email') or '').strip()
+            plan  = (data.get('plan')  or 'monthly').strip()  # 'monthly' أو 'annual'
             if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
 
             secret_key, _ = get_stripe_keys()
@@ -224,17 +225,29 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(503, {'error': 'Stripe غير متاح'}); return
 
             try:
-                # ابحث عن سعر المنتج
+                # ابحث عن سعر المنتج المناسب (شهري أو سنوي)
                 products = stripe_request('GET',
                     'products/search?query=name%3A%22%D9%81%D8%B7%D9%86%D8%A9%22%20AND%20active%3A%22true%22',
                     secret_key=secret_key)
                 price_id = None
+                target_interval = 'year' if plan == 'annual' else 'month'
                 for prod in products.get('data', []):
-                    prices = stripe_request('GET', f'prices?product={prod["id"]}&active=true&limit=1',
+                    prices = stripe_request('GET', f'prices?product={prod["id"]}&active=true&limit=10',
                                             secret_key=secret_key)
-                    if prices.get('data'):
-                        price_id = prices['data'][0]['id']
+                    for p in prices.get('data', []):
+                        if (p.get('recurring') or {}).get('interval') == target_interval:
+                            price_id = p['id']
+                            break
+                    if price_id:
                         break
+                # fallback: أول سعر متاح
+                if not price_id:
+                    for prod in products.get('data', []):
+                        prices = stripe_request('GET', f'prices?product={prod["id"]}&active=true&limit=1',
+                                                secret_key=secret_key)
+                        if prices.get('data'):
+                            price_id = prices['data'][0]['id']
+                            break
 
                 if not price_id:
                     self.send_json(503, {'error': 'المنتج غير موجود — شغّل setup_stripe.py أولاً'}); return

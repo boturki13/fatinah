@@ -279,6 +279,62 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
 .gen-loading .spin{font-size:32px; display:inline-block; animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .shake-x{animation:shake .4s;}
+
+/* ====== Paywall ====== */
+#s-paywall,#s-paywall.active{
+  display:flex!important;flex-direction:column;align-items:center;
+  position:fixed!important;inset:0;z-index:100;
+  overflow-y:auto;
+  padding:calc(env(safe-area-inset-top)+14px) 20px calc(env(safe-area-inset-bottom)+22px);
+  background:#07060E;
+}
+.pw-backdrop{position:fixed;inset:0;z-index:0;background:radial-gradient(120% 55% at 50% -12%,rgba(255,45,108,.32),transparent 60%),radial-gradient(90% 40% at 85% 110%,rgba(255,122,60,.10),transparent 60%),linear-gradient(180deg,#120B1F 0%,#07060E 45%);pointer-events:none;}
+.pw-grain{position:fixed;inset:0;z-index:0;opacity:.05;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");}
+.pw-close{position:fixed;top:calc(env(safe-area-inset-top)+14px);inset-inline-end:16px;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.06);color:#A79FBE;font-size:15px;display:grid;place-items:center;cursor:pointer;z-index:10;}
+.pw-close:active{transform:scale(.94);}
+.pw-wrap{width:100%;max-width:430px;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;}
+.pw-hero{text-align:center;margin-top:26px;}
+.pw-logo{font-family:"Tajawal",sans-serif;font-weight:900;font-size:72px;line-height:1;background:linear-gradient(160deg,#FF7AA8 0%,#FF2D6C 45%,#E01B55 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 26px rgba(255,45,108,.55)) drop-shadow(0 0 70px rgba(255,45,108,.28));}
+.pw-tagline{color:#A79FBE;font-size:14px;margin-top:6px;}
+.pw-headline{font-weight:800;text-align:center;font-size:clamp(24px,7vw,30px);line-height:1.4;margin-top:28px;color:#F7F5FA;}
+.pw-accent{color:#FF5C8F;}
+.pw-subhead{color:#A79FBE;text-align:center;font-size:14px;margin-top:8px;}
+.pw-features{list-style:none;width:100%;margin-top:24px;display:grid;gap:13px;}
+.pw-features li{display:flex;align-items:center;gap:13px;font-size:15px;font-weight:500;color:#F7F5FA;}
+.pw-chip{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(150deg,rgba(255,45,108,.20),rgba(255,122,60,.12));border:1px solid rgba(255,45,108,.28);}
+.pw-chip svg{width:19px;height:19px;stroke:#FF5C8F;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.pw-plans{width:100%;margin-top:26px;display:grid;gap:12px;}
+.pw-plan{position:relative;border-radius:18px;padding:17px 18px;cursor:pointer;background:rgba(255,255,255,.045);border:1.5px solid rgba(255,255,255,.09);display:flex;align-items:center;gap:14px;transition:border-color .2s,box-shadow .2s;}
+.pw-plan[aria-checked="true"]{border-color:transparent;background:linear-gradient(#120B1F,#120B1F) padding-box,linear-gradient(135deg,#FF2D6C,#FF7A3C) border-box;box-shadow:0 0 0 1px rgba(255,45,108,.15),0 10px 34px rgba(255,45,108,.22);}
+.pw-radio{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.28);display:grid;place-items:center;transition:.2s;}
+.pw-plan[aria-checked="true"] .pw-radio{border-color:#FF2D6C;background:#FF2D6C;}
+.pw-radio svg{width:12px;height:12px;stroke:#fff;fill:none;opacity:0;transition:.15s;}
+.pw-plan[aria-checked="true"] .pw-radio svg{opacity:1;}
+.pw-plan-info{flex:1;}
+.pw-plan-name{font-weight:800;font-size:16px;color:#F7F5FA;}
+.pw-plan-sub{color:#A79FBE;font-size:12.5px;margin-top:3px;}
+.pw-plan-price{text-align:left;flex:none;}
+.pw-price{font-weight:800;font-size:19px;color:#F7F5FA;}
+.pw-per{color:#A79FBE;font-size:11.5px;display:block;margin-top:1px;}
+.pw-badge{position:absolute;top:-11px;inset-inline-start:16px;background:linear-gradient(135deg,#FF2D6C,#FF7A3C);font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px;box-shadow:0 4px 14px rgba(255,45,108,.4);color:#fff;}
+.pw-cta{width:100%;margin-top:24px;border:none;cursor:pointer;border-radius:16px;padding:17px;font-family:inherit;font-weight:800;font-size:17px;color:#fff;background:linear-gradient(135deg,#FF2D6C 0%,#FF7A3C 100%);box-shadow:0 12px 36px rgba(255,45,108,.38);transition:transform .12s,box-shadow .2s;}
+.pw-cta:active{transform:scale(.975);}
+.pw-cta small{display:block;font-weight:500;font-size:12px;opacity:.85;margin-top:3px;}
+.pw-legal{color:#A79FBE;font-size:11.5px;text-align:center;line-height:1.75;margin-top:16px;}
+.pw-links{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:10px;font-size:12px;padding-bottom:8px;}
+.pw-links a{color:#A79FBE;text-decoration:none;padding:6px 4px;}
+.pw-dot{color:rgba(255,255,255,.2);}
+@media (prefers-reduced-motion:no-preference){
+  .pw-rise{opacity:0;transform:translateY(14px);animation:pwRise .6s cubic-bezier(.2,.7,.2,1) forwards;}
+  .pw-d1{animation-delay:.05s}.pw-d2{animation-delay:.14s}.pw-d3{animation-delay:.23s}
+  .pw-d4{animation-delay:.32s}.pw-d5{animation-delay:.41s}.pw-d6{animation-delay:.5s}
+  @keyframes pwRise{to{opacity:1;transform:none}}
+  .pw-logo{animation:pwGlow 4s ease-in-out infinite alternate;}
+  @keyframes pwGlow{
+    from{filter:drop-shadow(0 0 22px rgba(255,45,108,.45)) drop-shadow(0 0 60px rgba(255,45,108,.22));}
+    to{filter:drop-shadow(0 0 34px rgba(255,45,108,.65)) drop-shadow(0 0 90px rgba(255,45,108,.34));}
+  }
+}
 </style>
 </head>
 <body>
@@ -311,38 +367,73 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
   </section>
 
   <!-- شاشة الاشتراك -->
-  <section class="screen" id="s-paywall">
-    <div class="auth-hero">
-      <div class="logo-xl brand">فَطِنة</div>
-      <div class="tag">لعبة الذكاء والفطنة الجماعية</div>
-    </div>
-    <div class="auth-card">
-      <div class="auth-title">اشتركوا تلعبون! 🎯</div>
-      <div class="auth-sub">اشتراك شهري يفتح لكم كل ميزات فطنة</div>
-
-      <div style="margin:18px 0; display:flex; flex-direction:column; gap:10px; text-align:right;">
-        <div style="display:flex; align-items:center; gap:10px; color:var(--ink); font-size:15px;">
-          <span style="font-size:20px;">✅</span> <span>30 فئة وأكثر من 915 سؤال</span>
+  <section class="screen" id="s-paywall" style="padding:0;overflow-y:auto;background:var(--pw-ink,#07060E);">
+    <div class="pw-backdrop"></div>
+    <div class="pw-grain"></div>
+    <button class="pw-close" onclick="go('s-auth')" aria-label="إغلاق">✕</button>
+    <div class="pw-wrap">
+      <header class="pw-hero pw-rise pw-d1">
+        <div class="pw-logo">فطنة</div>
+        <p class="pw-tagline">لعبة الذكاء والفطنة الجماعية</p>
+      </header>
+      <h1 class="pw-headline pw-rise pw-d2">العب بلا حدود.<br><span class="pw-accent">اشتراك واحد يفتح كل شيء.</span></h1>
+      <p class="pw-subhead pw-rise pw-d2">كل ميزات فطنة، لك ولربعك.</p>
+      <ul class="pw-features pw-rise pw-d3">
+        <li>
+          <span class="pw-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+          ‎+30 فئة وأكثر من 915 سؤال
+        </li>
+        <li>
+          <span class="pw-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          أسئلة عائلية خاصة
+        </li>
+        <li>
+          <span class="pw-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg></span>
+          توليد أسئلة بالذكاء الاصطناعي
+        </li>
+        <li>
+          <span class="pw-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 15.5c-2 2-4.5 1.5-5.5 0s-.5-4 1.5-5.5 4.5-1.5 5.5 0l4 4c1 1.5 3.5 2 5.5.5s2.5-4 1.5-5.5-3.5-2-5.5 0l-1 1"/></svg></span>
+          جولات بلا حدود
+        </li>
+      </ul>
+      <div class="pw-plans pw-rise pw-d4" role="radiogroup" aria-label="اختر خطة الاشتراك">
+        <div class="pw-plan" role="radio" aria-checked="false" tabindex="0" data-plan="annual">
+          <span class="pw-badge">الأفضل قيمة · وفّر 37%</span>
+          <span class="pw-radio"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+          <div class="pw-plan-info">
+            <div class="pw-plan-name">سنوي</div>
+            <div class="pw-plan-sub">يعادل <bdi>$2.49</bdi> شهرياً فقط</div>
+          </div>
+          <div class="pw-plan-price">
+            <span class="pw-price"><bdi>$29.99</bdi></span>
+            <span class="pw-per">في السنة</span>
+          </div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px; color:var(--ink); font-size:15px;">
-          <span style="font-size:20px;">✅</span> <span>أسئلة عائلية خاصة</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:10px; color:var(--ink); font-size:15px;">
-          <span style="font-size:20px;">✅</span> <span>توليد أسئلة بالذكاء الاصطناعي</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:10px; color:var(--ink); font-size:15px;">
-          <span style="font-size:20px;">✅</span> <span>لا حدود لعدد الجولات</span>
+        <div class="pw-plan" role="radio" aria-checked="true" tabindex="0" data-plan="monthly">
+          <span class="pw-radio"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+          <div class="pw-plan-info">
+            <div class="pw-plan-name">شهري</div>
+            <div class="pw-plan-sub">مرونة كاملة، شهر بشهر</div>
+          </div>
+          <div class="pw-plan-price">
+            <span class="pw-price"><bdi>$3.99</bdi></span>
+            <span class="pw-per">في الشهر</span>
+          </div>
         </div>
       </div>
-
-      <div style="background:var(--bg3); border-radius:16px; padding:18px; margin:16px 0; text-align:center;">
-        <div style="font-size:42px; font-weight:900; color:var(--ink);">$3.99</div>
-        <div style="color:var(--muted); font-size:14px;">شهرياً — يُلغى في أي وقت</div>
-      </div>
-
-      <button class="btn btn-primary btn-block" id="paywall-btn" onclick="startCheckout()">اشترك الآن 🚀</button>
-      <div id="paywall-loading" style="display:none; text-align:center; padding:10px; color:var(--muted); font-size:14px;">جاري التحويل لصفحة الدفع…</div>
-      <div class="legal" style="margin-top:12px;">الدفع آمن عبر Stripe — تُجدَّد تلقائياً كل شهر</div>
+      <button class="pw-cta pw-rise pw-d5" id="paywall-btn" onclick="startCheckout()">
+        ابدأ اللعب الآن
+        <small id="pw-cta-sub">‏$3.99 / شهر — تُلغى في أي وقت</small>
+      </button>
+      <div id="paywall-loading" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:14px;">جاري التحويل لصفحة الدفع…</div>
+      <p class="pw-legal pw-rise pw-d6">اشتراك يتجدّد تلقائياً ما لم يُلغَ قبل نهاية الفترة الحالية بـ24 ساعة.</p>
+      <nav class="pw-links pw-rise pw-d6">
+        <a href="#">استعادة المشتريات</a>
+        <span class="pw-dot">·</span>
+        <a href="#">شروط الاستخدام</a>
+        <span class="pw-dot">·</span>
+        <a href="#">سياسة الخصوصية</a>
+      </nav>
     </div>
   </section>
 
@@ -836,10 +927,28 @@ async function checkSubscriptionAndRoute(uid){
   }
 }
 
+// ============ Paywall — اختيار الخطة ============
+let _pwPlan = 'monthly';
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('.pw-plan').forEach(el=>{
+    const handler = ()=>{
+      document.querySelectorAll('.pw-plan').forEach(p=>p.setAttribute('aria-checked','false'));
+      el.setAttribute('aria-checked','true');
+      _pwPlan = el.dataset.plan;
+      const sub = document.getElementById('pw-cta-sub');
+      if(sub) sub.textContent = _pwPlan==='annual'
+        ? '‏$29.99 / سنة — تُلغى في أي وقت'
+        : '‏$3.99 / شهر — تُلغى في أي وقت';
+    };
+    el.addEventListener('click', handler);
+    el.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); handler(); } });
+  });
+});
+
 async function startCheckout(){
-  const btn = document.getElementById('paywall-btn');
+  const btn     = document.getElementById('paywall-btn');
   const loading = document.getElementById('paywall-loading');
-  btn.style.display = 'none';
+  btn.style.display     = 'none';
   loading.style.display = 'block';
   try{
     const uid   = storeGet('authUid','');
@@ -847,13 +956,13 @@ async function startCheckout(){
     const resp  = await fetch('/api/stripe/create-checkout', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({uid, email})
+      body: JSON.stringify({uid, email, plan: _pwPlan})
     });
     const data = await resp.json();
     if(data.url){ window.location.href = data.url; }
     else{ throw new Error(data.error || 'خطأ غير معروف'); }
   }catch(e){
-    btn.style.display = 'block';
+    btn.style.display     = 'block';
     loading.style.display = 'none';
     showToast('⚠️','تعذّر الدفع', e.message || 'جرّب مرة ثانية', false);
   }
