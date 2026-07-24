@@ -428,7 +428,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <div id="paywall-loading" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:14px;">جاري التحويل لصفحة الدفع…</div>
       <p class="pw-legal pw-rise pw-d6">اشتراك يتجدّد تلقائياً ما لم يُلغَ قبل نهاية الفترة الحالية بـ24 ساعة.</p>
       <nav class="pw-links pw-rise pw-d6">
-        <a href="#">استعادة المشتريات</a>
+        <a href="#" onclick="rcRestore();return false;">استعادة المشتريات</a>
         <span class="pw-dot">·</span>
         <a href="#">شروط الاستخدام</a>
         <span class="pw-dot">·</span>
@@ -916,15 +916,77 @@ function completeLogin(name, provider, uid){
   checkSubscriptionAndRoute(uid);
 }
 
+// ============ RevenueCat — Apple IAP ============
+// RC_API_KEY: ضع هنا مفتاح iOS من لوحة RevenueCat بعد الإعداد
+const RC_API_KEY = 'appl_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+const RC_ENTITLEMENT = 'premium';
+
+function getRC(){
+  return window.Capacitor && window.Capacitor.isNativePlatform()
+    && window.Capacitor.Plugins && window.Capacitor.Plugins.Purchases
+    || null;
+}
+
+async function initRevenueCat(){
+  const RC = getRC();
+  if(!RC) return;
+  try{
+    const uid = storeGet('authUid','');
+    await RC.configure({ apiKey: RC_API_KEY });
+    if(uid) await RC.logIn({ appUserID: uid });
+  }catch(e){ console.error('RC init:', e); }
+}
+
+async function rcIsActive(){
+  const RC = getRC();
+  if(!RC) return null; // null = غير متاح (ويب)
+  try{
+    const { customerInfo } = await RC.getCustomerInfo();
+    return !!(customerInfo.entitlements.active &&
+              customerInfo.entitlements.active[RC_ENTITLEMENT]);
+  }catch(e){ console.error('RC status:', e); return null; }
+}
+
+async function rcPurchase(plan){
+  const RC = getRC();
+  if(!RC) throw new Error('RevenueCat غير متاح');
+  const { offerings } = await RC.getOfferings();
+  const current = offerings.current;
+  if(!current) throw new Error('لا توجد عروض متاحة');
+  const pkgs = current.availablePackages || [];
+  const pkg = plan === 'annual'
+    ? pkgs.find(p=>p.packageType==='ANNUAL')   || pkgs.find(p=>p.identifier==='annual')
+    : pkgs.find(p=>p.packageType==='MONTHLY')  || pkgs.find(p=>p.identifier==='monthly');
+  if(!pkg) throw new Error('الباقة غير موجودة — تأكد من إعداد Offerings في RevenueCat');
+  const { customerInfo } = await RC.purchasePackage({ aPackage: pkg });
+  return !!(customerInfo.entitlements.active &&
+            customerInfo.entitlements.active[RC_ENTITLEMENT]);
+}
+
+async function rcRestore(){
+  const RC = getRC();
+  if(!RC){ showToast('ℹ️','متاح على iOS فقط','',false); return; }
+  try{
+    const { customerInfo } = await RC.restorePurchases();
+    const active = !!(customerInfo.entitlements.active &&
+                      customerInfo.entitlements.active[RC_ENTITLEMENT]);
+    if(active){ go('s-home'); showToast('✅','تم استعادة اشتراكك','',false); }
+    else{ showToast('ℹ️','لا يوجد اشتراك سابق','',false); }
+  }catch(e){ showToast('⚠️','تعذّر الاستعادة', e.message||'', false); }
+}
+
 async function checkSubscriptionAndRoute(uid){
+  // iOS: RevenueCat أولاً
+  const rcActive = await rcIsActive();
+  if(rcActive === true){ go('s-home'); return; }
+  if(rcActive === false){ go('s-paywall'); return; }
+  // ويب: Stripe
   try{
     const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
     const data = await resp.json();
     if(data.active){ go('s-home'); }
     else{ go('s-paywall'); }
-  }catch(e){
-    go('s-home'); // graceful fallback
-  }
+  }catch(e){ go('s-home'); }
 }
 
 // ============ Paywall — اختيار الخطة ============
@@ -951,6 +1013,19 @@ async function startCheckout(){
   btn.style.display     = 'none';
   loading.style.display = 'block';
   try{
+    // iOS: Apple IAP عبر RevenueCat
+    if(window.Capacitor && window.Capacitor.isNativePlatform()){
+      const purchased = await rcPurchase(_pwPlan);
+      if(purchased){
+        go('s-home');
+        showToast('🎉','مرحباً بك!','اشتراكك فعّال — استمتع بفطنة!',false);
+      } else {
+        btn.style.display = 'block';
+        loading.style.display = 'none';
+      }
+      return;
+    }
+    // ويب: Stripe Checkout
     const uid   = storeGet('authUid','');
     const email = storeGet('authEmail','');
     const resp  = await fetch('/api/stripe/create-checkout', {
@@ -962,9 +1037,12 @@ async function startCheckout(){
     if(data.url){ window.location.href = data.url; }
     else{ throw new Error(data.error || 'خطأ غير معروف'); }
   }catch(e){
+    // تجاهل إلغاء المستخدم بصمت
+    if((e.code||'').toString().includes('CANCELLED') ||
+       (e.message||'').toLowerCase().includes('cancel')){ /* صامت */ }
+    else{ showToast('⚠️','تعذّر الدفع', e.message || 'جرّب مرة ثانية', false); }
     btn.style.display     = 'block';
     loading.style.display = 'none';
-    showToast('⚠️','تعذّر الدفع', e.message || 'جرّب مرة ثانية', false);
   }
 }
 
@@ -1889,6 +1967,8 @@ renderTeamNames();
 
 // حمّل Firebase مسبقاً حتى يكون جاهزاً فور ضغط الأزرار (بدون تأخير async)
 getFirebaseWebAuth();
+// هيّئ RevenueCat على iOS
+initRevenueCat();
 
 // تحقق من العودة بعد دفع Stripe ناجح
 (function checkStripeReturn(){
