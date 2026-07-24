@@ -734,7 +734,7 @@ async function appleSignIn(){
       return;
     }catch(e){
       console.error('Web Apple:', e);
-      showToast('⚠️','خطأ Apple: '+e.code, e.message || 'جرّب مرة ثانية',false);
+      showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية أو ادخل باسمك',false);
       return;
     }
   }
