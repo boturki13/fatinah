@@ -310,6 +310,42 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     </div>
   </section>
 
+  <!-- شاشة الاشتراك -->
+  <section class="screen" id="s-paywall">
+    <div class="auth-hero">
+      <div class="logo-xl brand">فَطِنة</div>
+      <div class="tag">لعبة الذكاء والفطنة الجماعية</div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-title">اشتركوا تلعبون! 🎯</div>
+      <div class="auth-sub">اشتراك شهري يفتح لكم كل ميزات فطنة</div>
+
+      <div style="margin:18px 0; display:flex; flex-direction:column; gap:10px; text-align:right;">
+        <div style="display:flex; align-items:center; gap:10px; color:var(--ink); font-size:15px;">
+          <span style="font-size:20px;">✅</span> <span>30 فئة وأكثر من 915 سؤال</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; color:var(--ink); font-size:15px;">
+          <span style="font-size:20px;">✅</span> <span>أسئلة عائلية خاصة</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; color:var(--ink); font-size:15px;">
+          <span style="font-size:20px;">✅</span> <span>توليد أسئلة بالذكاء الاصطناعي</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; color:var(--ink); font-size:15px;">
+          <span style="font-size:20px;">✅</span> <span>لا حدود لعدد الجولات</span>
+        </div>
+      </div>
+
+      <div style="background:var(--bg3); border-radius:16px; padding:18px; margin:16px 0; text-align:center;">
+        <div style="font-size:42px; font-weight:900; color:var(--ink);">$3.99</div>
+        <div style="color:var(--muted); font-size:14px;">شهرياً — يُلغى في أي وقت</div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="paywall-btn" onclick="startCheckout()">اشترك الآن 🚀</button>
+      <div id="paywall-loading" style="display:none; text-align:center; padding:10px; color:var(--muted); font-size:14px;">جاري التحويل لصفحة الدفع…</div>
+      <div class="legal" style="margin-top:12px;">الدفع آمن عبر Stripe — تُجدَّد تلقائياً كل شهر</div>
+    </div>
+  </section>
+
   <!-- الرئيسية -->
   <section class="screen" id="s-home">
     <div class="topbar">
@@ -730,6 +766,7 @@ async function appleSignIn(){
       provider.addScope('email'); provider.addScope('name');
       const result = await wb.signInWithPopup(wb.auth, provider);
       const u = result.user;
+      if(u.email) storeSet('authEmail', u.email);
       completeLogin(u.displayName || u.email || 'لاعب', 'apple', u.uid);
       return;
     }catch(e){
@@ -760,6 +797,7 @@ async function googleSignIn(){
       const provider = new wb.GoogleAuthProvider();
       const result = await wb.signInWithPopup(wb.auth, provider);
       const u = result.user;
+      if(u.email) storeSet('authEmail', u.email);
       completeLogin(u.displayName || u.email || 'لاعب', 'google', u.uid);
       return;
     }catch(e){
@@ -774,9 +812,51 @@ function completeLogin(name, provider, uid){
   sfx('start'); vibrate(20);
   storeSet('playerName', name);
   storeSet('authProvider', provider);
-  if(uid) storeSet('authUid', uid);
-  document.getElementById('user-name').textContent=name;
-  go('s-home');
+  // تأكد دائماً من وجود uid (للمستخدمين بالاسم نولّد device_id)
+  if(!uid){
+    uid = storeGet('deviceId','');
+    if(!uid){
+      uid = 'anon_' + Date.now().toString(36) + Math.random().toString(36).substr(2,6);
+      storeSet('deviceId', uid);
+    }
+  }
+  storeSet('authUid', uid);
+  document.getElementById('user-name').textContent = name;
+  checkSubscriptionAndRoute(uid);
+}
+
+async function checkSubscriptionAndRoute(uid){
+  try{
+    const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
+    const data = await resp.json();
+    if(data.active){ go('s-home'); }
+    else{ go('s-paywall'); }
+  }catch(e){
+    go('s-home'); // graceful fallback
+  }
+}
+
+async function startCheckout(){
+  const btn = document.getElementById('paywall-btn');
+  const loading = document.getElementById('paywall-loading');
+  btn.style.display = 'none';
+  loading.style.display = 'block';
+  try{
+    const uid   = storeGet('authUid','');
+    const email = storeGet('authEmail','');
+    const resp  = await fetch('/api/stripe/create-checkout', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({uid, email})
+    });
+    const data = await resp.json();
+    if(data.url){ window.location.href = data.url; }
+    else{ throw new Error(data.error || 'خطأ غير معروف'); }
+  }catch(e){
+    btn.style.display = 'block';
+    loading.style.display = 'none';
+    showToast('⚠️','تعذّر الدفع', e.message || 'جرّب مرة ثانية', false);
+  }
 }
 
 // ============ إعداد الفرق ============
@@ -1700,6 +1780,23 @@ renderTeamNames();
 
 // حمّل Firebase مسبقاً حتى يكون جاهزاً فور ضغط الأزرار (بدون تأخير async)
 getFirebaseWebAuth();
+
+// تحقق من العودة بعد دفع Stripe ناجح
+(function checkStripeReturn(){
+  const p = new URLSearchParams(window.location.search);
+  if(p.get('subscribed')==='1'){
+    const uid  = p.get('uid') || storeGet('authUid','');
+    const name = storeGet('playerName','لاعب');
+    window.history.replaceState({},'','/');
+    if(uid) storeSet('authUid', uid);
+    document.getElementById('user-name').textContent = name;
+    go('s-home');
+    setTimeout(()=>showToast('🎉','مرحباً بك!','اشتراكك فعّال — استمتع بفطنة!',false), 500);
+  } else if(p.get('canceled')==='1'){
+    window.history.replaceState({},'','/');
+    showToast('ℹ️','تم الإلغاء','يمكنك الاشتراك في أي وقت',false);
+  }
+})();
 
 </script>
 </body>
