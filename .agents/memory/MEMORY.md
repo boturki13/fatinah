@@ -1,0 +1,1 @@
+- [Fatinah server setup](fatinah-server.md) — خادم Python stdlib بلا Flask؛ يخدم index.html + AI proxy + firebase-config.js

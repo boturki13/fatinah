@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<script src="/firebase-config.js"></script>
 <style>
 :root{
   /* الثيم الداكن الفخم — كحلي/بنفسجي عميق */
@@ -683,38 +684,91 @@ function login(){
   completeLogin(val || 'لاعب', 'name', null);
 }
 
-// دخول Apple/Google حقيقي عبر Firebase Authentication (مكوّن Capacitor أصلي)
-// يعمل فقط داخل تطبيق iOS الحقيقي بعد إعداد Firebase (راجع CLAUDE.md).
-// في المتصفح أو قبل الإعداد، يظهر تنبيه ويبقى «متابعة بالاسم» يعمل دائماً كبديل.
+// ============ Firebase Auth — طبقتان: Capacitor (iOS) ثم Web SDK (متصفح) ============
+
+// الطبقة الأولى: مكوّن Capacitor الأصلي (يعمل داخل iOS app فقط)
 function getFirebaseAuth(){
   try{ return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.FirebaseAuthentication; }
   catch(e){ return null; }
 }
+
+// الطبقة الثانية: Firebase Web SDK (يعمل في المتصفح إذا كان FIREBASE_CONFIG جاهزاً)
+let _fbWebSDK = null;
+async function getFirebaseWebAuth(){
+  if(_fbWebSDK) return _fbWebSDK;
+  if(!window.FIREBASE_CONFIGURED) return null;
+  try{
+    const [appMod, authMod] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'),
+    ]);
+    const { initializeApp, getApps } = appMod;
+    const { getAuth, signInWithPopup, GoogleAuthProvider, OAuthProvider } = authMod;
+    const app = getApps().length ? getApps()[0] : initializeApp(window.FIREBASE_CONFIG);
+    _fbWebSDK = { auth: getAuth(app), signInWithPopup, GoogleAuthProvider, OAuthProvider };
+    return _fbWebSDK;
+  }catch(e){ console.error('Firebase Web SDK:', e); return null; }
+}
+
 async function appleSignIn(){
   sfx('tap'); vibrate(15);
-  const FA=getFirebaseAuth();
-  if(!FA){ showToast('🍎','غير متاح هنا','تسجيل Apple يعمل فقط داخل تطبيق آيفون بعد إعداده',false); return; }
-  try{
-    const res=await FA.signInWithApple();
-    const u=res && res.user;
-    completeLogin((u && u.displayName) || 'لاعب', 'apple', u && u.uid);
-  }catch(e){
-    console.error(e);
-    showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية أو ادخل باسمك',false);
+  // محاولة 1: Capacitor (iOS app)
+  const FA = getFirebaseAuth();
+  if(FA){
+    try{
+      const res = await FA.signInWithApple();
+      const u = res && res.user;
+      completeLogin((u && u.displayName) || 'لاعب', 'apple', u && u.uid);
+      return;
+    }catch(e){ console.error('Capacitor Apple:', e); }
   }
+  // محاولة 2: Firebase Web SDK (متصفح)
+  const wb = await getFirebaseWebAuth();
+  if(wb){
+    try{
+      const provider = new wb.OAuthProvider('apple.com');
+      provider.addScope('email'); provider.addScope('name');
+      const result = await wb.signInWithPopup(wb.auth, provider);
+      const u = result.user;
+      completeLogin(u.displayName || u.email || 'لاعب', 'apple', u.uid);
+      return;
+    }catch(e){
+      console.error('Web Apple:', e);
+      showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية أو ادخل باسمك',false);
+      return;
+    }
+  }
+  showToast('🍎','الإعداد ناقص','يحتاج Firebase config — ادخل باسمك في الوقت الحالي',false);
 }
+
 async function googleSignIn(){
   sfx('tap'); vibrate(15);
-  const FA=getFirebaseAuth();
-  if(!FA){ showToast('🔵','غير متاح هنا','تسجيل Google يعمل فقط داخل تطبيق آيفون بعد إعداده',false); return; }
-  try{
-    const res=await FA.signInWithGoogle();
-    const u=res && res.user;
-    completeLogin((u && u.displayName) || 'لاعب', 'google', u && u.uid);
-  }catch(e){
-    console.error(e);
-    showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية أو ادخل باسمك',false);
+  // محاولة 1: Capacitor (iOS app)
+  const FA = getFirebaseAuth();
+  if(FA){
+    try{
+      const res = await FA.signInWithGoogle();
+      const u = res && res.user;
+      completeLogin((u && u.displayName) || 'لاعب', 'google', u && u.uid);
+      return;
+    }catch(e){ console.error('Capacitor Google:', e); }
   }
+  // محاولة 2: Firebase Web SDK (متصفح)
+  const wb = await getFirebaseWebAuth();
+  if(wb){
+    try{
+      const provider = new wb.GoogleAuthProvider();
+      const result = await wb.signInWithPopup(wb.auth, provider);
+      const u = result.user;
+      completeLogin(u.displayName || u.email || 'لاعب', 'google', u.uid);
+      return;
+    }catch(e){
+      console.error('Web Google:', e);
+      showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية أو ادخل باسمك',false);
+      return;
+    }
+  }
+  showToast('🔵','الإعداد ناقص','يحتاج Firebase config — ادخل باسمك في الوقت الحالي',false);
 }
 function completeLogin(name, provider, uid){
   sfx('start'); vibrate(20);
@@ -1472,8 +1526,11 @@ async function generateFamily(){
   renderPreview(); go('s-family-preview');
 }
 
-// توليد حقيقي عبر الخادم الوسيط (Firebase Cloud Function) — لا يوجد أي مفتاح داخل التطبيق إطلاقاً
-const AI_BACKEND_URL='https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions';
+// توليد الأسئلة عبر الخادم المحلي (يستخدم Claude / Anthropic بأمان من جهة الخادم)
+// في بيئة iOS الأصلية نعود للـ Firebase Cloud Function كاحتياط
+const AI_BACKEND_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1') && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+  ? 'https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions'
+  : '/api/generate';
 async function aiGenerate(topic,count){
   const res=await fetch(AI_BACKEND_URL,{
     method:'POST', headers:{'Content-Type':'application/json'},

@@ -54,7 +54,19 @@ fatinah-ios/
     └── App/App/            ← مشروع Xcode الفعلي
 ```
 
-## أوامر البناء والتشغيل
+## تشغيل التطبيق على Replit (ويب)
+
+```bash
+python3 server.py
+```
+
+يشتغل على http://0.0.0.0:5000 — يخدم `index.html`، ويوفّر `/api/generate` (Claude) و`/firebase-config.js`.
+
+**المتغيّرات البيئية المطلوبة:**
+- `ANTHROPIC_API_KEY` — لتوليد الأسئلة بالذكاء الاصطناعي (Claude opus-4-5)
+- `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_APP_ID`, `FIREBASE_MESSAGING_SENDER_ID` — اختيارية، تُفعّل Google/Apple sign-in في المتصفح
+
+## أوامر البناء والتشغيل (iOS)
 
 ```bash
 # أول مرة فقط: تثبيت الاعتماديات وإضافة منصة iOS
@@ -62,16 +74,16 @@ npm install
 npx cap add ios
 npx cap sync ios
 
-# بعد أي تعديل على www/index.html:
+# بعد أي تعديل على index.html:
 npx cap sync ios        # ينسخ ملفات الويب إلى مشروع iOS
 npx cap open ios        # يفتح المشروع في Xcode
 
 # داخل Xcode: اختر جهازاً/محاكياً ثم اضغط Run (⌘R)
 ```
 
-**مهم:** أي تعديل على اللعبة يكون في `www/index.html`، ثم `npx cap sync ios` لنقله. لا تعدّل الملفات داخل `ios/App/App/public/` مباشرة — تُستبدل عند كل sync.
+**مهم:** أي تعديل على اللعبة يكون في `index.html`، ثم `npx cap sync ios` لنقله.
 
-**تفعيل Haptics/KeepAwake الأصليين فعلياً:** الكود يتحقّق تلقائياً من وجود `window.Capacitor.Plugins.Haptics` و`window.Capacitor.Plugins.KeepAwake`. بعد `npm install` (يضيف الحزمتين من package.json) و`npx cap sync ios`، ستُستخدم النسخة الأصلية تلقائياً بلا أي تعديل إضافي على الكود.
+**تفعيل Haptics/KeepAwake الأصليين فعلياً:** الكود يتحقّق تلقائياً من وجود `window.Capacitor.Plugins.Haptics` و`window.Capacitor.Plugins.KeepAwake`. بعد `npm install` و`npx cap sync ios`، ستُستخدم النسخة الأصلية تلقائياً بلا أي تعديل إضافي على الكود.
 
 ## معلومات App Store
 
