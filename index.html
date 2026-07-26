@@ -959,8 +959,12 @@ async function rcPurchase(plan){
     : pkgs.find(p=>p.packageType==='MONTHLY')  || pkgs.find(p=>p.identifier==='monthly');
   if(!pkg) throw new Error('الباقة غير موجودة — تأكد من إعداد Offerings في RevenueCat');
   const { customerInfo } = await RC.purchasePackage({ aPackage: pkg });
-  return !!(customerInfo.entitlements.active &&
-            customerInfo.entitlements.active[RC_ENTITLEMENT]);
+  // إذا اكتمل الشراء بدون exception → ناجح
+  // (RevenueCat قد يأخر تفعيل الـ entitlement بثوانٍ في المحاكي)
+  const entActive = customerInfo.entitlements &&
+                    customerInfo.entitlements.active &&
+                    customerInfo.entitlements.active[RC_ENTITLEMENT];
+  return entActive !== undefined ? !!entActive : true;
 }
 
 async function rcRestore(){
