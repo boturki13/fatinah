@@ -1,0 +1,98 @@
+abdulazizalshareef@MacBook-Air-Abdulaziz fatinah-replit % npx cap open ios
+✔ Opening the Xcode workspace... in 3.01s
+abdulazizalshareef@MacBook-Air-Abdulaziz fatinah-replit % cd ~/Downloads/fatinah-replit
+npm install @revenuecat/purchases-capacitor@10.3.3
+npx cap sync ios
+npm error code ERESOLVE
+npm error ERESOLVE unable to resolve dependency tree
+npm error
+npm error While resolving: fatinah@1.2.0
+npm error Found: @capacitor/core@6.2.1
+npm error node_modules/@capacitor/core
+npm error   @capacitor/core@"^6.1.2" from the root project
+npm error
+npm error Could not resolve dependency:
+npm error peer @capacitor/core@">=7.0.0" from @revenuecat/purchases-capacitor@10.3.3
+npm error node_modules/@revenuecat/purchases-capacitor
+npm error   @revenuecat/purchases-capacitor@"10.3.3" from the root project
+npm error
+npm error Fix the upstream dependency conflict, or retry this command with --force or --legacy-peer-deps to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error /Users/abdulazizalshareef/.npm/_logs/2026-07-26T09_36_56_280Z-eresolve-report.txt
+npm error A complete log of this run can be found in: /Users/abdulazizalshareef/.npm/_logs/2026-07-26T09_36_56_280Z-debug-0.log
+✔ Copying web assets from www to ios/App/App/public in 3.97ms
+✔ Creating capacitor.config.json in ios/App/App in 531.50μs
+✔ copy ios in 28.05ms
+✔ Updating iOS plugins in 806.50μs
+✔ Updating iOS native dependencies with pod install in 4.03s
+[info] Found 7 Capacitor plugins for ios:
+       @capacitor-community/keep-awake@5.0.1
+       @capacitor-firebase/authentication@6.3.1
+       @capacitor/haptics@6.0.3
+       @capacitor/preferences@6.0.4
+       @capacitor/splash-screen@6.0.4
+       @capacitor/status-bar@6.0.3
+       @revenuecat/purchases-capacitor@8.0.0
+✔ update ios in 4.12s
+[info] Sync finished in 4.486s
+abdulazizalshareef@MacBook-Air-Abdulaziz fatinah-replit % cd ~/Downloads/fatinah-replit
+npm install @revenuecat/purchases-capacitor@9
+npx cap sync ios
+
+changed 2 packages, and audited 182 packages in 8s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+16 vulnerabilities (9 moderate, 6 high, 1 critical)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn allow-scripts   protobufjs@7.6.5 (install: (install scripts present))
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+✔ Copying web assets from www to ios/App/App/public in 6.23ms
+✔ Creating capacitor.config.json in ios/App/App in 420.50μs
+✔ copy ios in 26.32ms
+✔ Updating iOS plugins in 767.33μs
+✖ Updating iOS native dependencies with pod install - failed!
+✖ update ios - failed!
+[error] Analyzing dependencies
+        [!] CocoaPods could not find compatible versions for pod "PurchasesHybridCommon":
+        In snapshot (Podfile.lock):
+        PurchasesHybridCommon (= 11.1.1)
+        
+        In Podfile:
+        RevenuecatPurchasesCapacitor (from `../../node_modules/@revenuecat/purchases-capacitor`) was resolved to 9.2.2,
+        which depends on
+        PurchasesHybridCommon (= 13.26.0)
+        
+        
+        You have either:
+        * out-of-date source repos which you can update with `pod repo update` or with `pod install --repo-update`.
+        * changed the constraints of dependency `PurchasesHybridCommon` inside your development pod
+        `RevenuecatPurchasesCapacitor`.
+        You should run `pod update PurchasesHybridCommon` to apply changes you've made.
+        
+abdulazizalshareef@MacBook-Air-Abdulaziz fatinah-replit % cd ~/Downloads/fatinah-replit/ios/App
+pod install --repo-update
+Updating local specs repositories
+Analyzing dependencies
+[!] CocoaPods could not find compatible versions for pod "PurchasesHybridCommon":
+  In snapshot (Podfile.lock):
+    PurchasesHybridCommon (= 11.1.1)
+
+  In Podfile:
+    RevenuecatPurchasesCapacitor (from `../../node_modules/@revenuecat/purchases-capacitor`) was resolved to 9.2.2, which depends on
+      PurchasesHybridCommon (= 13.26.0)
+
+
+You have either:
+ * changed the constraints of dependency `PurchasesHybridCommon` inside your development pod `RevenuecatPurchasesCapacitor`.
+   You should run `pod update PurchasesHybridCommon` to apply changes you've made.
+abdulazizalshareef@MacBook-Air-Abdulaziz App % 
