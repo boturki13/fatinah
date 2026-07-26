@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com https://api.stripe.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none';">
 <title>فَطِنة — لعبة الذكاء الجماعية</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -430,9 +431,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <nav class="pw-links pw-rise pw-d6">
         <a href="#" onclick="rcRestore();return false;">استعادة المشتريات</a>
         <span class="pw-dot">·</span>
-        <a href="#">شروط الاستخدام</a>
+        <a href="#" onclick="go('s-terms');return false;">شروط الاستخدام</a>
         <span class="pw-dot">·</span>
-        <a href="#">سياسة الخصوصية</a>
+        <a href="#" onclick="go('s-privacy');return false;">سياسة الخصوصية</a>
       </nav>
     </div>
   </section>
@@ -524,6 +525,55 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <div class="field-label" style="margin-top:18px;">الإنجازات</div>
     <div class="ach-list" id="ach-list"></div>
     <button class="btn btn-ghost btn-block mt" onclick="go('s-home')">رجوع</button>
+    <div style="margin-top:32px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
+      <div class="field-label" style="margin-bottom:12px;">الحساب</div>
+      <button class="btn btn-ghost btn-block" onclick="go('s-privacy')" style="margin-bottom:8px;">🔒 سياسة الخصوصية</button>
+      <button class="btn btn-ghost btn-block" onclick="go('s-terms')" style="margin-bottom:8px;">📄 شروط الاستخدام</button>
+      <button class="btn btn-block" onclick="confirmDeleteAccount()" style="background:rgba(220,53,69,.15);color:#ff6b7a;border:1px solid rgba(220,53,69,.3);margin-top:8px;">🗑️ حذف الحساب وكل البيانات</button>
+    </div>
+  </section>
+
+  <!-- سياسة الخصوصية -->
+  <section class="screen" id="s-privacy" style="overflow-y:auto;">
+    <h2 class="title">سياسة الخصوصية</h2>
+    <div class="card" style="font-size:14px;line-height:1.8;color:var(--ink);">
+      <p><b>آخر تحديث: يوليو 2025</b></p>
+      <p>تطبيق <b>فَطِنة</b> يحترم خصوصيتك ويلتزم بحمايتها.</p>
+      <p><b>البيانات التي نجمعها:</b><br>
+      • اسم اللاعب (اختياري — يُحفظ على جهازك فقط)<br>
+      • إحصاءات اللعب (نقاط، إنجازات — محلية على جهازك)<br>
+      • بريد إلكتروني عند التسجيل بـ Apple أو Google (لتفعيل الاشتراك فقط)</p>
+      <p><b>ما لا نجمعه:</b><br>
+      لا نبيع بياناتك. لا نتتبع موقعك. لا نشارك معلوماتك مع أطراف ثالثة إلا لأغراض معالجة الدفع (Stripe / Apple).</p>
+      <p><b>الاشتراكات:</b><br>
+      تُعالَج مدفوعات iOS عبر Apple App Store وتخضع لسياسة خصوصية Apple. لإلغاء الاشتراك: الإعدادات ← اسمك ← الاشتراكات.</p>
+      <p><b>التواصل:</b><br>
+      لأي استفسار: support@fatinah.app</p>
+    </div>
+    <button class="btn btn-ghost btn-block mt" onclick="history.back ? history.back() : go('s-home')">رجوع</button>
+  </section>
+
+  <!-- شروط الاستخدام -->
+  <section class="screen" id="s-terms" style="overflow-y:auto;">
+    <h2 class="title">شروط الاستخدام</h2>
+    <div class="card" style="font-size:14px;line-height:1.8;color:var(--ink);">
+      <p><b>آخر تحديث: يوليو 2025</b></p>
+      <p>باستخدامك تطبيق <b>فَطِنة</b> فأنت توافق على هذه الشروط.</p>
+      <p><b>الاشتراك:</b><br>
+      • الاشتراك الشهري: $3.99 شهرياً<br>
+      • الاشتراك السنوي: $29.99 سنوياً<br>
+      • يتجدد الاشتراك تلقائياً ما لم يُلغَ قبل 24 ساعة من انتهاء الفترة الحالية<br>
+      • يمكن إلغاؤه في أي وقت من إعدادات Apple ID</p>
+      <p><b>الاستخدام المقبول:</b><br>
+      التطبيق للاستخدام الشخصي والترفيهي. يُحظر نسخ المحتوى أو إعادة توزيعه.</p>
+      <p><b>الملكية الفكرية:</b><br>
+      جميع محتويات التطبيق محمية بحقوق النشر لصالح مطوّر فَطِنة.</p>
+      <p><b>إخلاء المسؤولية:</b><br>
+      التطبيق مقدَّم "كما هو" بدون ضمانات. المطوّر غير مسؤول عن أي أضرار ناجمة عن الاستخدام.</p>
+      <p><b>التواصل:</b><br>
+      support@fatinah.app</p>
+    </div>
+    <button class="btn btn-ghost btn-block mt" onclick="history.back ? history.back() : go('s-home')">رجوع</button>
   </section>
 
   <!-- أسئلة عائلية -->
@@ -689,6 +739,8 @@ let state={teamCount:2, catCount:6, teams:[], cats:[], turn:0, cells:{}, answere
 // أولوية: Capacitor Preferences (تخزين أصلي داخل تطبيق iOS) إن توفّر، وإلا localStorage (يعمل في المتصفح وداخل WKWebView أيضاً).
 // هذا يحل مشكلة فقدان كل البيانات عند إغلاق التطبيق.
 const STORAGE_PREFIX='fatinah_';
+// ============ XSS sanitizer ============
+function esc(str){ const d=document.createElement('div'); d.textContent=String(str||''); return d.innerHTML; }
 function storeGet(key, fallback){
   try{
     const raw=localStorage.getItem(STORAGE_PREFIX+key);
@@ -802,6 +854,29 @@ function doExit(){
   const qw=document.getElementById('q-wrap'); if(qw) qw.classList.remove('show');
   document.getElementById('exit-modal').classList.remove('show');
   go('s-home');
+}
+
+// ============ حذف الحساب (5.1.1) ============
+async function confirmDeleteAccount(){
+  const ok=confirm('سيتم حذف جميع بياناتك المحلية (نقاط، إنجازات، إعدادات) بشكل نهائي. هل أنت متأكد؟');
+  if(!ok) return;
+  // حذف localStorage
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX));
+  keys.forEach(k=>localStorage.removeItem(k));
+  // حذف Capacitor Preferences
+  try{
+    const P=window.Capacitor?.Plugins?.Preferences;
+    if(P) await P.clear();
+  }catch(e){}
+  // إلغاء ربط حساب Firebase إن وجد
+  try{
+    const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
+    if(FA) await FA.signOut();
+  }catch(e){}
+  // إعادة التهيئة
+  stats={games:0,correct:0,totalQ:0,bestScore:0,wins:0,ach:{}};
+  showToast('✅','تم حذف بياناتك','جميع البيانات المحلية محذوفة',false);
+  setTimeout(()=>go('s-auth'),1500);
 }
 
 // ============ الدخول ============
@@ -1270,7 +1345,7 @@ function renderTurn(){
   const st=TEAM_STYLES[state.teams[state.turn].idx];
   const p=document.getElementById('turn-pill');
   p.style.background=st.bg; p.style.color=st.color; p.style.borderColor=st.dot;
-  p.innerHTML=`▶ دور ${state.teams[state.turn].name}`;
+  p.innerHTML=`▶ دور ${esc(state.teams[state.turn].name)}`;
   updateBombButton();
 }
 
@@ -1678,7 +1753,7 @@ function endGame(){
 }
 function showResult(sorted,win,tie){
   const wl=document.getElementById('winner-line');
-  wl.innerHTML=tie?'تعادل! 🤝':('🏆 الفائز: <span class="brand">'+win.name+'</span>');
+  wl.innerHTML=tie?'تعادل! 🤝':('🏆 الفائز: <span class="brand">'+esc(win.name)+'</span>');
   const pod=document.getElementById('podium'); pod.innerHTML='';
   const medals=['🥇','🥈','🥉']; const heights={0:156,1:122,2:98};
   const order=[1,0,2].filter(i=>i<sorted.length);

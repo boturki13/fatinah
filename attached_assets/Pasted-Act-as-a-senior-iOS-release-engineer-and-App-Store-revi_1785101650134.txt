@@ -1,0 +1,31 @@
+Act as a senior iOS release engineer and App Store review specialist. Perform a full pre-submission audit of this Capacitor 6 hybrid app (HTML/CSS/JS in WKWebView) before I submit it to the Apple App Store. Analyze the entire codebase, configuration, and build output — do not skip any file.
+
+== 1. APP STORE REVIEW GUIDELINES COMPLIANCE ==
+- 2.1 Completeness: find any placeholder, fake, or non-functional UI (buttons, login screens, dead links). Flag every element that looks functional but isn't.
+- 2.5.2 / 4.7: confirm no remote code loading — all JS/HTML/CSS must be bundled locally; check capacitor.config for any production server.url pointing to a remote host.
+- 3.1.1 In-App Purchase: all digital purchases must go through StoreKit only — no external payment links or mentions. The subscription paywall must display: price, billing period, auto-renewal terms, a working "Restore Purchases" button, and links to Privacy Policy + Terms of Use (EULA).
+- 4.8 Login: if any third-party/social login exists, it must actually work and Sign in with Apple must be offered. Flag any fake or mock login UI for removal.
+- 5.1.1 Privacy: privacy policy link present in-app; if accounts exist, in-app account deletion must exist too.
+
+== 2. PRIVACY ==
+- Every NS*UsageDescription in Info.plist must match a capability actually used; list unused ones for removal.
+- PrivacyInfo.xcprivacy privacy manifest must exist and cover all required-reason APIs and every Capacitor plugin / third-party SDK.
+- Produce an exact list of all data the app and its SDKs collect, so I can fill the App Privacy labels in App Store Connect truthfully.
+- App Tracking Transparency: confirm whether any tracking/IDFA SDK exists; if yes, ATT prompt required; if no, confirm none fire.
+
+== 3. SECURITY ==
+- HTML/XSS injection: audit every use of innerHTML, insertAdjacentHTML, document.write, and dynamic templates. Enforce sanitization or safe DOM APIs, and add a strict Content-Security-Policy meta tag.
+- Scan the entire repo AND built assets for hardcoded API keys, secrets, or tokens.
+- All network calls must be HTTPS; ATS must not be weakened (no NSAllowsArbitraryLoads).
+- Sensitive data (tokens, receipts, subscription state) must not live in localStorage or console logs; subscription entitlement must be verified via receipt validation, never a client-side flag.
+
+== 4. BUILD & CONFIG INTEGRITY ==
+- Resolve the public/ vs www/ directory situation: confirm which directory capacitor.config actually ships, diff the two, and eliminate the stale copy so the shipped build matches the tested code.
+- npx cap sync ios must run clean; all plugins compatible with Capacitor 6; flag deprecated/abandoned plugins.
+- Check icons, launch screen, safe areas, RTL/Arabic layout, iPad behavior, and offline behavior (no blank white screen on network loss).
+- No private APIs, no debug flags, no test/sandbox endpoints in the release build.
+
+== OUTPUT FORMAT ==
+Produce a table: Check | Status (PASS / FAIL / NEEDS MANUAL VERIFICATION) | Severity (Blocker / Warning / Info) | File:Line | Exact Fix.
+Anything you cannot verify from code alone (real-device testing, App Store Connect metadata, TestFlight behavior) must be marked NEEDS MANUAL VERIFICATION — never mark it PASS.
+Then fix every Blocker, re-run the full audit, and show the updated table. Do not declare the audit complete until every item is either PASS or explicitly listed for manual verification.
