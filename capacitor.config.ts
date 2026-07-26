@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
     backgroundColor: '#120B24',
     // منع التكبير/التصغير غير المقصود في اللعبة
     scrollEnabled: false,
-    limitsNavigationsToAppBoundDomains: false
+    limitsNavigationsToAppBoundDomains: true
   },
   plugins: {
     SplashScreen: {
