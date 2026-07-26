@@ -1,0 +1,55 @@
+abdulazizalshareef@MacBook-Air-Abdulaziz App % # انسخ index.html الجديد لمجلد المشروع
+cp ~/Downloads/fatinah_updated/index.html ~/Downloads/fatinah-replit/index.html
+
+# ضع مفتاحك — غيّر appl_XXXXX بمفتاحك الحقيقي
+sed -i '' "s/appl_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/appl_مفتاحك_هنا/" ~/Downloads/fatinah-replit/index.html
+
+# تحقق إنه تغيّر
+grep "RC_API_KEY" ~/Downloads/fatinah-replit/index.html
+
+# زامن وشغّل
+cd ~/Downloads/fatinah-replit
+npx cap sync ios\
+> # انسخ index.html الجديد لمجلد المشروع
+cp ~/Downloads/fatinah_updated/index.html ~/Downloads/fatinah-replit/index.html
+
+# ضع مفتاحك — غيّر appl_XXXXX بمفتاحك الحقيقي
+sed -i '' "s/appl_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/appl_مفتاحك_هنا/" ~/Downloads/fatinah-replit/index.html
+
+# تحقق إنه تغيّر
+grep "RC_API_KEY" ~/Downloads/fatinah-replit/index.html
+
+# زامن وشغّل
+cd ~/Downloads/fatinah-replit
+npx cap sync ios
+zsh: command not found: #
+zsh: command not found: #
+zsh: command not found: #
+// RC_API_KEY: ضع هنا مفتاح iOS من لوحة RevenueCat بعد الإعداد
+const RC_API_KEY = 'appl_مفتاحك_هنا';
+    await RC.configure({ apiKey: RC_API_KEY });
+zsh: command not found: #
+[error] Platform ios# not found.
+[error] Platform ios# not found.
+zsh: command not found: #
+zsh: command not found: #
+// RC_API_KEY: ضع هنا مفتاح iOS من لوحة RevenueCat بعد الإعداد
+const RC_API_KEY = 'appl_مفتاحك_هنا';
+    await RC.configure({ apiKey: RC_API_KEY });
+zsh: command not found: #
+✔ Copying web assets from www to ios/App/App/public in 3.33ms
+✔ Creating capacitor.config.json in ios/App/App in 450.83μs
+✔ copy ios in 22.41ms
+✔ Updating iOS plugins in 729.46μs
+✔ Updating iOS native dependencies with pod install in 3.68s
+[info] Found 7 Capacitor plugins for ios:
+       @capacitor-community/keep-awake@5.0.1
+       @capacitor-firebase/authentication@6.3.1
+       @capacitor/haptics@6.0.3
+       @capacitor/preferences@6.0.4
+       @capacitor/splash-screen@6.0.4
+       @capacitor/status-bar@6.0.3
+       @revenuecat/purchases-capacitor@9.2.2
+✔ update ios in 3.72s
+[info] Sync finished in 3.984s
+abdulazizalshareef@MacBook-Air-Abdulaziz fatinah-replit % 
