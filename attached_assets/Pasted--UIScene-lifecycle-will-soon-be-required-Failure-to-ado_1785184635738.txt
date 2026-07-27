@@ -1,0 +1,76 @@
+`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+Reading from public effective user settings.
+Could not create a sandbox extension for '/var/containers/Bundle/Application/EC64B289-AC82-40A1-8916-8CD6D5216819/App.app'
+11.15.0 - [FirebaseCore][I-COR000003] The default Firebase app has not yet been configured. Add `FirebaseApp.configure()` to your application initialization. This can be done in in the App Delegate's application(_:didFinishLaunchingWithOptions:)` (or the `@main` struct's initializer in SwiftUI). Read more: https://firebase.google.com/docs/ios/setup#initialize_firebase_in_your_app
+11.15.0 - [FirebaseCore][I-COR000008] The project's Bundle ID is inconsistent with either the Bundle ID in 'GoogleService-Info.plist', or the Bundle ID in the options if you are using a customized options. To ensure that everything can be configured correctly, you may need to make the Bundle IDs consistent. To continue with this plist file, you may change your app's bundle identifier to 'com.fatinah.game'. Or you can download a new configuration file that matches your bundle identifier from https://console.firebase.google.com/ and replace the current one.
+⚡️  Loading app at capacitor://localhost...
+[ FirebaseAuthentication ]  <CapacitorFirebaseAuthentication.RuntimeError: 0x10ce3dfe0>
+WebContent[7739] Could not register system wide server: -25204
+WebContent[7739] _AXAddToElementCache was called even though the element was in the cache: <WKAccessibilityWebPageObject: 0x109724000>
+WebContent[7739] Unable to hide query parameters from script (missing data)
+⚡️  To Native ->  Purchases configure -1
+⚡️  To Native ->  Purchases logIn 59785612
+DEBUG: ℹ️ Configuring SDK using RevenueCat's UserDefaults suite.
+WebContent[7739] xpc_user_sessions_get_foreground_uid() failed with error 1 - Operation not permitted
+DEBUG: 👤 Identifying App User ID
+DEBUG: ℹ️ Debug logging enabled
+DEBUG: ℹ️ SDK Version - 5.20.0
+DEBUG: ℹ️ Bundle ID - com.fatinah.game.web
+DEBUG: ℹ️ System Version - Version 26.5.2 (Build 23F84)
+DEBUG: ℹ️ Not using a simulator.
+DEBUG: 👤 No initial App User ID
+DEBUG: ℹ️ Purchases is configured with informational response verification
+DEBUG: ℹ️ Observing StoreKit.Transaction.updates
+DEBUG: ℹ️ Purchases is configured with StoreKit version 2
+DEBUG: ℹ️ Delegate set
+⚡️  TO JS undefined
+DEBUG: ℹ️ Offerings cache is stale, updating from network in foreground
+DEBUG: ℹ️ Observing StoreKit.PurchaseIntent.intents
+WARN: ⚠️ The appUserID passed to logIn is the same as the one already cached. No action will be taken.
+DEBUG: ℹ️ GetOfferingsOperation: Started
+DEBUG: ℹ️ Vending CustomerInfo from cache.
+⚡️  TO JS {"customerInfo":{"latestExpirationDate":null,"requestDate":"2026-07-27T20:35:32Z","requestDateMillis":1785184532000,"allExpirationDatesMillis":{},"originalApplicationVersion":"1","originalPurchaseDate":"1970-01-01T00:00:00Z","allExpirationDates":{},"entitl
+DEBUG: ℹ️ Network operation 'GetOfferingsOperation' found with the same cache key 'GetOfferingsOpe…'. Skipping request.
+DEBUG: ℹ️ There are no requests currently running, starting request GET /v1/subscribers/anon_ms32g0kah8olym/offerings
+DEBUG: ℹ️ API request started: GET '/v1/subscribers/anon_ms32g0kah8olym/offerings'
+⚡️  WebView loaded
+WebContent[7739] Service "com.apple.CARenderServer" failed bootstrap look up (1) - (os/kern) invalid address
+WebContent[7739] Failed to initialize application enviroment context
+WebContent[7739] Failed to load a device context.
+WebContent[7739] Failed to initialize application enviroment context
+WebContent[7739] Failed to load a device context.
+DEBUG: ℹ️ API request completed: GET '/v1/subscribers/anon_ms32g0kah8olym/offerings' (304)
+DEBUG: ℹ️ No existing products cached, starting store products request for: ["com.fatinah.game.monthly", "com.fatinah.game.annual"]
+DEBUG: ℹ️ Found an existing request for products: ["com.fatinah.game.monthly", "com.fatinah.game.annual"], appending to completion
+DEBUG: ℹ️ GetOfferingsOperation: Finished
+DEBUG: ℹ️ Serial request done: GET /v1/subscribers/anon_ms32g0kah8olym/offerings, 0 requests left in the queue
+DEBUG: ℹ️ GetCustomerInfoOperation: Started
+DEBUG: ℹ️ There are no requests currently running, starting request GET /v1/subscribers/anon_ms32g0kah8olym
+DEBUG: ℹ️ API request started: GET '/v1/subscribers/anon_ms32g0kah8olym'
+DEBUG: 😻 Store products request received response
+DEBUG: ℹ️ Store products request finished
+WARN: ⚠️ Empty Product titles are not supported. Found in product with identifier: com.fatinah.game.monthly
+WARN: ⚠️ Empty Product titles are not supported. Found in product with identifier: com.fatinah.game.annual
+DEBUG: 😻 Offerings updated from network.
+DEBUG: 😻 Offerings updated from network.
+DEBUG: ℹ️ API request completed: GET '/v1/subscribers/anon_ms32g0kah8olym' (304)
+SplashScreen.hideSplash: SplashScreen was automatically hidden after default timeout. You should call `SplashScreen.hide()` as soon as your web app is loaded (or increase the timeout). Read more at https://capacitorjs.com/docs/apis/splash-screen#hiding-the-splash-screen
+DEBUG: 😻 CustomerInfo updated from network.
+DEBUG: ℹ️ GetCustomerInfoOperation: Finished
+DEBUG: ℹ️ Serial request done: GET /v1/subscribers/anon_ms32g0kah8olym, 0 requests left in the queue
+⚡️  To Native ->  Haptics impact 59785613
+⚡️  To Native ->  FirebaseAuthentication signInWithApple 59785614
+⚡️  TO JS undefined
+Authorization failed: Error Domain=AKAuthenticationError Code=-7026 "(null)" UserInfo={AKClientBundleID=com.fatinah.game.web}
+LaunchServices: store (null) or url (null) was nil: Error Domain=NSOSStatusErrorDomain Code=-54 "process may not map database" UserInfo={_LSLine=75, _LSFunction=_LSServer_GetServerStoreForConnectionWithCompletionHandler, _LSFile=LSDReadService.mm, NSDebugDescription=process may not map database}
+Attempt to map database failed: permission was denied. This attempt will not be retried.
+Failed to initialize client context with error Error Domain=NSOSStatusErrorDomain Code=-54 "process may not map database" UserInfo={_LSLine=75, _LSFunction=_LSServer_GetServerStoreForConnectionWithCompletionHandler, _LSFile=LSDReadService.mm, NSDebugDescription=process may not map database}
+Failed to get application extension record: Error Domain=NSOSStatusErrorDomain Code=-54 "(null)"
+ASAuthorizationController credential request failed with error: Error Domain=com.apple.AuthenticationServices.AuthorizationError Code=1000 "(null)"
+[ FirebaseAuthentication ]  The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1000.)
+ERROR MESSAGE:  {"errorMessage":"The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1000.)","message":"The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1000.)"}
+⚡️  [error] - {"errorMessage":"The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1000.)","message":"The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1000.)"}
+⚡️  [error] - Capacitor Apple: {"errorMessage":"The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1000.)"}
+⚡️  To Native ->  Haptics impact 59785615
+⚡️  To Native ->  FirebaseAuthentication signInWithGoogle 59785616
+⚡️  TO JS undefined
