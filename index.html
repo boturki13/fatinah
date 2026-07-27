@@ -83,6 +83,7 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 .btn-primary{color:#fff; background:linear-gradient(120deg,var(--hot2),var(--hot)); box-shadow:0 8px 24px rgba(255,61,113,.4);}
 .btn-primary:active{filter:brightness(1.08);}
 .btn-ghost{background:var(--glass); color:var(--ink); border:1.5px solid var(--line2); backdrop-filter:blur(8px);}
+.btn-share{color:#1B1030; background:linear-gradient(120deg,#FFE08A,#FFC24B); box-shadow:0 8px 24px rgba(255,194,75,.35);}
 .btn-sm{padding:10px 14px; font-size:15px; border-radius:12px; width:auto;}
 .btn-block{margin-top:12px;}
 
@@ -568,6 +569,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <div class="winner-line" id="winner-line"></div>
     <div class="podium" id="podium"></div>
     <button class="btn btn-primary mt" onclick="sfx('start');restart()">🔄 جولة جديدة</button>
+    <button class="btn btn-share btn-block" onclick="sfx('tap');shareResult()">شارك النتيجة 📤</button>
     <button class="btn btn-ghost btn-block" onclick="go('s-home')">القائمة الرئيسية</button>
   </section>
 
@@ -2120,6 +2122,7 @@ function endGame(){
   checkAchievements();
 }
 function showResult(sorted,win,tie){
+  state.lastResult={teams:sorted.map(t=>({name:t.name,score:t.score,idx:t.idx})),tie};
   const wl=document.getElementById('winner-line');
   if(sorted.length===1){
     wl.innerHTML='🎯 تحدٍّ فردي — نتيجتك: <span class="brand">'+win.score+'</span> نقطة';
@@ -2145,6 +2148,117 @@ function showResult(sorted,win,tie){
 function restart(){
   state.teams.forEach(t=>{ t.score=0; t.ll=3; t.used=new Set(); });
   startGame();
+}
+
+// ============ مشاركة النتيجة كصورة ============
+const SHARE_TEAM_COLORS=['#B794FF','#4FE3C4','#FFB067'];
+function buildResultCard(res){
+  const W=1080,H=1350,c=document.createElement('canvas');
+  c.width=W; c.height=H;
+  const x=c.getContext('2d');
+  // خلفية متدرجة
+  const bg=x.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#1B1030'); bg.addColorStop(.55,'#2A1548'); bg.addColorStop(1,'#3A1060');
+  x.fillStyle=bg; x.fillRect(0,0,W,H);
+  // نجوم خفيفة
+  for(let i=0;i<70;i++){
+    x.fillStyle='rgba(255,255,255,'+(0.06+((i*37)%10)/100)+')';
+    const sx=((i*137)%W), sy=((i*211)%H);
+    x.beginPath(); x.arc(sx,sy,1.4+((i*13)%3),0,7); x.fill();
+  }
+  // إطار
+  x.strokeStyle='rgba(255,210,75,.55)'; x.lineWidth=6;
+  const r=48; roundRect(x,34,34,W-68,H-68,r); x.stroke();
+  x.textAlign='center'; x.direction='rtl';
+  // شعار فَطِنة
+  const lg=x.createLinearGradient(0,120,0,240);
+  lg.addColorStop(0,'#FF7AA8'); lg.addColorStop(1,'#E01B55');
+  x.fillStyle=lg;
+  x.font='900 130px Tajawal, sans-serif';
+  x.shadowColor='rgba(255,45,108,.55)'; x.shadowBlur=40;
+  x.fillText('فَطِنة',W/2,225);
+  x.shadowBlur=0;
+  x.fillStyle='rgba(255,255,255,.75)';
+  x.font='500 44px Tajawal, sans-serif';
+  x.fillText('لعبة الذكاء الجماعية',W/2,295);
+  // سطر الفائز
+  x.font='800 62px Tajawal, sans-serif';
+  x.fillStyle='#FFD24B';
+  x.fillText(res.tie?'تعادل! 🤝':('🏆 الفائز: '+res.teams[0].name),W/2,430);
+  // بطاقات الفرق
+  const medals=['🥇','🥈','🥉'];
+  const cardH=170,gap=36,startY=520;
+  res.teams.slice(0,3).forEach((t,i)=>{
+    const y=startY+i*(cardH+gap);
+    const col=SHARE_TEAM_COLORS[t.idx%3]||'#FFD24B';
+    x.fillStyle='rgba(255,255,255,.07)';
+    roundRect(x,110,y,W-220,cardH,34); x.fill();
+    x.strokeStyle=col; x.lineWidth=4;
+    roundRect(x,110,y,W-220,cardH,34); x.stroke();
+    x.textAlign='right';
+    x.font='64px Tajawal, sans-serif';
+    x.fillText(medals[i]||'',W-160,y+cardH/2+22);
+    x.fillStyle='#fff';
+    x.font='800 58px Tajawal, sans-serif';
+    x.fillText(t.name,W-260,y+cardH/2+20);
+    x.textAlign='left';
+    x.fillStyle=col;
+    x.font='900 72px Tajawal, sans-serif';
+    x.fillText(String(t.score),160,y+cardH/2+26);
+    x.textAlign='center';
+  });
+  // تذييل
+  x.fillStyle='rgba(255,255,255,.65)';
+  x.font='500 40px Tajawal, sans-serif';
+  x.fillText('تحدَّ أصدقاءك في فَطِنة! 🧠✨',W/2,H-110);
+  return c;
+}
+function roundRect(x,px,py,w,h,r){
+  x.beginPath();
+  x.moveTo(px+r,py);
+  x.arcTo(px+w,py,px+w,py+h,r);
+  x.arcTo(px+w,py+h,px,py+h,r);
+  x.arcTo(px,py+h,px,py,r);
+  x.arcTo(px,py,px+w,py,r);
+  x.closePath();
+}
+async function shareResult(){
+  const res=state.lastResult;
+  if(!res||!res.teams||!res.teams.length){ showToast('⚠️','لا توجد نتيجة','العب جولة أولاً'); return; }
+  try{
+    // تأكد من تحميل الخط قبل الرسم حتى تظهر العربية بشكل جميل
+    try{ if(document.fonts&&document.fonts.load){ await Promise.all([document.fonts.load('900 130px Tajawal'),document.fonts.load('800 58px Tajawal'),document.fonts.load('500 44px Tajawal')]); } }catch(_){}
+    const canvas=buildResultCard(res);
+    const dataUrl=canvas.toDataURL('image/png');
+    const shareText='نتيجة مباراتنا في فَطِنة 🧠✨';
+    // الطبقة الأولى: مكوّن Capacitor الأصلي (iOS) — نحفظ الصورة كملف مؤقت ثم نشاركها
+    const SharePlugin=window.Capacitor?.Plugins?.Share;
+    const FS=window.Capacitor?.Plugins?.Filesystem;
+    if(window.Capacitor?.isNativePlatform?.()&&SharePlugin&&FS){
+      const b64=dataUrl.split(',')[1];
+      const w=await FS.writeFile({path:'fatinah-result.png',data:b64,directory:'CACHE'});
+      await SharePlugin.share({title:'نتيجة فَطِنة',text:shareText,url:w.uri,dialogTitle:'شارك النتيجة'});
+      return;
+    }
+    // الطبقة الثانية: Web Share API مع ملف صورة
+    const blob=await new Promise(rs=>canvas.toBlob(rs,'image/png'));
+    if(blob&&navigator.canShare&&navigator.share){
+      const file=new File([blob],'fatinah-result.png',{type:'image/png'});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:'نتيجة فَطِنة',text:shareText});
+        return;
+      }
+    }
+    // الطبقة الثالثة: تنزيل الصورة مباشرة
+    const a=document.createElement('a');
+    a.href=dataUrl; a.download='fatinah-result.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    showToast('📥','تم حفظ الصورة','شاركها مع أصدقائك!');
+  }catch(e){
+    if(e&&(e.name==='AbortError'||/cancel/i.test(String(e.message||'')))) return; // المستخدم أغلق نافذة المشاركة
+    console.error('share failed',e);
+    showToast('⚠️','تعذّرت المشاركة','حاول مرة أخرى');
+  }
 }
 function fireConfetti(){
   const box=document.getElementById('confetti'); box.innerHTML='';
