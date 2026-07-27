@@ -443,6 +443,20 @@ class Handler(BaseHTTPRequestHandler):
             except FileNotFoundError:
                 self.send_response(404); self.end_headers()
 
+        elif path == '/sw.js':
+            try:
+                with open(os.path.join(os.path.dirname(__file__), 'sw.js'), 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type',  'application/javascript; charset=utf-8')
+                # لا كاش للـ SW نفسه — حتى تصل التحديثات فوراً
+                self.send_header('Cache-Control', 'no-cache')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
+
         elif path == '/download/index.html':
             with open(HTML_FILE, 'rb') as f:
                 body = f.read()

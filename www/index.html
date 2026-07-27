@@ -1726,6 +1726,8 @@ function startGame(){
   state.familyRound=null; state.usedQ=new Set();
   vibrate(30); state.turn=0; state.answered=0; state.cells={};
   buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
+  // حمّل مخزون الأسئلة دون اتصال في الخلفية (لا يعطّل اللعب)
+  try{ prefetchOfflinePacks(); }catch(e){}
 }
 function buildBoard(){
   const n=state.cats.length;
@@ -2493,6 +2495,19 @@ async function generateFamily(){
   let questions=null; let failed=false;
   try{ questions = await aiGenerate(topic,count); }
   catch(e){ failed=true; }
+  if(!failed && questions && questions.length){
+    // نجح التوليد — املأ مخزون هذا الموضوع فوراً في الخلفية
+    // حتى يكون السقوط على المخزون متاحاً لو انقطع الاتصال في نفس الجلسة
+    setTimeout(()=>{ try{ prefetchTopicPack(topic, 12); }catch(e){} }, 0);
+  }
+  if(failed || !questions || !questions.length){
+    // انقطع الاتصال؟ اسحب من المخزون المحلي المُحمَّل مسبقاً بدل رسالة الخطأ
+    const cached=takeFromQCache(topic,count);
+    if(cached && cached.length){
+      questions=cached; failed=false;
+      showToast('📴','وضع دون اتصال','أسئلة من المخزون المحفوظ على جهازك',false);
+    }
+  }
   btn.disabled=false; btn.innerHTML='✨ ولّد الأسئلة';
   if(failed || !questions || !questions.length){
     // رسالة صادقة بدل أسئلة قوالب وهمية بلا معنى
@@ -2637,7 +2652,68 @@ async function aiGenerate(topic,count){
   const data=await res.json();
   const arr=(data.questions||[]).filter(x=>x&&x.q&&x.answer).slice(0,count);
   addSeen(topic, arr.map(x=>x.id).filter(Boolean));
+  rememberTopic(topic);
   return arr;
+}
+
+// ─── مخزون الأسئلة دون اتصال (لكل موضوع) ──────────────────────────────────
+// عند نجاح أي توليد، نجلب دفعة إضافية في الخلفية ونخزّنها محلياً.
+// عند انقطاع الإنترنت، نسحب من هذا المخزون بدل رسالة الخطأ.
+const QCACHE_MAX_PER_TOPIC = 24;
+function getQCache(topic){ const m=storeGet('qCache',{}); return m[seenKey(topic)]||[]; }
+function setQCache(topic, arr){
+  const m=storeGet('qCache',{}); const k=seenKey(topic);
+  if(arr.length) m[k]=arr.slice(0,QCACHE_MAX_PER_TOPIC); else delete m[k];
+  // حد أقصى 20 موضوعاً — احذف الأقدم (حماية سعة localStorage)
+  const keys=Object.keys(m);
+  if(keys.length>20){ keys.slice(0,keys.length-20).forEach(x=>delete m[x]); }
+  storeSet('qCache', m);
+}
+function takeFromQCache(topic,count){
+  const pool=getQCache(topic);
+  if(!pool.length) return null;
+  const taken=pool.slice(0,count);
+  setQCache(topic, pool.slice(taken.length));
+  return taken;
+}
+// قائمة المواضيع الأخيرة — تُستخدم للتحميل المسبق عند بدء الجلسة
+function rememberTopic(topic){
+  const t=(topic||'').trim(); if(!t) return;
+  let list=storeGet('recentTopics',[]);
+  list=[t, ...list.filter(x=>seenKey(x)!==seenKey(t))].slice(0,8);
+  storeSet('recentTopics', list);
+}
+// تعبئة مخزون موضوع واحد في الخلفية (بصمت — الفشل غير مهم هنا)
+let _prefetchBusy=false;
+async function prefetchTopicPack(topic, want){
+  if(_prefetchBusy) return; // لا تكدّس طلبات توليد متوازية
+  if(typeof navigator!=='undefined' && navigator.onLine===false) return;
+  const have=getQCache(topic).length;
+  const need=Math.min(12, Math.max(0,(want||12)-have));
+  if(!need) return;
+  _prefetchBusy=true;
+  try{
+    const auth=await getFamilyAuthHeader();
+    if(!auth) return;
+    const res=await fetch(AI_BACKEND_URL,{
+      method:'POST', headers:{'Content-Type':'application/json', ...auth},
+      body:JSON.stringify({ topic, count:need, seen:getSeen(topic) })
+    });
+    if(!res.ok) return;
+    const data=await res.json();
+    const arr=(data.questions||[]).filter(x=>x&&x.q&&x.answer);
+    if(!arr.length) return;
+    addSeen(topic, arr.map(x=>x.id).filter(Boolean));
+    setQCache(topic, [...getQCache(topic), ...arr]);
+  }catch(e){ /* دون اتصال — المخزون الحالي يكفي */ }
+  finally{ _prefetchBusy=false; }
+}
+// تحميل مسبق للمواضيع الأخيرة — يُستدعى عند بدء الجلسة وعند عودة الاتصال
+function prefetchOfflinePacks(){
+  const topics=storeGet('recentTopics',[]);
+  (async()=>{
+    for(const t of topics.slice(0,4)){ await prefetchTopicPack(t, 12); }
+  })();
 }
 
 // مولّد نموذجي ذكي (يعمل دون إنترنت — لعرض التجربة كاملة)
@@ -2798,6 +2874,30 @@ renderTeamNames();
     const userNameEl=document.getElementById('user-name');
     if(userNameEl) userNameEl.textContent=saved;
   }
+})();
+
+// ─── وضع دون اتصال: Service Worker + مؤشر ────────────────────────────────────
+// SW يخزّن هيكل التطبيق حتى تفتح اللعبة وتشتغل كاملة بلا إنترنت
+(function initOffline(){
+  try{
+    const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+    if(!isNative && 'serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    }
+  }catch(e){}
+  // مؤشر صغير «وضع دون اتصال»
+  const badge=document.createElement('div');
+  badge.id='offline-badge';
+  badge.textContent='📴 وضع دون اتصال';
+  badge.style.cssText='display:none;position:fixed;top:10px;left:10px;z-index:9999;background:#8b1a3d;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.35);pointer-events:none;';
+  document.body.appendChild(badge);
+  function updateBadge(){ badge.style.display = navigator.onLine===false ? 'block' : 'none'; }
+  window.addEventListener('offline', updateBadge);
+  window.addEventListener('online', ()=>{
+    updateBadge();
+    try{ prefetchOfflinePacks(); }catch(e){} // أعد تعبئة المخزون عند عودة الاتصال
+  });
+  updateBadge();
 })();
 
 // حمّل Firebase مسبقاً حتى يكون جاهزاً فور ضغط الأزرار (بدون تأخير async)
