@@ -4,8 +4,11 @@
   "description": "فَطِنة — لعبة الذكاء والفطنة الجماعية",
   "private": true,
   "scripts": {
+    "sync:www": "bash scripts/sync-www.sh",
+    "presync": "bash scripts/sync-www.sh",
     "sync": "npx cap sync",
     "open:ios": "npx cap open ios",
+    "prebuild:ios": "bash scripts/sync-www.sh",
     "build:ios": "npx cap sync ios && npx cap open ios"
   },
   "dependencies": {
