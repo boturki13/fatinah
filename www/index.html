@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com https://api.stripe.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none';">
 <title>فَطِنة — لعبة الذكاء الجماعية</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -438,6 +437,34 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     </div>
   </section>
 
+  <section class="screen" id="s-terms" style="padding:24px 20px 40px;overflow-y:auto;">
+    <div style="max-width:560px;margin:0 auto;">
+      <h2 style="font-weight:800;font-size:22px;margin:8px 0 14px;">شروط الاستخدام</h2>
+      <div style="color:#CFC9DF;font-size:14px;line-height:1.9;">
+        <p>«فَطِنة» لعبة أسئلة جماعية للترفيه العائلي. باستخدامك التطبيق فأنت توافق على هذه الشروط.</p>
+        <p><b>الاشتراك:</b> يوفّر التطبيق اشتراكاً شهرياً وسنوياً يفتح كل الميزات. تُحصَّل القيمة عبر حساب Apple، ويتجدّد تلقائياً ما لم تلغِه قبل نهاية الفترة الحالية بـ24 ساعة على الأقل.</p>
+        <p><b>الإلغاء:</b> يمكنك إدارة الاشتراك أو إلغاؤه من الإعدادات ← Apple ID ← الاشتراكات. طلبات الاسترداد تتم عبر Apple مباشرة.</p>
+        <p><b>الاستخدام العادل:</b> يُمنع إساءة استخدام التطبيق أو تجاوز أنظمة الدفع أو إعادة توزيع المحتوى.</p>
+        <p><b>التواصل:</b> boturkialshareef@gmail.com</p>
+      </div>
+      <button class="btn btn-ghost btn-block" style="margin-top:18px;" onclick="go('s-paywall')">رجوع</button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-privacy" style="padding:24px 20px 40px;overflow-y:auto;">
+    <div style="max-width:560px;margin:0 auto;">
+      <h2 style="font-weight:800;font-size:22px;margin:8px 0 14px;">سياسة الخصوصية</h2>
+      <div style="color:#CFC9DF;font-size:14px;line-height:1.9;">
+        <p>خصوصيتك تهمّنا. هذه السياسة توضّح ما نجمعه وكيف نستخدمه.</p>
+        <p><b>ما نجمعه:</b> الاسم الذي تدخله للعب، ومعرّف مستخدم لتشغيل التطبيق، وبيانات الدخول إن اخترت Apple أو Google. تُحفظ نقاطك وإعداداتك على جهازك.</p>
+        <p><b>المدفوعات:</b> تتم عبر Apple، ونستخدم RevenueCat للتحقق من حالة الاشتراك. لا نطّلع على بيانات بطاقتك ولا نخزّنها.</p>
+        <p><b>المشاركة:</b> لا نبيع بياناتك ولا نشاركها لأغراض إعلانية.</p>
+        <p><b>الحذف:</b> راسلنا على boturkialshareef@gmail.com</p>
+      </div>
+      <button class="btn btn-ghost btn-block" style="margin-top:18px;" onclick="go('s-paywall')">رجوع</button>
+    </div>
+  </section>
+
   <!-- الرئيسية -->
   <section class="screen" id="s-home">
     <div class="topbar">
@@ -525,55 +552,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <div class="field-label" style="margin-top:18px;">الإنجازات</div>
     <div class="ach-list" id="ach-list"></div>
     <button class="btn btn-ghost btn-block mt" onclick="go('s-home')">رجوع</button>
-    <div style="margin-top:32px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
-      <div class="field-label" style="margin-bottom:12px;">الحساب</div>
-      <button class="btn btn-ghost btn-block" onclick="go('s-privacy')" style="margin-bottom:8px;">🔒 سياسة الخصوصية</button>
-      <button class="btn btn-ghost btn-block" onclick="go('s-terms')" style="margin-bottom:8px;">📄 شروط الاستخدام</button>
-      <button class="btn btn-block" onclick="confirmDeleteAccount()" style="background:rgba(220,53,69,.15);color:#ff6b7a;border:1px solid rgba(220,53,69,.3);margin-top:8px;">🗑️ حذف الحساب وكل البيانات</button>
-    </div>
-  </section>
-
-  <!-- سياسة الخصوصية -->
-  <section class="screen" id="s-privacy" style="overflow-y:auto;">
-    <h2 class="title">سياسة الخصوصية</h2>
-    <div class="card" style="font-size:14px;line-height:1.8;color:var(--ink);">
-      <p><b>آخر تحديث: يوليو 2025</b></p>
-      <p>تطبيق <b>فَطِنة</b> يحترم خصوصيتك ويلتزم بحمايتها.</p>
-      <p><b>البيانات التي نجمعها:</b><br>
-      • اسم اللاعب (اختياري — يُحفظ على جهازك فقط)<br>
-      • إحصاءات اللعب (نقاط، إنجازات — محلية على جهازك)<br>
-      • بريد إلكتروني عند التسجيل بـ Apple أو Google (لتفعيل الاشتراك فقط)</p>
-      <p><b>ما لا نجمعه:</b><br>
-      لا نبيع بياناتك. لا نتتبع موقعك. لا نشارك معلوماتك مع أطراف ثالثة إلا لأغراض معالجة الدفع (Stripe / Apple).</p>
-      <p><b>الاشتراكات:</b><br>
-      تُعالَج مدفوعات iOS عبر Apple App Store وتخضع لسياسة خصوصية Apple. لإلغاء الاشتراك: الإعدادات ← اسمك ← الاشتراكات.</p>
-      <p><b>التواصل:</b><br>
-      لأي استفسار: boturkialshareef@gmail.com</p>
-    </div>
-    <button class="btn btn-ghost btn-block mt" onclick="history.back ? history.back() : go('s-home')">رجوع</button>
-  </section>
-
-  <!-- شروط الاستخدام -->
-  <section class="screen" id="s-terms" style="overflow-y:auto;">
-    <h2 class="title">شروط الاستخدام</h2>
-    <div class="card" style="font-size:14px;line-height:1.8;color:var(--ink);">
-      <p><b>آخر تحديث: يوليو 2025</b></p>
-      <p>باستخدامك تطبيق <b>فَطِنة</b> فأنت توافق على هذه الشروط.</p>
-      <p><b>الاشتراك:</b><br>
-      • الاشتراك الشهري: $3.99 شهرياً<br>
-      • الاشتراك السنوي: $29.99 سنوياً<br>
-      • يتجدد الاشتراك تلقائياً ما لم يُلغَ قبل 24 ساعة من انتهاء الفترة الحالية<br>
-      • يمكن إلغاؤه في أي وقت من إعدادات Apple ID</p>
-      <p><b>الاستخدام المقبول:</b><br>
-      التطبيق للاستخدام الشخصي والترفيهي. يُحظر نسخ المحتوى أو إعادة توزيعه.</p>
-      <p><b>الملكية الفكرية:</b><br>
-      جميع محتويات التطبيق محمية بحقوق النشر لصالح مطوّر فَطِنة.</p>
-      <p><b>إخلاء المسؤولية:</b><br>
-      التطبيق مقدَّم "كما هو" بدون ضمانات. المطوّر غير مسؤول عن أي أضرار ناجمة عن الاستخدام.</p>
-      <p><b>التواصل:</b><br>
-      boturkialshareef@gmail.com</p>
-    </div>
-    <button class="btn btn-ghost btn-block mt" onclick="history.back ? history.back() : go('s-home')">رجوع</button>
   </section>
 
   <!-- أسئلة عائلية -->
@@ -739,8 +717,6 @@ let state={teamCount:2, catCount:6, teams:[], cats:[], turn:0, cells:{}, answere
 // أولوية: Capacitor Preferences (تخزين أصلي داخل تطبيق iOS) إن توفّر، وإلا localStorage (يعمل في المتصفح وداخل WKWebView أيضاً).
 // هذا يحل مشكلة فقدان كل البيانات عند إغلاق التطبيق.
 const STORAGE_PREFIX='fatinah_';
-// ============ XSS sanitizer ============
-function esc(str){ const d=document.createElement('div'); d.textContent=String(str||''); return d.innerHTML; }
 function storeGet(key, fallback){
   try{
     const raw=localStorage.getItem(STORAGE_PREFIX+key);
@@ -854,29 +830,6 @@ function doExit(){
   const qw=document.getElementById('q-wrap'); if(qw) qw.classList.remove('show');
   document.getElementById('exit-modal').classList.remove('show');
   go('s-home');
-}
-
-// ============ حذف الحساب (5.1.1) ============
-async function confirmDeleteAccount(){
-  const ok=confirm('سيتم حذف جميع بياناتك المحلية (نقاط، إنجازات، إعدادات) بشكل نهائي. هل أنت متأكد؟');
-  if(!ok) return;
-  // حذف localStorage
-  const keys=Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX));
-  keys.forEach(k=>localStorage.removeItem(k));
-  // حذف Capacitor Preferences
-  try{
-    const P=window.Capacitor?.Plugins?.Preferences;
-    if(P) await P.clear();
-  }catch(e){}
-  // إلغاء ربط حساب Firebase إن وجد
-  try{
-    const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
-    if(FA) await FA.signOut();
-  }catch(e){}
-  // إعادة التهيئة
-  stats={games:0,correct:0,totalQ:0,bestScore:0,wins:0,ach:{}};
-  showToast('✅','تم حذف بياناتك','جميع البيانات المحلية محذوفة',false);
-  setTimeout(()=>go('s-auth'),1500);
 }
 
 // ============ الدخول ============
@@ -995,6 +948,8 @@ function completeLogin(name, provider, uid){
 // RC_API_KEY: ضع هنا مفتاح iOS من لوحة RevenueCat بعد الإعداد
 const RC_API_KEY = 'appl_uqcDNORwLPcxPWRUDjmPPpoMeNM';
 const RC_ENTITLEMENT = 'premium';
+const TRIAL_GAMES = 3;
+let _isSubscribed = false;
 
 function getRC(){
   return window.Capacitor && window.Capacitor.isNativePlatform()
@@ -1049,15 +1004,25 @@ async function rcRestore(){
     const { customerInfo } = await RC.restorePurchases();
     const active = !!(customerInfo.entitlements.active &&
                       customerInfo.entitlements.active[RC_ENTITLEMENT]);
-    if(active){ go('s-home'); showToast('✅','تم استعادة اشتراكك','',false); }
+    if(active){ _isSubscribed = true; go('s-home'); showToast('✅','تم استعادة اشتراكك','',false); }
     else{ showToast('ℹ️','لا يوجد اشتراك سابق','',false); }
   }catch(e){ showToast('⚠️','تعذّر الاستعادة', e.message||'', false); }
 }
 
 async function checkSubscriptionAndRoute(uid){
-  // iOS: RevenueCat أولاً
+  const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
   const rcActive = await rcIsActive();
+  _isSubscribed = (rcActive === true);
   if(rcActive === true){ go('s-home'); return; }
+  if(isNative){
+    const used = +storeGet('trialGames','0') || 0;
+    if(used < TRIAL_GAMES){
+      go('s-home');
+      const left = TRIAL_GAMES - used;
+      showToast('🎁','تجربة مجانية', 'باقي لك '+left+' من الجولات المجانية', false);
+    } else { go('s-paywall'); }
+    return;
+  }
   if(rcActive === false){ go('s-paywall'); return; }
   // ويب: Stripe
   try{
@@ -1096,6 +1061,7 @@ async function startCheckout(){
     if(window.Capacitor && window.Capacitor.isNativePlatform()){
       const purchased = await rcPurchase(_pwPlan);
       if(purchased){
+        _isSubscribed = true;
         go('s-home');
         showToast('🎉','مرحباً بك!','اشتراكك فعّال — استمتع بفطنة!',false);
       } else {
@@ -1295,6 +1261,16 @@ function advancePickTurn(){
 
 // ============ بدء ============
 function startGame(){
+  const _nat = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  if(_nat && !_isSubscribed){
+    const _used = +storeGet('trialGames','0') || 0;
+    if(_used >= TRIAL_GAMES){
+      go('s-paywall');
+      showToast('🔒','انتهت جولاتك المجانية','اشترك للعب بلا حدود',false);
+      return;
+    }
+    storeSet('trialGames', String(_used+1));
+  }
   state.familyRound=null; state.usedQ=new Set();
   vibrate(30); state.turn=0; state.answered=0; state.cells={};
   buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
@@ -1345,7 +1321,7 @@ function renderTurn(){
   const st=TEAM_STYLES[state.teams[state.turn].idx];
   const p=document.getElementById('turn-pill');
   p.style.background=st.bg; p.style.color=st.color; p.style.borderColor=st.dot;
-  p.innerHTML=`▶ دور ${esc(state.teams[state.turn].name)}`;
+  p.innerHTML=`▶ دور ${state.teams[state.turn].name}`;
   updateBombButton();
 }
 
@@ -1753,7 +1729,7 @@ function endGame(){
 }
 function showResult(sorted,win,tie){
   const wl=document.getElementById('winner-line');
-  wl.innerHTML=tie?'تعادل! 🤝':('🏆 الفائز: <span class="brand">'+esc(win.name)+'</span>');
+  wl.innerHTML=tie?'تعادل! 🤝':('🏆 الفائز: <span class="brand">'+win.name+'</span>');
   const pod=document.getElementById('podium'); pod.innerHTML='';
   const medals=['🥇','🥈','🥉']; const heights={0:156,1:122,2:98};
   const order=[1,0,2].filter(i=>i<sorted.length);
@@ -1771,7 +1747,7 @@ function showResult(sorted,win,tie){
   if(!tie){ sfx('win'); vibrate([60,40,60,40,120]); fireConfetti(); }
 }
 function restart(){
-  state.teams.forEach(t=>{ t.score=0; t.ll=3; t.used=new Set(); });
+  state.teams.forEach(t=>{ t.score=0; t.ll=3; t.used=new Set(); t.bombUsed=false; });
   startGame();
 }
 function fireConfetti(){
