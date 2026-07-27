@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<script src="/server-config.js"></script>
 <script src="/firebase-config.js"></script>
 <style>
 :root{
@@ -1026,7 +1027,7 @@ async function checkSubscriptionAndRoute(uid){
   if(rcActive === false){ go('s-paywall'); return; }
   // ويب: Stripe
   try{
-    const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
+    const resp = await fetch(apiUrl(`/api/stripe/status?uid=${encodeURIComponent(uid)}`));
     const data = await resp.json();
     if(data.active){ go('s-home'); }
     else{ go('s-paywall'); }
@@ -1073,7 +1074,7 @@ async function startCheckout(){
     // ويب: Stripe Checkout
     const uid   = storeGet('authUid','');
     const email = storeGet('authEmail','');
-    const resp  = await fetch('/api/stripe/create-checkout', {
+    const resp  = await fetch(apiUrl('/api/stripe/create-checkout'), {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({uid, email, plan: _pwPlan})
@@ -1848,11 +1849,34 @@ async function generateFamily(){
   renderPreview(); go('s-family-preview');
 }
 
-// توليد الأسئلة عبر الخادم المحلي (يستخدم Claude / Anthropic بأمان من جهة الخادم)
-// في بيئة iOS الأصلية نعود للـ Firebase Cloud Function كاحتياط
-const AI_BACKEND_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1') && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
-  ? 'https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions'
-  : '/api/generate';
+// ─── رابط API المناسب للبيئة ──────────────────────────────────────────────────
+// في المتصفح العادي: URLs نسبية تعمل مباشرةً
+// في iOS الأصلية (Capacitor): نضيف SERVER_BASE_URL (محقون من server-config.js المُجمَّع)
+function apiUrl(path) {
+  const isNative = typeof window !== 'undefined' &&
+    window.Capacitor && window.Capacitor.isNativePlatform &&
+    window.Capacitor.isNativePlatform();
+  if (isNative) {
+    const base = (typeof window !== 'undefined' && window.SERVER_BASE_URL) || '';
+    if (base) return base + path;
+  }
+  return path;
+}
+
+// رابط توليد الأسئلة — يوجّه iOS لخادم Replit (بنك الأسئلة + Claude)
+// احتياط: Firebase Cloud Function إن لم يُضبط SERVER_BASE_URL بعد
+function getAiBackendUrl() {
+  const isNative = typeof window !== 'undefined' &&
+    window.Capacitor && window.Capacitor.isNativePlatform &&
+    window.Capacitor.isNativePlatform();
+  if (isNative) {
+    const base = (typeof window !== 'undefined' && window.SERVER_BASE_URL) || '';
+    if (base) return base + '/api/generate';
+    return 'https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions';
+  }
+  return '/api/generate';
+}
+const AI_BACKEND_URL = getAiBackendUrl();
 async function aiGenerate(topic,count){
   const res=await fetch(AI_BACKEND_URL,{
     method:'POST', headers:{'Content-Type':'application/json'},

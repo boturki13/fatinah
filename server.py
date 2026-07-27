@@ -126,6 +126,18 @@ def read_html():
         return f.read()
 
 # ─── Firebase config ─────────────────────────────────────────────────────────
+def server_config_js():
+    """يعرض رابط الخادم الأساسي لاستخدامه في تطبيقات iOS الأصلية (Capacitor)."""
+    # REPLIT_APP_URL يُضبط يدوياً بعد النشر، وإلا نستخدم REPLIT_DOMAINS كاحتياط
+    app_url = os.environ.get('REPLIT_APP_URL', '').rstrip('/')
+    if not app_url:
+        domain = (os.environ.get('REPLIT_DOMAINS') or '').split(',')[0].strip()
+        app_url = f'https://{domain}' if domain else ''
+    return (
+        f'window.SERVER_BASE_URL = {json.dumps(app_url)};\n'
+    ).encode()
+
+
 def firebase_config_js():
     cfg = {
         'apiKey':            os.environ.get('GOOGLE_API_KEY', ''),
@@ -282,7 +294,15 @@ class Handler(BaseHTTPRequestHandler):
         path   = parsed.path
         params = urllib.parse.parse_qs(parsed.query)
 
-        if path == '/firebase-config.js':
+        if path == '/server-config.js':
+            body = server_config_js()
+            self.send_response(200)
+            self.send_header('Content-Type',   'application/javascript; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        elif path == '/firebase-config.js':
             body = firebase_config_js()
             self.send_response(200)
             self.send_header('Content-Type',   'application/javascript; charset=utf-8')
