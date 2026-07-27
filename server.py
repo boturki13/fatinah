@@ -97,6 +97,19 @@ def init_db():
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    # ─── أرشيف الإحصاءات عند حذف الحساب (لمنع ضياع البيانات) ───────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS archived_stats (
+            uid        TEXT NOT NULL,
+            games      INTEGER NOT NULL DEFAULT 0,
+            correct    INTEGER NOT NULL DEFAULT 0,
+            total_q    INTEGER NOT NULL DEFAULT 0,
+            best_score INTEGER NOT NULL DEFAULT 0,
+            wins       INTEGER NOT NULL DEFAULT 0,
+            ach        TEXT    NOT NULL DEFAULT '{}',
+            archived_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -626,19 +639,30 @@ class Handler(BaseHTTPRequestHandler):
 
         # ─── حذف الحساب: إزالة سجل الاشتراك المرتبط بالـ uid ────────────────
         elif path == '/api/account/delete':
-            try:   data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
-
-            uid = (data.get('uid') or '').strip()
-            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
+            # المصادقة: uid يُستخرج من التوكن فقط، لا من الجسم
+            uid = self.authed_uid()
+            if not uid: self.send_json(401, {'error': 'تسجيل الدخول مطلوب'}); return
 
             try:
                 conn = db_connect()
-                cur  = conn.execute('DELETE FROM subscriptions WHERE uid=?', (uid,))
+                # ① أرشفة الإحصاءات قبل المسح
+                row = conn.execute(
+                    'SELECT games, correct, total_q, best_score, wins, ach FROM player_stats WHERE uid=?',
+                    (uid,)).fetchone()
+                if row:
+                    conn.execute(
+                        '''INSERT INTO archived_stats
+                               (uid, games, correct, total_q, best_score, wins, ach)
+                           VALUES (?,?,?,?,?,?,?)''',
+                        (uid, row[0], row[1], row[2], row[3], row[4], row[5]))
+                # ② مسح جميع بيانات المستخدم
+                conn.execute('DELETE FROM player_stats       WHERE uid=?', (uid,))
+                conn.execute('DELETE FROM family_categories  WHERE uid=?', (uid,))
+                conn.execute('DELETE FROM promo_redemptions  WHERE uid=?', (uid,))
+                cur = conn.execute('DELETE FROM subscriptions WHERE uid=?', (uid,))
                 conn.commit()
-                deleted = cur.rowcount
                 conn.close()
-                self.send_json(200, {'ok': True, 'deleted': deleted})
+                self.send_json(200, {'ok': True, 'deleted': cur.rowcount})
             except sqlite3.OperationalError:
                 self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
 
