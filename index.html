@@ -810,7 +810,64 @@ let stats=loadStats();
 function loadStats(){
   return storeGet('stats', {games:0, correct:0, totalQ:0, bestScore:0, wins:0, ach:{}});
 }
-function saveStats(){ storeSet('stats', stats); }
+function saveStats(){ storeSet('stats', stats); pushStatsToCloud(); }
+
+// ============ مزامنة الإحصاءات سحابياً ============
+// الحفظ المحلي يبقى المصدر الفوري؛ المزامنة تعمل في الخلفية.
+async function _getStatsAuthHeader(){
+  try{
+    const FA = window.Capacitor?.Plugins?.FirebaseAuthentication;
+    if(FA){ const r=await FA.getIdToken(); if(r&&r.token) return {'Authorization':'Bearer '+r.token}; }
+  }catch(e){}
+  try{
+    if(_fbWebSDK&&_fbWebSDK.auth.currentUser){
+      const t=await _fbWebSDK.auth.currentUser.getIdToken();
+      if(t) return {'Authorization':'Bearer '+t};
+    }
+  }catch(e){}
+  return null;
+}
+async function pushStatsToCloud(){
+  try{
+    const auth=await _getStatsAuthHeader();
+    if(!auth) return;
+    fetch(apiUrl('/api/stats/sync'),{
+      method:'POST',
+      headers:{'Content-Type':'application/json',...auth},
+      body:JSON.stringify({
+        games:stats.games, correct:stats.correct, totalQ:stats.totalQ||0,
+        bestScore:stats.bestScore, wins:stats.wins, ach:stats.ach||{}
+      })
+    }).catch(()=>{});
+  }catch(e){}
+}
+async function pullStatsFromCloud(){
+  try{
+    const auth=await _getStatsAuthHeader();
+    if(!auth) return;
+    const r=await fetch(apiUrl('/api/stats/sync'),{
+      method:'POST',
+      headers:{'Content-Type':'application/json',...auth},
+      body:JSON.stringify({
+        games:stats.games, correct:stats.correct, totalQ:stats.totalQ||0,
+        bestScore:stats.bestScore, wins:stats.wins, ach:stats.ach||{}
+      })
+    });
+    if(!r.ok) return;
+    const d=await r.json();
+    if(!d.ok) return;
+    // نأخذ الأعلى لكل قيمة رقمية، واتحاد الإنجازات
+    let changed=false;
+    ['games','correct','bestScore','wins'].forEach(k=>{
+      if((d[k]||0)>(stats[k]||0)){ stats[k]=d[k]; changed=true; }
+    });
+    if((d.totalQ||0)>(stats.totalQ||0)){ stats.totalQ=d.totalQ; changed=true; }
+    const remoteAch=d.ach||{};
+    stats.ach=stats.ach||{};
+    Object.keys(remoteAch).forEach(k=>{ if(!stats.ach[k]){ stats.ach[k]=remoteAch[k]; changed=true; } });
+    if(changed){ storeSet('stats',stats); }
+  }catch(e){ /* بدون إنترنت — المحلي يكفي */ }
+}
 
 const ACHIEVEMENTS=[
   {id:'first', icon:'🎮', t:'أول جولة', d:'أكملت أول جولة', chk:s=>s.games>=1},
@@ -1124,6 +1181,7 @@ function completeLogin(name, provider, uid){
   window._currentUid = uid;
   document.getElementById('user-name').textContent = name;
   pullFamilyFromCloud();   // استرجاع الفئات العائلية من السحابة (في الخلفية)
+  pullStatsFromCloud();    // مزامنة الإحصاءات والإنجازات من السحابة (في الخلفية)
   checkSubscriptionAndRoute(uid);
 }
 

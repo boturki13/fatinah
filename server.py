@@ -74,6 +74,19 @@ def init_db():
             PRIMARY KEY (uid, name)
         )
     ''')
+    # ─── إحصاءات اللاعب وإنجازاته المزامنة سحابياً ─────────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS player_stats (
+            uid        TEXT PRIMARY KEY,
+            games      INTEGER NOT NULL DEFAULT 0,
+            correct    INTEGER NOT NULL DEFAULT 0,
+            total_q    INTEGER NOT NULL DEFAULT 0,
+            best_score INTEGER NOT NULL DEFAULT 0,
+            wins       INTEGER NOT NULL DEFAULT 0,
+            ach        TEXT    NOT NULL DEFAULT '{}',
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -486,6 +499,69 @@ class Handler(BaseHTTPRequestHandler):
                 cur = conn.execute('DELETE FROM family_categories WHERE uid=?', (uid,))
                 conn.commit()
                 self.send_json(200, {'ok': True, 'deleted': cur.rowcount})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+            finally:
+                conn.close()
+
+        # ─── إحصاءات اللاعب: رفع / دمج ──────────────────────────────────────
+        elif path == '/api/stats/sync':
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            uid = self.authed_uid()
+            if not uid: self.send_json(401, {'error': 'تسجيل الدخول مطلوب'}); return
+            # نأخذ الأعلى لكل حقل رقمي، واتحاد مجموعة الإنجازات
+            games      = int(data.get('games',      0) or 0)
+            correct    = int(data.get('correct',    0) or 0)
+            total_q    = int(data.get('totalQ',     0) or 0)
+            best_score = int(data.get('bestScore',  0) or 0)
+            wins       = int(data.get('wins',       0) or 0)
+            ach_client = data.get('ach', {})
+            if not isinstance(ach_client, dict): ach_client = {}
+            conn = db_connect()
+            try:
+                row = conn.execute(
+                    'SELECT games, correct, total_q, best_score, wins, ach FROM player_stats WHERE uid=?',
+                    (uid,)
+                ).fetchone()
+                if row:
+                    ach_db = {}
+                    try: ach_db = json.loads(row[5] or '{}')
+                    except Exception: pass
+                    merged_ach = {**ach_db, **ach_client}
+                    conn.execute('''
+                        UPDATE player_stats SET
+                            games      = MAX(games,      ?),
+                            correct    = MAX(correct,    ?),
+                            total_q    = MAX(total_q,    ?),
+                            best_score = MAX(best_score, ?),
+                            wins       = MAX(wins,       ?),
+                            ach        = ?,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE uid = ?
+                    ''', (games, correct, total_q, best_score, wins,
+                          json.dumps(merged_ach, ensure_ascii=False), uid))
+                else:
+                    merged_ach = ach_client
+                    conn.execute('''
+                        INSERT INTO player_stats (uid, games, correct, total_q, best_score, wins, ach)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (uid, games, correct, total_q, best_score, wins,
+                          json.dumps(merged_ach, ensure_ascii=False)))
+                conn.commit()
+                # أعد الصف المدمج للعميل
+                row2 = conn.execute(
+                    'SELECT games, correct, total_q, best_score, wins, ach FROM player_stats WHERE uid=?',
+                    (uid,)
+                ).fetchone()
+                ach_out = {}
+                try: ach_out = json.loads(row2[5] or '{}')
+                except Exception: pass
+                self.send_json(200, {
+                    'ok': True,
+                    'games': row2[0], 'correct': row2[1], 'totalQ': row2[2],
+                    'bestScore': row2[3], 'wins': row2[4], 'ach': ach_out
+                })
             except sqlite3.OperationalError:
                 self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
             finally:
