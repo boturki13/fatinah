@@ -1207,9 +1207,9 @@ function completeLogin(name, provider, uid){
 }
 
 // ============ RevenueCat — Apple IAP ============
-// RC_API_KEY: ضع هنا مفتاح iOS من لوحة RevenueCat بعد الإعداد
-const RC_API_KEY = 'appl_uqcDNORwLPcxPWRUDjmPPpoMeNM';
-const RC_CONFIGURED = !RC_API_KEY.includes('XXXX'); // true = مفتاح حقيقي
+// RC_API_KEY: يُحقن من /server-config.js (متغير البيئة RC_API_KEY على الخادم)
+const RC_API_KEY = window.RC_API_KEY || '';
+const RC_CONFIGURED = RC_API_KEY.startsWith('appl_'); // true = مفتاح حقيقي
 const RC_ENTITLEMENT = 'premium';
 
 function getRC(){
@@ -2429,8 +2429,10 @@ async function pullSeenFromCloud(){
   }catch(e){}
 }
 async function aiGenerate(topic,count){
+  const auth=await getFamilyAuthHeader();   // الخادم يتطلب مصادقة لتوليد الأسئلة
+  if(!auth) throw new Error('تسجيل الدخول مطلوب لتوليد الأسئلة');
   const res=await fetch(AI_BACKEND_URL,{
-    method:'POST', headers:{'Content-Type':'application/json'},
+    method:'POST', headers:{'Content-Type':'application/json', ...auth},
     body:JSON.stringify({ topic, count, seen:getSeen(topic) })
   });
   if(!res.ok) throw new Error('فشل الاتصال بالخادم');
