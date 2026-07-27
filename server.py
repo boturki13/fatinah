@@ -458,22 +458,22 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path   = self.path.split('?')[0]
-        length = int(self.headers.get('Content-Length', 0))
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+        except (TypeError, ValueError):
+            length = 0
 
-        # ─── حد حجم body لمسار مزامنة الأسئلة المشاهدة (64KB) ───────────────
-        if path == '/api/seen/sync':
-            if length <= 0:
-                self.send_json(411, {'error': 'Content-Length مطلوب'}); return
-            if length > 65536:
-                self.send_json(413, {'error': 'حجم الطلب يتجاوز الحد المسموح (64KB)'}); return
-            body = self.rfile.read(length)
-        else:
-            body = self.rfile.read(length)
+        # ─── حد حجم body لكل مسارات POST (64KB) ─────────────────────────────
+        if length < 0:
+            self.send_json(400, {'error': 'Content-Length غير صالح'}); return
+        if path == '/api/seen/sync' and length <= 0:
+            self.send_json(411, {'error': 'Content-Length مطلوب'}); return
+        if length > 65536:
+            self.send_json(413, {'error': 'حجم الطلب يتجاوز الحد المسموح (64KB)'}); return
+        body = self.rfile.read(length)
 
         # ─── AI generate ────────────────────────────────────────────────────
         if path == '/api/generate':
-            if length > 65536:
-                self.send_json(413, {'error': 'حجم الطلب يتجاوز الحد المسموح (64KB)'}); return
             # مصادقة إلزامية — الاستدعاء يكلّف توكنات Claude مدفوعة
             uid = self.authed_uid()
             if not uid:
