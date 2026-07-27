@@ -12,47 +12,47 @@
 - **Anthropic API key** — paid per token. Abuse causes financial harm.
 - **Stripe secret key** — allows payment operations. Must never appear in logs.
 - **ADMIN_SECRET** — protects promo-code management (`/api/promo/admin`). If absent or leaked, admin actions become accessible.
-- **RevenueCat public key** (`appl_` prefix) — client-side iOS IAP key, not secret by design, but hardcoded in source.
+- **RevenueCat public key** (`appl_` prefix) — client-side iOS IAP key, not secret by design; served via `/server-config.js` from env var `RC_API_KEY`.
 - **SQLite database** (`subscriptions.db`) — contains subscription records, promo redemptions, question bank, player stats.
 
 ## Trust Boundaries
 
 - **Browser/iOS app → Server** — all client requests are untrusted. Firebase token verification is the primary trust mechanism; `uid` must always be derived from the verified token, never from the request body.
-- **Server → Anthropic API** — paid outbound call. Should be rate-limited and require authenticated callers.
+- **Server → Anthropic API** — paid outbound call. Rate-limited (20 req / 5 min per uid) and requires authenticated callers.
 - **Server → Firebase Identity Toolkit** — used to verify tokens; server caches results for 5 minutes.
 - **Server → Stripe API** — payment operations; key must be secret.
-- **Public vs. Authenticated endpoints** — most data endpoints require `Authorization: Bearer <idToken>`; `/api/generate`, `/api/promo/redeem`, and `/api/promo/status` currently do not.
+- **Public vs. Authenticated endpoints** — all data/action endpoints now require `Authorization: Bearer <idToken>`. `/api/generate`, `/api/promo/redeem`, and `/api/promo/status` were previously unauthenticated and have since been fixed.
 
 ## Scan Anchors
 
 - **Production entry points:** `server.py` (`Handler.do_GET`, `Handler.do_POST`) — single HTTP handler for all routes on port 5000.
 - **Highest-risk areas:**
-  - `/api/promo/redeem` — missing auth + client-supplied uid (IDOR)
-  - `/api/promo/status` — missing auth, uid from query param
-  - `/api/generate` — missing auth, triggers paid Anthropic API call
+  - `/api/stats/sync`, `/api/family/sync`, `/api/promo/redeem` — missing body-size limits (DoS risk for authenticated callers)
+  - `/api/promo/redeem` — raw exception details (`str(e)`) returned in 500 responses
   - `/api/promo/admin` — protected by `X-Admin-Secret` header vs env var `ADMIN_SECRET`
-- **Public surface:** `/`, `/firebase-config.js`, `/server-config.js`, `/privacy`, `/terms`, `/vendor/*.js`, `/admin/promo` (HTML only), `/api/generate`, `/api/promo/redeem`, `/api/promo/status`
-- **Authenticated surface:** `/api/family/list`, `/api/family/sync`, `/api/family/delete`, `/api/family/purge`, `/api/stats/sync`, `/api/seen/sync`, `/api/account/delete`
+  - `_rate_buckets` dict in `rate_limited()` — accessed by multiple threads without a lock (race condition, minor rate-limit bypass risk)
+- **Public surface:** `/`, `/firebase-config.js`, `/server-config.js`, `/privacy`, `/terms`, `/legal/**`, `/robots.txt`, `/vendor/*.js`, `/admin/promo` (HTML only), `/download/index.html`
+- **Authenticated surface:** `/api/generate`, `/api/family/list`, `/api/family/sync`, `/api/family/delete`, `/api/family/purge`, `/api/stats/sync`, `/api/seen/sync`, `/api/promo/redeem`, `/api/promo/status`, `/api/account/delete`
 - **Admin surface:** `/api/promo/admin` (X-Admin-Secret)
 - **Dev/setup only:** `setup_stripe.py`, `functions/index.js` (Firebase Cloud Function backup)
 
 ## Threat Categories
 
-### Spoofing / Broken Object-Level Authorization
+### Spoofing / Authentication
 
-The server correctly verifies Firebase tokens server-side for most endpoints by calling `verify_firebase_token()` and deriving uid from the token. However, `/api/promo/redeem` accepts uid from the request body without any token check, allowing an attacker to act as any uid. All user-scoped endpoints MUST derive uid exclusively from the verified token.
+All protected endpoints verify Firebase ID tokens server-side via `verify_firebase_token()`. The `uid` is derived exclusively from the verified token — it is never accepted from the request body or query string. Previously unauthenticated endpoints (`/api/generate`, `/api/promo/redeem`, `/api/promo/status`) were fixed in commit `0a51426`.
 
 ### Elevation of Privilege
 
-`/api/promo/admin` is protected by a shared secret (`ADMIN_SECRET`). If this env var is not set, the endpoint fails closed (403 to all). The admin HTML page (`/admin/promo`) is served unauthenticated but is UI-only — the actual API requires the secret. This is acceptable, but the page existence reveals the admin interface location.
+`/api/promo/admin` is protected by a shared secret (`ADMIN_SECRET`). If this env var is not set, the endpoint fails closed (returns 403 to all). The admin HTML page (`/admin/promo`) is served unauthenticated but is UI-only — the actual API requires the secret.
 
 ### Denial of Service / Financial Abuse
 
-`/api/generate` is callable by unauthenticated users with no rate limiting. Each call can consume ~4 000 Anthropic tokens (claude-opus-4-5). Unlimited invocations cause unbounded API spend. Rate limiting and authentication are required.
+`/api/generate` has authentication and a per-user rate limit (20 requests per 5-minute window). However, `/api/stats/sync`, `/api/family/sync`, `/api/promo/redeem`, and `/api/account/delete` have **no body-size cap**, unlike `/api/seen/sync` and `/api/generate` which enforce 64 KB. An authenticated user can send a multi-GB body to exhaust server memory. Rate limiting uses an in-memory dict (`_rate_buckets`) accessed by multiple threads without a lock, introducing a minor race condition.
 
 ### Information Disclosure
 
-`/api/promo/status` exposes per-user promo subscription state to any caller with a uid. The `GOOGLE_API_KEY` (Firebase web API key) is served to clients via `/firebase-config.js` — this is intentional for Firebase Web SDK. Stripe partial key in `setup_stripe.py` stdout is low-risk but undesirable.
+The `/api/promo/redeem` and `/api/promo/admin` handlers return raw `str(e)` from caught exceptions in 500 responses, potentially leaking SQLite error messages, table names, or constraint names. All other handlers use generic error text. The `GOOGLE_API_KEY` (Firebase web API key) is served to clients via `/firebase-config.js` — this is intentional for Firebase Web SDK. The RevenueCat public key is served via `/server-config.js` from env var `RC_API_KEY` — this is intentional per RevenueCat's design.
 
 ### Tampering
 
@@ -60,4 +60,4 @@ Stats sync (`/api/stats/sync`) uses `MAX()` to take the higher of server vs clie
 
 ### Cryptography / Secrets
 
-No plaintext passwords. Firebase tokens are validated via HTTPS. SQLite database is on the local filesystem (Replit persistent storage). The RevenueCat public key is hardcoded in client source — acceptable per RevenueCat design but rotation is difficult.
+No plaintext passwords. Firebase tokens are validated via HTTPS. SQLite database is on the local filesystem (Replit persistent storage). The RevenueCat public key is served from env var (no longer hardcoded in source).
