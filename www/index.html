@@ -465,7 +465,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <div id="paywall-loading" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:14px;">جاري التحويل لصفحة الدفع…</div>
       <!-- كود مكافأة -->
       <div class="pw-promo pw-rise pw-d6" id="pw-promo-box">
-        <button class="pw-promo-toggle" id="pw-promo-toggle" onclick="togglePromoBox()">🎁 عندك كود مجاني؟</button>
+        <button class="pw-promo-toggle" id="pw-promo-toggle" onclick="togglePromoBox()">🎁 هنا يُكتب الكود</button>
         <div class="pw-promo-form" id="pw-promo-form" style="display:none;">
           <input id="pw-promo-input" type="text" placeholder="أدخل الكود هنا..." autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
           <button onclick="redeemPromo()">تفعيل</button>
@@ -615,7 +615,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <p><b>التواصل:</b><br>
       لأي استفسار: fatinahgame@gmail.com</p>
     </div>
-    <button class="btn btn-ghost btn-block mt" onclick="history.back ? history.back() : go('s-home')">رجوع</button>
+    <button class="btn btn-ghost btn-block mt" onclick="goBack()">رجوع</button>
   </section>
 
   <!-- شروط الاستخدام -->
@@ -638,7 +638,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <p><b>التواصل:</b><br>
       fatinahgame@gmail.com</p>
     </div>
-    <button class="btn btn-ghost btn-block mt" onclick="history.back ? history.back() : go('s-home')">رجوع</button>
+    <button class="btn btn-ghost btn-block mt" onclick="goBack()">رجوع</button>
   </section>
 
   <!-- أسئلة عائلية -->
@@ -990,7 +990,11 @@ function toggleSound(){
 }
 
 // ============ تنقّل ============
+let prevScreen='s-home';
+function goBack(){ go(prevScreen||'s-home'); }
 function go(id){
+  const cur=document.querySelector('.screen.active');
+  if(cur && cur.id!==id && cur.id!=='s-terms' && cur.id!=='s-privacy') prevScreen=cur.id;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
@@ -1450,7 +1454,7 @@ function togglePromoBox(){
   const open = form.style.display === 'none';
   form.style.display = open ? 'flex' : 'none';
   form.style.flexDirection = 'column';
-  btn.textContent = open ? '✖ إخفاء' : '🎁 عندك كود مجاني؟';
+  btn.textContent = open ? '✖ إخفاء' : '🎁 هنا يُكتب الكود';
   if(open) document.getElementById('pw-promo-input').focus();
 }
 
