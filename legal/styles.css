@@ -1,0 +1,40 @@
+/* فَطِنة — Legal pages */
+:root{--ink:#1a1a1a;--muted:#555;--line:#e5e5e5;--accent:#5b2ea6;--bg:#ffffff;}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,"SF Arabic","Noto Sans Arabic",Tahoma,sans-serif;
+  line-height:1.9;font-size:17px;}
+.wrap{max-width:760px;margin:0 auto;padding:24px 20px 80px;}
+h1{font-size:1.9em;line-height:1.4;margin:.4em 0 .1em;}
+h2{font-size:1.25em;margin-top:2em;border-bottom:1px solid var(--line);padding-bottom:.3em;}
+h3{font-size:1.05em;margin-top:1.4em;}
+a{color:var(--accent);}
+.updated{color:var(--muted);font-size:.9em;margin:0 0 1.5em;}
+.summary{background:#f4effc;border:1px solid #e0d3f5;border-radius:12px;padding:14px 18px;margin:1.2em 0;}
+.toc{background:#fafafa;border:1px solid var(--line);border-radius:12px;padding:14px 22px;margin:1.5em 0;}
+.toc ol{margin:.4em 0;padding-inline-start:1.4em;}
+.toc a{text-decoration:none;}
+table{border-collapse:collapse;width:100%;font-size:.92em;margin:1em 0;}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:start;vertical-align:top;}
+th{background:#fafafa;}
+.placeholder{background:#fff3cd;border:1px dashed #d4a017;padding:1px 6px;border-radius:6px;font-weight:700;}
+.caps{font-weight:700;}
+footer{margin-top:56px;border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:.9em;}
+footer a{margin-inline-end:14px;}
+/* Language toggle */
+.langbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.95);backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--line);padding:10px 20px;display:flex;justify-content:center;gap:8px;}
+.langbar button{font:inherit;font-weight:700;padding:6px 22px;border-radius:999px;border:1px solid var(--line);
+  background:#fff;color:var(--ink);cursor:pointer;}
+.langbar button.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+[hidden]{display:none !important;}
+/* Landing */
+.hero{text-align:center;padding:60px 20px 30px;}
+.hero .logo{font-size:56px;}
+.hero p{color:var(--muted);}
+.btns{display:flex;flex-direction:column;gap:14px;max-width:420px;margin:26px auto;}
+.btns a{display:block;padding:16px 20px;border-radius:14px;text-decoration:none;font-weight:800;font-size:1.05em;
+  background:var(--accent);color:#fff;text-align:center;}
+.btns a.alt{background:#fff;color:var(--accent);border:2px solid var(--accent);}
+@media (max-width:480px){body{font-size:16px;}}
