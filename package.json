@@ -12,22 +12,24 @@
     "build:ios": "npx cap sync ios && npx cap open ios"
   },
   "dependencies": {
-    "@revenuecat/purchases-capacitor": "^9.0.0",
-    "@capacitor/core": "^6.1.2",
-    "@capacitor/ios": "^6.1.2",
-    "@capacitor/haptics": "^6.0.2",
-    "@capacitor/status-bar": "^6.0.2",
-    "@capacitor/splash-screen": "^6.0.3",
-    "@capacitor/preferences": "^6.0.3",
     "@capacitor-community/keep-awake": "^5.0.0",
     "@capacitor-firebase/authentication": "^6.3.0",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/filesystem": "^6.0.4",
+    "@capacitor/haptics": "^6.0.2",
+    "@capacitor/ios": "^6.1.2",
+    "@capacitor/preferences": "^6.0.3",
+    "@capacitor/share": "^6.0.4",
+    "@capacitor/splash-screen": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.2",
+    "@revenuecat/purchases-capacitor": "^9.0.0",
     "firebase": "^10.14.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.1.2"
+    "@capacitor/cli": "^6.1.2",
+    "typescript": "^4.9.5"
   },
   "overrides": {
     "undici": ">=6.27.0"
   }
 }
-
