@@ -1262,13 +1262,18 @@ async function promoIsActive(uid){
 }
 
 async function promoStatusFull(uid){
-  if(!uid) return {active: false, expires_at: null};
+  if(!uid) return {active: false, expires_at: null, had_promo: false, expired_at: null};
   try{
     const r = await fetch(apiUrl(`/api/promo/status?uid=${encodeURIComponent(uid)}`));
-    if(!r.ok) return {active: false, expires_at: null};
+    if(!r.ok) return {active: false, expires_at: null, had_promo: false, expired_at: null};
     const d = await r.json();
-    return {active: d.active === true, expires_at: d.expires_at || null};
-  }catch(e){ return {active: false, expires_at: null}; }
+    return {
+      active:     d.active === true,
+      expires_at: d.expires_at  || null,
+      had_promo:  d.had_promo   === true,
+      expired_at: d.expired_at  || null
+    };
+  }catch(e){ return {active: false, expires_at: null, had_promo: false, expired_at: null}; }
 }
 
 function maybeWarnPromoExpiry(expires_at){
@@ -1281,13 +1286,26 @@ function maybeWarnPromoExpiry(expires_at){
   }
 }
 
+function notifyPromoExpired(expired_at){
+  let desc = 'اشترك للاستمرار في الاستمتاع بفطنة';
+  if(expired_at){
+    const dateStr = new Date(expired_at).toLocaleDateString('ar-SA');
+    desc = `انتهى بتاريخ ${dateStr} — اشترك للاستمرار`;
+  }
+  showToast('⏰', 'انتهت صلاحية كود المكافأة', desc, false);
+}
+
 async function checkSubscriptionAndRoute(uid){
   // iOS: RevenueCat
   const rcActive = await rcIsActive();
   if(rcActive === true){ go('s-home'); return; }
   if(rcActive === false){
     // تحقق من كود مجاني قبل صفحة الاشتراك
-    if(uid){ const ps = await promoStatusFull(uid); if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; } }
+    if(uid){
+      const ps = await promoStatusFull(uid);
+      if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; }
+      if(ps.had_promo){ go('s-paywall'); notifyPromoExpired(ps.expired_at); return; }
+    }
     go('s-paywall'); return;
   }
   // ويب: Stripe — فشل مغلق (fail-closed): أي خطأ = paywall لا home
@@ -1297,10 +1315,18 @@ async function checkSubscriptionAndRoute(uid){
     const data = await resp.json();
     if(data.active === true){ go('s-home'); return; }
     // تحقق من كود مجاني
-    if(uid){ const ps = await promoStatusFull(uid); if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; } }
+    if(uid){
+      const ps = await promoStatusFull(uid);
+      if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; }
+      if(ps.had_promo){ go('s-paywall'); notifyPromoExpired(ps.expired_at); return; }
+    }
     go('s-paywall');
   }catch(e){
-    if(uid){ const ps = await promoStatusFull(uid); if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; } }
+    if(uid){
+      const ps = await promoStatusFull(uid);
+      if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; }
+      if(ps.had_promo){ go('s-paywall'); notifyPromoExpired(ps.expired_at); return; }
+    }
     go('s-paywall');
   }
 }
