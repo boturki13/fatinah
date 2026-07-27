@@ -391,6 +391,24 @@ class Handler(BaseHTTPRequestHandler):
             finally:
                 conn.close()
 
+        # ─── حذف الحساب: إزالة سجل الاشتراك المرتبط بالـ uid ────────────────
+        elif path == '/api/account/delete':
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+
+            uid = (data.get('uid') or '').strip()
+            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
+
+            try:
+                conn = db_connect()
+                cur  = conn.execute('DELETE FROM subscriptions WHERE uid=?', (uid,))
+                conn.commit()
+                deleted = cur.rowcount
+                conn.close()
+                self.send_json(200, {'ok': True, 'deleted': deleted})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+
         # ─── Stripe: إنشاء جلسة دفع ─────────────────────────────────────────
         elif path == '/api/stripe/create-checkout':
             try:   data = json.loads(body)
