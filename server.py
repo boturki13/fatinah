@@ -443,6 +443,21 @@ class Handler(BaseHTTPRequestHandler):
             except FileNotFoundError:
                 self.send_response(404); self.end_headers()
 
+        elif path.startswith('/fonts/') and (path.endswith('.woff2') or path.endswith('.css')) and '..' not in path:
+            fpath = os.path.join(os.path.dirname(__file__), 'www', path.lstrip('/'))
+            try:
+                with open(fpath, 'rb') as f:
+                    body = f.read()
+                ctype = 'font/woff2' if path.endswith('.woff2') else 'text/css; charset=utf-8'
+                self.send_response(200)
+                self.send_header('Content-Type',   ctype)
+                self.send_header('Cache-Control',  'public, max-age=604800')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
+
         elif path == '/sw.js':
             try:
                 with open(os.path.join(os.path.dirname(__file__), 'sw.js'), 'rb') as f:

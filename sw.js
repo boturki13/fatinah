@@ -1,13 +1,24 @@
 // ─── Service Worker: تشغيل اللعبة كاملة دون اتصال ─────────────────────────────
 // يخزّن هيكل التطبيق (الصفحة + ملفات JS + الخطوط) حتى تعمل اللعبة بلا إنترنت.
 // لا يخزّن أبداً طلبات /api — تلك تبقى شبكية دائماً.
-const CACHE_NAME = 'fatinah-shell-v1';
+const CACHE_NAME = 'fatinah-shell-v2';
 const SHELL = [
   '/',
   '/server-config.js',
   '/firebase-config.js',
   '/vendor/firebase-app.js',
   '/vendor/firebase-auth.js',
+  '/fonts/tajawal.css',
+  '/fonts/tajawal-400-arabic.woff2',
+  '/fonts/tajawal-400-latin.woff2',
+  '/fonts/tajawal-500-arabic.woff2',
+  '/fonts/tajawal-500-latin.woff2',
+  '/fonts/tajawal-700-arabic.woff2',
+  '/fonts/tajawal-700-latin.woff2',
+  '/fonts/tajawal-800-arabic.woff2',
+  '/fonts/tajawal-800-latin.woff2',
+  '/fonts/tajawal-900-arabic.woff2',
+  '/fonts/tajawal-900-latin.woff2',
 ];
 
 self.addEventListener('install', (e) => {
