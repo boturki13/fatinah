@@ -2337,22 +2337,49 @@ function addSeen(topic, ids){
   const keys=Object.keys(m);
   if(keys.length>40){ keys.slice(0,keys.length-40).forEach(x=>delete m[x]); }
   storeSet('seenQ', m);
+  localStorage.setItem('pendingSeenSync','1'); // ضع العلم قبل الإرسال
   syncSeenToCloud();  // ارفع التغيير للسحابة في الخلفية
 }
 // ─── مزامنة الأسئلة المشاهدة مع السحابة ──────────────────────────────────
+let _syncInFlight=false;
 async function syncSeenToCloud(){
+  if(_syncInFlight) return;           // تجنّب طلبين متزامنين
+  _syncInFlight=true;
   try{
     const auth=await _getStatsAuthHeader();
-    if(!auth) return;
+    if(!auth){ _syncInFlight=false; return; }
     const m=storeGet('seenQ',{});
-    if(!Object.keys(m).length) return;
-    fetch(apiUrl('/api/seen/sync'),{
+    if(!Object.keys(m).length){ _syncInFlight=false; return; }
+    const r=await fetch(apiUrl('/api/seen/sync'),{
       method:'POST',
       headers:{'Content-Type':'application/json',...auth},
       body:JSON.stringify({topics:m})
-    }).catch(()=>{});
-  }catch(e){}
+    });
+    if(r.ok){
+      localStorage.removeItem('pendingSeenSync'); // نجح — ألغِ العلم
+    } else {
+      localStorage.setItem('pendingSeenSync','1'); // فشل — احتفظ بالعلم
+    }
+  }catch(e){
+    localStorage.setItem('pendingSeenSync','1');   // انقطاع — احتفظ بالعلم
+  }finally{
+    _syncInFlight=false;
+  }
 }
+
+// أعِد المحاولة عند عودة الاتصال
+window.addEventListener('online', ()=>{
+  if(localStorage.getItem('pendingSeenSync')){
+    syncSeenToCloud();
+  }
+});
+
+// أعِد المحاولة عند تحميل الصفحة إذا كان هناك علم معلّق
+window.addEventListener('load', ()=>{
+  if(localStorage.getItem('pendingSeenSync')){
+    syncSeenToCloud();
+  }
+});
 async function pullSeenFromCloud(){
   try{
     const auth=await _getStatsAuthHeader();
