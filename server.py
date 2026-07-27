@@ -64,6 +64,16 @@ def init_db():
             PRIMARY KEY (uid, code)
         )
     ''')
+    # ─── الفئات العائلية المزامنة سحابياً ──────────────────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS family_categories (
+            uid        TEXT NOT NULL,
+            name       TEXT NOT NULL,
+            questions  TEXT NOT NULL DEFAULT '[]',
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (uid, name)
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -75,6 +85,40 @@ def normalize_topic(topic: str) -> str:
     t = t.replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا').replace('ة', 'ه').replace('ى', 'ي')
     t = re.sub(r'\s+', ' ', t)
     return t
+
+# ─── التحقق من هوية Firebase (بدون مكتبات خارجية) ───────────────────────────
+# نتحقق من idToken عبر Identity Toolkit REST API ونستخرج uid من الخادم مباشرة
+# حتى لا نثق بأي uid يرسله العميل (منع IDOR).
+_token_cache = {}   # sha256(token) -> (uid, expires_epoch)
+
+def verify_firebase_token(id_token: str):
+    """يعيد uid الموثّق أو None."""
+    if not id_token:
+        return None
+    api_key = os.environ.get('GOOGLE_API_KEY', '')
+    if not api_key:
+        return None
+    import hashlib, time as _time
+    key = hashlib.sha256(id_token.encode()).hexdigest()
+    cached = _token_cache.get(key)
+    if cached and cached[1] > _time.time():
+        return cached[0]
+    try:
+        req = urllib.request.Request(
+            f'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={api_key}',
+            data=json.dumps({'idToken': id_token}).encode(),
+            headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+        users = data.get('users') or []
+        uid = users[0].get('localId') if users else None
+        if uid:
+            if len(_token_cache) > 500:
+                _token_cache.clear()
+            _token_cache[key] = (uid, _time.time() + 300)  # كاش 5 دقائق
+        return uid
+    except Exception:
+        return None
 
 # ─── Stripe credentials من Replit Connector ──────────────────────────────────
 def get_stripe_keys():
@@ -262,11 +306,18 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def authed_uid(self):
+        """يستخرج uid الموثّق من ترويسة Authorization: Bearer <idToken>."""
+        auth = self.headers.get('Authorization', '')
+        if not auth.startswith('Bearer '):
+            return None
+        return verify_firebase_token(auth[7:].strip())
+
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header('Access-Control-Allow-Origin',  '*')
         self.send_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Stripe-Signature')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Stripe-Signature, Authorization')
         self.end_headers()
 
     def do_GET(self):
@@ -291,6 +342,26 @@ class Handler(BaseHTTPRequestHandler):
             conn.close()
             active = bool(row and row[0] == 'active')
             self.send_json(200, {'active': active})
+
+        elif path == '/api/family/list':
+            uid = self.authed_uid()
+            if not uid:
+                self.send_json(401, {'error': 'تسجيل الدخول مطلوب'}); return
+            conn = db_connect()
+            try:
+                rows = conn.execute(
+                    'SELECT name, questions, updated_at FROM family_categories WHERE uid=? ORDER BY updated_at DESC',
+                    (uid,)).fetchall()
+                cats = []
+                for r in rows:
+                    try:    qs = json.loads(r[1])
+                    except Exception: qs = []
+                    cats.append({'name': r[0], 'questions': qs, 'updated_at': r[2]})
+                self.send_json(200, {'categories': cats})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+            finally:
+                conn.close()
 
         elif path in ('/', '/index.html'):
             body = read_html()
@@ -386,6 +457,68 @@ class Handler(BaseHTTPRequestHandler):
                     except sqlite3.OperationalError: pass  # قفل مؤقت — الأسئلة المولّدة تُعاد للاعب على أي حال
                     result = fetch_unseen(count)
                 self.send_json(200, {'questions': result, 'from_bank': True})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+            finally:
+                conn.close()
+
+        # ─── الفئات العائلية: مزامنة (حفظ/تحديث) ────────────────────────────
+        elif path == '/api/family/sync':
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            uid = self.authed_uid()
+            if not uid: self.send_json(401, {'error': 'تسجيل الدخول مطلوب'}); return
+            cats = data.get('categories')
+            if not isinstance(cats, list): self.send_json(400, {'error': 'categories مطلوبة كمصفوفة'}); return
+            conn = db_connect()
+            try:
+                saved = 0
+                for c in cats[:200]:
+                    if not isinstance(c, dict): continue
+                    name = str(c.get('name') or '').strip()
+                    qs   = c.get('questions')
+                    if not name or not isinstance(qs, list): continue
+                    conn.execute('''INSERT INTO family_categories (uid, name, questions, updated_at)
+                        VALUES (?,?,?, CURRENT_TIMESTAMP)
+                        ON CONFLICT(uid, name) DO UPDATE SET
+                        questions=excluded.questions, updated_at=CURRENT_TIMESTAMP''',
+                        (uid, name, json.dumps(qs, ensure_ascii=False)))
+                    saved += 1
+                conn.commit()
+                self.send_json(200, {'ok': True, 'saved': saved})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+            finally:
+                conn.close()
+
+        # ─── الفئات العائلية: حذف فئة ────────────────────────────────────────
+        elif path == '/api/family/delete':
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            uid = self.authed_uid()
+            if not uid: self.send_json(401, {'error': 'تسجيل الدخول مطلوب'}); return
+            name = str(data.get('name') or '').strip()
+            if not name:
+                self.send_json(400, {'error': 'name مطلوب'}); return
+            conn = db_connect()
+            try:
+                conn.execute('DELETE FROM family_categories WHERE uid=? AND name=?', (uid, name))
+                conn.commit()
+                self.send_json(200, {'ok': True})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+            finally:
+                conn.close()
+
+        # ─── الفئات العائلية: مسح كل بيانات المستخدم الموثّق (قبل حذف الحساب) ─
+        elif path == '/api/family/purge':
+            uid = self.authed_uid()
+            if not uid: self.send_json(401, {'error': 'تسجيل الدخول مطلوب'}); return
+            conn = db_connect()
+            try:
+                cur = conn.execute('DELETE FROM family_categories WHERE uid=?', (uid,))
+                conn.commit()
+                self.send_json(200, {'ok': True, 'deleted': cur.rowcount})
             except sqlite3.OperationalError:
                 self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
             finally:
