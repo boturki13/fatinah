@@ -74,6 +74,16 @@ def init_db():
             PRIMARY KEY (uid, name)
         )
     ''')
+    # ─── الأسئلة المشاهدة لكل مستخدم (تمنع التكرار عند تغيير الجهاز) ──────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS seen_questions (
+            uid        TEXT NOT NULL,
+            topic_norm TEXT NOT NULL,
+            q_ids      TEXT NOT NULL DEFAULT '[]',
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (uid, topic_norm)
+        )
+    ''')
     # ─── إحصاءات اللاعب وإنجازاته المزامنة سحابياً ─────────────────────────
     conn.execute('''
         CREATE TABLE IF NOT EXISTS player_stats (
@@ -562,6 +572,53 @@ class Handler(BaseHTTPRequestHandler):
                     'games': row2[0], 'correct': row2[1], 'totalQ': row2[2],
                     'bestScore': row2[3], 'wins': row2[4], 'ach': ach_out
                 })
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+            finally:
+                conn.close()
+
+        # ─── الأسئلة المشاهدة: مزامنة (دمج محلي + سحابي وإعادة الاتحاد) ──────
+        elif path == '/api/seen/sync':
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            uid = self.authed_uid()
+            if not uid: self.send_json(401, {'error': 'تسجيل الدخول مطلوب'}); return
+            topics_in = data.get('topics')
+            if not isinstance(topics_in, dict):
+                self.send_json(400, {'error': 'topics مطلوبة كـ object'}); return
+            conn = db_connect()
+            try:
+                result_topics = {}
+                for raw_topic, ids_in in list(topics_in.items())[:100]:
+                    tnorm = normalize_topic(str(raw_topic))
+                    if not tnorm: continue
+                    ids_in = [int(x) for x in (ids_in or []) if str(x).isdigit()][:5000]
+                    row = conn.execute(
+                        'SELECT q_ids FROM seen_questions WHERE uid=? AND topic_norm=?',
+                        (uid, tnorm)
+                    ).fetchone()
+                    stored = []
+                    if row:
+                        try: stored = json.loads(row[0] or '[]')
+                        except Exception: stored = []
+                    merged = list(dict.fromkeys(stored + ids_in))[:5000]
+                    conn.execute('''
+                        INSERT INTO seen_questions (uid, topic_norm, q_ids, updated_at)
+                        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                        ON CONFLICT(uid, topic_norm) DO UPDATE SET
+                            q_ids=excluded.q_ids, updated_at=CURRENT_TIMESTAMP
+                    ''', (uid, tnorm, json.dumps(merged)))
+                    result_topics[tnorm] = merged
+                # أضف المواضيع السحابية التي لم يرسلها العميل
+                rows = conn.execute(
+                    'SELECT topic_norm, q_ids FROM seen_questions WHERE uid=?', (uid,)
+                ).fetchall()
+                for r in rows:
+                    if r[0] not in result_topics:
+                        try: result_topics[r[0]] = json.loads(r[1] or '[]')
+                        except Exception: result_topics[r[0]] = []
+                conn.commit()
+                self.send_json(200, {'ok': True, 'topics': result_topics})
             except sqlite3.OperationalError:
                 self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
             finally:

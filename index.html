@@ -1182,6 +1182,7 @@ function completeLogin(name, provider, uid){
   document.getElementById('user-name').textContent = name;
   pullFamilyFromCloud();   // استرجاع الفئات العائلية من السحابة (في الخلفية)
   pullStatsFromCloud();    // مزامنة الإحصاءات والإنجازات من السحابة (في الخلفية)
+  pullSeenFromCloud();     // مزامنة الأسئلة المشاهدة (تمنع التكرار على جهاز جديد)
   checkSubscriptionAndRoute(uid);
 }
 
@@ -2284,6 +2285,46 @@ function addSeen(topic, ids){
   const keys=Object.keys(m);
   if(keys.length>40){ keys.slice(0,keys.length-40).forEach(x=>delete m[x]); }
   storeSet('seenQ', m);
+  syncSeenToCloud();  // ارفع التغيير للسحابة في الخلفية
+}
+// ─── مزامنة الأسئلة المشاهدة مع السحابة ──────────────────────────────────
+async function syncSeenToCloud(){
+  try{
+    const auth=await _getStatsAuthHeader();
+    if(!auth) return;
+    const m=storeGet('seenQ',{});
+    if(!Object.keys(m).length) return;
+    fetch(apiUrl('/api/seen/sync'),{
+      method:'POST',
+      headers:{'Content-Type':'application/json',...auth},
+      body:JSON.stringify({topics:m})
+    }).catch(()=>{});
+  }catch(e){}
+}
+async function pullSeenFromCloud(){
+  try{
+    const auth=await _getStatsAuthHeader();
+    if(!auth) return;
+    const m=storeGet('seenQ',{});
+    const r=await fetch(apiUrl('/api/seen/sync'),{
+      method:'POST',
+      headers:{'Content-Type':'application/json',...auth},
+      body:JSON.stringify({topics:m})
+    });
+    if(!r.ok) return;
+    const d=await r.json();
+    if(!d.ok || !d.topics) return;
+    // ادمج المُعادة (اتحاد سحابي+محلي) في localStorage
+    const merged=storeGet('seenQ',{});
+    let changed=false;
+    for(const [tnorm, ids] of Object.entries(d.topics)){
+      if(!Array.isArray(ids)) continue;
+      const prev=merged[tnorm]||[];
+      const union=[...new Set([...prev,...ids])].slice(-5000);
+      if(union.length!==prev.length){ merged[tnorm]=union; changed=true; }
+    }
+    if(changed) storeSet('seenQ', merged);
+  }catch(e){}
 }
 async function aiGenerate(topic,count){
   const res=await fetch(AI_BACKEND_URL,{
