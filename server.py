@@ -696,9 +696,16 @@ class Handler(BaseHTTPRequestHandler):
                     "SELECT expires_at FROM promo_redemptions WHERE uid=? AND expires_at > datetime('now') ORDER BY expires_at DESC LIMIT 1",
                     (uid,)).fetchone()
                 if row:
-                    self.send_json(200, {'active': True,  'expires_at': row[0]})
+                    self.send_json(200, {'active': True,  'expires_at': row[0], 'had_promo': True})
                 else:
-                    self.send_json(200, {'active': False, 'expires_at': None})
+                    # تحقق هل كان للمستخدم كود منتهٍ سابقاً
+                    expired_row = conn.execute(
+                        "SELECT expires_at FROM promo_redemptions WHERE uid=? ORDER BY expires_at DESC LIMIT 1",
+                        (uid,)).fetchone()
+                    if expired_row:
+                        self.send_json(200, {'active': False, 'expires_at': None, 'had_promo': True, 'expired_at': expired_row[0]})
+                    else:
+                        self.send_json(200, {'active': False, 'expires_at': None, 'had_promo': False})
             finally:
                 conn.close()
 
