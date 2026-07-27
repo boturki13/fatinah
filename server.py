@@ -164,6 +164,69 @@ def call_claude(topic: str, count: int):
     except Exception as exc:
         return None, str(exc)
 
+# ─── صفحات قانونية عامة (لمتطلبات App Store Connect) ────────────────────────
+PRIVACY_BODY = '''
+<h1>سياسة الخصوصية</h1>
+<p><b>آخر تحديث: يوليو 2025</b></p>
+<p>تطبيق <b>فَطِنة</b> يحترم خصوصيتك ويلتزم بحمايتها.</p>
+<p><b>البيانات التي نجمعها:</b><br>
+• اسم اللاعب (اختياري — يُحفظ على جهازك فقط)<br>
+• إحصاءات اللعب (نقاط، إنجازات — محلية على جهازك)<br>
+• بريد إلكتروني عند التسجيل بـ Apple أو Google (لتفعيل الاشتراك فقط)</p>
+<p><b>ما لا نجمعه:</b><br>
+لا نبيع بياناتك. لا نتتبع موقعك. لا نشارك معلوماتك مع أطراف ثالثة إلا لأغراض معالجة الدفع (Stripe / Apple).</p>
+<p><b>الاشتراكات:</b><br>
+تُعالَج مدفوعات iOS عبر Apple App Store وتخضع لسياسة خصوصية Apple. لإلغاء الاشتراك: الإعدادات ← اسمك ← الاشتراكات.</p>
+<p><b>التواصل:</b><br>
+لأي استفسار: boturki13@gmail.com</p>
+'''
+
+TERMS_BODY = '''
+<h1>شروط الاستخدام</h1>
+<p><b>آخر تحديث: يوليو 2025</b></p>
+<p>باستخدامك تطبيق <b>فَطِنة</b> فأنت توافق على هذه الشروط.</p>
+<p><b>الاشتراك:</b><br>
+• الاشتراك الشهري: $3.99 شهرياً<br>
+• الاشتراك السنوي: $29.99 سنوياً<br>
+• يتجدد الاشتراك تلقائياً ما لم يُلغَ قبل 24 ساعة من انتهاء الفترة الحالية<br>
+• يمكن إلغاؤه في أي وقت من إعدادات Apple ID</p>
+<p><b>الاستخدام المقبول:</b><br>
+التطبيق للاستخدام الشخصي والترفيهي. يُحظر نسخ المحتوى أو إعادة توزيعه.</p>
+<p><b>الملكية الفكرية:</b><br>
+جميع محتويات التطبيق محمية بحقوق النشر لصالح مطوّر فَطِنة.</p>
+<p><b>إخلاء المسؤولية:</b><br>
+التطبيق مقدَّم "كما هو" بدون ضمانات. المطوّر غير مسؤول عن أي أضرار ناجمة عن الاستخدام.</p>
+<p><b>التواصل:</b><br>
+boturki13@gmail.com</p>
+'''
+
+def legal_page_html(kind: str) -> bytes:
+    title = 'سياسة الخصوصية' if kind == 'privacy' else 'شروط الاستخدام'
+    content = PRIVACY_BODY if kind == 'privacy' else TERMS_BODY
+    page = f'''<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title} — فَطِنة</title>
+<style>
+  body {{ font-family: -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+         background:#0f1220; color:#e8e6f0; margin:0; padding:24px;
+         line-height:1.9; font-size:16px; }}
+  main {{ max-width:720px; margin:0 auto; background:#191d33;
+          border:1px solid #2a2f4f; border-radius:16px; padding:28px; }}
+  h1 {{ color:#f5c542; font-size:24px; margin-top:0; }}
+  a {{ color:#f5c542; }}
+  footer {{ text-align:center; color:#8a8fa8; font-size:13px; margin-top:20px; }}
+</style>
+</head>
+<body>
+<main>{content}</main>
+<footer>فَطِنة © 2026 — <a href="/privacy">سياسة الخصوصية</a> · <a href="/terms">شروط الاستخدام</a></footer>
+</body>
+</html>'''
+    return page.encode()
+
 # ─── HTTP handler ─────────────────────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
@@ -210,6 +273,14 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path in ('/', '/index.html'):
             body = read_html()
+            self.send_response(200)
+            self.send_header('Content-Type',   'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        elif path in ('/privacy', '/terms'):
+            body = legal_page_html('privacy' if path == '/privacy' else 'terms')
             self.send_response(200)
             self.send_header('Content-Type',   'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
