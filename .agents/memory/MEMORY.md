@@ -1,2 +1,3 @@
 - [Fatinah server setup](fatinah-server.md) — خادم Python stdlib بلا Flask؛ يخدم index.html + AI proxy + firebase-config.js
 - [Offline mode design](offline-mode.md) — اللعب محلي بالتصميم؛ الشبكي الوحيد هو توليد الذكاء (qCache) وفتح الصفحة (sw.js في المتصفح فقط)
+- [npm lockfile Replit URLs](npm-lockfile-replit-urls.md) — نظّف package-lock من package-firewall.replit.local قبل الدفع وإلا فشل npm install على ماك المستخدم
