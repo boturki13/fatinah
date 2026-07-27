@@ -1274,7 +1274,9 @@ async function rcRestore(){
 async function promoIsActive(uid){
   if(!uid) return false;
   try{
-    const r = await fetch(apiUrl(`/api/promo/status?uid=${encodeURIComponent(uid)}`));
+    const auth = await _getStatsAuthHeader();
+    if(!auth) return false;
+    const r = await fetch(apiUrl('/api/promo/status'), {headers: auth});
     if(!r.ok) return false;
     const d = await r.json();
     return d.active === true;
@@ -1284,7 +1286,9 @@ async function promoIsActive(uid){
 async function promoStatusFull(uid){
   if(!uid) return {active: false, expires_at: null, had_promo: false, expired_at: null};
   try{
-    const r = await fetch(apiUrl(`/api/promo/status?uid=${encodeURIComponent(uid)}`));
+    const auth = await _getStatsAuthHeader();
+    if(!auth) return {active: false, expires_at: null, had_promo: false, expired_at: null};
+    const r = await fetch(apiUrl('/api/promo/status'), {headers: auth});
     if(!r.ok) return {active: false, expires_at: null, had_promo: false, expired_at: null};
     const d = await r.json();
     return {
@@ -1383,11 +1387,12 @@ async function redeemPromo(){
   if(!code){ msg.style.color='#ff8a8a'; msg.textContent='أدخل الكود أولاً'; return; }
   msg.style.color='#C4B8E0'; msg.textContent='⏳ جاري التحقق...';
   try{
-    const uid = window._currentUid || '';
+    const auth = await _getStatsAuthHeader();
+    if(!auth){ msg.style.color='#ff8a8a'; msg.textContent='سجّل الدخول أولاً لتفعيل الكود'; return; }
     const r = await fetch(apiUrl('/api/promo/redeem'),{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({code, uid})
+      headers:{'Content-Type':'application/json', ...auth},
+      body: JSON.stringify({code})
     });
     const d = await r.json();
     if(d.ok){

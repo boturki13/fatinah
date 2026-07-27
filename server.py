@@ -707,12 +707,14 @@ class Handler(BaseHTTPRequestHandler):
 
         # ─── Promo: تحقق من كود مكافأة ──────────────────────────────────────
         elif path == '/api/promo/redeem':
+            uid = self.authed_uid()
+            if not uid:
+                self.send_json(401, {'error': 'تسجيل الدخول مطلوب'}); return
             try:   data = json.loads(body)
             except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
             code = (data.get('code') or '').strip().upper()
-            uid  = (data.get('uid')  or '').strip()
-            if not code or not uid:
-                self.send_json(400, {'error': 'code و uid مطلوبان'}); return
+            if not code:
+                self.send_json(400, {'error': 'code مطلوب'}); return
             conn = db_connect()
             try:
                 # هل الكود موجود وفعّال؟
@@ -749,10 +751,9 @@ class Handler(BaseHTTPRequestHandler):
 
         # ─── Promo: فحص حالة المستخدم ────────────────────────────────────────
         elif path.startswith('/api/promo/status'):
-            from urllib.parse import urlparse, parse_qs
-            qs  = parse_qs(urlparse(self.path).query)
-            uid = (qs.get('uid', [''])[0]).strip()
-            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
+            uid = self.authed_uid()
+            if not uid:
+                self.send_json(401, {'error': 'تسجيل الدخول مطلوب'}); return
             conn = db_connect()
             try:
                 row = conn.execute(
