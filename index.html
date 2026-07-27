@@ -972,6 +972,13 @@ async function confirmDeleteAccount(){
   if(!ok) return;
   const uid = storeGet('authUid','');
   const provider = storeGet('authProvider','');
+  // 0) احذف الفئات العائلية السحابية قبل حذف مستخدم Firebase (التوكن يبطل بعد الحذف).
+  //    endpoint مخصص لا يمسّ الاشتراك؛ وإن فشل حذف Firebase لاحقاً،
+  //    البيانات المحلية باقية وستُعاد مزامنتها تلقائياً عند أي حفظ.
+  try{
+    const auth = await getFamilyAuthHeader();
+    if(auth) await fetch('/api/family/purge',{method:'POST',headers:auth});
+  }catch(e){ console.error('cloud family purge:', e); }
   // 1) حذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login)
   if(provider==='apple' || provider==='google'){
     const deleted = await deleteFirebaseUser();
@@ -1115,6 +1122,7 @@ function completeLogin(name, provider, uid){
   storeSet('authUid', uid);
   window._currentUid = uid;
   document.getElementById('user-name').textContent = name;
+  pullFamilyFromCloud();   // استرجاع الفئات العائلية من السحابة (في الخلفية)
   checkSubscriptionAndRoute(uid);
 }
 
@@ -2039,7 +2047,86 @@ let manualDraft = { name:'', questions:[], correct:0 };
 let previewData = null;                // {name, questions}
 
 function loadFamily(){ return storeGet('family', []); }
-function saveFamily(){ storeSet('family', familyCats); }
+function saveFamily(){ storeSet('family', familyCats); syncFamilyToCloud(); }
+
+// ---- مزامنة سحابية للفئات العائلية ----
+// الحفظ المحلي (localStorage + Preferences) يبقى المصدر الفوري؛
+// المزامنة مع الخادم تعمل في الخلفية ولا تعطّل اللعب عند انقطاع الإنترنت.
+// الخادم يتحقق من هوية Firebase (idToken) ويستخرج uid بنفسه — لا نرسل uid أبداً.
+async function getFamilyAuthHeader(){
+  // 1) Capacitor (iOS)
+  try{
+    const FA = window.Capacitor?.Plugins?.FirebaseAuthentication;
+    if(FA){
+      const r = await FA.getIdToken();
+      if(r && r.token) return {'Authorization':'Bearer '+r.token};
+    }
+  }catch(e){}
+  // 2) Firebase Web SDK (متصفح)
+  try{
+    if(_fbWebSDK && _fbWebSDK.auth.currentUser){
+      const t = await _fbWebSDK.auth.currentUser.getIdToken();
+      if(t) return {'Authorization':'Bearer '+t};
+    }
+  }catch(e){}
+  return null; // مستخدم بالاسم فقط — بياناته محلية على جهازه
+}
+async function syncFamilyToCloud(){
+  try{
+    if(!familyCats.length) return;
+    const auth = await getFamilyAuthHeader();
+    if(!auth) return;
+    fetch('/api/family/sync',{
+      method:'POST',
+      headers:{'Content-Type':'application/json', ...auth},
+      body:JSON.stringify({categories:familyCats})
+    }).catch(()=>{});
+  }catch(e){}
+}
+async function deleteFamilyFromCloud(name){
+  try{
+    if(!name) return;
+    const auth = await getFamilyAuthHeader();
+    if(!auth) return;
+    fetch('/api/family/delete',{
+      method:'POST',
+      headers:{'Content-Type':'application/json', ...auth},
+      body:JSON.stringify({name})
+    }).catch(()=>{});
+  }catch(e){}
+}
+// عند تسجيل الدخول: اجلب الفئات من السحابة وادمجها مع المحلية
+async function pullFamilyFromCloud(){
+  try{
+    const auth = await getFamilyAuthHeader();
+    if(!auth) return;
+    const r = await fetch('/api/family/list',{headers:auth});
+    if(!r.ok) return;
+    const data = await r.json();
+    const remote = data.categories || [];
+    let changed = false;
+    for(const rc of remote){
+      if(!rc.name || !Array.isArray(rc.questions)) continue;
+      const local = familyCats.find(c=>c.name===rc.name);
+      if(!local){
+        familyCats.push({name:rc.name, questions:rc.questions});
+        changed = true;
+      }else{
+        // ادمج الأسئلة غير الموجودة محلياً (تفادي التكرار بنص السؤال)
+        const localQs = new Set(local.questions.map(q=>q.q));
+        for(const q of rc.questions){
+          if(q && q.q && !localQs.has(q.q)){ local.questions.push(q); changed = true; }
+        }
+      }
+    }
+    if(changed){
+      storeSet('family', familyCats);
+      if(typeof renderSavedFamily==='function' && document.getElementById('family-saved')) renderSavedFamily();
+    }
+    // ارفع أي فئات محلية غير موجودة سحابياً
+    syncFamilyToCloud();
+  }catch(e){ /* بدون إنترنت — المحلي يكفي */ }
+}
 
 function openFamily(){
   setFamilyMode('ai');
@@ -2224,7 +2311,11 @@ function renderSavedFamily(){
       </div></div>`).join('');
 }
 function deleteFamily(i){
-  sfx('tap'); familyCats.splice(i,1); saveFamily(); renderSavedFamily();
+  sfx('tap');
+  const removed=familyCats.splice(i,1)[0];
+  storeSet('family', familyCats);
+  if(removed) deleteFamilyFromCloud(removed.name);
+  renderSavedFamily();
 }
 
 // جولة سريعة منفصلة بفئة عائلية واحدة
