@@ -45,3 +45,6 @@ channel = "stable-25_05"
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 60000
+[deployment]
+deploymentTarget = "autoscale"
+run = ["python3", "server.py"]
