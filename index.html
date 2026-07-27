@@ -1202,13 +1202,33 @@ async function promoIsActive(uid){
   }catch(e){ return false; }
 }
 
+async function promoStatusFull(uid){
+  if(!uid) return {active: false, expires_at: null};
+  try{
+    const r = await fetch(apiUrl(`/api/promo/status?uid=${encodeURIComponent(uid)}`));
+    if(!r.ok) return {active: false, expires_at: null};
+    const d = await r.json();
+    return {active: d.active === true, expires_at: d.expires_at || null};
+  }catch(e){ return {active: false, expires_at: null}; }
+}
+
+function maybeWarnPromoExpiry(expires_at){
+  if(!expires_at) return;
+  const expiryMs = new Date(expires_at).getTime();
+  const diffDays = (expiryMs - Date.now()) / (1000 * 60 * 60 * 24);
+  if(diffDays > 0 && diffDays <= 3){
+    const dateStr = new Date(expires_at).toLocaleDateString('ar-SA');
+    showToast('⚠️', `كود المكافأة ينتهي ${dateStr}`, 'اشترك الآن لتتجنب الانقطاع', false);
+  }
+}
+
 async function checkSubscriptionAndRoute(uid){
   // iOS: RevenueCat
   const rcActive = await rcIsActive();
   if(rcActive === true){ go('s-home'); return; }
   if(rcActive === false){
     // تحقق من كود مجاني قبل صفحة الاشتراك
-    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
+    if(uid){ const ps = await promoStatusFull(uid); if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; } }
     go('s-paywall'); return;
   }
   // ويب: Stripe — فشل مغلق (fail-closed): أي خطأ = paywall لا home
@@ -1218,10 +1238,10 @@ async function checkSubscriptionAndRoute(uid){
     const data = await resp.json();
     if(data.active === true){ go('s-home'); return; }
     // تحقق من كود مجاني
-    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
+    if(uid){ const ps = await promoStatusFull(uid); if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; } }
     go('s-paywall');
   }catch(e){
-    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
+    if(uid){ const ps = await promoStatusFull(uid); if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; } }
     go('s-paywall');
   }
 }
