@@ -3,7 +3,7 @@
 يخدم index.html، يوفّر firebase-config.js، يولّد الأسئلة عبر Claude،
 ويدير أكواد المكافآت المجانية.
 """
-import json, os, sqlite3, urllib.request, urllib.error, urllib.parse
+import json, os, sqlite3, traceback, urllib.request, urllib.error, urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 
@@ -774,8 +774,9 @@ class Handler(BaseHTTPRequestHandler):
                 expires_row = conn.execute(
                     'SELECT expires_at FROM promo_redemptions WHERE uid=? AND code=?', (uid, code)).fetchone()
                 self.send_json(200, {'ok': True, 'expires_at': expires_row[0], 'days': days})
-            except Exception as e:
-                self.send_json(500, {'error': str(e)})
+            except Exception:
+                traceback.print_exc()
+                self.send_json(500, {'error': 'خطأ داخلي'})
             finally:
                 conn.close()
 
@@ -845,8 +846,9 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json(200, {'ok': True})
                 else:
                     self.send_json(400, {'error': 'action غير معروف'})
-            except Exception as e:
-                self.send_json(500, {'error': str(e)})
+            except Exception:
+                traceback.print_exc()
+                self.send_json(500, {'error': 'خطأ داخلي'})
             finally:
                 conn.close()
 
