@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>إدارة أكواد فَطِنة</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,'Segoe UI',Tahoma,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;padding:24px;}
+  h1{color:#f5c542;font-size:22px;margin-bottom:4px;}
+  .sub{color:#7d8590;font-size:14px;margin-bottom:24px;}
+  .card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:20px;margin-bottom:20px;}
+  h2{font-size:16px;color:#c9d1d9;margin-bottom:14px;}
+  label{display:block;font-size:13px;color:#8b949e;margin-bottom:4px;margin-top:12px;}
+  input,select{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:15px;padding:9px 12px;font-family:inherit;outline:none;}
+  input:focus,select:focus{border-color:#f5c542;}
+  .btn{display:inline-block;background:#f5c542;color:#0d1117;border:none;border-radius:8px;padding:10px 20px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:14px;}
+  .btn:hover{background:#ffd166;}
+  .btn-danger{background:#da3633;color:#fff;}
+  .btn-danger:hover{background:#f85149;}
+  .btn-sm{padding:5px 12px;font-size:13px;margin-top:0;}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th{text-align:right;padding:8px 10px;color:#8b949e;border-bottom:1px solid #30363d;font-weight:600;}
+  td{padding:8px 10px;border-bottom:1px solid #21262d;}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;}
+  .active{background:#1a4731;color:#56d364;}
+  .inactive{background:#3d1f1f;color:#f85149;}
+  #msg{padding:10px 14px;border-radius:8px;font-size:14px;margin-top:12px;display:none;}
+  .ok{background:#1a4731;color:#56d364;}
+  .err{background:#3d1f1f;color:#f85149;}
+  .secret-row{display:flex;gap:10px;align-items:flex-end;}
+  .secret-row input{flex:1;}
+</style>
+</head>
+<body>
+<h1>🎁 إدارة أكواد فَطِنة</h1>
+<p class="sub">أنشئ أكواداً مجانية وراقب استخداماتها</p>
+
+<div class="card">
+  <h2>🔐 كلمة مرور الإدارة</h2>
+  <div class="secret-row">
+    <div style="flex:1">
+      <label>ADMIN_SECRET (من Replit Secrets)</label>
+      <input type="password" id="secret" placeholder="أدخل كلمة المرور...">
+    </div>
+    <button class="btn" onclick="loadCodes()">تحميل الأكواد</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>➕ إنشاء كود جديد</h2>
+  <label>الكود (أحرف وأرقام)</label>
+  <input type="text" id="new-code" placeholder="مثال: C90 أو FAMILY2026" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+  <label>المدة (بالأيام)</label>
+  <input type="number" id="new-days" value="30" min="1" max="3650">
+  <label>الحد الأقصى للاستخدامات (اتركه فارغاً = بلا حد)</label>
+  <input type="number" id="new-max" placeholder="فارغ = بلا حد" min="1">
+  <label>ملاحظة (اختياري)</label>
+  <input type="text" id="new-note" placeholder="مثال: تجربة مجانية لشهر">
+  <button class="btn" onclick="createCode()">إنشاء الكود</button>
+  <div id="msg"></div>
+</div>
+
+<div class="card">
+  <h2>📋 الأكواد الحالية</h2>
+  <div id="codes-table"><p style="color:#7d8590;font-size:14px;">اضغط "تحميل الأكواد" أولاً</p></div>
+</div>
+
+<script>
+const BASE = window.location.origin;
+
+function getSecret(){ return document.getElementById('secret').value.trim(); }
+
+function showMsg(text, ok){
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = ok ? 'ok' : 'err';
+  el.style.display = 'block';
+  setTimeout(()=>el.style.display='none', 3000);
+}
+
+async function adminReq(data){
+  const r = await fetch(BASE+'/api/promo/admin',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Admin-Secret':getSecret()},
+    body:JSON.stringify(data)
+  });
+  return r.json();
+}
+
+async function createCode(){
+  const code = document.getElementById('new-code').value.trim().toUpperCase();
+  const days = parseInt(document.getElementById('new-days').value)||30;
+  const maxV = document.getElementById('new-max').value.trim();
+  const note = document.getElementById('new-note').value.trim();
+  if(!code){ showMsg('أدخل الكود أولاً',false); return; }
+  const d = await adminReq({action:'create',code,days,max_uses:maxV?parseInt(maxV):null,note});
+  if(d.ok){ showMsg(`✅ تم إنشاء الكود "${code}" بمدة ${days} يوماً`,true); loadCodes(); }
+  else showMsg('❌ '+(d.error||'خطأ'), false);
+}
+
+async function loadCodes(){
+  const d = await adminReq({action:'list'});
+  if(d.error){ document.getElementById('codes-table').innerHTML=`<p style="color:#f85149">${d.error}</p>`; return; }
+  if(!d.codes.length){ document.getElementById('codes-table').innerHTML='<p style="color:#7d8590">لا توجد أكواد بعد</p>'; return; }
+  let html=`<table><thead><tr>
+    <th>الكود</th><th>المدة</th><th>الاستخدامات</th><th>الحالة</th><th>الملاحظة</th><th></th>
+  </tr></thead><tbody>`;
+  for(const c of d.codes){
+    const uses = c.max_uses ? `${c.used_count}/${c.max_uses}` : c.used_count;
+    html+=`<tr>
+      <td><b style="letter-spacing:2px">${c.code}</b></td>
+      <td>${c.days} يوم</td>
+      <td>${uses}</td>
+      <td><span class="badge ${c.active?'active':'inactive'}">${c.active?'فعّال':'موقوف'}</span></td>
+      <td style="color:#7d8590">${c.note||'-'}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-sm" onclick="toggleCode('${c.code}')">${c.active?'إيقاف':'تفعيل'}</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteCode('${c.code}')">حذف</button>
+      </td>
+    </tr>`;
+  }
+  html+='</tbody></table>';
+  document.getElementById('codes-table').innerHTML=html;
+}
+
+async function toggleCode(code){
+  const d = await adminReq({action:'toggle',code});
+  if(d.ok) loadCodes(); else alert(d.error);
+}
+
+async function deleteCode(code){
+  if(!confirm(`حذف الكود "${code}" نهائياً؟`)) return;
+  const d = await adminReq({action:'delete',code});
+  if(d.ok) loadCodes(); else alert(d.error);
+}
+</script>
+</body>
+</html>
