@@ -838,36 +838,18 @@ async function _getStatsAuthHeader(){
   }catch(e){}
   return null;
 }
+// طابور موحّد لكل رحلات /api/stats/sync (رفعاً وسحباً): رحلة واحدة فقط في أي لحظة.
 let _statsSyncInFlight=false;
-let _statsSyncPending=false; // طلب وارد أثناء رحلة قيد التنفيذ — يُنفَّذ بعد انتهائها
-async function pushStatsToCloud(){
+let _statsSyncPending=false;      // طلب وارد أثناء رحلة قيد التنفيذ — يُنفَّذ بعد انتهائها
+let _statsSyncPendingPull=false;  // هل الطلب المجدوَل يحتاج دمج بيانات السحابة محلياً؟
+async function _statsSyncTrip(applyRemote){
   if(_statsSyncInFlight){
     _statsSyncPending=true; // جدوِل إعادة المحاولة بدلاً من الإهمال
+    if(applyRemote) _statsSyncPendingPull=true;
     return;
   }
   _statsSyncInFlight=true;
   _statsSyncPending=false;
-  try{
-    const auth=await _getStatsAuthHeader();
-    if(!auth) return;
-    await fetch(apiUrl('/api/stats/sync'),{
-      method:'POST',
-      headers:{'Content-Type':'application/json',...auth},
-      body:JSON.stringify({
-        games:stats.games, correct:stats.correct, totalQ:stats.totalQ||0,
-        bestScore:stats.bestScore, wins:stats.wins, ach:stats.ach||{}
-      })
-    }).catch(()=>{});
-  }catch(e){}
-  finally{
-    _statsSyncInFlight=false;
-    if(_statsSyncPending){
-      _statsSyncPending=false;
-      pushStatsToCloud(); // نفّذ الطلب المجدوَل الذي وصل أثناء الرحلة
-    }
-  }
-}
-async function pullStatsFromCloud(){
   try{
     const auth=await _getStatsAuthHeader();
     if(!auth) return;
@@ -879,6 +861,7 @@ async function pullStatsFromCloud(){
         bestScore:stats.bestScore, wins:stats.wins, ach:stats.ach||{}
       })
     });
+    if(!applyRemote) return;
     if(!r.ok) return;
     const d=await r.json();
     if(!d.ok) return;
@@ -893,7 +876,18 @@ async function pullStatsFromCloud(){
     Object.keys(remoteAch).forEach(k=>{ if(!stats.ach[k]){ stats.ach[k]=remoteAch[k]; changed=true; } });
     if(changed){ storeSet('stats',stats); }
   }catch(e){ /* بدون إنترنت — المحلي يكفي */ }
+  finally{
+    _statsSyncInFlight=false;
+    if(_statsSyncPending){
+      _statsSyncPending=false;
+      const pull=_statsSyncPendingPull;
+      _statsSyncPendingPull=false;
+      _statsSyncTrip(pull); // نفّذ الطلب المجدوَل الذي وصل أثناء الرحلة
+    }
+  }
 }
+function pushStatsToCloud(){ return _statsSyncTrip(false); }
+function pullStatsFromCloud(){ return _statsSyncTrip(true); }
 
 const ACHIEVEMENTS=[
   {id:'first', icon:'🎮', t:'أول جولة', d:'أكملت أول جولة', chk:s=>s.games>=1},
