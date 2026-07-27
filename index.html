@@ -494,6 +494,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       </div>
       <div id="catcount-split" style="font-size:12.5px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.6;"></div>
     </div>
+    <div class="card">
+      <div class="field-label">مستوى الصعوبة</div>
+      <div class="seg" id="seg-diff">
+        <button data-d="easy"   onclick="setDifficulty('easy')">🟢 سهل</button>
+        <button class="on" data-d="normal" onclick="setDifficulty('normal')">🟡 عادي</button>
+        <button data-d="hard"   onclick="setDifficulty('hard')">🔴 صعب</button>
+      </div>
+      <div id="diff-hint" style="font-size:12.5px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.6;">⏱ وقت الإجابة: 30 ثانية</div>
+    </div>
     <div class="card" id="team-names"></div>
     <button class="btn btn-primary" onclick="sfx('tap');toCats()">التالي: اختيار الفئات</button>
     <button class="btn btn-ghost btn-block" onclick="go('s-home')">رجوع</button>
@@ -752,7 +761,7 @@ const CAT_GROUPS={
 };
 const GROUP_ICONS={"إسلاميات":"🕌","معرفة وعلوم":"🧠","تاريخ وجغرافيا":"🏛️","رياضة":"⚽","محرّكات":"🏎️","ثقافة وتراث":"🐪","ألغاز وذكاء":"🧩","فنون وأدب":"📜","طبيعة وحيوانات":"🦁"};
 
-let state={teamCount:2, catCount:6, teams:[], cats:[], turn:0, cells:{}, answered:0, cur:null,
+let state={teamCount:2, catCount:6, difficulty:'normal', teams:[], cats:[], turn:0, cells:{}, answered:0, cur:null,
   timer:null, timeLeft:60, paused:false, searchTimer:null, answering:true};
 
 // ============ التخزين الدائم ============
@@ -1014,6 +1023,7 @@ function completeLogin(name, provider, uid){
 // ============ RevenueCat — Apple IAP ============
 // RC_API_KEY: ضع هنا مفتاح iOS من لوحة RevenueCat بعد الإعداد
 const RC_API_KEY = 'appl_uqcDNORwLPcxPWRUDjmPPpoMeNM';
+const RC_CONFIGURED = !RC_API_KEY.includes('XXXX'); // true = مفتاح حقيقي
 const RC_ENTITLEMENT = 'premium';
 
 function getRC(){
@@ -1024,7 +1034,7 @@ function getRC(){
 
 async function initRevenueCat(){
   const RC = getRC();
-  if(!RC) return;
+  if(!RC || !RC_CONFIGURED) return; // لا تهيّئ إذا كان المفتاح placeholder
   try{
     const uid = storeGet('authUid','');
     await RC.configure({ apiKey: RC_API_KEY });
@@ -1034,7 +1044,7 @@ async function initRevenueCat(){
 
 async function rcIsActive(){
   const RC = getRC();
-  if(!RC) return null; // null = غير متاح (ويب)
+  if(!RC || !RC_CONFIGURED) return null; // null = غير متاح (ويب أو مفتاح placeholder)
   try{
     const { customerInfo } = await RC.getCustomerInfo();
     return !!(customerInfo.entitlements.active &&
@@ -1045,6 +1055,7 @@ async function rcIsActive(){
 async function rcPurchase(plan){
   const RC = getRC();
   if(!RC) throw new Error('RevenueCat غير متاح');
+  if(!RC_CONFIGURED) throw new Error('RevenueCat غير مهيَّأ — أضف مفتاح iOS الحقيقي في RC_API_KEY');
   const { offerings } = await RC.getOfferings();
   const current = offerings.current;
   if(!current) throw new Error('لا توجد عروض متاحة');
@@ -1079,13 +1090,14 @@ async function checkSubscriptionAndRoute(uid){
   const rcActive = await rcIsActive();
   if(rcActive === true){ go('s-home'); return; }
   if(rcActive === false){ go('s-paywall'); return; }
-  // ويب: Stripe
+  // ويب: Stripe — فشل مغلق (fail-closed): أي خطأ = paywall لا home
   try{
     const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
+    if(!resp.ok) throw new Error('status error');
     const data = await resp.json();
-    if(data.active){ go('s-home'); }
+    if(data.active === true){ go('s-home'); }
     else{ go('s-paywall'); }
-  }catch(e){ go('s-home'); }
+  }catch(e){ go('s-paywall'); } // لا نسمح بالدخول عند الشك
 }
 
 // ============ Paywall — اختيار الخطة ============
@@ -1143,6 +1155,15 @@ async function startCheckout(){
     btn.style.display     = 'block';
     loading.style.display = 'none';
   }
+}
+
+// ============ مستوى الصعوبة ============
+const DIFF_TIMES={easy:{normal:45,speed:25,steal:18,bomb:45},normal:{normal:30,speed:15,steal:30,bomb:30},hard:{normal:20,speed:10,steal:20,bomb:20}};
+function setDifficulty(d){
+  sfx('tap'); state.difficulty=d;
+  document.querySelectorAll('#seg-diff button').forEach(b=>b.classList.toggle('on',b.dataset.d===d));
+  const labels={easy:'⏱ وقت الإجابة: 45 ثانية',normal:'⏱ وقت الإجابة: 30 ثانية',hard:'⏱ وقت الإجابة: 20 ثانية'};
+  document.getElementById('diff-hint').textContent=labels[d]||'';
 }
 
 // ============ إعداد الفرق ============
@@ -1410,7 +1431,7 @@ function fireBomb(targetIdx){
     for(let c=0;c<n;c++){ const key=c+'-'+lvl; if(state.cells[key] && !state.cells[key].used) candidates.push(c); }
     if(candidates.length){ col=candidates[Math.floor(Math.random()*candidates.length)]; r=lvl; }
   }
-  if(col===-1) return; // لا خانات متبقية إطلاقاً (نادر جداً قرب نهاية اللعبة)
+  if(col===-1){ state.teams[state.turn].bombUsed=true; return; } // لا خانات متبقية — سجّل القنبلة مستخدمة
   const key=col+'-'+r;
   const cellEls=document.querySelectorAll('#board .cell');
   const cell=cellEls[(r-1)*n+col];
@@ -1508,10 +1529,11 @@ function openQuestion(col,r,key,cell){
 function startPhase(phase){
   state.cur.phase=phase;
   const c=state.cur;
+  const dt=DIFF_TIMES[state.difficulty]||DIFF_TIMES.normal;
   if(c.isBomb){
     if(phase==='bomb'){
       setPhasePill(c.bombTarget, '💣 قنبلة! دور فريق '+state.teams[c.bombTarget].name+' — يجاوب شفهياً');
-      showTimer(30);
+      showTimer(dt.bomb);
       renderFlow();
     } else if(phase==='reveal'){
       clearInterval(state.timer);
@@ -1524,14 +1546,14 @@ function startPhase(phase){
   }
   const isSpeed = c.cat==='إجابة سريعة';
   if(phase==='owner'){
-    const t=isSpeed?15:30;
+    const t=isSpeed?dt.speed:dt.normal;
     setPhasePill(c.owner, 'دور فريق '+state.teams[c.owner].name+' — يجاوب شفهياً'+(isSpeed?' (سريع!)':''));
     showTimer(t);
     renderFlow();
   } else if(phase==='steal'){
     const ti=c.stealQueue[c.stealPos];
     c.askedTeams.add(ti);
-    const t=isSpeed?7:30;
+    const t=isSpeed?Math.round(dt.speed*0.5):dt.steal;
     setPhasePill(ti, 'سرقة! دور فريق '+state.teams[ti].name+' — '+t+' ثانية');
     showTimer(t);
     renderFlow();
@@ -1741,7 +1763,9 @@ function useLifeline(id, teamIdx){
     const nq=pickQuestion(c.cat,c.d); c.q=nq;
     document.getElementById('q-text').textContent=nq.q;
     document.getElementById('ans-text').textContent = nq.answer || (nq.o && typeof nq.a==='number' ? nq.o[nq.a] : '');
-    showTimer(c.phase==='steal'?30:60);
+    const dt2=DIFF_TIMES[state.difficulty]||DIFF_TIMES.normal;
+    const isSpd=c.cat==='إجابة سريعة';
+    showTimer(c.phase==='steal'?(isSpd?Math.round(dt2.speed*0.5):dt2.steal):(isSpd?dt2.speed:dt2.normal));
   } else if(id==='double'){
     c.doubled=true;
     document.getElementById('q-points').textContent='+'+(c.points*2)+' نقطة (مضاعف!)';
@@ -1996,7 +2020,7 @@ function addManualQuestion(){
   const o=[0,1,2,3].map(i=>(document.getElementById('fm-o-'+i).value||'').trim());
   if(!name){ shakeField('fm-name'); return; }
   if(!q){ shakeField('fm-q'); return; }
-  if(o.some(x=>!x)){ shakeField('fm-o-0'); return; }
+  const emptyIdx=o.findIndex(x=>!x); if(emptyIdx!==-1){ shakeField('fm-o-'+emptyIdx); return; }
   sfx('correct'); vibrate(15);
   manualDraft.name=name;
   manualDraft.questions.push({q, o, a:manualDraft.correct});
@@ -2090,17 +2114,20 @@ getFirebaseWebAuth();
 // هيّئ RevenueCat على iOS
 initRevenueCat();
 
-// تحقق من العودة بعد دفع Stripe ناجح
+// تحقق من العودة بعد دفع Stripe — لا نثق بـ ?subscribed=1 وحده (قابل للتزوير)
+// نستخدم uid المحفوظ مسبقاً في localStorage فقط (لا uid من URL)
 (function checkStripeReturn(){
   const p = new URLSearchParams(window.location.search);
   if(p.get('subscribed')==='1'){
-    const uid  = p.get('uid') || storeGet('authUid','');
-    const name = storeGet('playerName','لاعب');
     window.history.replaceState({},'','/');
-    if(uid) storeSet('authUid', uid);
+    // استخدم uid المحفوظ سابقاً — لا نثق بـ uid القادم من URL
+    const uid  = storeGet('authUid','');
+    const name = storeGet('playerName','لاعب');
     document.getElementById('user-name').textContent = name;
-    go('s-home');
-    setTimeout(()=>showToast('🎉','مرحباً بك!','اشتراكك فعّال — استمتع بفطنة!',false), 500);
+    showToast('🎉','جاري التحقق…','نتأكد من اشتراكك',false);
+    // تحقق من الخادم — fail-closed (بدون uid = paywall)
+    if(uid){ checkSubscriptionAndRoute(uid); }
+    else { go('s-paywall'); }
   } else if(p.get('canceled')==='1'){
     window.history.replaceState({},'','/');
     showToast('ℹ️','تم الإلغاء','يمكنك الاشتراك في أي وقت',false);

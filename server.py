@@ -372,20 +372,33 @@ class Handler(BaseHTTPRequestHandler):
             if not secret_key:
                 self.send_json(503, {'error': 'Stripe غير متاح'}); return
 
-            try:
-                import stripe as stripe_lib
-                stripe_lib.api_key = secret_key
-                if webhook_secret:
-                    event = stripe_lib.Webhook.construct_event(body, signature, webhook_secret)
-                else:
-                    event = json.loads(body)
-                    event_type = event.get('type', '')
-                    event = type('E', (), {'type': event_type, 'data': type('D', (), {'object': event.get('data', {}).get('object', {})})()})()
-            except Exception as e:
-                self.send_json(400, {'error': f'Webhook invalid: {e}'}); return
+            # نرفض أي webhook بدون توقيع مُتحقَّق — نمنع استقبال أحداث مزوّرة
+            if not webhook_secret:
+                self.send_json(400, {'error': 'Webhook secret غير مهيَّأ'}); return
+            if not signature:
+                self.send_json(400, {'error': 'Stripe-Signature مفقود'}); return
 
-            etype = event.type if hasattr(event, 'type') else ''
-            obj   = event.data.object if hasattr(event.data, 'object') else {}
+            # التحقق من توقيع Stripe عبر HMAC-SHA256 (بدون مكتبة stripe الخارجية)
+            try:
+                import hmac, hashlib, time as _time
+                parts = {p.split('=',1)[0]: p.split('=',1)[1] for p in signature.split(',') if '=' in p}
+                ts = parts.get('t','')
+                v1 = parts.get('v1','')
+                if not ts or not v1:
+                    raise ValueError('signature malformed')
+                # منع replay attacks: نرفض الطلبات الأقدم من 5 دقائق
+                if abs(_time.time() - float(ts)) > 300:
+                    raise ValueError('timestamp too old')
+                payload  = f'{ts}.'.encode() + (body if isinstance(body, bytes) else body.encode())
+                expected = hmac.new(webhook_secret.encode(), payload, hashlib.sha256).hexdigest()
+                if not hmac.compare_digest(expected, v1):
+                    raise ValueError('signature mismatch')
+                event = json.loads(body)
+            except Exception as e:
+                self.send_json(400, {'error': f'Webhook signature invalid: {e}'}); return
+
+            etype = event.get('type', '')
+            obj   = (event.get('data') or {}).get('object', {})
 
             conn = sqlite3.connect(DB_PATH)
             try:
