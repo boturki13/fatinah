@@ -90,6 +90,7 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 .field-label{font-size:14px; color:var(--muted); font-weight:600; margin-bottom:10px;}
 .seg{display:flex; gap:8px;}
 .seg button{flex:1; border:1.5px solid var(--line2); background:var(--glass); border-radius:14px; padding:15px; font-family:inherit; font-size:17px; font-weight:800; color:var(--muted); cursor:pointer; transition:.15s;}
+#seg-catcount button{padding:12px 0; font-size:16px; min-width:38px;}
 .seg button.on{background:linear-gradient(120deg,var(--hot2),var(--hot)); color:#fff; border-color:transparent; box-shadow:0 6px 18px rgba(255,61,113,.35);}
 
 .team-row{display:flex; align-items:center; gap:10px; margin-bottom:11px;}
@@ -471,7 +472,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     </div>
     <div class="card">
       <div class="field-label">كم عدد الفئات؟ <b id="catcount-lbl" style="color:var(--gold)">6</b></div>
-      <input type="range" id="catcount" min="4" max="10" value="6" step="1" style="width:100%;" oninput="updateCatCount(this.value)">
+      <div class="seg" id="seg-catcount" style="flex-wrap:wrap; gap:6px;">
+        <button data-n="2" onclick="updateCatCount(2)">٢</button>
+        <button data-n="3" onclick="updateCatCount(3)">٣</button>
+        <button data-n="4" onclick="updateCatCount(4)">٤</button>
+        <button data-n="5" onclick="updateCatCount(5)">٥</button>
+        <button class="on" data-n="6" onclick="updateCatCount(6)">٦</button>
+        <button data-n="7" onclick="updateCatCount(7)">٧</button>
+        <button data-n="8" onclick="updateCatCount(8)">٨</button>
+      </div>
       <div id="catcount-split" style="font-size:12.5px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.6;"></div>
     </div>
     <div class="card" id="team-names"></div>
@@ -1133,8 +1142,10 @@ function setTeamCount(n){
   updateCatSplitPreview();
 }
 function updateCatCount(v){
+  sfx('tap');
   state.catCount=+v;
   document.getElementById('catcount-lbl').textContent=v;
+  document.querySelectorAll('#seg-catcount button').forEach(b=>b.classList.toggle('on', +b.dataset.n===+v));
   updateCatSplitPreview();
 }
 // حساب توزيع الفئات على الفرق بالتناوب، والزائد للأوائل
