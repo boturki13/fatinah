@@ -374,13 +374,27 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
 
-        elif path in ('/privacy', '/terms'):
-            body = legal_page_html('privacy' if path == '/privacy' else 'terms')
-            self.send_response(200)
-            self.send_header('Content-Type',   'text/html; charset=utf-8')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+        elif path in ('/privacy', '/terms', '/legal', '/legal/', '/legal/index.html',
+                      '/legal/privacy.html', '/legal/terms.html', '/legal/styles.css', '/robots.txt'):
+            fname = {
+                '/privacy': 'privacy.html', '/terms': 'terms.html',
+                '/legal': 'index.html', '/legal/': 'index.html', '/legal/index.html': 'index.html',
+                '/legal/privacy.html': 'privacy.html', '/legal/terms.html': 'terms.html',
+                '/legal/styles.css': 'styles.css', '/robots.txt': 'robots.txt',
+            }[path]
+            ctype = ('text/css; charset=utf-8' if fname.endswith('.css')
+                     else 'text/plain; charset=utf-8' if fname.endswith('.txt')
+                     else 'text/html; charset=utf-8')
+            try:
+                with open(os.path.join(os.path.dirname(__file__), 'legal', fname), 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type',   ctype)
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
 
         elif path == '/admin/promo':
             try:
