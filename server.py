@@ -199,7 +199,7 @@ PRIVACY_BODY = '''
 <p><b>الاشتراكات:</b><br>
 تُعالَج مدفوعات iOS عبر Apple App Store وتخضع لسياسة خصوصية Apple. لإلغاء الاشتراك: الإعدادات ← اسمك ← الاشتراكات.</p>
 <p><b>التواصل:</b><br>
-لأي استفسار: boturki13@gmail.com</p>
+لأي استفسار: fatinahgame@gmail.com</p>
 '''
 
 TERMS_BODY = '''
@@ -218,7 +218,7 @@ TERMS_BODY = '''
 <p><b>إخلاء المسؤولية:</b><br>
 التطبيق مقدَّم "كما هو" بدون ضمانات. المطوّر غير مسؤول عن أي أضرار ناجمة عن الاستخدام.</p>
 <p><b>التواصل:</b><br>
-boturki13@gmail.com</p>
+fatinahgame@gmail.com</p>
 '''
 
 def legal_page_html(kind: str) -> bytes:
