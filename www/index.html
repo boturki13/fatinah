@@ -154,6 +154,17 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 .modal-sub{font-size:14px; color:var(--muted); line-height:1.7; margin-bottom:22px;}
 .modal-actions{display:flex; gap:10px;}
 .modal-actions .btn{flex:1;}
+/* ============ شاشة تعليمية (Onboarding) ============ */
+.onb-wrap{position:fixed; inset:0; background:rgba(8,4,16,.82); backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center; z-index:95; padding:24px;}
+.onb-wrap.show{display:flex; animation:fade .25s ease;}
+.onb-card{background:linear-gradient(180deg,var(--bg2),var(--bg1)); border:1px solid var(--line2); border-radius:24px; padding:30px 22px 22px; max-width:360px; width:100%; text-align:center; box-shadow:var(--sh); animation:pop .3s cubic-bezier(.2,.9,.3,1.3); position:relative;}
+.onb-skip{position:absolute; top:14px; inset-inline-start:16px; background:none; border:none; color:var(--muted); font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit; padding:4px 6px;}
+.onb-art{font-size:56px; margin-bottom:12px; line-height:1;}
+.onb-title{font-size:21px; font-weight:900; margin-bottom:8px;}
+.onb-sub{font-size:14px; color:var(--muted); line-height:1.8; margin-bottom:20px; min-height:66px;}
+.onb-dots{display:flex; justify-content:center; gap:7px; margin-bottom:18px;}
+.onb-dots span{width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.18); transition:all .25s;}
+.onb-dots span.on{background:var(--gold); width:22px; border-radius:5px;}
 .turn-pill{font-size:13px; font-weight:800; padding:8px 15px; border-radius:22px; display:flex; align-items:center; gap:6px; border:1.5px solid;}
 .teams-bar{display:flex; gap:8px; margin-bottom:14px;}
 .team-chip{flex:1; border-radius:14px; padding:10px 11px; border:2px solid transparent; transition:.25s; position:relative;}
@@ -582,6 +593,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <button class="btn btn-ghost btn-block mt" onclick="go('s-home')">رجوع</button>
     <div style="margin-top:32px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
       <div class="field-label" style="margin-bottom:12px;">الحساب</div>
+      <button class="btn btn-ghost btn-block" onclick="openOnboarding()" style="margin-bottom:8px;">📖 طريقة اللعب</button>
       <button class="btn btn-ghost btn-block" onclick="go('s-privacy')" style="margin-bottom:8px;">🔒 سياسة الخصوصية</button>
       <button class="btn btn-ghost btn-block" onclick="go('s-terms')" style="margin-bottom:8px;">📄 شروط الاستخدام</button>
       <button class="btn btn-block" onclick="confirmDeleteAccount()" style="background:rgba(220,53,69,.15);color:#ff6b7a;border:1px solid rgba(220,53,69,.3);margin-top:8px;">🗑️ حذف الحساب وكل البيانات</button>
@@ -722,6 +734,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
 <div class="confetti" id="confetti"></div>
 
 <!-- نافذة تأكيد الخروج -->
+<!-- شاشة تعليمية لأول مرة -->
+<div class="onb-wrap" id="onb-modal">
+  <div class="onb-card">
+    <button class="onb-skip" onclick="closeOnboarding()">تخطّي ✕</button>
+    <div class="onb-art" id="onb-art">🗂️</div>
+    <div class="onb-title" id="onb-title"></div>
+    <div class="onb-sub" id="onb-sub"></div>
+    <div class="onb-dots" id="onb-dots"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="onb-back" onclick="onbPrev()">السابق</button>
+      <button class="btn btn-primary" id="onb-next" onclick="onbNext()">التالي</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-wrap" id="exit-modal">
   <div class="modal">
     <div class="modal-icon">🚪</div>
@@ -969,6 +996,45 @@ function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
+  if(id==='s-home') maybeShowOnboarding();
+}
+
+// ============ شاشة تعليمية (Onboarding) ============
+const ONB_STEPS=[
+  {art:'🗂️', title:'اختاروا الفئات', sub:'قسّموا المجلس إلى فريقين أو ثلاثة، وكل فريق يختار الفئات التي يحبها — رياضة، تاريخ، ألغاز وأكثر.'},
+  {art:'🎤', title:'أسئلة وأدوار', sub:'تظهر الأسئلة بالتناوب بين الفرق. السؤال يُقرأ بصوت عالٍ وعلى الفريق الإجابة قبل انتهاء الوقت!'},
+  {art:'🏆', title:'نقاط وفوز', sub:'كل إجابة صحيحة تكسب نقاط الفئة. عند انتهاء الأسئلة، الفريق صاحب أعلى النقاط هو الأفطن! 🎊'}
+];
+let onbStep=0;
+function renderOnb(){
+  const s=ONB_STEPS[onbStep];
+  document.getElementById('onb-art').textContent=s.art;
+  document.getElementById('onb-title').textContent=s.title;
+  document.getElementById('onb-sub').textContent=s.sub;
+  document.getElementById('onb-dots').innerHTML=ONB_STEPS.map((_,i)=>`<span class="${i===onbStep?'on':''}"></span>`).join('');
+  document.getElementById('onb-back').style.visibility=onbStep===0?'hidden':'visible';
+  document.getElementById('onb-next').textContent=onbStep===ONB_STEPS.length-1?'يلا نبدأ! 🎉':'التالي';
+}
+function openOnboarding(){
+  sfx&&sfx('tap');
+  onbStep=0; renderOnb();
+  document.getElementById('onb-modal').classList.add('show');
+}
+function closeOnboarding(){
+  document.getElementById('onb-modal').classList.remove('show');
+  storeSet('onboardingSeen', true);
+}
+function onbNext(){
+  sfx('tap'); vibrate(10);
+  if(onbStep>=ONB_STEPS.length-1){ closeOnboarding(); return; }
+  onbStep++; renderOnb();
+}
+function onbPrev(){
+  sfx('tap');
+  if(onbStep>0){ onbStep--; renderOnb(); }
+}
+function maybeShowOnboarding(){
+  if(!storeGet('onboardingSeen', false)) openOnboarding();
 }
 
 // ============ الخروج من الجولة ============
