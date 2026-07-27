@@ -308,6 +308,19 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
 
+        elif path == '/admin/promo':
+            try:
+                with open(os.path.join(os.path.dirname(__file__), 'admin_promo.html'), 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
+            return
+
         elif path == '/download/index.html':
             with open(HTML_FILE, 'rb') as f:
                 body = f.read()
