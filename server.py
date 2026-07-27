@@ -156,6 +156,24 @@ def verify_firebase_token(id_token: str):
     except Exception:
         return None
 
+# ─── حد المعدل (rate limiting) لنقاط الاستدعاء المكلفة ──────────────────────
+_rate_buckets = {}   # key -> [timestamps]
+
+def rate_limited(key: str, limit: int = 20, window: int = 300):
+    """يعيد True إذا تجاوز المفتاح الحد المسموح (limit طلبات لكل window ثانية)."""
+    import time as _time
+    now = _time.time()
+    ts = [t for t in _rate_buckets.get(key, []) if now - t < window]
+    if len(ts) >= limit:
+        _rate_buckets[key] = ts
+        return True
+    ts.append(now)
+    _rate_buckets[key] = ts
+    if len(_rate_buckets) > 5000:   # حماية الذاكرة
+        for k in [k for k, v in _rate_buckets.items() if not v or now - v[-1] > window]:
+            _rate_buckets.pop(k, None)
+    return False
+
 # ─── قراءة index.html ────────────────────────────────────────────────────────
 def read_html():
     with open(HTML_FILE, 'rb') as f:
@@ -169,8 +187,10 @@ def server_config_js():
     if not app_url:
         domain = (os.environ.get('REPLIT_DOMAINS') or '').split(',')[0].strip()
         app_url = f'https://{domain}' if domain else ''
+    rc_key = os.environ.get('RC_API_KEY', '')
     return (
         f'window.SERVER_BASE_URL = {json.dumps(app_url)};\n'
+        f'window.RC_API_KEY = {json.dumps(rc_key)};\n'
     ).encode()
 
 
@@ -452,10 +472,20 @@ class Handler(BaseHTTPRequestHandler):
 
         # ─── AI generate ────────────────────────────────────────────────────
         if path == '/api/generate':
+            if length > 65536:
+                self.send_json(413, {'error': 'حجم الطلب يتجاوز الحد المسموح (64KB)'}); return
+            # مصادقة إلزامية — الاستدعاء يكلّف توكنات Claude مدفوعة
+            uid = self.authed_uid()
+            if not uid:
+                self.send_json(401, {'error': 'تسجيل الدخول مطلوب'}); return
+            # حد المعدل: 20 طلباً لكل 5 دقائق لكل مستخدم
+            if rate_limited(f'gen:{uid}', limit=20, window=300):
+                self.send_json(429, {'error': 'طلبات كثيرة — انتظر قليلاً ثم حاول مجدداً'}); return
+
             try:   data = json.loads(body)
             except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
 
-            topic = (data.get('topic') or '').strip()
+            topic = (data.get('topic') or '').strip()[:200]
             try:    count = min(max(int(data.get('count', 6)), 1), 30)
             except Exception: count = 6
             seen  = data.get('seen') or []          # قائمة معرّفات الأسئلة التي شاهدها اللاعب
