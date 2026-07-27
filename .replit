@@ -41,3 +41,7 @@ FIREBASE_STORAGE_BUCKET = "fatinah-game.firebasestorage.app"
 
 [nix]
 channel = "stable-25_05"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 60000
