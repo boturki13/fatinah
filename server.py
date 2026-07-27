@@ -43,6 +43,27 @@ def init_db():
         )
     ''')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_bank_topic ON question_bank(topic_norm)')
+    # ─── جداول أكواد المكافآت ───────────────────────────────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS promo_codes (
+            code       TEXT PRIMARY KEY,
+            days       INTEGER NOT NULL DEFAULT 30,
+            max_uses   INTEGER,
+            used_count INTEGER NOT NULL DEFAULT 0,
+            active     INTEGER NOT NULL DEFAULT 1,
+            note       TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS promo_redemptions (
+            uid          TEXT NOT NULL,
+            code         TEXT NOT NULL,
+            expires_at   DATETIME NOT NULL,
+            redeemed_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (uid, code)
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -502,6 +523,113 @@ class Handler(BaseHTTPRequestHandler):
                 conn.close()
 
             self.send_json(200, {'received': True})
+
+        # ─── Promo: تحقق من كود مكافأة ──────────────────────────────────────
+        elif path == '/api/promo/redeem':
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            code = (data.get('code') or '').strip().upper()
+            uid  = (data.get('uid')  or '').strip()
+            if not code or not uid:
+                self.send_json(400, {'error': 'code و uid مطلوبان'}); return
+            conn = db_connect()
+            try:
+                # هل الكود موجود وفعّال؟
+                row = conn.execute(
+                    'SELECT days, max_uses, used_count, active FROM promo_codes WHERE code=?',
+                    (code,)).fetchone()
+                if not row:
+                    self.send_json(404, {'error': 'الكود غير صحيح'}); return
+                days, max_uses, used_count, active = row
+                if not active:
+                    self.send_json(403, {'error': 'هذا الكود غير فعّال'}); return
+                if max_uses is not None and used_count >= max_uses:
+                    self.send_json(403, {'error': 'انتهى الحد الأقصى لاستخدامات هذا الكود'}); return
+                # هل هذا المستخدم استخدمه من قبل ولسه ساري؟
+                existing = conn.execute(
+                    "SELECT expires_at FROM promo_redemptions WHERE uid=? AND code=? AND expires_at > datetime('now')",
+                    (uid, code)).fetchone()
+                if existing:
+                    self.send_json(200, {'ok': True, 'expires_at': existing[0], 'already': True}); return
+                # سجّل الاستخدام
+                conn.execute(
+                    "INSERT OR REPLACE INTO promo_redemptions (uid, code, expires_at) VALUES (?,?, datetime('now','+'||?||' days'))",
+                    (uid, code, days))
+                conn.execute(
+                    'UPDATE promo_codes SET used_count=used_count+1 WHERE code=?', (code,))
+                conn.commit()
+                expires_row = conn.execute(
+                    'SELECT expires_at FROM promo_redemptions WHERE uid=? AND code=?', (uid, code)).fetchone()
+                self.send_json(200, {'ok': True, 'expires_at': expires_row[0], 'days': days})
+            except Exception as e:
+                self.send_json(500, {'error': str(e)})
+            finally:
+                conn.close()
+
+        # ─── Promo: فحص حالة المستخدم ────────────────────────────────────────
+        elif path.startswith('/api/promo/status'):
+            from urllib.parse import urlparse, parse_qs
+            qs  = parse_qs(urlparse(self.path).query)
+            uid = (qs.get('uid', [''])[0]).strip()
+            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
+            conn = db_connect()
+            try:
+                row = conn.execute(
+                    "SELECT expires_at FROM promo_redemptions WHERE uid=? AND expires_at > datetime('now') ORDER BY expires_at DESC LIMIT 1",
+                    (uid,)).fetchone()
+                if row:
+                    self.send_json(200, {'active': True,  'expires_at': row[0]})
+                else:
+                    self.send_json(200, {'active': False, 'expires_at': None})
+            finally:
+                conn.close()
+
+        # ─── Promo: إدارة الأكواد (Admin) ────────────────────────────────────
+        elif path == '/api/promo/admin':
+            admin_secret = os.environ.get('ADMIN_SECRET', '')
+            auth_header  = self.headers.get('X-Admin-Secret', '')
+            if not admin_secret or auth_header != admin_secret:
+                self.send_json(403, {'error': 'غير مصرح'}); return
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            action = data.get('action', '')
+            conn = db_connect()
+            try:
+                if action == 'create':
+                    code     = (data.get('code') or '').strip().upper()
+                    days     = int(data.get('days', 30))
+                    max_uses = data.get('max_uses')   # None = بلا حد
+                    note     = data.get('note', '')
+                    if not code: self.send_json(400, {'error': 'code مطلوب'}); return
+                    conn.execute(
+                        'INSERT OR REPLACE INTO promo_codes (code,days,max_uses,active,note) VALUES (?,?,?,1,?)',
+                        (code, days, max_uses, note))
+                    conn.commit()
+                    self.send_json(200, {'ok': True, 'code': code, 'days': days})
+                elif action == 'list':
+                    rows = conn.execute(
+                        'SELECT code,days,max_uses,used_count,active,note,created_at FROM promo_codes ORDER BY created_at DESC'
+                    ).fetchall()
+                    codes = [{'code':r[0],'days':r[1],'max_uses':r[2],'used_count':r[3],
+                              'active':bool(r[4]),'note':r[5],'created_at':r[6]} for r in rows]
+                    self.send_json(200, {'codes': codes})
+                elif action == 'toggle':
+                    code = (data.get('code') or '').strip().upper()
+                    conn.execute('UPDATE promo_codes SET active=1-active WHERE code=?', (code,))
+                    conn.commit()
+                    self.send_json(200, {'ok': True})
+                elif action == 'delete':
+                    code = (data.get('code') or '').strip().upper()
+                    conn.execute('DELETE FROM promo_codes WHERE code=?', (code,))
+                    conn.execute('DELETE FROM promo_redemptions WHERE code=?', (code,))
+                    conn.commit()
+                    self.send_json(200, {'ok': True})
+                else:
+                    self.send_json(400, {'error': 'action غير معروف'})
+            except Exception as e:
+                self.send_json(500, {'error': str(e)})
+            finally:
+                conn.close()
 
         else:
             self.send_response(404); self.end_headers()
