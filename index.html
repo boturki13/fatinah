@@ -2342,14 +2342,19 @@ function addSeen(topic, ids){
 }
 // ─── مزامنة الأسئلة المشاهدة مع السحابة ──────────────────────────────────
 let _syncInFlight=false;
+let _syncPending=false; // طلب وارد أثناء رحلة قيد التنفيذ — يُنفَّذ بعد انتهائها
 async function syncSeenToCloud(){
-  if(_syncInFlight) return;           // تجنّب طلبين متزامنين
+  if(_syncInFlight){
+    _syncPending=true; // جدوِل إعادة المحاولة بدلاً من الإهمال
+    return;
+  }
   _syncInFlight=true;
+  _syncPending=false;
   try{
     const auth=await _getStatsAuthHeader();
-    if(!auth){ _syncInFlight=false; return; }
+    if(!auth){ return; }
     const m=storeGet('seenQ',{});
-    if(!Object.keys(m).length){ _syncInFlight=false; return; }
+    if(!Object.keys(m).length){ return; }
     const r=await fetch(apiUrl('/api/seen/sync'),{
       method:'POST',
       headers:{'Content-Type':'application/json',...auth},
@@ -2364,6 +2369,10 @@ async function syncSeenToCloud(){
     localStorage.setItem('pendingSeenSync','1');   // انقطاع — احتفظ بالعلم
   }finally{
     _syncInFlight=false;
+    if(_syncPending){
+      _syncPending=false;
+      syncSeenToCloud(); // نفّذ الطلب المجدوَل الذي وصل أثناء الرحلة
+    }
   }
 }
 
