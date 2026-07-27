@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com https://api.stripe.com wss://*.firebaseio.com https://*.replit.app https://*.replit.dev; frame-src 'none'; object-src 'none';">
 <title>فَطِنة — لعبة الذكاء الجماعية</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<script src="/server-config.js"></script>
 <script src="/firebase-config.js"></script>
 <style>
 :root{
@@ -977,7 +978,7 @@ async function confirmDeleteAccount(){
   //    البيانات المحلية باقية وستُعاد مزامنتها تلقائياً عند أي حفظ.
   try{
     const auth = await getFamilyAuthHeader();
-    if(auth) await fetch('/api/family/purge',{method:'POST',headers:auth});
+    if(auth) await fetch(apiUrl('/api/family/purge'),{method:'POST',headers:auth});
   }catch(e){ console.error('cloud family purge:', e); }
   // 1) حذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login)
   if(provider==='apple' || provider==='google'){
@@ -990,7 +991,7 @@ async function confirmDeleteAccount(){
   // 2) حذف سجل الاشتراك من الخادم
   if(uid){
     try{
-      await fetch('/api/account/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid})});
+      await fetch(apiUrl('/api/account/delete'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid})});
     }catch(e){ console.error('server delete:', e); }
   }
   // 3) حذف localStorage
@@ -1194,7 +1195,7 @@ async function rcRestore(){
 async function promoIsActive(uid){
   if(!uid) return false;
   try{
-    const r = await fetch(`/api/promo/status?uid=${encodeURIComponent(uid)}`);
+    const r = await fetch(apiUrl(`/api/promo/status?uid=${encodeURIComponent(uid)}`));
     if(!r.ok) return false;
     const d = await r.json();
     return d.active === true;
@@ -1205,9 +1206,24 @@ async function checkSubscriptionAndRoute(uid){
   // iOS: RevenueCat
   const rcActive = await rcIsActive();
   if(rcActive === true){ go('s-home'); return; }
-  // تحقق من كود مجاني مجاني
-  if(uid && await promoIsActive(uid)){ go('s-home'); return; }
-  go('s-paywall');
+  if(rcActive === false){
+    // تحقق من كود مجاني قبل صفحة الاشتراك
+    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
+    go('s-paywall'); return;
+  }
+  // ويب: Stripe — فشل مغلق (fail-closed): أي خطأ = paywall لا home
+  try{
+    const resp = await fetch(apiUrl(`/api/stripe/status?uid=${encodeURIComponent(uid)}`));
+    if(!resp.ok) throw new Error('status error');
+    const data = await resp.json();
+    if(data.active === true){ go('s-home'); return; }
+    // تحقق من كود مجاني
+    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
+    go('s-paywall');
+  }catch(e){
+    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
+    go('s-paywall');
+  }
 }
 
 // ============ كود مكافأة مجاني ============
@@ -1228,7 +1244,7 @@ async function redeemPromo(){
   msg.style.color='#C4B8E0'; msg.textContent='⏳ جاري التحقق...';
   try{
     const uid = window._currentUid || '';
-    const r = await fetch('/api/promo/redeem',{
+    const r = await fetch(apiUrl('/api/promo/redeem'),{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({code, uid})
@@ -2055,7 +2071,7 @@ async function syncFamilyToCloud(){
     if(!familyCats.length) return;
     const auth = await getFamilyAuthHeader();
     if(!auth) return;
-    fetch('/api/family/sync',{
+    fetch(apiUrl('/api/family/sync'),{
       method:'POST',
       headers:{'Content-Type':'application/json', ...auth},
       body:JSON.stringify({categories:familyCats})
@@ -2067,7 +2083,7 @@ async function deleteFamilyFromCloud(name){
     if(!name) return;
     const auth = await getFamilyAuthHeader();
     if(!auth) return;
-    fetch('/api/family/delete',{
+    fetch(apiUrl('/api/family/delete'),{
       method:'POST',
       headers:{'Content-Type':'application/json', ...auth},
       body:JSON.stringify({name})
@@ -2079,7 +2095,7 @@ async function pullFamilyFromCloud(){
   try{
     const auth = await getFamilyAuthHeader();
     if(!auth) return;
-    const r = await fetch('/api/family/list',{headers:auth});
+    const r = await fetch(apiUrl('/api/family/list'),{headers:auth});
     if(!r.ok) return;
     const data = await r.json();
     const remote = data.categories || [];
@@ -2144,11 +2160,35 @@ async function generateFamily(){
   renderPreview(); go('s-family-preview');
 }
 
-// توليد الأسئلة عبر الخادم المحلي (يستخدم Claude / Anthropic بأمان من جهة الخادم)
-// في بيئة iOS الأصلية نعود للـ Firebase Cloud Function كاحتياط
-const AI_BACKEND_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1') && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
-  ? 'https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions'
-  : '/api/generate';
+// ─── رابط API المناسب للبيئة ──────────────────────────────────────────────────
+// في المتصفح العادي: URLs نسبية تعمل مباشرةً
+// في iOS الأصلية (Capacitor): نضيف SERVER_BASE_URL أمام كل مسار
+// SERVER_BASE_URL يأتي من /server-config.js المُحقَن بواسطة server.py
+function apiUrl(path) {
+  const isNative = typeof window !== 'undefined' &&
+    window.Capacitor && window.Capacitor.isNativePlatform &&
+    window.Capacitor.isNativePlatform();
+  if (isNative) {
+    const base = (typeof window !== 'undefined' && window.SERVER_BASE_URL) || '';
+    if (base) return base + path;
+  }
+  return path;
+}
+
+// رابط توليد الأسئلة — يُستخدم في aiGenerate()
+// احتياط لـ iOS قبل ضبط SERVER_BASE_URL: Firebase Cloud Function القديمة
+function getAiBackendUrl() {
+  const isNative = typeof window !== 'undefined' &&
+    window.Capacitor && window.Capacitor.isNativePlatform &&
+    window.Capacitor.isNativePlatform();
+  if (isNative) {
+    const base = (typeof window !== 'undefined' && window.SERVER_BASE_URL) || '';
+    if (base) return base + '/api/generate';
+    return 'https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions';
+  }
+  return '/api/generate';
+}
+const AI_BACKEND_URL = getAiBackendUrl();
 // تتبّع الأسئلة المُشاهدة لكل موضوع — يضمن أسئلة جديدة دائماً ويوفّر التوكن
 // نفس تطبيع الخادم (normalize_topic) حتى تتطابق المفاتيح
 function seenKey(topic){
