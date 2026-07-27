@@ -395,6 +395,20 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(404); self.end_headers()
             return
 
+        elif path.startswith('/vendor/') and path.endswith('.js') and '..' not in path:
+            fpath = os.path.join(os.path.dirname(__file__), path.lstrip('/'))
+            try:
+                with open(fpath, 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type',   'application/javascript; charset=utf-8')
+                self.send_header('Cache-Control',  'public, max-age=86400')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
+
         elif path == '/download/index.html':
             with open(HTML_FILE, 'rb') as f:
                 body = f.read()

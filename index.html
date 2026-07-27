@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com https://api.stripe.com wss://*.firebaseio.com https://*.replit.app https://*.replit.dev; frame-src 'none'; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com wss://*.firebaseio.com https://*.replit.app https://*.replit.dev; frame-src 'none'; object-src 'none';">
 <title>فَطِنة — لعبة الذكاء الجماعية</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -993,7 +993,7 @@ async function reauthThen(provider, fn){
   const wb=await getFirebaseWebAuth();
   if(wb && wb.auth.currentUser){
     const p = provider==='google' ? new wb.GoogleAuthProvider() : new wb.OAuthProvider('apple.com');
-    const { reauthenticateWithPopup } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+    const { reauthenticateWithPopup } = await import('./vendor/firebase-auth.js');
     await reauthenticateWithPopup(wb.auth.currentUser, p);
     return fn();
   }
@@ -1027,13 +1027,13 @@ async function deleteFirebaseUser(){
     const user = wb.auth.currentUser;
     if(!user) return true; // لا يوجد مستخدم Firebase مسجَّل
     try{
-      const { deleteUser } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+      const { deleteUser } = await import('./vendor/firebase-auth.js');
       await deleteUser(user);
       return true;
     }catch(e){
       if(e && e.code==='auth/requires-recent-login'){
         try{
-          const { deleteUser } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+          const { deleteUser } = await import('./vendor/firebase-auth.js');
           await reauthThen(provider, ()=>deleteUser(wb.auth.currentUser));
           return true;
         }catch(e2){ console.error('web reauth+delete:', e2); return false; }
@@ -1112,8 +1112,8 @@ async function getFirebaseWebAuth(){
   if(!window.FIREBASE_CONFIGURED) return null;
   try{
     const [appMod, authMod] = await Promise.all([
-      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
-      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'),
+      import('./vendor/firebase-app.js'),
+      import('./vendor/firebase-auth.js'),
     ]);
     const { initializeApp, getApps } = appMod;
     const { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, OAuthProvider } = authMod;
@@ -1594,9 +1594,9 @@ function renderCatGrid(){
     if(picked && state.catOwner[cat]!=null){
       const ost=TEAM_STYLES[state.teams[state.catOwner[cat]].idx];
       el.style.borderColor=ost.dot;
-      ownerBadge=`<span style="position:absolute;bottom:6px;left:8px;font-size:10px;font-weight:800;color:${ost.color}">${state.teams[state.catOwner[cat]].name}</span>`;
+      ownerBadge=`<span style="position:absolute;bottom:6px;left:8px;font-size:10px;font-weight:800;color:${ost.color}">${esc(state.teams[state.catOwner[cat]].name)}</span>`;
     }
-    el.innerHTML=`<span class="ci">${icon}</span>${cat}${ownerBadge}`;
+    el.innerHTML=`<span class="ci">${icon}</span>${esc(cat)}${ownerBadge}`;
     el.onclick=()=>toggleCat(cat,el);
     grid.appendChild(el);
   });
@@ -2460,11 +2460,11 @@ function renderPreview(){
   list.innerHTML=previewData.questions.map((q,i)=>{
     // النظام الخفيف الجديد: سؤال + إجابة نصية فقط (بلا خيارات)
     if(q.answer && !q.o){
-      return `<div class="fp-card"><div class="fp-q">${i+1}. ${q.q}</div><div class="fp-o correct">✓ ${q.answer}</div></div>`;
+      return `<div class="fp-card"><div class="fp-q">${i+1}. ${esc(q.q)}</div><div class="fp-o correct">✓ ${esc(q.answer)}</div></div>`;
     }
     // توافق عكسي: النظام القديم بخيارات
-    const opts=(q.o||[]).map((o,j)=>`<div class="fp-o ${j===q.a?'correct':''}">${j===q.a?'✓ ':''}${o}</div>`).join('');
-    return `<div class="fp-card"><div class="fp-q">${i+1}. ${q.q}</div>${opts}</div>`;
+    const opts=(q.o||[]).map((o,j)=>`<div class="fp-o ${j===q.a?'correct':''}">${j===q.a?'✓ ':''}${esc(o)}</div>`).join('');
+    return `<div class="fp-card"><div class="fp-q">${i+1}. ${esc(q.q)}</div>${opts}</div>`;
   }).join('');
 }
 function saveFamilyCategory(){
