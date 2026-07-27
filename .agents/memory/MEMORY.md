@@ -1,1 +1,2 @@
 - [Fatinah server setup](fatinah-server.md) — خادم Python stdlib بلا Flask؛ يخدم index.html + AI proxy + firebase-config.js
+- [Offline mode design](offline-mode.md) — اللعب محلي بالتصميم؛ الشبكي الوحيد هو توليد الذكاء (qCache) وفتح الصفحة (sw.js في المتصفح فقط)
