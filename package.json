@@ -25,6 +25,9 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^6.1.2"
+  },
+  "overrides": {
+    "undici": ">=6.27.0"
   }
 }
 
