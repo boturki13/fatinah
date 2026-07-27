@@ -838,11 +838,19 @@ async function _getStatsAuthHeader(){
   }catch(e){}
   return null;
 }
+let _statsSyncInFlight=false;
+let _statsSyncPending=false; // طلب وارد أثناء رحلة قيد التنفيذ — يُنفَّذ بعد انتهائها
 async function pushStatsToCloud(){
+  if(_statsSyncInFlight){
+    _statsSyncPending=true; // جدوِل إعادة المحاولة بدلاً من الإهمال
+    return;
+  }
+  _statsSyncInFlight=true;
+  _statsSyncPending=false;
   try{
     const auth=await _getStatsAuthHeader();
     if(!auth) return;
-    fetch(apiUrl('/api/stats/sync'),{
+    await fetch(apiUrl('/api/stats/sync'),{
       method:'POST',
       headers:{'Content-Type':'application/json',...auth},
       body:JSON.stringify({
@@ -851,6 +859,13 @@ async function pushStatsToCloud(){
       })
     }).catch(()=>{});
   }catch(e){}
+  finally{
+    _statsSyncInFlight=false;
+    if(_statsSyncPending){
+      _statsSyncPending=false;
+      pushStatsToCloud(); // نفّذ الطلب المجدوَل الذي وصل أثناء الرحلة
+    }
+  }
 }
 async function pullStatsFromCloud(){
   try{
