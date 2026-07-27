@@ -520,6 +520,7 @@ class Handler(BaseHTTPRequestHandler):
             conn = db_connect()
             try:
                 cur = conn.execute('DELETE FROM family_categories WHERE uid=?', (uid,))
+                conn.execute('DELETE FROM seen_questions WHERE uid=?', (uid,))
                 conn.commit()
                 self.send_json(200, {'ok': True, 'deleted': cur.rowcount})
             except sqlite3.OperationalError:
@@ -659,6 +660,7 @@ class Handler(BaseHTTPRequestHandler):
                 conn.execute('DELETE FROM player_stats       WHERE uid=?', (uid,))
                 conn.execute('DELETE FROM family_categories  WHERE uid=?', (uid,))
                 conn.execute('DELETE FROM promo_redemptions  WHERE uid=?', (uid,))
+                conn.execute('DELETE FROM seen_questions      WHERE uid=?', (uid,))
                 cur = conn.execute('DELETE FROM subscriptions WHERE uid=?', (uid,))
                 conn.commit()
                 conn.close()

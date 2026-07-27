@@ -1041,11 +1041,10 @@ async function confirmDeleteAccount(){
   if(!ok) return;
   const uid = storeGet('authUid','');
   const provider = storeGet('authProvider','');
-  // 0) احذف الفئات العائلية السحابية قبل حذف مستخدم Firebase (التوكن يبطل بعد الحذف).
-  //    endpoint مخصص لا يمسّ الاشتراك؛ وإن فشل حذف Firebase لاحقاً،
-  //    البيانات المحلية باقية وستُعاد مزامنتها تلقائياً عند أي حفظ.
+  // 0) نجلب التوكن مرة واحدة ونُدفئ كاش الخادم عبر family/purge قبل حذف Firebase
+  //    (التوكن يبطل بعد حذف مستخدم Firebase، لكن الكاش يبقى 5 دقائق للخطوة 2)
+  const auth = await getFamilyAuthHeader();
   try{
-    const auth = await getFamilyAuthHeader();
     if(auth) await fetch(apiUrl('/api/family/purge'),{method:'POST',headers:auth});
   }catch(e){ console.error('cloud family purge:', e); }
   // 1) حذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login)
@@ -1056,11 +1055,12 @@ async function confirmDeleteAccount(){
       return; // لا نمسح البيانات إن فشل حذف الحساب الفعلي
     }
   }
-  // 2) حذف سجل الاشتراك من الخادم
-  if(uid){
+  // 2) حذف سجل الاشتراك والأسئلة المشاهدة من الخادم بعد التأكد من حذف Firebase
+  // التوكن محفوظ في كاش الخادم (5 دقائق) من استدعاء family/purge أعلاه
+  if(auth){
     try{
-      await fetch(apiUrl('/api/account/delete'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid})});
-    }catch(e){ console.error('server delete:', e); }
+      await fetch(apiUrl('/api/account/delete'),{method:'POST',headers:{...auth,'Content-Type':'application/json'}});
+    }catch(e){ console.error('server account delete:', e); }
   }
   // 3) حذف localStorage
   const keys=Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX));
