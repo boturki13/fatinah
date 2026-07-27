@@ -1877,15 +1877,34 @@ async function generateFamily(){
 const AI_BACKEND_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1') && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
   ? 'https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions'
   : '/api/generate';
+// تتبّع الأسئلة المُشاهدة لكل موضوع — يضمن أسئلة جديدة دائماً ويوفّر التوكن
+// نفس تطبيع الخادم (normalize_topic) حتى تتطابق المفاتيح
+function seenKey(topic){
+  let t=topic.trim().toLowerCase();
+  t=t.replace(/[\u064B-\u0652\u0670]/g,'');
+  t=t.replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي');
+  return t.replace(/\s+/g,' ');
+}
+function getSeen(topic){ const m=storeGet('seenQ',{}); return m[seenKey(topic)]||[]; }
+function addSeen(topic, ids){
+  if(!ids.length) return;
+  const m=storeGet('seenQ',{}); const k=seenKey(topic);
+  m[k]=[...new Set([...(m[k]||[]), ...ids])].slice(-5000);
+  // حد أقصى 40 موضوعاً — احذف الأقدم عند التجاوز (حماية سعة localStorage)
+  const keys=Object.keys(m);
+  if(keys.length>40){ keys.slice(0,keys.length-40).forEach(x=>delete m[x]); }
+  storeSet('seenQ', m);
+}
 async function aiGenerate(topic,count){
   const res=await fetch(AI_BACKEND_URL,{
     method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ topic, count })
+    body:JSON.stringify({ topic, count, seen:getSeen(topic) })
   });
   if(!res.ok) throw new Error('فشل الاتصال بالخادم');
   const data=await res.json();
-  const arr=data.questions||[];
-  return arr.filter(x=>x&&x.q&&x.answer).slice(0,count);
+  const arr=(data.questions||[]).filter(x=>x&&x.q&&x.answer).slice(0,count);
+  addSeen(topic, arr.map(x=>x.id).filter(Boolean));
+  return arr;
 }
 
 // مولّد نموذجي ذكي (يعمل دون إنترنت — لعرض التجربة كاملة)

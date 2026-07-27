@@ -13,6 +13,13 @@ HTML_FILE = os.path.join(os.path.dirname(__file__), 'index.html')
 DB_PATH   = os.path.join(os.path.dirname(__file__), 'subscriptions.db')
 
 # ─── قاعدة البيانات ──────────────────────────────────────────────────────────
+def db_connect():
+    """اتصال sqlite آمن للخيوط المتعددة: WAL + مهلة انتظار للأقفال."""
+    conn = sqlite3.connect(DB_PATH, timeout=10)
+    conn.execute('PRAGMA journal_mode=WAL')
+    conn.execute('PRAGMA busy_timeout=10000')
+    return conn
+
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     conn.execute('''
@@ -25,8 +32,28 @@ def init_db():
             updated_at             DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS question_bank (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            topic_norm TEXT NOT NULL,
+            q          TEXT NOT NULL,
+            answer     TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(topic_norm, q)
+        )
+    ''')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_bank_topic ON question_bank(topic_norm)')
     conn.commit()
     conn.close()
+
+def normalize_topic(topic: str) -> str:
+    """توحيد الموضوع: إزالة التشكيل والمسافات الزائدة وأل التعريف للمطابقة."""
+    import re
+    t = topic.strip().lower()
+    t = re.sub(r'[\u064B-\u0652\u0670]', '', t)          # تشكيل
+    t = t.replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا').replace('ة', 'ه').replace('ى', 'ي')
+    t = re.sub(r'\s+', ' ', t)
+    return t
 
 # ─── Stripe credentials من Replit Connector ──────────────────────────────────
 def get_stripe_keys():
@@ -98,7 +125,7 @@ def call_claude(topic: str, count: int):
     if not api_key:
         return None, 'ANTHROPIC_API_KEY غير موجود في البيئة'
 
-    safe_count = min(max(int(count), 4), 12)
+    safe_count = min(max(int(count), 4), 30)
     prompt = (
         f'ولّد {safe_count} أسئلة مسابقات بالعربية بلهجة خليجية بسيطة عن: "{topic}".\n'
         'كل سؤال يجب أن يكون دقيقاً وصحيحاً واقعياً.\n'
@@ -108,7 +135,7 @@ def call_claude(topic: str, count: int):
 
     payload = json.dumps({
         'model':      'claude-opus-4-5',
-        'max_tokens': 1024,
+        'max_tokens': 4096,
         'messages':   [{'role': 'user', 'content': prompt}],
     }).encode()
 
@@ -213,12 +240,51 @@ class Handler(BaseHTTPRequestHandler):
             except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
 
             topic = (data.get('topic') or '').strip()
-            count =  data.get('count', 6)
+            try:    count = min(max(int(data.get('count', 6)), 1), 30)
+            except Exception: count = 6
+            seen  = data.get('seen') or []          # قائمة معرّفات الأسئلة التي شاهدها اللاعب
             if not topic: self.send_json(400, {'error': 'topic مطلوب'}); return
+            if not isinstance(seen, list): seen = []
+            seen = [int(s) for s in seen if str(s).isdigit()][:5000]
 
-            questions, err = call_claude(topic, count)
-            if err: self.send_json(502, {'error': err}); return
-            self.send_json(200, {'questions': questions})
+            tnorm = normalize_topic(topic)
+            conn  = db_connect()
+
+            def fetch_unseen(limit):
+                if seen:
+                    ph = ','.join('?' * len(seen))
+                    rows = conn.execute(
+                        f'SELECT id,q,answer FROM question_bank WHERE topic_norm=? AND id NOT IN ({ph}) ORDER BY RANDOM() LIMIT ?',
+                        [tnorm, *seen, limit]).fetchall()
+                else:
+                    rows = conn.execute(
+                        'SELECT id,q,answer FROM question_bank WHERE topic_norm=? ORDER BY RANDOM() LIMIT ?',
+                        (tnorm, limit)).fetchall()
+                return [{'id': r[0], 'q': r[1], 'answer': r[2]} for r in rows]
+
+            try:
+                # 1) جرّب البنك أولاً — صفر توكن
+                result = fetch_unseen(count)
+
+                # 2) إن لم يكفِ، ولّد دفعة كبيرة (30) وخزّنها ثم أعد المحاولة
+                if len(result) < count:
+                    questions, err = call_claude(topic, 30)
+                    if err and not result:
+                        self.send_json(502, {'error': err}); return
+                    for q in (questions or []):
+                        try:
+                            conn.execute('INSERT OR IGNORE INTO question_bank(topic_norm,q,answer) VALUES(?,?,?)',
+                                         (tnorm, q['q'].strip(), q['answer'].strip()))
+                        except Exception:
+                            pass
+                    try: conn.commit()
+                    except sqlite3.OperationalError: pass  # قفل مؤقت — الأسئلة المولّدة تُعاد للاعب على أي حال
+                    result = fetch_unseen(count)
+                self.send_json(200, {'questions': result, 'from_bank': True})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+            finally:
+                conn.close()
 
         # ─── Stripe: إنشاء جلسة دفع ─────────────────────────────────────────
         elif path == '/api/stripe/create-checkout':
