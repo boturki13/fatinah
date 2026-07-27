@@ -904,25 +904,104 @@ function doExit(){
 }
 
 // ============ حذف الحساب (5.1.1) ============
+// إعادة المصادقة عند requires-recent-login حسب مزوّد الدخول المخزَّن
+async function reauthThen(provider, fn){
+  const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
+  if(FA){
+    if(provider==='google') await FA.signInWithGoogle();
+    else await FA.signInWithApple();
+    return fn();
+  }
+  const wb=await getFirebaseWebAuth();
+  if(wb && wb.auth.currentUser){
+    const p = provider==='google' ? new wb.GoogleAuthProvider() : new wb.OAuthProvider('apple.com');
+    const { reauthenticateWithPopup } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+    await reauthenticateWithPopup(wb.auth.currentUser, p);
+    return fn();
+  }
+  throw new Error('no-auth-layer');
+}
+
+// حذف مستخدم Firebase فعلياً (شرط Apple 5.1.1) — وليس تسجيل خروج فقط
+async function deleteFirebaseUser(){
+  const provider = storeGet('authProvider','');
+  // الطبقة الأولى: مكوّن Capacitor الأصلي (iOS)
+  const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
+  if(FA){
+    try{
+      const cur = await FA.getCurrentUser().catch(()=>null);
+      if(!cur || !cur.user) return true; // لا يوجد مستخدم Firebase — دخول بالاسم فقط
+      await FA.deleteUser();
+      return true;
+    }catch(e){
+      const msg = String(e?.code||e?.message||e);
+      if(msg.includes('requires-recent-login')){
+        try{ await reauthThen(provider, ()=>FA.deleteUser()); return true; }
+        catch(e2){ console.error('reauth+delete:', e2); return false; }
+      }
+      console.error('Capacitor deleteUser:', e);
+      return false;
+    }
+  }
+  // الطبقة الثانية: Firebase Web SDK (متصفح)
+  const wb=await getFirebaseWebAuth();
+  if(wb){
+    const user = wb.auth.currentUser;
+    if(!user) return true; // لا يوجد مستخدم Firebase مسجَّل
+    try{
+      const { deleteUser } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+      await deleteUser(user);
+      return true;
+    }catch(e){
+      if(e && e.code==='auth/requires-recent-login'){
+        try{
+          const { deleteUser } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+          await reauthThen(provider, ()=>deleteUser(wb.auth.currentUser));
+          return true;
+        }catch(e2){ console.error('web reauth+delete:', e2); return false; }
+      }
+      console.error('web deleteUser:', e);
+      return false;
+    }
+  }
+  return true; // لا توجد طبقة Firebase أصلاً (دخول بالاسم)
+}
+
 async function confirmDeleteAccount(){
-  const ok=confirm('سيتم حذف جميع بياناتك المحلية (نقاط، إنجازات، إعدادات) بشكل نهائي. هل أنت متأكد؟');
+  const ok=confirm('سيتم حذف حسابك نهائياً من النظام مع جميع بياناتك (نقاط، إنجازات، إعدادات، اشتراك). لا يمكن التراجع. هل أنت متأكد؟');
   if(!ok) return;
-  // حذف localStorage
+  const uid = storeGet('authUid','');
+  const provider = storeGet('authProvider','');
+  // 1) حذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login)
+  if(provider==='apple' || provider==='google'){
+    const deleted = await deleteFirebaseUser();
+    if(!deleted){
+      showToast('⚠️','تعذّر حذف الحساب','يلزم إعادة تسجيل الدخول ثم المحاولة مرة أخرى',false);
+      return; // لا نمسح البيانات إن فشل حذف الحساب الفعلي
+    }
+  }
+  // 2) حذف سجل الاشتراك من الخادم
+  if(uid){
+    try{
+      await fetch('/api/account/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid})});
+    }catch(e){ console.error('server delete:', e); }
+  }
+  // 3) حذف localStorage
   const keys=Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX));
   keys.forEach(k=>localStorage.removeItem(k));
-  // حذف Capacitor Preferences
+  // 4) حذف Capacitor Preferences
   try{
     const P=window.Capacitor?.Plugins?.Preferences;
     if(P) await P.clear();
   }catch(e){}
-  // إلغاء ربط حساب Firebase إن وجد
+  // 5) تسجيل خروج احتياطي (في حال بقيت جلسة)
   try{
     const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
     if(FA) await FA.signOut();
   }catch(e){}
   // إعادة التهيئة
   stats={games:0,correct:0,totalQ:0,bestScore:0,wins:0,ach:{}};
-  showToast('✅','تم حذف بياناتك','جميع البيانات المحلية محذوفة',false);
+  showToast('✅','تم حذف حسابك','حُذف الحساب وجميع البيانات نهائياً',false);
   setTimeout(()=>go('s-auth'),1500);
 }
 
