@@ -368,6 +368,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     to{filter:drop-shadow(0 0 34px rgba(255,45,108,.65)) drop-shadow(0 0 90px rgba(255,45,108,.34));}
   }
 }
+
+/* ===== شاشة التعليم الأولى (onboarding) ===== */
+#s-onb{display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding-top:calc(env(safe-area-inset-top)+12px);}
+#s-onb.active{display:flex;}
+.onb-dots{display:flex; gap:8px; margin-bottom:28px;}
+.onb-dot{width:8px; height:8px; border-radius:50%; background:var(--line2); transition:all .3s;}
+.onb-dot.active{width:24px; border-radius:4px; background:var(--gold);}
+.onb-card-wrap{width:100%; max-width:340px; position:relative; min-height:340px;}
+.onb-card{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; opacity:0; transform:translateX(40px); transition:opacity .4s, transform .4s; pointer-events:none;}
+.onb-card.active{opacity:1; transform:none; pointer-events:auto;}
+.onb-card.out{opacity:0; transform:translateX(-40px);}
+.onb-art{width:220px; height:170px; margin-bottom:20px; filter:drop-shadow(0 8px 24px rgba(255,210,75,.18));}
+.onb-title{font-size:22px; font-weight:900; color:var(--ink); text-align:center; margin-bottom:10px; letter-spacing:.3px;}
+.onb-desc{font-size:15px; color:var(--muted); text-align:center; line-height:1.7; max-width:280px;}
+.onb-actions{width:100%; max-width:340px; margin-top:28px;}
 </style>
 </head>
 <body>
@@ -488,6 +503,112 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       </nav>
     </div>
   </section>
+
+  <!-- شاشة التعليم الأولى -->
+  <section class="screen" id="s-onb">
+    <div class="onb-dots" id="onb-dots">
+      <span class="onb-dot active"></span>
+      <span class="onb-dot"></span>
+      <span class="onb-dot"></span>
+    </div>
+    <div class="onb-card-wrap" id="onb-cards">
+
+      <!-- بطاقة ١: اختر فئاتك -->
+      <div class="onb-card active" id="onb-card-0">
+        <svg class="onb-art" viewBox="0 0 220 170" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="og1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FFD24B" stop-opacity=".12"/><stop offset="100%" stop-color="#FFD24B" stop-opacity="0"/></radialGradient>
+          </defs>
+          <ellipse cx="110" cy="85" rx="90" ry="72" fill="url(#og1)"/>
+          <!-- بطاقة ١ — ذهبية (نجمة) -->
+          <rect x="16" y="18" width="84" height="64" rx="13" fill="#2E1A57" stroke="#FFD24B" stroke-width="1.8"/>
+          <polygon points="58,30 61.8,41.6 74,41.6 64.1,48.4 67.9,60 58,53.2 48.1,60 51.9,48.4 42,41.6 54.2,41.6" fill="#FFD24B"/>
+          <!-- بطاقة ٢ — بنفسجية (برق) -->
+          <rect x="120" y="18" width="84" height="64" rx="13" fill="#2E1A57" stroke="#B794FF" stroke-width="1.8"/>
+          <polygon points="168,26 156,50 164,50 152,74 170,46 161,46" fill="#B794FF"/>
+          <!-- بطاقة ٣ — وردية (كرة) -->
+          <rect x="16" y="94" width="84" height="64" rx="13" fill="#2E1A57" stroke="#FF3D71" stroke-width="1.8"/>
+          <circle cx="58" cy="126" r="20" fill="none" stroke="#FF3D71" stroke-width="2"/>
+          <path d="M58 106 Q72 118 66 134 Q58 140 50 134 Q44 118 58 106Z" fill="none" stroke="#FF3D71" stroke-width="1.4"/>
+          <line x1="38" y1="120" x2="78" y2="120" stroke="#FF3D71" stroke-width="1.4"/>
+          <!-- بطاقة ٤ — زرقاء (فيلم) -->
+          <rect x="120" y="94" width="84" height="64" rx="13" fill="#2E1A57" stroke="#4FE3C4" stroke-width="1.8"/>
+          <rect x="146" y="112" width="32" height="26" rx="5" fill="none" stroke="#4FE3C4" stroke-width="2"/>
+          <polygon points="178,125 192,118 192,132" fill="#4FE3C4"/>
+          <line x1="152" y1="112" x2="152" y2="138" stroke="#4FE3C4" stroke-width="1.4"/>
+          <line x1="160" y1="112" x2="160" y2="138" stroke="#4FE3C4" stroke-width="1.4"/>
+          <line x1="168" y1="112" x2="168" y2="138" stroke="#4FE3C4" stroke-width="1.4"/>
+        </svg>
+        <div class="onb-title">اختر فئاتك</div>
+        <div class="onb-desc">أكثر من ٣٠ فئة — رياضة وأفلام وتاريخ وعلوم وأكثر</div>
+      </div>
+
+      <!-- بطاقة ٢: أجب وتحدّى -->
+      <div class="onb-card" id="onb-card-1">
+        <svg class="onb-art" viewBox="0 0 220 170" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="og2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FF3D71" stop-opacity=".1"/><stop offset="100%" stop-color="#FF3D71" stop-opacity="0"/></radialGradient>
+          </defs>
+          <ellipse cx="110" cy="85" rx="90" ry="72" fill="url(#og2)"/>
+          <!-- فريق ١ -->
+          <circle cx="42" cy="70" r="26" fill="#2E1A57" stroke="#B794FF" stroke-width="2"/>
+          <circle cx="42" cy="60" r="10" fill="#B794FF" opacity=".85"/>
+          <path d="M20,96 Q42,82 64,96" fill="#B794FF" opacity=".5"/>
+          <!-- سحابة سؤال — يسار -->
+          <rect x="72" y="28" width="76" height="46" rx="12" fill="#241546" stroke="#FFD24B" stroke-width="2"/>
+          <polygon points="82,74 76,88 96,74" fill="#241546" stroke="#FFD24B" stroke-width="1.5" stroke-linejoin="round"/>
+          <!-- علامة استفهام -->
+          <text x="110" y="62" font-size="28" font-weight="900" text-anchor="middle" fill="#FFD24B" font-family="Tajawal,sans-serif">؟</text>
+          <!-- فريق ٢ -->
+          <circle cx="178" cy="70" r="26" fill="#2E1A57" stroke="#4FE3C4" stroke-width="2"/>
+          <circle cx="178" cy="60" r="10" fill="#4FE3C4" opacity=".85"/>
+          <path d="M156,96 Q178,82 200,96" fill="#4FE3C4" opacity=".5"/>
+          <!-- سهم سرقة -->
+          <path d="M78,115 Q110,100 142,115" fill="none" stroke="#FF3D71" stroke-width="2" stroke-dasharray="5,4"/>
+          <polygon points="142,115 134,108 136,120" fill="#FF3D71"/>
+          <text x="110" y="138" font-size="11" text-anchor="middle" fill="#FF3D71" font-family="Tajawal,sans-serif">إجابة خاطئة = سرقة!</text>
+        </svg>
+        <div class="onb-title">أجب وتحدّى</div>
+        <div class="onb-desc">فريق يسأل والآخر يجيب — إجابة خاطئة تفتح السرقة للخصم</div>
+      </div>
+
+      <!-- بطاقة ٣: الفائز يتوّج -->
+      <div class="onb-card" id="onb-card-2">
+        <svg class="onb-art" viewBox="0 0 220 170" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="og3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FFD24B" stop-opacity=".15"/><stop offset="100%" stop-color="#FFD24B" stop-opacity="0"/></radialGradient>
+            <linearGradient id="tg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFD24B"/><stop offset="100%" stop-color="#FF9500"/></linearGradient>
+          </defs>
+          <ellipse cx="110" cy="95" rx="80" ry="60" fill="url(#og3)"/>
+          <!-- نجوم -->
+          <polygon points="42,38 44.5,45.5 52,45.5 46.2,50 48.7,57.5 42,53 35.3,57.5 37.8,50 32,45.5 39.5,45.5" fill="#FFD24B" opacity=".6"/>
+          <polygon points="178,28 180,34.2 186.5,34.2 181.5,38.2 183.5,44.4 178,40.8 172.5,44.4 174.5,38.2 169.5,34.2 176,34.2" fill="#FFD24B" opacity=".8"/>
+          <polygon points="110,18 111.6,23.2 117,23.2 112.8,26.3 114.4,31.5 110,28.4 105.6,31.5 107.2,26.3 103,23.2 108.4,23.2" fill="#FFD24B"/>
+          <!-- كأس -->
+          <path d="M78,50 L78,95 Q78,110 110,110 Q142,110 142,95 L142,50 Z" fill="url(#tg)"/>
+          <path d="M78,50 Q62,50 62,68 Q62,84 82,88" fill="none" stroke="#FFD24B" stroke-width="4" stroke-linecap="round"/>
+          <path d="M142,50 Q158,50 158,68 Q158,84 138,88" fill="none" stroke="#FFD24B" stroke-width="4" stroke-linecap="round"/>
+          <rect x="100" y="110" width="20" height="14" fill="#FF9500"/>
+          <rect x="86" y="124" width="48" height="10" rx="4" fill="#FF9500"/>
+          <!-- منصة -->
+          <rect x="64" y="134" width="34" height="22" rx="4" fill="#B794FF" opacity=".7"/>
+          <rect x="93" y="127" width="34" height="29" rx="4" fill="#FFD24B" opacity=".85"/>
+          <rect x="122" y="140" width="34" height="16" rx="4" fill="#4FE3C4" opacity=".7"/>
+          <text x="81" y="150" font-size="11" text-anchor="middle" fill="#fff" font-weight="700" font-family="Tajawal,sans-serif">٢</text>
+          <text x="110" y="148" font-size="12" text-anchor="middle" fill="#1B1035" font-weight="900" font-family="Tajawal,sans-serif">١</text>
+          <text x="139" y="153" font-size="11" text-anchor="middle" fill="#fff" font-weight="700" font-family="Tajawal,sans-serif">٣</text>
+        </svg>
+        <div class="onb-title">الفائز يتوّج</div>
+        <div class="onb-desc">أعلى نقاط في نهاية الجولة يفوز — كن الأفطن في المجلس!</div>
+      </div>
+
+    </div><!-- /onb-cards -->
+    <div class="onb-actions">
+      <button class="btn btn-primary btn-block" id="onb-next-btn" onclick="onbNext()">التالي</button>
+      <button class="btn btn-ghost btn-block" onclick="onbFinish()">تخطّى</button>
+    </div>
+  </section>
+
 
   <!-- الرئيسية -->
   <section class="screen active" id="s-home">
@@ -1141,6 +1262,7 @@ function afterAuthSuccess(name, provider, uid, email){
   renderAccountLinks();
   const target = window._authReturnScreen || 's-home';
   if(target==='s-stats'){ go('s-stats'); }
+  else if(!storeGet('onbDone', false)){ _onbStep=0; _onbSetStep(0); go('s-onb'); }
   else { checkSubscriptionAndRoute(window._currentUid); }
 }
 
@@ -1428,6 +1550,38 @@ async function emailAuth(mode){
       msg.style.color='#ff8a8a'; msg.textContent='تعذّر إكمال العملية — حاول مرة أخرى';
     }
   }
+
+// ===== شاشة التعليم الأولى (onboarding) =====
+let _onbStep = 0;
+const _ONB_TOTAL = 3;
+function _onbSetStep(step){
+  // تحديث الأزرار
+  document.getElementById('onb-next-btn').textContent = (step === _ONB_TOTAL - 1) ? 'ابدأ اللعب 🎯' : 'التالي';
+  // تحديث النقاط
+  document.querySelectorAll('.onb-dot').forEach((d,i)=>{
+    d.classList.toggle('active', i===step);
+  });
+  // تحريك البطاقات
+  for(let i=0; i<_ONB_TOTAL; i++){
+    const c = document.getElementById('onb-card-'+i);
+    c.classList.remove('active','out');
+    if(i===step) c.classList.add('active');
+    else if(i<step) c.classList.add('out');
+  }
+}
+function onbNext(){
+  sfx('tap');
+  if(_onbStep < _ONB_TOTAL - 1){
+    _onbStep++;
+    _onbSetStep(_onbStep);
+  } else {
+    onbFinish();
+  }
+}
+function onbFinish(){
+  sfx('tap');
+  storeSet('onbDone', true);
+  checkSubscriptionAndRoute(storeGet('authUid',''));
 }
 
 // ────────── RevenueCat — Apple IAP
