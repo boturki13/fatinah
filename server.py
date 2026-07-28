@@ -455,97 +455,17 @@ class Handler(BaseHTTPRequestHandler):
             if not uid:
                 self.send_json(400, {'error': 'uid مطلوب'}); return
             conn = sqlite3.connect(DB_PATH)
+
             row  = conn.execute('SELECT status FROM subscriptions WHERE uid=?', (uid,)).fetchone()
+
             conn.close()
+
             active = bool(row and row[0] == 'active')
-            self.send_json(200, {'active': active})
 
-        elif path in ('/', '/index.html'):
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+
             body = read_html()
-            self.send_response(200)
-            self.send_header('Content-Type',   'text/html; charset=utf-8')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
 
-        elif path in ('/favicon.ico', '/apple-touch-icon.png', '/og-image.png'):
-            fname = path.lstrip('/')
-            ctype = 'image/x-icon' if fname.endswith('.ico') else 'image/png'
-            try:
-                with open(os.path.join(os.path.dirname(__file__), fname), 'rb') as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', ctype)
-                self.send_header('Content-Length', str(len(body)))
-                self.send_header('Cache-Control', 'public, max-age=86400')
-                self.end_headers()
-                self.wfile.write(body)
-            except FileNotFoundError:
-                self.send_response(404); self.end_headers()
-
-        elif path.startswith('/legal/img/'):
-            fname = path[len('/legal/img/'):]
-            ctype = ('image/x-icon' if fname.endswith('.ico')
-                     else 'image/svg+xml' if fname.endswith('.svg')
-                     else 'image/png')
-            try:
-                with open(os.path.join(os.path.dirname(__file__), 'legal', 'img', fname), 'rb') as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', ctype)
-                self.send_header('Content-Length', str(len(body)))
-                self.send_header('Cache-Control', 'public, max-age=86400')
-                self.end_headers()
-                self.wfile.write(body)
-            except FileNotFoundError:
-                self.send_response(404); self.end_headers()
-
-        elif path in ('/privacy', '/terms', '/legal', '/legal/', '/legal/index.html',
-                      '/legal/privacy.html', '/legal/terms.html', '/legal/styles.css', '/robots.txt'):
-            fname = {
-                '/privacy': 'privacy.html', '/terms': 'terms.html',
-                '/legal': 'index.html', '/legal/': 'index.html', '/legal/index.html': 'index.html',
-                '/legal/privacy.html': 'privacy.html', '/legal/terms.html': 'terms.html',
-                '/legal/styles.css': 'styles.css', '/robots.txt': 'robots.txt',
-            }[path]
-            ctype = ('text/css; charset=utf-8' if fname.endswith('.css')
-                     else 'text/plain; charset=utf-8' if fname.endswith('.txt')
-                     else 'text/html; charset=utf-8')
-            try:
-                with open(os.path.join(os.path.dirname(__file__), 'legal', fname), 'rb') as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', ctype)
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            except FileNotFoundError:
-                self.send_response(404); self.end_headers()
-
-        elif path == '/admin/promo':
-            try:
-                with open(os.path.join(os.path.dirname(__file__), 'admin_promo.html'), 'rb') as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', 'text/html; charset=utf-8')
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            except FileNotFoundError:
-                self.send_response(404); self.end_headers()
-            return
-
-        elif path == '/download/index.html':
-            with open(HTML_FILE, 'rb') as f:
-                body = f.read()
-            self.send_response(200)
-            self.send_header('Content-Type',        'application/octet-stream')
-            self.send_header('Content-Disposition', 'attachment; filename="index.html"')
-            self.send_header('Content-Length',      str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-
-        else:
             self.send_response(404); self.end_headers()
 
     # حدود حجم body لكل نقطة POST — تُعيد 413 مبكراً قبل قراءة البيانات
@@ -572,350 +492,19 @@ class Handler(BaseHTTPRequestHandler):
 
         # ─── AI generate ────────────────────────────────────────────────────
         if path == '/api/generate':
-            try:   data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
 
-            topic = (data.get('topic') or '').strip()
-            try:    count = min(max(int(data.get('count', 6)), 1), 30)
-            except Exception: count = 6
-            seen  = data.get('seen') or []          # قائمة معرّفات الأسئلة التي شاهدها اللاعب
-            if not topic: self.send_json(400, {'error': 'topic مطلوب'}); return
-            if not isinstance(seen, list): seen = []
-            seen = [int(s) for s in seen if str(s).isdigit()][:5000]
+            self.send_header('Content-Length',      str(len(body)))
 
-            tnorm = normalize_topic(topic)
-            conn  = db_connect()
+            self.end_headers()
 
-            def fetch_unseen(limit):
-                if seen:
-                    ph = ','.join('?' * len(seen))
-                    rows = conn.execute(
-                        f'SELECT id,q,answer FROM question_bank WHERE topic_norm=? AND id NOT IN ({ph}) ORDER BY RANDOM() LIMIT ?',
-                        [tnorm, *seen, limit]).fetchall()
-                else:
-                    rows = conn.execute(
-                        'SELECT id,q,answer FROM question_bank WHERE topic_norm=? ORDER BY RANDOM() LIMIT ?',
-                        (tnorm, limit)).fetchall()
-                return [{'id': r[0], 'q': r[1], 'answer': r[2]} for r in rows]
+            self.wfile.write(body)
 
-            try:
-                # 1) جرّب البنك أولاً — صفر توكن
-                result = fetch_unseen(count)
+        else:
 
-                # 2) إن لم يكفِ، ولّد دفعة كبيرة (30) وخزّنها ثم أعد المحاولة
-                if len(result) < count:
-                    questions, err = call_claude(topic, 30)
-                    if err and not result:
-                        self.send_json(502, {'error': err}); return
-                    for q in (questions or []):
-                        try:
-                            conn.execute('INSERT OR IGNORE INTO question_bank(topic_norm,q,answer) VALUES(?,?,?)',
-                                         (tnorm, q['q'].strip(), q['answer'].strip()))
-                        except Exception:
-                            pass
-                    try: conn.commit()
-                    except sqlite3.OperationalError: pass  # قفل مؤقت — الأسئلة المولّدة تُعاد للاعب على أي حال
-                    result = fetch_unseen(count)
-                self.send_json(200, {'questions': result, 'from_bank': True})
-            except sqlite3.OperationalError:
-                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
-            finally:
-                conn.close()
+            fname = path.lstrip('/')
 
-        # ─── حذف الحساب: إزالة كل بيانات المستخدم المرتبطة بالـ uid ──────────
-        elif path == '/api/account/delete':
-            try:   data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            ctype = 'image/x-icon' if fname.endswith('.ico') else 'image/png'
 
-            uid      = (data.get('uid')     or '').strip()
-            id_token = (data.get('idToken') or '').strip()
-            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
-
-            # تحقّق من هوية الطالب — يمنع حذف حساب شخص آخر (بديل Firestore Rules)
-            if not uid_matches_token(uid, id_token):
-                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
-
-            try:
-                conn = db_connect()
-                cur  = conn.execute('DELETE FROM subscriptions WHERE uid=?', (uid,))
-                conn.execute('DELETE FROM promo_redemptions WHERE uid=?', (uid,))
-                conn.commit()
-                deleted = cur.rowcount
-                conn.close()
-                self.send_json(200, {'ok': True, 'deleted': deleted})
-            except sqlite3.OperationalError:
-                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
-
-        # ─── حفظ بيانات الملف الشخصي بشكل دائم (خصوصاً بريد/اسم Apple الذي
-        # لا يُرسَل إلا مرة واحدة عند أول تفويض) ─────────────────────────────
-        elif path == '/api/account/profile':
-            try:   data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
-
-            uid      = (data.get('uid')     or '').strip()
-            name     = (data.get('name')    or '').strip()[:60]
-            email    = (data.get('email')   or '').strip()[:200]
-            provider = (data.get('provider') or '').strip()[:30]
-            id_token = (data.get('idToken') or '').strip()
-            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
-
-            if not uid_matches_token(uid, id_token):
-                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
-
-            try:
-                conn = db_connect()
-                conn.execute('''
-                    INSERT INTO subscriptions (uid, email, display_name, auth_provider)
-                    VALUES (?,?,?,?)
-                    ON CONFLICT(uid) DO UPDATE SET
-                        email        = CASE WHEN excluded.email        != '' THEN excluded.email        ELSE subscriptions.email END,
-                        display_name = CASE WHEN excluded.display_name != '' THEN excluded.display_name ELSE subscriptions.display_name END,
-                        auth_provider= CASE WHEN excluded.auth_provider!= '' THEN excluded.auth_provider ELSE subscriptions.auth_provider END
-                ''', (uid, email, name, provider))
-                conn.commit()
-                conn.close()
-                self.send_json(200, {'ok': True})
-            except sqlite3.OperationalError:
-                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
-
-        # ─── Stripe: إنشاء جلسة دفع ─────────────────────────────────────────
-        elif path == '/api/stripe/create-checkout':
-            try:   data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
-
-            uid   = (data.get('uid')   or '').strip()
-            email = (data.get('email') or '').strip()
-            plan  = (data.get('plan')  or 'monthly').strip()  # 'monthly' أو 'annual'
-            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
-
-            secret_key, _ = get_stripe_keys()
-            if not secret_key:
-                self.send_json(503, {'error': 'Stripe غير متاح'}); return
-
-            try:
-                # ابحث عن سعر المنتج المناسب (شهري أو سنوي)
-                products = stripe_request('GET',
-                    'products/search?query=name%3A%22%D9%81%D8%B7%D9%86%D8%A9%22%20AND%20active%3A%22true%22',
-                    secret_key=secret_key)
-                price_id = None
-                target_interval = 'year' if plan == 'annual' else 'month'
-                for prod in products.get('data', []):
-                    prices = stripe_request('GET', f'prices?product={prod["id"]}&active=true&limit=10',
-                                            secret_key=secret_key)
-                    for p in prices.get('data', []):
-                        if (p.get('recurring') or {}).get('interval') == target_interval:
-                            price_id = p['id']
-                            break
-                    if price_id:
-                        break
-                # fallback: أول سعر متاح
-                if not price_id:
-                    for prod in products.get('data', []):
-                        prices = stripe_request('GET', f'prices?product={prod["id"]}&active=true&limit=1',
-                                                secret_key=secret_key)
-                        if prices.get('data'):
-                            price_id = prices['data'][0]['id']
-                            break
-
-                if not price_id:
-                    self.send_json(503, {'error': 'المنتج غير موجود — شغّل setup_stripe.py أولاً'}); return
-
-                # أنشئ أو احضر customer
-                conn = sqlite3.connect(DB_PATH)
-                row  = conn.execute('SELECT stripe_customer_id FROM subscriptions WHERE uid=?', (uid,)).fetchone()
-                conn.close()
-                customer_id = row[0] if row and row[0] else None
-
-                if not customer_id:
-                    cust_data = {'metadata[uid]': uid}
-                    if email: cust_data['email'] = email
-                    cust = stripe_request('POST', 'customers', cust_data, secret_key)
-                    customer_id = cust['id']
-                    conn = sqlite3.connect(DB_PATH)
-                    conn.execute('''INSERT OR REPLACE INTO subscriptions
-                        (uid, email, stripe_customer_id, status) VALUES (?,?,?,'inactive')''',
-                        (uid, email, customer_id))
-                    conn.commit(); conn.close()
-
-                domain   = (os.environ.get('REPLIT_DOMAINS') or '').split(',')[0].strip()
-                base_url = f'https://{domain}' if domain else 'http://localhost:5000'
-
-                session_data = {
-                    'customer':                   customer_id,
-                    'payment_method_types[]':     'card',
-                    'line_items[0][price]':       price_id,
-                    'line_items[0][quantity]':    '1',
-                    'mode':                       'subscription',
-                    'success_url':                f'{base_url}/?subscribed=1&uid={urllib.parse.quote(uid)}',
-                    'cancel_url':                 f'{base_url}/?canceled=1',
-                    'metadata[uid]':              uid,
-                    'locale':                     'ar',
-                }
-                session = stripe_request('POST', 'checkout/sessions', session_data, secret_key)
-                self.send_json(200, {'url': session['url']})
-
-            except Exception as e:
-                self.send_json(500, {'error': str(e)})
-
-        # ─── Stripe Webhook ──────────────────────────────────────────────────
-        elif path == '/api/stripe/webhook':
-            signature = self.headers.get('Stripe-Signature', '')
-            secret_key, webhook_secret = get_stripe_keys()
-            if not secret_key:
-                self.send_json(503, {'error': 'Stripe غير متاح'}); return
-
-            # نرفض أي webhook بدون توقيع مُتحقَّق — نمنع استقبال أحداث مزوّرة
-            if not webhook_secret:
-                self.send_json(400, {'error': 'Webhook secret غير مهيَّأ'}); return
-            if not signature:
-                self.send_json(400, {'error': 'Stripe-Signature مفقود'}); return
-
-            # التحقق من توقيع Stripe عبر HMAC-SHA256 (بدون مكتبة stripe الخارجية)
-            try:
-                import hmac, hashlib, time as _time
-                parts = {p.split('=',1)[0]: p.split('=',1)[1] for p in signature.split(',') if '=' in p}
-                ts = parts.get('t','')
-                v1 = parts.get('v1','')
-                if not ts or not v1:
-                    raise ValueError('signature malformed')
-                # منع replay attacks: نرفض الطلبات الأقدم من 5 دقائق
-                if abs(_time.time() - float(ts)) > 300:
-                    raise ValueError('timestamp too old')
-                payload  = f'{ts}.'.encode() + (body if isinstance(body, bytes) else body.encode())
-                expected = hmac.new(webhook_secret.encode(), payload, hashlib.sha256).hexdigest()
-                if not hmac.compare_digest(expected, v1):
-                    raise ValueError('signature mismatch')
-                event = json.loads(body)
-            except Exception as e:
-                self.send_json(400, {'error': f'Webhook signature invalid: {e}'}); return
-
-            etype = event.get('type', '')
-            obj   = (event.get('data') or {}).get('object', {})
-
-            conn = sqlite3.connect(DB_PATH)
-            firestore_args = None   # (uid, status, cid, sid)
-            try:
-                if etype in ('customer.subscription.created', 'customer.subscription.updated'):
-                    cid    = obj.get('customer') if isinstance(obj, dict) else getattr(obj, 'customer', None)
-                    status = obj.get('status')   if isinstance(obj, dict) else getattr(obj, 'status', None)
-                    sid    = obj.get('id')        if isinstance(obj, dict) else getattr(obj, 'id', None)
-                    active = 'active' if status in ('active', 'trialing') else (status or 'inactive')
-                    conn.execute('''UPDATE subscriptions
-                        SET stripe_subscription_id=?, status=?, updated_at=CURRENT_TIMESTAMP
-                        WHERE stripe_customer_id=?''', (sid, active, cid))
-                    # احضر uid من SQLite لتمريره لـ Firestore
-                    row = conn.execute('SELECT uid FROM subscriptions WHERE stripe_customer_id=?', (cid,)).fetchone()
-                    if row:
-                        firestore_args = (row[0], active, cid, sid)
-
-                elif etype == 'customer.subscription.deleted':
-                    cid = obj.get('customer') if isinstance(obj, dict) else getattr(obj, 'customer', None)
-                    conn.execute('''UPDATE subscriptions SET status='canceled', updated_at=CURRENT_TIMESTAMP
-                        WHERE stripe_customer_id=?''', (cid,))
-                    row = conn.execute('SELECT uid FROM subscriptions WHERE stripe_customer_id=?', (cid,)).fetchone()
-                    if row:
-                        firestore_args = (row[0], 'canceled', cid, None)
-
-                elif etype == 'checkout.session.completed':
-                    uid = (obj.get('metadata') or {}).get('uid') if isinstance(obj, dict) else \
-                          getattr(getattr(obj, 'metadata', None) or type('', (), {})(), 'uid', None)
-                    cid = obj.get('customer') if isinstance(obj, dict) else getattr(obj, 'customer', None)
-                    if uid:
-                        conn.execute('''INSERT INTO subscriptions (uid, stripe_customer_id, status)
-                            VALUES (?,?,'active')
-                            ON CONFLICT(uid) DO UPDATE SET
-                            stripe_customer_id=excluded.stripe_customer_id,
-                            status='active', updated_at=CURRENT_TIMESTAMP''', (uid, cid))
-                        firestore_args = (uid, 'active', cid, None)
-                conn.commit()
-            finally:
-                conn.close()
-
-            # تحديث Firestore بعد COMMIT — نُعيد 502 إذا فشل حتى تُعيد Stripe المحاولة.
-            # العملية في SQLite آمنة (idempotent) فلا ضرر من إعادة تشغيل الـ webhook.
-            event_id = event.get('id', 'unknown')
-            if firestore_args:
-                fs_ok = firestore_upsert_subscription(*firestore_args)
-                if not fs_ok:
-                    print(f'[Stripe→Firestore] فشل التحديث — event_id={event_id}'
-                          f' uid={firestore_args[0]} status={firestore_args[1]}')
-                    self.send_json(502, {
-                        'error':    'Firestore sync failed — Stripe will retry',
-                        'event_id': event_id,
-                    }); return
-
-            self.send_json(200, {'received': True})
-
-        # ─── Promo: تحقق من كود مكافأة ──────────────────────────────────────
-        elif path == '/api/promo/redeem':
-            try:   data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
-            code = (data.get('code') or '').strip().upper()
-            uid  = (data.get('uid')  or '').strip()
-            if not code or not uid:
-                self.send_json(400, {'error': 'code و uid مطلوبان'}); return
-            conn = db_connect()
-            try:
-                # هل الكود موجود وفعّال؟
-                row = conn.execute(
-                    'SELECT days, max_uses, used_count, active FROM promo_codes WHERE code=?',
-                    (code,)).fetchone()
-                if not row:
-                    self.send_json(404, {'error': 'الكود غير صحيح'}); return
-                days, max_uses, used_count, active = row
-                if not active:
-                    self.send_json(403, {'error': 'هذا الكود غير فعّال'}); return
-                if max_uses is not None and used_count >= max_uses:
-                    self.send_json(403, {'error': 'انتهى الحد الأقصى لاستخدامات هذا الكود'}); return
-                # هل هذا المستخدم استخدمه من قبل ولسه ساري؟
-                existing = conn.execute(
-                    "SELECT expires_at FROM promo_redemptions WHERE uid=? AND code=? AND expires_at > datetime('now')",
-                    (uid, code)).fetchone()
-                if existing:
-                    self.send_json(200, {'ok': True, 'expires_at': existing[0], 'already': True}); return
-                # سجّل الاستخدام
-                conn.execute(
-                    "INSERT OR REPLACE INTO promo_redemptions (uid, code, expires_at) VALUES (?,?, datetime('now','+'||?||' days'))",
-                    (uid, code, days))
-                conn.execute(
-                    'UPDATE promo_codes SET used_count=used_count+1 WHERE code=?', (code,))
-                conn.commit()
-                expires_row = conn.execute(
-                    'SELECT expires_at FROM promo_redemptions WHERE uid=? AND code=?', (uid, code)).fetchone()
-                self.send_json(200, {'ok': True, 'expires_at': expires_row[0], 'days': days})
-            except Exception as e:
-                self.send_json(500, {'error': str(e)})
-            finally:
-                conn.close()
-
-        # ─── Promo: فحص حالة المستخدم ────────────────────────────────────────
-        elif path.startswith('/api/promo/status'):
-            from urllib.parse import urlparse, parse_qs
-            qs  = parse_qs(urlparse(self.path).query)
-            uid = (qs.get('uid', [''])[0]).strip()
-            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
-            conn = db_connect()
-            try:
-                row = conn.execute(
-                    "SELECT expires_at FROM promo_redemptions WHERE uid=? AND expires_at > datetime('now') ORDER BY expires_at DESC LIMIT 1",
-                    (uid,)).fetchone()
-                if row:
-                    self.send_json(200, {'active': True,  'expires_at': row[0]})
-                else:
-                    self.send_json(200, {'active': False, 'expires_at': None})
-            finally:
-                conn.close()
-
-        # ─── Promo: إدارة الأكواد (Admin) ────────────────────────────────────
-        elif path == '/api/promo/admin':
-            admin_secret = os.environ.get('ADMIN_SECRET', '')
-            auth_header  = self.headers.get('X-Admin-Secret', '')
-            if not admin_secret or auth_header != admin_secret:
-                self.send_json(403, {'error': 'غير مصرح'}); return
-            try:   data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
-            action = data.get('action', '')
-            conn = db_connect()
             try:
                 if action == 'create':
                     code     = (data.get('code') or '').strip().upper()
@@ -948,42 +537,119 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json(200, {'ok': True})
                 else:
                     self.send_json(400, {'error': 'action غير معروف'})
+
             except Exception as e:
                 self.send_json(500, {'error': str(e)})
+
+            fname = path[len('/legal/img/'):]
+
+            ctype = ('text/css; charset=utf-8' if fname.endswith('.css')
+                     else 'text/plain; charset=utf-8' if fname.endswith('.txt')
+                     else 'text/html; charset=utf-8')
+
+            fname = {
+                '/privacy': 'privacy.html', '/terms': 'terms.html',
+                '/legal': 'index.html', '/legal/': 'index.html', '/legal/index.html': 'index.html',
+                '/legal/privacy.html': 'privacy.html', '/legal/terms.html': 'terms.html',
+                '/legal/styles.css': 'styles.css', '/robots.txt': 'robots.txt',
+
+            }[path]
+
+            return
+
+        elif path == '/api/admin/db-status':
+
+            event_id    = edata.get('id', 'unknown')
+
+            if auth_val != rc_secret:
+                self.send_json(401, {'error': 'Unauthorized'}); return
+
+            })
+
+        elif path == '/download/index.html':
+
+            with open(HTML_FILE, 'rb') as f:
+                body = f.read()
+
+            try:   event = json.loads(body)
+
+            topic = (data.get('topic') or '').strip()
+
+            try:    count = min(max(int(data.get('count', 6)), 1), 30)
+
+            if not isinstance(seen, list): seen = []
+
+            seen = [int(s) for s in seen if str(s).isdigit()][:5000]
+
+            tnorm = normalize_topic(topic)
+
+            conn = db_connect()
+
+            def fetch_unseen(limit):
+                if seen:
+                    ph = ','.join('?' * len(seen))
+                    rows = conn.execute(
+                        f'SELECT id,q,answer FROM question_bank WHERE topic_norm=? AND id NOT IN ({ph}) ORDER BY RANDOM() LIMIT ?',
+                        [tnorm, *seen, limit]).fetchall()
+                else:
+                    rows = conn.execute(
+                        'SELECT id,q,answer FROM question_bank WHERE topic_norm=? ORDER BY RANDOM() LIMIT ?',
+                        (tnorm, limit)).fetchall()
+                return [{'id': r[0], 'q': r[1], 'answer': r[2]} for r in rows]
+
             finally:
                 conn.close()
 
         # ─── RevenueCat Webhook ──────────────────────────────────────────────
         elif path == '/api/revenuecat/webhook':
             # المصادقة: يُرفض الطلب إذا لم يُهيَّأ السر أو لم يطابق
-            rc_secret = os.environ.get('REVENUECAT_WEBHOOK_SECRET', '')
-            if not rc_secret:
-                print('[RevenueCat] REVENUECAT_WEBHOOK_SECRET غير مهيَّأ — الـ endpoint معطَّل')
-                self.send_json(503, {'error': 'Webhook غير مهيَّأ — تواصل مع المسؤول'}); return
-            auth_val = self.headers.get('Authorization', '')
-            if auth_val != rc_secret:
-                self.send_json(401, {'error': 'Unauthorized'}); return
 
-            try:   event = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            uid = (qs.get('uid', [''])[0]).strip()
 
-            edata       = event.get('event') or {}
+            id_token = (data.get('idToken') or '').strip()
+
+            if not uid_matches_token(uid, id_token):
+                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
+
+            name     = (data.get('name')    or '').strip()[:60]
+
+            email = (data.get('email') or '').strip()
+
+            provider = (data.get('provider') or '').strip()[:30]
+
+            plan  = (data.get('plan')  or 'monthly').strip()  # 'monthly' أو 'annual'
+
+            secret_key, webhook_secret = get_stripe_keys()
+
+            obj   = (event.get('data') or {}).get('object', {})
+
+            firestore_args = None   # (uid, status, cid, sid)
+
+            code = (data.get('code') or '').strip().upper()
+
+            from urllib.parse import urlparse, parse_qs
+
+            qs  = parse_qs(urlparse(self.path).query)
+
             etype       = (edata.get('type') or '').strip()
-            event_id    = edata.get('id', 'unknown')
+
             app_user_id = (edata.get('app_user_id') or '').strip()
 
             # أحداث تُفعِّل الاشتراك
+
             RC_ACTIVE_EVENTS = {
                 'INITIAL_PURCHASE', 'RENEWAL', 'PRODUCT_CHANGE',
                 'UNCANCELLATION', 'BILLING_ISSUE_RESOLVED',
             }
             # أحداث تُنهي الاشتراك
+
             RC_STATUS_MAP = {
                 'CANCELLATION': 'canceled',
                 'EXPIRATION':   'inactive',
                 'BILLING_ISSUE': 'inactive',
             }
             # أحداث لا تُعبِّر عن تغيير حالة — يجب تجاهلها تماماً
+
             RC_IGNORED_EVENTS = {
                 'SUBSCRIBER_ALIAS', 'TRANSFER', 'TEST',
                 'RC_BILLING_ADDRESS_CHANGE', 'PAUSE',
@@ -1034,9 +700,316 @@ class Handler(BaseHTTPRequestHandler):
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
 
-# ─── تشغيل ───────────────────────────────────────────────────────────────────
-if __name__ == '__main__':
-    init_db()
-    server = ThreadedHTTPServer(('0.0.0.0', PORT), Handler)
-    print(f'فَطِنة تعمل على http://0.0.0.0:{PORT}')
-    server.serve_forever()
+# ─── حالة بدء التشغيل والاستعادة ────────────────────────────────────────────
+import datetime as _dt, threading as _threading
+
+_startup_status = {
+    'started_at':          None,   # ISO timestamp لحظة بدء التشغيل
+    'subscription_count':  0,      # عدد الاشتراكات عند بدء التشغيل
+    'firestore_restore':   None,   # 'ok' | 'failed' | 'skipped' | 'not_configured'
+    'firestore_error':     None,   # رسالة الخطأ إن وُجدت
+    'firestore_restored':  0,      # عدد السجلات المستعادة/متزامنة من Firestore
+    'firestore_source':    0,      # إجمالي السجلات في Firestore وقت الاستعادة
+    'warning':             None,   # تنبيه المشرف إن وُجد
+}
+
+
+def _firestore_get_token():
+    """احصل على access token لـ Firestore REST API عبر Service Account."""
+    sa_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT', '')
+    if not sa_json:
+        return None, 'FIREBASE_SERVICE_ACCOUNT غير محدد'
+    try:
+        import base64 as _b64, time as _time, subprocess, tempfile, os as _os
+        sa = json.loads(sa_json)
+        header    = _b64.urlsafe_b64encode(json.dumps({'alg':'RS256','typ':'JWT'}).encode()).rstrip(b'=')
+        now       = int(_time.time())
+        claim     = _b64.urlsafe_b64encode(json.dumps({
+            'iss':   sa['client_email'],
+            'scope': 'https://www.googleapis.com/auth/datastore',
+            'aud':   'https://oauth2.googleapis.com/token',
+            'iat':   now,
+            'exp':   now + 3600,
+        }).encode()).rstrip(b'=')
+        signing_input = header + b'.' + claim
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pem') as f:
+            f.write(sa['private_key'].encode())
+            pem_path = f.name
+        try:
+            result = subprocess.run(
+                ['openssl', 'dgst', '-sha256', '-sign', pem_path],
+                input=signing_input, capture_output=True)
+            sig = _b64.urlsafe_b64encode(result.stdout).rstrip(b'=')
+        finally:
+            _os.unlink(pem_path)
+        jwt_token = (signing_input + b'.' + sig).decode()
+        post_data = urllib.parse.urlencode({
+            'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            'assertion':  jwt_token,
+        }).encode()
+        req = urllib.request.Request(
+            'https://oauth2.googleapis.com/token',
+            data=post_data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            tok = json.loads(resp.read())
+        return tok.get('access_token'), None
+    except Exception as e:
+        return None, str(e)
+
+def _firestore_fetch_all_docs(project_id, token):
+    """
+    يجلب جميع وثائق مجموعة subscriptions من Firestore مع دعم التصفّح الكامل.
+    يُعيد (list_of_docs, error_message).
+    """
+    base = (f'https://firestore.googleapis.com/v1/projects/{project_id}'
+            f'/databases/(default)/documents/subscriptions')
+    docs       = []
+    page_token = None
+    try:
+        while True:
+            url = base + '?pageSize=300'
+            if page_token:
+                url += f'&pageToken={urllib.parse.quote(page_token)}'
+            req = urllib.request.Request(url, headers={'Authorization': f'Bearer {token}'})
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                data = json.loads(resp.read())
+            docs.extend(data.get('documents') or [])
+            page_token = data.get('nextPageToken')
+            if not page_token:
+                break
+        return docs, None
+    except Exception as e:
+        return docs, f'Firestore fetch error: {e}'
+def try_restore_from_firestore():
+    """
+    يجلب جميع سجلات subscriptions من Firestore (مع تصفّح كامل) ويُدمجها في SQLite.
+    يُعيد (count_upserted, source_total, error_message).
+    """
+    project_id = os.environ.get('FIREBASE_PROJECT_ID', '')
+    if not project_id:
+        return 0, 0, 'FIREBASE_PROJECT_ID غير محدد'
+
+    token, err = _firestore_get_token()
+    if not token:
+        return 0, 0, f'JWT/token error: {err}'
+
+    docs, fetch_err = _firestore_fetch_all_docs(project_id, token)
+    source_total    = len(docs)
+
+    if not docs:
+        return 0, 0, fetch_err   # فارغ أو خطأ
+
+    count, upsert_err = _upsert_docs_to_sqlite(docs)
+    combined_err = ' | '.join(filter(None, [fetch_err, upsert_err])) or None
+    return count, source_total, combined_err
+
+def init_outbox_table():
+    """أنشئ جدول outbox لتتبّع عمليات الكتابة المعلّقة على Firestore."""
+    conn = db_connect()
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS subscription_outbox (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            uid         TEXT NOT NULL,
+            payload     TEXT NOT NULL,        -- JSON بيانات الاشتراك
+            attempts    INTEGER DEFAULT 0,
+            last_error  TEXT,
+            created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+            next_retry  DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+def _run_startup_recovery():
+    """
+    يُشغَّل مرة واحدة عند `__main__`.
+    - دائماً يُزامن من Firestore (ليس فقط عند الإفراغ) للتعافي من الفقد الجزئي.
+    - يُسجّل تحذيراً واضحاً إذا فشلت الاستعادة وكانت قاعدة البيانات فارغة.
+    """
+    global _startup_status
+    _startup_status['started_at'] = _dt.datetime.now(_dt.timezone.utc).isoformat()
+
+    # عدّ الاشتراكات الحالية قبل الاستعادة
+    try:
+        conn   = db_connect()
+        row    = conn.execute('SELECT COUNT(*) FROM subscriptions').fetchone()
+        conn.close()
+        before = row[0] if row else 0
+    except Exception:
+        before = 0
+    _startup_status['subscription_count'] = before
+
+    if not os.environ.get('FIREBASE_PROJECT_ID'):
+        _startup_status['firestore_restore'] = 'not_configured'
+        if before == 0:
+            _startup_status['warning'] = (
+                '🚨 تنبيه: قاعدة البيانات فارغة وFirestore غير مهيّأ. '
+                'قد تكون الاشتراكات مفقودة — تحقق فوراً!'
+            )
+            print(f'[STARTUP] {_startup_status["warning"]}')
+        else:
+            print(f'[STARTUP] Firestore غير مهيّأ — تعمل من قاعدة بيانات محلية ({before} سجل).')
+        return
+
+    # ─── مزامنة من Firestore (دائماً، للتعافي من الفقد الجزئي) ────────────
+    mode = 'مزامنة كاملة' if before > 0 else 'استعادة (قاعدة فارغة)'
+    print(f'[STARTUP] ⏳ {mode} من Firestore…')
+
+    restored, source_total, err = try_restore_from_firestore()
+    _startup_status['firestore_restored'] = restored
+    _startup_status['firestore_source']   = source_total
+
+    if err and restored == 0:
+        _startup_status['firestore_restore'] = 'failed'
+        _startup_status['firestore_error']   = err
+        if before == 0:
+            _startup_status['warning'] = (
+                f'🚨 تنبيه خطير: قاعدة البيانات فارغة وفشل الاستعادة من Firestore ({err}). '
+                'بيانات الاشتراكات قد تكون مفقودة — تدخّل فوري مطلوب!'
+            )
+        else:
+            _startup_status['warning'] = (
+                f'⚠️ تحذير: فشلت المزامنة مع Firestore ({err}). '
+                f'الخادم يعمل من النسخة المحلية ({before} سجل) — قد تكون بعض السجلات ناقصة.'
+            )
+        print(f'[STARTUP] {_startup_status["warning"]}')
+    else:
+        _startup_status['firestore_restore'] = 'ok'
+        if err:
+            _startup_status['firestore_error'] = err
+        # أعد عدّ ما بعد الاستعادة
+        try:
+            conn   = db_connect()
+            row    = conn.execute('SELECT COUNT(*) FROM subscriptions').fetchone()
+            conn.close()
+            after  = row[0] if row else restored
+        except Exception:
+            after  = restored
+        _startup_status['subscription_count'] = after
+        gained = after - before
+        print(f'[STARTUP] ✅ {mode} اكتملت: {restored}/{source_total} سجل من Firestore، '
+              f'إجمالي محلي={after} (+{gained} جديد).')
+
+def enqueue_outbox(uid: str, payload: dict):
+    """أضف سجل اشتراك إلى الـ outbox ليُعاد إرساله إلى Firestore لاحقاً."""
+    try:
+        conn = db_connect()
+        conn.execute(
+            'INSERT OR REPLACE INTO subscription_outbox (uid, payload, attempts) VALUES (?,?,0)',
+            (uid, json.dumps(payload, ensure_ascii=False)))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f'[OUTBOX] تعذّر الإضافة إلى الـ outbox: {e}')
+
+def _firestore_write_subscription(uid: str, payload: dict, token: str, project_id: str):
+    """يكتب سجل اشتراك واحد إلى Firestore REST API."""
+    def fs_val(v):
+        return {'stringValue': str(v)} if v else {'nullValue': None}
+    fields = {
+        'uid':                     fs_val(payload.get('uid', uid)),
+        'email':                   fs_val(payload.get('email', '')),
+        'stripe_customer_id':      fs_val(payload.get('stripe_customer_id', '')),
+        'stripe_subscription_id':  fs_val(payload.get('stripe_subscription_id', '')),
+        'status':                  fs_val(payload.get('status', 'inactive')),
+        'updated_at':              fs_val(payload.get('updated_at', '')),
+    }
+    body = json.dumps({'fields': fields}).encode()
+    url  = (f'https://firestore.googleapis.com/v1/projects/{project_id}'
+            f'/databases/(default)/documents/subscriptions/{urllib.parse.quote(uid)}')
+    req  = urllib.request.Request(url, data=body, method='PATCH',
+           headers={'Authorization': f'Bearer {token}',
+                    'Content-Type':  'application/json'})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        resp.read()
+
+def _outbox_worker():
+    """
+    خيط خلفي يُعيد إرسال السجلات المعلّقة في الـ outbox إلى Firestore.
+    يعمل كل 60 ثانية؛ يتوقف بعد 10 محاولات فاشلة لكل سجل.
+    """
+    import time as _time
+    project_id = os.environ.get('FIREBASE_PROJECT_ID', '')
+    if not project_id:
+        return   # Firestore غير مهيّأ — لا فائدة من الخيط
+
+    while True:
+        _time.sleep(60)
+        try:
+            conn = db_connect()
+            rows = conn.execute(
+                "SELECT id, uid, payload, attempts FROM subscription_outbox "
+                "WHERE attempts < 10 AND next_retry <= datetime('now') "
+                "ORDER BY id LIMIT 50").fetchall()
+            conn.close()
+        except Exception:
+            continue
+
+        if not rows:
+            continue
+
+        token, err = _firestore_get_token()
+        if not token:
+            print(f'[OUTBOX] تعذّر الحصول على token: {err}')
+            continue
+
+        for row_id, uid, payload_json, attempts in rows:
+            try:
+                payload = json.loads(payload_json)
+                _firestore_write_subscription(uid, payload, token, project_id)
+                # نجاح — احذف من الـ outbox
+                conn = db_connect()
+                conn.execute('DELETE FROM subscription_outbox WHERE id=?', (row_id,))
+                conn.commit()
+                conn.close()
+                print(f'[OUTBOX] ✅ أُرسل uid={uid} إلى Firestore بنجاح.')
+            except Exception as e:
+                delay = min(2 ** attempts * 60, 3600)   # exponential backoff حتى ساعة
+                conn = db_connect()
+                conn.execute(
+                    "UPDATE subscription_outbox SET attempts=attempts+1, last_error=?, "
+                    "next_retry=datetime('now','+'||?||' seconds') WHERE id=?",
+                    (str(e)[:500], delay, row_id))
+                conn.commit()
+                conn.close()
+                print(f'[OUTBOX] ❌ فشل uid={uid} (محاولة {attempts+1}): {e}')
+
+def _upsert_docs_to_sqlite(docs):
+    """
+    يُدرج/يُحدّث قائمة وثائق Firestore في SQLite (INSERT OR REPLACE).
+    يُعيد (count_upserted, error_message).
+    """
+    conn  = db_connect()
+    count = 0
+    try:
+        for doc in docs:
+            fields = doc.get('fields') or {}
+            def fv(key):
+                f = fields.get(key) or {}
+                return f.get('stringValue') or f.get('integerValue') or ''
+            uid    = fv('uid') or (doc.get('name') or '').rsplit('/', 1)[-1]
+            email  = fv('email')
+            cid    = fv('stripe_customer_id')
+            sid    = fv('stripe_subscription_id')
+            status = fv('status') or 'inactive'
+            if not uid:
+                continue
+            conn.execute('''INSERT INTO subscriptions
+                (uid, email, stripe_customer_id, stripe_subscription_id, status)
+                VALUES (?,?,?,?,?)
+                ON CONFLICT(uid) DO UPDATE SET
+                    email                  = excluded.email,
+                    stripe_customer_id     = excluded.stripe_customer_id,
+                    stripe_subscription_id = excluded.stripe_subscription_id,
+                    status                 = excluded.status,
+                    updated_at             = CURRENT_TIMESTAMP''',
+                (uid, email, cid, sid, status))
+            count += 1
+        conn.commit()
+        return count, None
+    except Exception as e:
+        try: conn.rollback()
+        except Exception: pass
+        return count, f'SQLite upsert error: {e}'
+    finally:
+        conn.close()
