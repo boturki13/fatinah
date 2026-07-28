@@ -477,6 +477,8 @@ class Handler(BaseHTTPRequestHandler):
         '/api/promo/redeem':            2_048,   # 2 KB   (code + uid)
         '/api/promo/status':            1_024,   # 1 KB   (uid في query string)
         '/api/promo/admin':             8_192,   # 8 KB   (إجراءات الإدارة)
+
+            uid  = (data.get('uid')  or '').strip()
     }
     _DEFAULT_MAX_BODY = 16_384  # 16 KB للمسارات غير المدرجة
 
