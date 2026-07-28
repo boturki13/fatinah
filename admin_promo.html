@@ -31,6 +31,9 @@
   .err{background:#3d1f1f;color:#f85149;}
   .secret-row{display:flex;gap:10px;align-items:flex-end;}
   .secret-row input{flex:1;}
+  .btn-secondary{background:#21262d;color:#c9d1d9;border:1px solid #30363d;}
+  .btn-secondary:hover{background:#30363d;}
+  #logout-btn{display:none;margin-top:12px;}
 </style>
 </head>
 <body>
@@ -46,6 +49,7 @@
     </div>
     <button class="btn" onclick="loadCodes()">تحميل الأكواد</button>
   </div>
+  <button id="logout-btn" class="btn btn-secondary" onclick="logout()">🚪 تسجيل الخروج</button>
 </div>
 
 <div class="card">
@@ -69,8 +73,26 @@
 
 <script>
 const BASE = window.location.origin;
+const SESSION_KEY = 'admin_secret';
 
 function getSecret(){ return document.getElementById('secret').value.trim(); }
+
+function restoreSecret(){
+  const saved = sessionStorage.getItem(SESSION_KEY);
+  if(saved){ document.getElementById('secret').value = saved; loadCodes(); }
+}
+
+function showLogout(show){
+  document.getElementById('logout-btn').style.display = show ? 'inline-block' : 'none';
+}
+
+function logout(){
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById('secret').value = '';
+  document.getElementById('codes-table').innerHTML = '<p style="color:#7d8590;font-size:14px;">اضغط "تحميل الأكواد" أولاً</p>';
+  showLogout(false);
+}
+
 
 function showMsg(text, ok){
   const el = document.getElementById('msg');
@@ -102,7 +124,9 @@ async function createCode(){
 
 async function loadCodes(){
   const d = await adminReq({action:'list'});
-  if(d.error){ document.getElementById('codes-table').innerHTML=`<p style="color:#f85149">${d.error}</p>`; return; }
+  if(d.error){ document.getElementById('codes-table').innerHTML=`<p style="color:#f85149">${d.error}</p>`; showLogout(false); return; }
+  sessionStorage.setItem(SESSION_KEY, getSecret());
+  showLogout(true);
   if(!d.codes.length){ document.getElementById('codes-table').innerHTML='<p style="color:#7d8590">لا توجد أكواد بعد</p>'; return; }
   let html=`<table><thead><tr>
     <th>الكود</th><th>المدة</th><th>الاستخدامات</th><th>الحالة</th><th>الملاحظة</th><th></th>
