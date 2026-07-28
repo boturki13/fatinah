@@ -607,6 +607,38 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
 
+        elif path in ('/favicon.ico', '/apple-touch-icon.png', '/og-image.png'):
+            fname = path.lstrip('/')
+            ctype = ('image/x-icon' if fname.endswith('.ico') else 'image/png')
+            try:
+                with open(os.path.join(os.path.dirname(__file__), fname), 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', ctype)
+                self.send_header('Content-Length', str(len(body)))
+                self.send_header('Cache-Control', 'public, max-age=86400')
+                self.end_headers()
+                self.wfile.write(body)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
+
+        elif path.startswith('/legal/img/'):
+            fname = path[len('/legal/img/'):]
+            ctype = ('image/x-icon' if fname.endswith('.ico')
+                     else 'image/svg+xml' if fname.endswith('.svg')
+                     else 'image/png')
+            try:
+                with open(os.path.join(os.path.dirname(__file__), 'legal', 'img', fname), 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', ctype)
+                self.send_header('Content-Length', str(len(body)))
+                self.send_header('Cache-Control', 'public, max-age=86400')
+                self.end_headers()
+                self.wfile.write(body)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
+
         elif path in ('/privacy', '/terms', '/legal', '/legal/', '/legal/index.html',
                       '/legal/privacy.html', '/legal/terms.html', '/legal/styles.css', '/robots.txt'):
             fname = {
