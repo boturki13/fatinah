@@ -41,6 +41,7 @@ FIREBASE_STORAGE_BUCKET = "fatinah-game.firebasestorage.app"
 
 [nix]
 channel = "stable-25_05"
+packages = ["cargo", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc"]
 
 [postMerge]
 path = "scripts/post-merge.sh"

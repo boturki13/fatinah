@@ -162,6 +162,131 @@ def stripe_request(method, path, data=None, secret_key=None):
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read())
 
+# ─── Google Service Account → OAuth2 access token (RS256 JWT) ────────────────
+_gsa_token_cache = {'token': None, 'exp': 0}
+
+def _get_gsa_access_token(sa_json: dict) -> str:
+    """
+    يُنشئ JWT موقَّع بـ RS256 ويُبادله بـ OAuth2 access token من Google.
+    النتيجة مُخزَّنة محلياً لمدة دقيقة أقل من انتهاء صلاحيتها.
+    """
+    import time as _time, base64, struct
+    from cryptography.hazmat.primitives import serialization, hashes
+    from cryptography.hazmat.primitives.asymmetric import padding as _padding
+    from cryptography.hazmat.backends import default_backend
+
+    now = int(_time.time())
+    if _gsa_token_cache['token'] and now < _gsa_token_cache['exp']:
+        return _gsa_token_cache['token']
+
+    private_key_pem = sa_json['private_key'].encode()
+    client_email    = sa_json['client_email']
+    scope           = 'https://www.googleapis.com/auth/datastore'
+    token_uri       = sa_json.get('token_uri', 'https://oauth2.googleapis.com/token')
+
+    # ── بناء JWT ────────────────────────────────────────────────────────────
+    def b64url(data: bytes) -> str:
+        return base64.urlsafe_b64encode(data).rstrip(b'=').decode()
+
+    header  = b64url(json.dumps({'alg': 'RS256', 'typ': 'JWT'}).encode())
+    payload = b64url(json.dumps({
+        'iss': client_email,
+        'sub': client_email,
+        'aud': token_uri,
+        'scope': scope,
+        'iat': now,
+        'exp': now + 3600,
+    }).encode())
+    signing_input = f'{header}.{payload}'.encode()
+
+    private_key = serialization.load_pem_private_key(
+        private_key_pem, password=None, backend=default_backend())
+    signature = private_key.sign(signing_input, _padding.PKCS1v15(), hashes.SHA256())
+    jwt_token = f'{header}.{payload}.{b64url(signature)}'
+
+    # ── تبادل JWT بـ access token ────────────────────────────────────────────
+    data = urllib.parse.urlencode({
+        'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        'assertion':  jwt_token,
+    }).encode()
+    req = urllib.request.Request(token_uri, data=data,
+          headers={'Content-Type': 'application/x-www-form-urlencoded'})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        result = json.loads(resp.read())
+
+    token = result['access_token']
+    _gsa_token_cache['token'] = token
+    _gsa_token_cache['exp']   = now + int(result.get('expires_in', 3600)) - 60
+    return token
+
+# ─── Firestore REST upsert ───────────────────────────────────────────────────
+def firestore_upsert_subscription(uid: str, status: str,
+                                   stripe_customer_id: str = None,
+                                   stripe_subscription_id: str = None) -> bool:
+    """
+    يحدّث (أو ينشئ) وثيقة Firestore في المسار subscriptions/{uid}.
+
+    المصادقة (بالأولوية):
+    1. FIREBASE_SERVICE_ACCOUNT_JSON (متغير بيئة يحتوي على JSON مفتاح الخدمة)
+       → يُنشئ JWT موقَّع بـ RS256 ويستخدم Bearer token — آمن تماماً.
+    2. إذا لم يُهيَّأ → يتخطى التحديث ويُعيد False مع تسجيل تحذير.
+
+    يُعيد True عند النجاح، False عند الفشل (مع طباعة الخطأ).
+    """
+    import time as _time
+
+    project_id = os.environ.get('FIREBASE_PROJECT_ID', '')
+    sa_json_str = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON', '')
+
+    if not project_id:
+        print('[Firestore] FIREBASE_PROJECT_ID غير متوفر — تخطى التحديث')
+        return False
+    if not sa_json_str:
+        print('[Firestore] FIREBASE_SERVICE_ACCOUNT_JSON غير متوفر — '
+              'أضف مفتاح الخدمة من Google Cloud Console لتفعيل تحديث Firestore')
+        return False
+
+    try:
+        sa_json = json.loads(sa_json_str)
+        token   = _get_gsa_access_token(sa_json)
+    except Exception as exc:
+        print(f'[Firestore] فشل الحصول على access token: {exc}')
+        return False
+
+    url = (
+        f'https://firestore.googleapis.com/v1/projects/{project_id}'
+        f'/databases/(default)/documents/subscriptions/{uid}'
+    )
+
+    # بناء الحقول بتنسيق Firestore REST (stringValue)
+    fields = {
+        'uid':        {'stringValue': uid},
+        'status':     {'stringValue': status},
+        'updated_at': {'stringValue': _time.strftime('%Y-%m-%dT%H:%M:%SZ', _time.gmtime())},
+    }
+    if stripe_customer_id:
+        fields['stripe_customer_id'] = {'stringValue': stripe_customer_id}
+    if stripe_subscription_id:
+        fields['stripe_subscription_id'] = {'stringValue': stripe_subscription_id}
+
+    payload = json.dumps({'fields': fields}).encode()
+    req = urllib.request.Request(url, data=payload, method='PATCH',
+          headers={
+              'Content-Type':  'application/json',
+              'Authorization': f'Bearer {token}',
+          })
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            resp.read()
+        return True
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors='ignore')
+        print(f'[Firestore] HTTP {e.code}: {body[:300]}')
+        return False
+    except Exception as exc:
+        print(f'[Firestore] خطأ: {exc}')
+        return False
+
 # ─── قراءة index.html ────────────────────────────────────────────────────────
 def read_html():
     with open(HTML_FILE, 'rb') as f:
@@ -651,6 +776,7 @@ class Handler(BaseHTTPRequestHandler):
             obj   = (event.get('data') or {}).get('object', {})
 
             conn = sqlite3.connect(DB_PATH)
+            firestore_args = None   # (uid, status, cid, sid)
             try:
                 if etype in ('customer.subscription.created', 'customer.subscription.updated'):
                     cid    = obj.get('customer') if isinstance(obj, dict) else getattr(obj, 'customer', None)
@@ -660,11 +786,18 @@ class Handler(BaseHTTPRequestHandler):
                     conn.execute('''UPDATE subscriptions
                         SET stripe_subscription_id=?, status=?, updated_at=CURRENT_TIMESTAMP
                         WHERE stripe_customer_id=?''', (sid, active, cid))
+                    # احضر uid من SQLite لتمريره لـ Firestore
+                    row = conn.execute('SELECT uid FROM subscriptions WHERE stripe_customer_id=?', (cid,)).fetchone()
+                    if row:
+                        firestore_args = (row[0], active, cid, sid)
 
                 elif etype == 'customer.subscription.deleted':
                     cid = obj.get('customer') if isinstance(obj, dict) else getattr(obj, 'customer', None)
                     conn.execute('''UPDATE subscriptions SET status='canceled', updated_at=CURRENT_TIMESTAMP
                         WHERE stripe_customer_id=?''', (cid,))
+                    row = conn.execute('SELECT uid FROM subscriptions WHERE stripe_customer_id=?', (cid,)).fetchone()
+                    if row:
+                        firestore_args = (row[0], 'canceled', cid, None)
 
                 elif etype == 'checkout.session.completed':
                     uid = (obj.get('metadata') or {}).get('uid') if isinstance(obj, dict) else \
@@ -676,9 +809,23 @@ class Handler(BaseHTTPRequestHandler):
                             ON CONFLICT(uid) DO UPDATE SET
                             stripe_customer_id=excluded.stripe_customer_id,
                             status='active', updated_at=CURRENT_TIMESTAMP''', (uid, cid))
+                        firestore_args = (uid, 'active', cid, None)
                 conn.commit()
             finally:
                 conn.close()
+
+            # تحديث Firestore بعد COMMIT — نُعيد 502 إذا فشل حتى تُعيد Stripe المحاولة.
+            # العملية في SQLite آمنة (idempotent) فلا ضرر من إعادة تشغيل الـ webhook.
+            event_id = event.get('id', 'unknown')
+            if firestore_args:
+                fs_ok = firestore_upsert_subscription(*firestore_args)
+                if not fs_ok:
+                    print(f'[Stripe→Firestore] فشل التحديث — event_id={event_id}'
+                          f' uid={firestore_args[0]} status={firestore_args[1]}')
+                    self.send_json(502, {
+                        'error':    'Firestore sync failed — Stripe will retry',
+                        'event_id': event_id,
+                    }); return
 
             self.send_json(200, {'received': True})
 
@@ -788,6 +935,81 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(500, {'error': str(e)})
             finally:
                 conn.close()
+
+        # ─── RevenueCat Webhook ──────────────────────────────────────────────
+        elif path == '/api/revenuecat/webhook':
+            # المصادقة: يُرفض الطلب إذا لم يُهيَّأ السر أو لم يطابق
+            rc_secret = os.environ.get('REVENUECAT_WEBHOOK_SECRET', '')
+            if not rc_secret:
+                print('[RevenueCat] REVENUECAT_WEBHOOK_SECRET غير مهيَّأ — الـ endpoint معطَّل')
+                self.send_json(503, {'error': 'Webhook غير مهيَّأ — تواصل مع المسؤول'}); return
+            auth_val = self.headers.get('Authorization', '')
+            if auth_val != rc_secret:
+                self.send_json(401, {'error': 'Unauthorized'}); return
+
+            try:   event = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+
+            edata       = event.get('event') or {}
+            etype       = (edata.get('type') or '').strip()
+            event_id    = edata.get('id', 'unknown')
+            app_user_id = (edata.get('app_user_id') or '').strip()
+
+            # أحداث تُفعِّل الاشتراك
+            RC_ACTIVE_EVENTS = {
+                'INITIAL_PURCHASE', 'RENEWAL', 'PRODUCT_CHANGE',
+                'UNCANCELLATION', 'BILLING_ISSUE_RESOLVED',
+            }
+            # أحداث تُنهي الاشتراك
+            RC_STATUS_MAP = {
+                'CANCELLATION': 'canceled',
+                'EXPIRATION':   'inactive',
+                'BILLING_ISSUE': 'inactive',
+            }
+            # أحداث لا تُعبِّر عن تغيير حالة — يجب تجاهلها تماماً
+            RC_IGNORED_EVENTS = {
+                'SUBSCRIBER_ALIAS', 'TRANSFER', 'TEST',
+                'RC_BILLING_ADDRESS_CHANGE', 'PAUSE',
+            }
+
+            if etype in RC_IGNORED_EVENTS or not etype:
+                # نقبل الحدث ونتجاهله — لا نُعدِّل أي سجل
+                self.send_json(200, {'received': True, 'note': f'event {etype} ignored'}); return
+
+            if etype in RC_ACTIVE_EVENTS:
+                new_status = 'active'
+            elif etype in RC_STATUS_MAP:
+                new_status = RC_STATUS_MAP[etype]
+            else:
+                # حدث غير معروف — نتجاهله بأمان
+                print(f'[RevenueCat] حدث غير معروف: {etype} (id={event_id}) — تجاهَل')
+                self.send_json(200, {'received': True, 'note': f'event {etype} unknown/ignored'}); return
+
+            if not app_user_id:
+                self.send_json(400, {'error': 'app_user_id مطلوب'}); return
+
+            # تحديث SQLite
+            conn = sqlite3.connect(DB_PATH)
+            try:
+                conn.execute('''INSERT INTO subscriptions (uid, status)
+                    VALUES (?,?)
+                    ON CONFLICT(uid) DO UPDATE SET
+                    status=excluded.status, updated_at=CURRENT_TIMESTAMP''',
+                    (app_user_id, new_status))
+                conn.commit()
+            finally:
+                conn.close()
+
+            # تحديث Firestore — نُعيد 502 إذا فشل حتى يُعيد RevenueCat المحاولة
+            fs_ok = firestore_upsert_subscription(app_user_id, new_status)
+            if not fs_ok:
+                print(f'[RevenueCat] فشل تحديث Firestore للمستخدم {app_user_id} (event_id={event_id}, status={new_status})')
+                self.send_json(502, {
+                    'error':    'Firestore sync failed — please retry',
+                    'event_id': event_id,
+                }); return
+
+            self.send_json(200, {'received': True, 'uid': app_user_id, 'status': new_status})
 
         else:
             self.send_response(404); self.end_headers()
