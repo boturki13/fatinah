@@ -548,9 +548,26 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_response(404); self.end_headers()
 
+    # حدود حجم body لكل نقطة POST — تُعيد 413 مبكراً قبل قراءة البيانات
+    _MAX_BODY: dict = {
+        '/api/generate':               65_536,   # 64 KB  (topic + قائمة seen)
+        '/api/account/delete':          1_024,   # 1 KB   (uid فقط)
+        '/api/stripe/create-checkout':  4_096,   # 4 KB   (uid + email + plan)
+        '/api/stripe/webhook':         65_536,   # 64 KB  (حدث Stripe)
+        '/api/promo/redeem':            2_048,   # 2 KB   (code + uid)
+        '/api/promo/status':            1_024,   # 1 KB   (uid في query string)
+        '/api/promo/admin':             8_192,   # 8 KB   (إجراءات الإدارة)
+    }
+    _DEFAULT_MAX_BODY = 16_384  # 16 KB للمسارات غير المدرجة
+
     def do_POST(self):
         path   = self.path.split('?')[0]
         length = int(self.headers.get('Content-Length', 0))
+
+        max_allowed = self._MAX_BODY.get(path, self._DEFAULT_MAX_BODY)
+        if length > max_allowed:
+            self.send_json(413, {'error': f'حجم الطلب كبير جداً (الحد: {max_allowed} بايت)'}); return
+
         body   = self.rfile.read(length)
 
         # ─── AI generate ────────────────────────────────────────────────────
