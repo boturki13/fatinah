@@ -48,4 +48,29 @@ python3 server.py
 - بناء iOS app يحتاج Xcode على ماك (شرط من أبل)
 - التخزين يعتمد على `localStorage`
 
+## قائمة مراجعة النشر (Deploy Checklist)
+
+قبل الضغط على **Deploy**، شغّل:
+
+```
+python3 scripts/check-production.py
+```
+
+يجب أن تُظهر ✅ لكل متطلب. إذا ظهر ❌ لأي متغيّر، أضفه في **Secrets** أولاً.
+
+### المتطلبات الإضافية
+| المتطلب | كيف تتحقق |
+|---|---|
+| `ANTHROPIC_API_KEY` | Secrets — مفتاح Claude |
+| `GOOGLE_API_KEY` | Secrets — مفتاح Firebase |
+| `FIREBASE_*` متغيرات | `.replit` → `[userenv.shared]` أو Secrets |
+| `RC_API_KEY` | Secrets — مفتاح RevenueCat |
+| `ADMIN_SECRET` | Secrets — كلمة سر صفحة الأدمن |
+| `REPLIT_APP_URL` | يُضبط تلقائياً من `REPLIT_DOMAINS` عند أول تشغيل |
+| `subscriptions.db` | تُستعاد تلقائياً من Replit KV عند إعادة التشغيل |
+
+### بعد أول نشر
+1. تحقق من السجلات أن `🔗 رابط الخادم:` يعرض رابط `.replit.app` الصحيح
+2. إذا أردت تثبيته يدوياً: أضف `REPLIT_APP_URL = https://your-app.replit.app` في Secrets
+
 ## User preferences

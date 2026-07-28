@@ -3,7 +3,7 @@
 يخدم index.html، يوفّر firebase-config.js، يولّد الأسئلة عبر Claude،
 ويدير أكواد المكافآت المجانية.
 """
-import json, os, sqlite3, traceback, urllib.request, urllib.error, urllib.parse
+import base64, json, os, sqlite3, threading, traceback, urllib.request, urllib.error, urllib.parse, zlib
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 
@@ -11,6 +11,106 @@ from socketserver import ThreadingMixIn
 PORT      = int(os.environ.get('PORT', 5000))
 HTML_FILE = os.path.join(os.path.dirname(__file__), 'index.html')
 DB_PATH   = os.path.join(os.path.dirname(__file__), 'subscriptions.db')
+
+# ─── Replit KV — احتياط قاعدة البيانات تلقائياً ─────────────────────────────
+# نستخدم REPLIT_DB_URL (Replit KV) لحفظ نسخة مضغوطة من subscriptions.db
+# عند إعادة تشغيل Autoscale يضيع الملف المحلي — نستعيده من KV تلقائياً.
+
+KV_DB_KEY = 'fatinah_subscriptions_db_v1'
+
+# sentinel يميّز "مفتاح غير موجود (404)" عن "خطأ شبكة/KV"
+_KV_NOT_FOUND = object()
+
+def _kv_url() -> str:
+    return os.environ.get('REPLIT_DB_URL', '')
+
+def kv_get_bytes(key: str):
+    """
+    يجلب قيمة من Replit KV.
+    يعيد:
+      bytes         — وُجدت القيمة
+      _KV_NOT_FOUND — المفتاح غير موجود (404) ← لا نسخة احتياطية سابقة
+      None          — خطأ شبكة أو KV ← لا ندري إن كانت البيانات موجودة
+    """
+    base = _kv_url()
+    if not base:
+        return _KV_NOT_FOUND   # لا KV في هذه البيئة — اعتبره "غير موجود"
+    try:
+        url = base.rstrip('/') + '/' + urllib.parse.quote(key, safe='')
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.read()
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return _KV_NOT_FOUND   # مفتاح غير موجود — آمن لإنشاء DB جديدة
+        return None                # خطأ KV — لا نُقرّر
+    except Exception:
+        return None                # خطأ شبكة — لا نُقرّر
+
+def kv_set_bytes(key: str, value: bytes) -> bool:
+    """يخزّن bytes في Replit KV (base64 لتفادي مشاكل الترميز). يعيد True عند النجاح."""
+    base = _kv_url()
+    if not base:
+        return False
+    try:
+        encoded = base64.b64encode(value).decode('ascii')
+        data = urllib.parse.urlencode({key: encoded}).encode('utf-8')
+        req = urllib.request.Request(base.rstrip('/'), data=data, method='POST')
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp.read()
+        return True
+    except Exception:
+        return False
+
+def kv_backup_db():
+    """يحفظ نسخة مضغوطة من subscriptions.db في Replit KV (في خيط خلفي)."""
+    def _do():
+        try:
+            if not os.path.exists(DB_PATH):
+                return
+            with open(DB_PATH, 'rb') as f:
+                raw = f.read()
+            compressed = zlib.compress(raw, level=9)
+            ok = kv_set_bytes(KV_DB_KEY, compressed)
+            if ok:
+                print(f'💾 KV backup: {len(compressed):,} bytes محفوظة')
+        except Exception as e:
+            print(f'⚠️ KV backup خطأ: {e}')
+    threading.Thread(target=_do, daemon=True).start()
+
+def kv_restore_db() -> str:
+    """
+    يحاول استعادة subscriptions.db من Replit KV.
+    يعيد:
+      'restored'   — نجحت الاستعادة
+      'not_found'  — لا نسخة احتياطية (المفتاح غير موجود) — آمن لإنشاء DB جديدة
+      'error'      — فشل KV أو فك الضغط — لا تُكتب نسخة احتياطية جديدة حتى لا تُمحى نسخة سابقة
+    """
+    result = kv_get_bytes(KV_DB_KEY)
+    if result is _KV_NOT_FOUND:
+        return 'not_found'
+    if result is None:
+        return 'error'
+    try:
+        compressed = base64.b64decode(result)
+        raw = zlib.decompress(compressed)
+        with open(DB_PATH, 'wb') as f:
+            f.write(raw)
+        print(f'✅ KV restore: استُعيدت {len(raw):,} bytes')
+        return 'restored'
+    except Exception as e:
+        print(f'⚠️ KV restore خطأ في فك الضغط: {e}')
+        return 'error'
+
+def _start_periodic_kv_backup(interval_sec: int = 300):
+    """يشغّل خيطاً خلفياً يحفظ نسخة احتياطية كل interval_sec ثانية."""
+    import time as _time
+    def _loop():
+        _time.sleep(interval_sec)   # تأخير أولي حتى يستقر الخادم
+        while True:
+            kv_backup_db()
+            _time.sleep(interval_sec)
+    threading.Thread(target=_loop, daemon=True, name='kv-periodic-backup').start()
 
 # ─── قاعدة البيانات ──────────────────────────────────────────────────────────
 def db_connect():
@@ -760,6 +860,7 @@ class Handler(BaseHTTPRequestHandler):
                 cur = conn.execute('DELETE FROM subscriptions WHERE uid=?', (uid,))
                 conn.commit()
                 conn.close()
+                kv_backup_db()   # احتياط فوري بعد حذف بيانات المستخدم
                 self.send_json(200, {'ok': True, 'deleted': cur.rowcount})
             except sqlite3.OperationalError:
                 self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
@@ -889,7 +990,39 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 # ─── تشغيل ───────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
+    # ① ضبط REPLIT_APP_URL تلقائياً من REPLIT_DOMAINS إذا لم يكن مضبوطاً
+    if not os.environ.get('REPLIT_APP_URL'):
+        _domains = os.environ.get('REPLIT_DOMAINS', '')
+        if _domains:
+            _first = _domains.split(',')[0].strip()
+            if _first:
+                os.environ['REPLIT_APP_URL'] = f'https://{_first}'
+    _app_url = os.environ.get('REPLIT_APP_URL', '')
+    print(f'🔗 رابط الخادم: {_app_url or "(غير محدد — يعمل في وضع التطوير)"}')
+
+    # ② استعادة قاعدة البيانات من KV إن لم تكن موجودة (بعد Autoscale restart)
+    _kv_backup_safe = True   # افتراضياً: آمن للكتابة في KV
+    if not os.path.exists(DB_PATH):
+        print('ℹ️ subscriptions.db غير موجودة — محاولة الاستعادة من KV...')
+        _restore = kv_restore_db()
+        if _restore == 'restored':
+            pass   # تمت الاستعادة، سيُعاد الحفظ بعد init_db
+        elif _restore == 'not_found':
+            print('ℹ️ لا نسخة احتياطية في KV — ستُنشأ قاعدة بيانات جديدة')
+        else:   # 'error' — KV غير متاح أو خطأ في فك الضغط
+            print('⚠️ تعذّر الوصول إلى KV — سيعمل الخادم بقاعدة بيانات مؤقتة (لن يُكتب KV)')
+            _kv_backup_safe = False   # لا نكتب فوق نسخة قد تكون موجودة في KV
+
+    # ③ تهيئة الجداول (تُنشئها إن لم تكن موجودة، لا تأثير إن وُجدت)
     init_db()
+
+    # ④ حفظ نسخة احتياطية أولية في KV — فقط إذا كان KV متاحاً أو المفتاح غير موجود
+    if _kv_backup_safe:
+        kv_backup_db()
+
+    # ⑤ نسخ احتياطي دوري كل 5 دقائق لتغطية عمليات الكتابة خلال وقت التشغيل
+    _start_periodic_kv_backup(interval_sec=300)
+
     server = ThreadedHTTPServer(('0.0.0.0', PORT), Handler)
     print(f'فَطِنة تعمل على http://0.0.0.0:{PORT}')
     server.serve_forever()
