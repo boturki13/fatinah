@@ -257,6 +257,11 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 .ach .ai{font-size:26px; width:34px; text-align:center;}
 .ach .at{font-weight:800; font-size:15px;}
 .ach .ad{font-size:12.5px; color:var(--muted); margin-top:1px;}
+/* شريط وضع دون اتصال */
+.offline-bar{position:fixed; bottom:0; left:0; right:0; z-index:90; background:rgba(30,15,55,.97); border-top:1.5px solid rgba(255,90,110,.5); padding:calc(8px + env(safe-area-inset-bottom)) 16px 8px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; font-weight:700; color:#FF8FA0; transform:translateY(100%); transition:transform .35s ease; pointer-events:none;}
+.offline-bar.show{transform:translateY(0);}
+.offline-bar .ob-dot{width:8px; height:8px; border-radius:50%; background:#FF5A6E; flex-shrink:0; animation:pulse-dot 1.5s ease-in-out infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:.3;}}
 .toast{position:fixed; top:calc(16px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%) translateY(-120px); background:linear-gradient(120deg,#3A1F6E,var(--bg3)); border:1.5px solid var(--gold); border-radius:16px; padding:12px 18px; display:flex; align-items:center; gap:11px; z-index:80; box-shadow:var(--sh); transition:transform .5s cubic-bezier(.2,.9,.3,1.3); max-width:90%;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 .toast .ti{font-size:24px;}
@@ -733,6 +738,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
 
 <div class="toast" id="toast"><div class="ti">🏆</div><div><div class="tt" id="toast-t"></div><div class="td" id="toast-d"></div></div></div>
 <div class="confetti" id="confetti"></div>
+<div class="offline-bar" id="offline-bar" aria-live="polite" aria-label="وضع دون اتصال"><span class="ob-dot"></span>وضع دون اتصال</div>
 
 <!-- نافذة تأكيد الخروج -->
 <div class="modal-wrap" id="exit-modal">
@@ -1451,9 +1457,23 @@ async function rcIsActive(){
   if(!RC || !RC_CONFIGURED) return null; // null = غير متاح (ويب أو مفتاح placeholder)
   try{
     const { customerInfo } = await RC.getCustomerInfo();
-    return !!(customerInfo.entitlements.active &&
-              customerInfo.entitlements.active[RC_ENTITLEMENT]);
-  }catch(e){ console.error('RC status:', e); return null; }
+    const active = !!(customerInfo.entitlements.active &&
+                      customerInfo.entitlements.active[RC_ENTITLEMENT]);
+    // احفظ آخر حالة معروفة (للاستخدام عند انعدام الإنترنت)
+    storeSet('rcSubCache', { active, ts: Date.now() });
+    return active;
+  }catch(e){
+    console.error('RC status:', e);
+    // إذا كنا بلا إنترنت على iOS، أعد الحالة المحفوظة (صالحة 7 أيام)
+    if(!navigator.onLine){
+      const cache = storeGet('rcSubCache', null);
+      if(cache && (Date.now() - cache.ts) < 7 * 24 * 60 * 60 * 1000){
+        console.log('RC offline — using cached state:', cache.active);
+        return cache.active;
+      }
+    }
+    return null;
+  }
 }
 
 async function rcPurchase(plan){
@@ -2663,7 +2683,31 @@ function shakeField(id){
   setTimeout(()=>{ el.style.borderColor=''; el.classList.remove('shake-x'); },500);
 }
 
-// ────────── تهيئة
+// ---- مؤشر وضع دون اتصال ----
+(function initConnectivity(){
+  const bar = document.getElementById('offline-bar');
+  if(!bar) return;
+
+  function setOffline(offline){
+    bar.classList.toggle('show', offline);
+  }
+
+  // الحالة الأولية
+  setOffline(!navigator.onLine);
+
+  // استمع لأحداث المتصفح (تعمل داخل WKWebView أيضاً)
+  window.addEventListener('online',  () => setOffline(false));
+  window.addEventListener('offline', () => setOffline(true));
+
+  // على iOS (Capacitor) — استخدم Network plugin إن توفّر للتحقق المبكّر
+  const Net = window.Capacitor?.Plugins?.Network;
+  if(Net){
+    Net.getStatus().then(s => setOffline(!s.connected)).catch(()=>{});
+    Net.addListener('networkStatusChange', s => setOffline(!s.connected));
+  }
+})();
+
+// ---- تهيئة ----
 renderTeamNames();
 (function initSoundIcon(){
   const b=document.getElementById('sound-btn');
