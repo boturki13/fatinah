@@ -287,97 +287,17 @@ class Handler(BaseHTTPRequestHandler):
             if not uid:
                 self.send_json(400, {'error': 'uid مطلوب'}); return
             conn = sqlite3.connect(DB_PATH)
+
             row  = conn.execute('SELECT status FROM subscriptions WHERE uid=?', (uid,)).fetchone()
+
             conn.close()
+
             active = bool(row and row[0] == 'active')
-            self.send_json(200, {'active': active})
 
-        elif path in ('/', '/index.html'):
+            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
+
             body = read_html()
-            self.send_response(200)
-            self.send_header('Content-Type',   'text/html; charset=utf-8')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
 
-        elif path in ('/favicon.ico', '/apple-touch-icon.png', '/og-image.png'):
-            fname = path.lstrip('/')
-            ctype = 'image/x-icon' if fname.endswith('.ico') else 'image/png'
-            try:
-                with open(os.path.join(os.path.dirname(__file__), fname), 'rb') as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', ctype)
-                self.send_header('Content-Length', str(len(body)))
-                self.send_header('Cache-Control', 'public, max-age=86400')
-                self.end_headers()
-                self.wfile.write(body)
-            except FileNotFoundError:
-                self.send_response(404); self.end_headers()
-
-        elif path.startswith('/legal/img/'):
-            fname = path[len('/legal/img/'):]
-            ctype = ('image/x-icon' if fname.endswith('.ico')
-                     else 'image/svg+xml' if fname.endswith('.svg')
-                     else 'image/png')
-            try:
-                with open(os.path.join(os.path.dirname(__file__), 'legal', 'img', fname), 'rb') as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', ctype)
-                self.send_header('Content-Length', str(len(body)))
-                self.send_header('Cache-Control', 'public, max-age=86400')
-                self.end_headers()
-                self.wfile.write(body)
-            except FileNotFoundError:
-                self.send_response(404); self.end_headers()
-
-        elif path in ('/privacy', '/terms', '/legal', '/legal/', '/legal/index.html',
-                      '/legal/privacy.html', '/legal/terms.html', '/legal/styles.css', '/robots.txt'):
-            fname = {
-                '/privacy': 'privacy.html', '/terms': 'terms.html',
-                '/legal': 'index.html', '/legal/': 'index.html', '/legal/index.html': 'index.html',
-                '/legal/privacy.html': 'privacy.html', '/legal/terms.html': 'terms.html',
-                '/legal/styles.css': 'styles.css', '/robots.txt': 'robots.txt',
-            }[path]
-            ctype = ('text/css; charset=utf-8' if fname.endswith('.css')
-                     else 'text/plain; charset=utf-8' if fname.endswith('.txt')
-                     else 'text/html; charset=utf-8')
-            try:
-                with open(os.path.join(os.path.dirname(__file__), 'legal', fname), 'rb') as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', ctype)
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            except FileNotFoundError:
-                self.send_response(404); self.end_headers()
-
-        elif path == '/admin/promo':
-            try:
-                with open(os.path.join(os.path.dirname(__file__), 'admin_promo.html'), 'rb') as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header('Content-Type', 'text/html; charset=utf-8')
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            except FileNotFoundError:
-                self.send_response(404); self.end_headers()
-            return
-
-        elif path == '/download/index.html':
-            with open(HTML_FILE, 'rb') as f:
-                body = f.read()
-            self.send_response(200)
-            self.send_header('Content-Type',        'application/octet-stream')
-            self.send_header('Content-Disposition', 'attachment; filename="index.html"')
-            self.send_header('Content-Length',      str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-
-        else:
             self.send_response(404); self.end_headers()
 
     def do_POST(self):
@@ -387,87 +307,16 @@ class Handler(BaseHTTPRequestHandler):
 
         # ─── AI generate ────────────────────────────────────────────────────
         if path == '/api/generate':
-            try:   data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
 
-            topic = (data.get('topic') or '').strip()
-            try:    count = min(max(int(data.get('count', 6)), 1), 30)
-            except Exception: count = 6
-            seen  = data.get('seen') or []          # قائمة معرّفات الأسئلة التي شاهدها اللاعب
-            if not topic: self.send_json(400, {'error': 'topic مطلوب'}); return
-            if not isinstance(seen, list): seen = []
-            seen = [int(s) for s in seen if str(s).isdigit()][:5000]
+            self.send_header('Content-Length',      str(len(body)))
 
-            tnorm = normalize_topic(topic)
-            conn  = db_connect()
+            self.end_headers()
 
-            def fetch_unseen(limit):
-                if seen:
-                    ph = ','.join('?' * len(seen))
-                    rows = conn.execute(
-                        f'SELECT id,q,answer FROM question_bank WHERE topic_norm=? AND id NOT IN ({ph}) ORDER BY RANDOM() LIMIT ?',
-                        [tnorm, *seen, limit]).fetchall()
-                else:
-                    rows = conn.execute(
-                        'SELECT id,q,answer FROM question_bank WHERE topic_norm=? ORDER BY RANDOM() LIMIT ?',
-                        (tnorm, limit)).fetchall()
-                return [{'id': r[0], 'q': r[1], 'answer': r[2]} for r in rows]
+            self.wfile.write(body)
 
-            try:
-                # 1) جرّب البنك أولاً — صفر توكن
-                result = fetch_unseen(count)
+        else:
 
-                # 2) إن لم يكفِ، ولّد دفعة كبيرة (30) وخزّنها ثم أعد المحاولة
-                if len(result) < count:
-                    questions, err = call_claude(topic, 30)
-                    if err and not result:
-                        self.send_json(502, {'error': err}); return
-                    for q in (questions or []):
-                        try:
-                            conn.execute('INSERT OR IGNORE INTO question_bank(topic_norm,q,answer) VALUES(?,?,?)',
-                                         (tnorm, q['q'].strip(), q['answer'].strip()))
-                        except Exception:
-                            pass
-                    try: conn.commit()
-                    except sqlite3.OperationalError: pass  # قفل مؤقت — الأسئلة المولّدة تُعاد للاعب على أي حال
-                    result = fetch_unseen(count)
-                self.send_json(200, {'questions': result, 'from_bank': True})
-            except sqlite3.OperationalError:
-                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
-            finally:
-                conn.close()
-
-        # ─── حذف الحساب: إزالة سجل الاشتراك المرتبط بالـ uid ────────────────
-        elif path == '/api/account/delete':
-            try:   data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
-
-            uid = (data.get('uid') or '').strip()
-            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
-
-            try:
-                conn = db_connect()
-                cur  = conn.execute('DELETE FROM subscriptions WHERE uid=?', (uid,))
-                conn.commit()
-                deleted = cur.rowcount
-                conn.close()
-                self.send_json(200, {'ok': True, 'deleted': deleted})
-            except sqlite3.OperationalError:
-                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
-
-        # ─── Stripe: إنشاء جلسة دفع ─────────────────────────────────────────
-        elif path == '/api/stripe/create-checkout':
-            try:   data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
-
-            uid   = (data.get('uid')   or '').strip()
-            email = (data.get('email') or '').strip()
-            plan  = (data.get('plan')  or 'monthly').strip()  # 'monthly' أو 'annual'
-            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
-
-            secret_key, _ = get_stripe_keys()
-            if not secret_key:
-                self.send_json(503, {'error': 'Stripe غير متاح'}); return
+            ctype = 'image/x-icon' if fname.endswith('.ico') else 'image/png'
 
             try:
                 # ابحث عن سعر المنتج المناسب (شهري أو سنوي)
@@ -527,6 +376,66 @@ class Handler(BaseHTTPRequestHandler):
                     'cancel_url':                 f'{base_url}/?canceled=1',
                     'metadata[uid]':              uid,
                     'locale':                     'ar',
+
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+
+        # ─── Stripe: إنشاء جلسة دفع ─────────────────────────────────────────
+        elif path == '/api/stripe/create-checkout':
+
+            return
+
+        elif path == '/download/index.html':
+
+            with open(HTML_FILE, 'rb') as f:
+                body = f.read()
+
+            try:   data = json.loads(body)
+
+            topic = (data.get('topic') or '').strip()
+
+            try:    count = min(max(int(data.get('count', 6)), 1), 30)
+
+            seen  = data.get('seen') or []          # قائمة معرّفات الأسئلة التي شاهدها اللاعب
+
+            if not isinstance(seen, list): seen = []
+
+            seen = [int(s) for s in seen if str(s).isdigit()][:5000]
+
+            tnorm = normalize_topic(topic)
+
+            conn  = db_connect()
+
+            def fetch_unseen(limit):
+                if seen:
+                    ph = ','.join('?' * len(seen))
+                    rows = conn.execute(
+                        f'SELECT id,q,answer FROM question_bank WHERE topic_norm=? AND id NOT IN ({ph}) ORDER BY RANDOM() LIMIT ?',
+                        [tnorm, *seen, limit]).fetchall()
+                else:
+                    rows = conn.execute(
+                        'SELECT id,q,answer FROM question_bank WHERE topic_norm=? ORDER BY RANDOM() LIMIT ?',
+                        (tnorm, limit)).fetchall()
+                return [{'id': r[0], 'q': r[1], 'answer': r[2]} for r in rows]
+
+            finally:
+                conn.close()
+
+        # ─── حذف الحساب: إزالة سجل الاشتراك المرتبط بالـ uid ────────────────
+        elif path == '/api/account/delete':
+
+            uid   = (data.get('uid')   or '').strip()
+
+            email = (data.get('email') or '').strip()
+
+            plan  = (data.get('plan')  or 'monthly').strip()  # 'monthly' أو 'annual'
+
+            secret_key, _ = get_stripe_keys()
+
+            if not secret_key:
+                self.send_json(503, {'error': 'Stripe غير متاح'}); return
+
+            body = legal_page_html('privacy' if path == '/privacy' else 'terms')
                 }
                 session = stripe_request('POST', 'checkout/sessions', session_data, secret_key)
                 self.send_json(200, {'url': session['url']})
