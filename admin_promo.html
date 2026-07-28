@@ -77,8 +77,19 @@
 
 <script>
 const BASE = window.location.origin;
+const SECRET_KEY = 'admin_secret';
 
 function getSecret(){ return document.getElementById('secret').value.trim(); }
+
+function saveSecret(val){ if(val) sessionStorage.setItem(SECRET_KEY, val); }
+
+function restoreSecret(){
+  const saved = sessionStorage.getItem(SECRET_KEY);
+  if(saved){
+    document.getElementById('secret').value = saved;
+    loadCodes();
+  }
+}
 
 function showMsg(text, ok){
   const el = document.getElementById('msg');
@@ -183,6 +194,7 @@ async function refreshEnvStatus(){
 }
 
 async function loadCodes(){
+  saveSecret(getSecret());
   loadEnvStatus();
   startEnvAutoRefresh();
   const d = await adminReq({action:'list'});
@@ -219,6 +231,8 @@ async function deleteCode(code){
   const d = await adminReq({action:'delete',code});
   if(d.ok) loadCodes(); else alert(d.error);
 }
+
+restoreSecret();
 </script>
 </body>
 </html>
