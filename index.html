@@ -2462,7 +2462,7 @@ async function generateFamily(){
     showToast('⚠️','تعذّر التوليد','تأكّد من الإنترنت وحاول مرة ثانية، أو استخدم الإدخال اليدوي',false);
     return;
   }
-  previewData={name, questions};
+  previewData={name, topic, questions};
   renderPreview(); go('s-family-preview');
 }
 
@@ -2489,6 +2489,25 @@ function addSeen(topic, ids){
   if(keys.length>40){ keys.slice(0,keys.length-40).forEach(x=>delete m[x]); }
   storeSet('seenQ', m);
 }
+// ---- مخزون الأسئلة دون اتصال (qCache) ----
+// يُملأ في الخلفية فور حفظ فئة مولّدة بالذكاء لضمان توفّر أسئلة عند الانقطاع
+function getQCache(topic){ const m=storeGet('qCache',{}); return m[seenKey(topic)]||[]; }
+function addQCache(topic, questions){
+  if(!questions||!questions.length) return;
+  const m=storeGet('qCache',{}); const k=seenKey(topic);
+  m[k]=[...(m[k]||[]), ...questions].slice(-50); // آخر 50 سؤال لكل موضوع
+  const keys=Object.keys(m);
+  if(keys.length>20){ keys.slice(0,keys.length-20).forEach(x=>delete m[x]); }
+  storeSet('qCache', m);
+}
+async function prefetchTopicPack(topic){
+  if(!navigator.onLine) return; // لا إنترنت — تخطَّ
+  try{
+    const questions = await aiGenerate(topic, 10);
+    if(questions && questions.length) addQCache(topic, questions);
+  }catch(e){ /* صامت — الجلب في الخلفية */ }
+}
+
 async function aiGenerate(topic,count){
   const res=await fetch(AI_BACKEND_URL,{
     method:'POST', headers:{'Content-Type':'application/json'},
@@ -2542,8 +2561,11 @@ function saveFamilyCategory(){
   else{ familyCats.push({name:previewData.name, questions:previewData.questions.slice()}); }
   saveFamily();
   showToast('👨‍👩‍👧‍👦','تم الحفظ!',`فئة "${previewData.name}" جاهزة`);
+  // جلب دفعة إضافية في الخلفية لتعبئة مخزون اللاعب دون اتصال
+  const savedTopic = previewData.topic;
   previewData=null;
   openFamily();
+  if(savedTopic) prefetchTopicPack(savedTopic);
 }
 
 // ---- وضع الإدخال اليدوي ----
