@@ -369,14 +369,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
 <div id="app">
 
   <!-- تسجيل الدخول -->
-  <section class="screen active" id="s-auth">
+  <section class="screen" id="s-auth">
     <div class="auth-hero">
       <div class="logo-xl brand">فَطِنة</div>
       <div class="tag">لعبة الذكاء والفطنة الجماعية</div>
     </div>
     <div class="auth-card">
-      <div class="auth-title">أهلاً فيك!</div>
-      <div class="auth-sub">سجّل دخولك عشان نحفظ نقاطك وإنجازاتك، أو ادخل باسمك بسرعة</div>
+      <div class="auth-title" id="auth-title">اربط حسابك</div>
+      <div class="auth-sub" id="auth-sub">سجّل بأي طريقة تحفظ نقاطك وإنجازاتك حتى لو غيّرت جهازك</div>
 
       <button class="sso sso-apple" onclick="appleSignIn()">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.09-2.01-3.76-2.04-1.6-.16-3.12.94-3.93.94-.81 0-2.06-.92-3.39-.89-1.74.03-3.35 1.01-4.25 2.57-1.81 3.15-.46 7.81 1.3 10.37.86 1.25 1.88 2.66 3.22 2.61 1.29-.05 1.78-.84 3.34-.84 1.56 0 2 .84 3.37.81 1.39-.02 2.27-1.28 3.12-2.54.98-1.46 1.39-2.87 1.41-2.94-.03-.01-2.7-1.04-2.73-4.11l-.23-.5zM14.6 4.59c.71-.86 1.19-2.06 1.06-3.25-1.02.04-2.26.68-3 1.54-.66.76-1.24 1.98-1.08 3.15 1.14.09 2.31-.58 3.02-1.44z"/></svg>
@@ -386,11 +386,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
         <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/></svg>
         متابعة مع Google
       </button>
+      <button class="sso" style="background:linear-gradient(145deg,#2E3350,#1E2238); color:#fff;" onclick="toggleEmailForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+        متابعة بالبريد الإلكتروني
+      </button>
 
-      <div class="auth-or">أو</div>
-      <input class="team-input" id="auth-name" placeholder="اكتب اسمك (اختياري)" maxlength="20" style="width:100%; margin-bottom:12px;">
-      <button class="btn btn-primary btn-block" onclick="login()">متابعة بالاسم 🎯</button>
-      <div class="legal">بياناتك تُحفظ على جهازك فقط ولا تُشارك مع أحد</div>
+      <div id="auth-email-form" style="display:none; margin-top:14px;">
+        <input class="team-input" id="auth-email" type="email" placeholder="البريد الإلكتروني" autocomplete="email" style="width:100%; margin-bottom:10px;">
+        <input class="team-input" id="auth-password" type="password" placeholder="كلمة المرور (٦ أحرف على الأقل)" autocomplete="current-password" style="width:100%; margin-bottom:12px;">
+        <button class="btn btn-primary btn-block" onclick="emailAuth('signup')">📧 إنشاء حساب جديد</button>
+        <button class="btn btn-ghost btn-block" onclick="emailAuth('signin')" style="margin-top:8px;">لدي حساب بالفعل — تسجيل الدخول</button>
+      </div>
+      <div id="auth-msg" style="font-size:13px; text-align:center; margin-top:10px; min-height:18px;"></div>
+
+      <button class="btn btn-ghost btn-block" style="margin-top:16px;" onclick="skipAuth()">متابعة بدون ربط الآن</button>
+      <div class="legal">بياناتك تُحفظ بأمان ولا تُشارك مع أحد</div>
     </div>
   </section>
 
@@ -475,7 +485,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
   </section>
 
   <!-- الرئيسية -->
-  <section class="screen" id="s-home">
+  <section class="screen active" id="s-home">
     <div class="topbar">
       <button class="icon-btn" onclick="openStats()" title="إحصاءاتي">📊</button>
       <div class="hi">أهلاً <b id="user-name">لاعب</b> 👋</div>
@@ -579,6 +589,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <div class="ach-list" id="ach-list"></div>
     <button class="btn btn-ghost btn-block mt" onclick="go('s-home')">رجوع</button>
     <div style="margin-top:32px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
+      <div class="field-label" style="margin-bottom:12px;">وسائل الدخول المرتبطة بحسابك</div>
+      <div id="account-links" style="margin-bottom:8px;"></div>
+      <div class="legal" style="margin-top:4px;">اربط أكثر من وسيلة حتى تستعيد تقدّمك من أي جهاز</div>
+    </div>
+    <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
       <div class="field-label" style="margin-bottom:12px;">الحساب</div>
       <button class="btn btn-ghost btn-block" onclick="go('s-privacy')" style="margin-bottom:8px;">🔒 سياسة الخصوصية</button>
       <button class="btn btn-ghost btn-block" onclick="go('s-terms')" style="margin-bottom:8px;">📄 شروط الاستخدام</button>
@@ -915,14 +930,33 @@ async function reauthThen(provider, fn){
   const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
   if(FA){
     if(provider==='google') await FA.signInWithGoogle();
-    else await FA.signInWithApple();
+    else if(provider==='apple') await FA.signInWithApple();
+    else if(provider==='password'){
+      const email = storeGet('authEmail','');
+      const password = prompt('لتأكيد الحذف، أدخل كلمة مرور حساب ' + email + ':');
+      if(!password) throw new Error('cancelled');
+      await FA.signInWithEmailAndPassword({email, password});
+    } else {
+      // anonymous — لا توجد طريقة لإعادة المصادقة، الجلسة عادةً حديثة أصلاً
+      throw new Error('no-reauth-anonymous');
+    }
     return fn();
   }
   const wb=await getFirebaseWebAuth();
   if(wb && wb.auth.currentUser){
-    const p = provider==='google' ? new wb.GoogleAuthProvider() : new wb.OAuthProvider('apple.com');
-    const { reauthenticateWithPopup } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
-    await reauthenticateWithPopup(wb.auth.currentUser, p);
+    const { reauthenticateWithPopup, reauthenticateWithCredential, EmailAuthProvider } =
+      await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+    if(provider==='password'){
+      const email = storeGet('authEmail','');
+      const password = prompt('لتأكيد الحذف، أدخل كلمة مرور حساب ' + email + ':');
+      if(!password) throw new Error('cancelled');
+      await reauthenticateWithCredential(wb.auth.currentUser, EmailAuthProvider.credential(email, password));
+    } else if(provider==='google' || provider==='apple'){
+      const p = provider==='google' ? new wb.GoogleAuthProvider() : new wb.OAuthProvider('apple.com');
+      await reauthenticateWithPopup(wb.auth.currentUser, p);
+    } else {
+      throw new Error('no-reauth-anonymous');
+    }
     return fn();
   }
   throw new Error('no-auth-layer');
@@ -978,19 +1012,23 @@ async function confirmDeleteAccount(){
   if(!ok) return;
   const uid = storeGet('authUid','');
   const provider = storeGet('authProvider','');
-  // 1) حذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login)
-  if(provider==='apple' || provider==='google'){
-    const deleted = await deleteFirebaseUser();
-    if(!deleted){
-      showToast('⚠️','تعذّر حذف الحساب','يلزم إعادة تسجيل الدخول ثم المحاولة مرة أخرى',false);
-      return; // لا نمسح البيانات إن فشل حذف الحساب الفعلي
-    }
-  }
-  // 2) حذف سجل الاشتراك من الخادم
+  // 1) احذف بيانات الخادم أولاً بينما جلسة Firebase لا تزال صالحة للتحقق من الهوية
   if(uid){
     try{
-      await fetch('/api/account/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid})});
+      const idToken = await getCurrentIdToken();
+      const resp = await fetch('/api/account/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid, idToken})});
+      if(resp.status===401){
+        showToast('⚠️','يلزم إعادة تسجيل الدخول','انتهت صلاحية جلستك — سجّل دخولك مرة أخرى وحاول من جديد',false);
+        return;
+      }
     }catch(e){ console.error('server delete:', e); }
+  }
+  // 2) احذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login) — لكل الوسائل
+  // بما فيها الجلسات المجهولة، طالما توجد طبقة Firebase أصلاً
+  const deleted = await deleteFirebaseUser();
+  if(!deleted){
+    showToast('⚠️','تعذّر حذف حساب Firebase بالكامل','بيانات لعبك حُذفت من الخادم، لكن يلزم إعادة تسجيل الدخول لإكمال حذف حساب الدخول',false);
+    // نكمل مسح البيانات المحلية رغم ذلك لأن بيانات الخادم حُذفت فعلاً
   }
   // 3) حذف localStorage
   const keys=Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX));
@@ -1011,11 +1049,189 @@ async function confirmDeleteAccount(){
   setTimeout(()=>go('s-auth'),1500);
 }
 
-// ────────── الدخول
-// دخول بالاسم فقط — يعمل دائماً بلا اعتماد على أي خدمة خارجية
-function login(){
-  const val=(document.getElementById('auth-name').value||'').trim();
-  completeLogin(val || 'لاعب', 'name', null);
+// ============ نظام الهوية الموحّد ============
+// كل شخص = uid واحد ثابت بغض النظر عن وسيلة الدخول. عند أول فتح للتطبيق نبدأ
+// بجلسة Firebase مجهولة (anonymous) تلقائياً بلا شاشة تسجيل إجبارية، وعند
+// التسجيل لاحقاً بأي مزوّد نربطه بنفس الحساب (linkWithCredential) بدل إنشاء
+// حساب جديد — فلا يضيع تقدّم اللاعب أبداً.
+
+function toggleEmailForm(){
+  sfx('tap');
+  const f=document.getElementById('auth-email-form');
+  if(f) f.style.display = f.style.display==='none' ? 'block' : 'none';
+}
+
+function currentScreenId(){
+  const el=document.querySelector('.screen.active');
+  return el ? el.id : 's-home';
+}
+
+// أين نُعيد المستخدم بعد نجاح تسجيل الدخول/الربط (الشاشة التي بدأ منها)
+window._authReturnScreen = 's-home';
+
+function skipAuth(){
+  sfx('tap');
+  const target = window._authReturnScreen || 's-home';
+  if(target==='s-stats'){ go('s-stats'); return; }
+  checkSubscriptionAndRoute(storeGet('authUid',''));
+}
+
+function openAuth(fromScreen){
+  window._authReturnScreen = fromScreen || currentScreenId();
+  document.getElementById('auth-title').textContent = 'اربط حسابك';
+  document.getElementById('auth-sub').textContent = 'سجّل بأي طريقة تحفظ نقاطك وإنجازاتك حتى لو غيّرت جهازك';
+  document.getElementById('auth-msg').textContent = '';
+  go('s-auth');
+}
+
+// جلسة مجهولة أولى: تُنشأ تلقائياً عند أول فتح للتطبيق بلا حساب محفوظ
+async function ensureAnonymousSession(){
+  let uid = storeGet('authUid','');
+  if(uid) return {uid, provider: storeGet('authProvider','anonymous')};
+
+  const FA=getFirebaseAuth();
+  if(FA){
+    try{
+      const res = await FA.signInAnonymously();
+      uid = res && res.user && res.user.uid;
+    }catch(e){ console.error('anon Capacitor:', e); }
+  }
+  if(!uid){
+    const wb=await getFirebaseWebAuth();
+    if(wb){
+      try{
+        const { signInAnonymously } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+        const result = await signInAnonymously(wb.auth);
+        uid = result.user.uid;
+      }catch(e){ console.error('anon Web:', e); }
+    }
+  }
+  if(!uid){
+    // احتياط كامل بلا اتصال/بلا Firebase config: معرّف جهاز محلي ثابت
+    uid = storeGet('deviceId','');
+    if(!uid){
+      uid = 'anon_' + Date.now().toString(36) + Math.random().toString(36).substr(2,6);
+      storeSet('deviceId', uid);
+    }
+  }
+  storeSet('authUid', uid);
+  storeSet('authProvider', 'anonymous');
+  return {uid, provider:'anonymous'};
+}
+
+// نجاح الدخول/الربط بأي وسيلة — يوحّد كل مسارات ما بعد المصادقة
+function afterAuthSuccess(name, provider, uid, email){
+  sfx('start'); vibrate(20);
+  if(name) storeSet('playerName', name);
+  storeSet('authProvider', provider);
+  if(uid) storeSet('authUid', uid);
+  if(email) storeSet('authEmail', email);
+  window._currentUid = uid || storeGet('authUid','');
+  const nameEl=document.getElementById('user-name');
+  if(nameEl) nameEl.textContent = storeGet('playerName','لاعب');
+  const emailForm=document.getElementById('auth-email-form');
+  if(emailForm) emailForm.style.display='none';
+  showToast('✅','تم الدخول','تم ربط حسابك بنجاح',false);
+  renderAccountLinks();
+  const target = window._authReturnScreen || 's-home';
+  if(target==='s-stats'){ go('s-stats'); }
+  else { checkSubscriptionAndRoute(window._currentUid); }
+}
+
+// جلب ID token للمستخدم الحالي (لإثبات الهوية للخادم)
+async function getCurrentIdToken(){
+  try{
+    const FA=getFirebaseAuth();
+    if(FA){ const r=await FA.getIdToken(); return (r && r.token) || ''; }
+  }catch(e){}
+  try{
+    const wb=await getFirebaseWebAuth();
+    if(wb && wb.auth.currentUser) return await wb.auth.currentUser.getIdToken();
+  }catch(e){}
+  return '';
+}
+
+// حفظ اسم/بريد المستخدم بشكل دائم في قاعدة بيانات الخادم — ضروري خصوصاً
+// لـ Apple التي لا ترسل هذه الحقول إلا في أول تفويض فقط
+async function savePermanentProfile(uid, name, email, provider){
+  if(!uid) return;
+  try{
+    const idToken = await getCurrentIdToken();
+    await fetch('/api/account/profile', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({uid, name: name||'', email: email||'', provider: provider||'', idToken})
+    });
+  }catch(e){ console.error('save profile:', e); }
+}
+
+// ─── الربط التفاعلي: يعالج auth/account-exists-with-different-credential ───
+// يعيد true إن تمت معالجة الخطأ (سواء بعرض توضيح أو ببدء مسار الربط)
+async function handleAuthConflict(e, attemptedProvider, wb){
+  const code = String((e && e.code) || '');
+  if(!code.includes('account-exists-with-different-credential') && !code.includes('credential-already-in-use')) return false;
+
+  let email = e && (e.email || (e.customData && e.customData.email));
+  let pendingCred = null;
+  if(wb && e && e.customData){
+    try{
+      const { OAuthProvider, GoogleAuthProvider } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+      pendingCred = attemptedProvider==='google'
+        ? GoogleAuthProvider.credentialFromError(e)
+        : OAuthProvider.credentialFromError(e);
+    }catch(err){}
+  }
+
+  let methods = [];
+  if(email){
+    try{
+      const wbAuth = wb || await getFirebaseWebAuth();
+      if(wbAuth){
+        const { fetchSignInMethodsForEmail } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+        methods = await fetchSignInMethodsForEmail(wbAuth.auth, email);
+      }
+    }catch(err){}
+  }
+  const original = methods[0] || '';
+  const originalLabel = original.includes('google') ? 'Google'
+    : original.includes('apple') ? 'Apple'
+    : original.includes('password') ? 'البريد وكلمة المرور'
+    : 'طريقتك الأصلية';
+
+  window._pendingLinkCred    = pendingCred;
+  window._pendingLinkEmail   = email || '';
+  window._pendingLinkOriginal= original;
+
+  openAuth(window._authReturnScreen || currentScreenId());
+  document.getElementById('auth-title').textContent = 'لديك حساب بالفعل';
+  document.getElementById('auth-sub').textContent = email
+    ? `البريد (${email}) مسجَّل مسبقاً عبر ${originalLabel}. سجّل دخولك بهذه الطريقة أولاً وسنربط حسابك تلقائياً.`
+    : 'لديك حساب بالفعل بطريقة دخول مختلفة. سجّل دخولك بطريقتك الأصلية أولاً ثم يمكنك ربط الطريقة الجديدة من إعدادات الحساب.';
+  if(original.includes('password') && email){
+    document.getElementById('auth-email-form').style.display='block';
+    document.getElementById('auth-email').value = email;
+  }
+  showToast('🔗','لديك حساب بالفعل', originalLabel ? `سجّل عبر ${originalLabel} للمتابعة` : 'سجّل بطريقتك الأصلية', false);
+  return true;
+}
+
+// بعد نجاح تسجيل الدخول بالطريقة الأصلية، إن كان هناك ربط معلّق نكمله تلقائياً
+async function resolvePendingLinkWeb(wb, userAfterSignIn){
+  if(!window._pendingLinkCred || !userAfterSignIn) return false;
+  try{
+    const { linkWithCredential } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+    await linkWithCredential(userAfterSignIn, window._pendingLinkCred);
+    showToast('🔗','تم الربط بنجاح','أصبح بإمكانك الدخول من الطريقتين الآن',false);
+    return true;
+  }catch(e){ console.error('resolve pending link:', e); return false; }
+  finally{
+    window._pendingLinkCred=null; window._pendingLinkEmail=null; window._pendingLinkOriginal=null;
+  }
+}
+function clearPendingLinkNative(){
+  // على iOS الأصلي عبر Capacitor لا تتوفر واجهة موحّدة لاستخراج بيانات الاعتماد
+  // المعلّقة من الخطأ (على عكس Web SDK)، لذا نكتفي بإكمال تسجيل الدخول بالطريقة
+  // الأصلية بأمان بدل ربط تلقائي كامل. موثّق في AUTH_SETUP.md.
+  window._pendingLinkCred=null; window._pendingLinkEmail=null; window._pendingLinkOriginal=null;
 }
 
 // ────────── Firebase Auth — طبقتان: Capacitor (iOS) ثم Web SDK (متصفح)
@@ -1046,15 +1262,26 @@ async function getFirebaseWebAuth(){
 
 async function appleSignIn(){
   sfx('tap'); vibrate(15);
+  const isAnon = storeGet('authProvider','')==='anonymous';
   // محاولة 1: Capacitor (iOS app)
   const FA = getFirebaseAuth();
   if(FA){
     try{
-      const res = await FA.signInWithApple();
+      const res = isAnon ? await FA.linkWithApple() : await FA.signInWithApple();
       const u = res && res.user;
-      completeLogin((u && u.displayName) || 'لاعب', 'apple', u && u.uid);
+      if(u){
+        if(u.email) storeSet('authEmail', u.email);
+        savePermanentProfile(u.uid, u.displayName, u.email, 'apple');
+      }
+      afterAuthSuccess((u && u.displayName) || storeGet('playerName','لاعب'), 'apple', u && u.uid, u && u.email);
       return;
-    }catch(e){ console.error('Capacitor Apple:', e); }
+    }catch(e){
+      const code=String(e && e.code || '');
+      if(code.includes('account-exists-with-different-credential') || code.includes('credential-already-in-use')){
+        await handleAuthConflict(e, 'apple', null); return;
+      }
+      console.error('Capacitor Apple:', e);
+    }
   }
   // محاولة 2: Firebase Web SDK (متصفح) — SDK محمّل مسبقاً فلا يُمنع الـ popup
   const wb = await getFirebaseWebAuth();
@@ -1062,66 +1289,139 @@ async function appleSignIn(){
     try{
       const provider = new wb.OAuthProvider('apple.com');
       provider.addScope('email'); provider.addScope('name');
-      const result = await wb.signInWithPopup(wb.auth, provider);
+      let result;
+      if(isAnon && wb.auth.currentUser){
+        const { linkWithPopup } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+        result = await linkWithPopup(wb.auth.currentUser, provider);
+      } else {
+        result = await wb.signInWithPopup(wb.auth, provider);
+      }
       const u = result.user;
-      if(u.email) storeSet('authEmail', u.email);
-      completeLogin(u.displayName || u.email || 'لاعب', 'apple', u.uid);
+      if(u.email){ storeSet('authEmail', u.email); savePermanentProfile(u.uid, u.displayName, u.email, 'apple'); }
+      afterAuthSuccess(u.displayName || u.email || storeGet('playerName','لاعب'), 'apple', u.uid, u.email);
       return;
     }catch(e){
+      if(await handleAuthConflict(e, 'apple', wb)) return;
       console.error('Web Apple:', e);
-      showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية أو ادخل باسمك',false);
+      showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية',false);
       return;
     }
   }
-  showToast('🍎','الإعداد ناقص','يحتاج Firebase config — ادخل باسمك في الوقت الحالي',false);
+  showToast('🍎','الإعداد ناقص','يحتاج Firebase config',false);
 }
 
 async function googleSignIn(){
   sfx('tap'); vibrate(15);
+  const isAnon = storeGet('authProvider','')==='anonymous';
   // محاولة 1: Capacitor (iOS app)
   const FA = getFirebaseAuth();
   if(FA){
     try{
-      const res = await FA.signInWithGoogle();
+      const res = isAnon ? await FA.linkWithGoogle() : await FA.signInWithGoogle();
       const u = res && res.user;
-      completeLogin((u && u.displayName) || 'لاعب', 'google', u && u.uid);
+      if(u){
+        if(u.email) storeSet('authEmail', u.email);
+        savePermanentProfile(u.uid, u.displayName, u.email, 'google');
+      }
+      afterAuthSuccess((u && u.displayName) || storeGet('playerName','لاعب'), 'google', u && u.uid, u && u.email);
       return;
-    }catch(e){ console.error('Capacitor Google:', e); }
+    }catch(e){
+      const code=String(e && e.code || '');
+      if(code.includes('account-exists-with-different-credential') || code.includes('credential-already-in-use')){
+        await handleAuthConflict(e, 'google', null); return;
+      }
+      console.error('Capacitor Google:', e);
+    }
   }
   // محاولة 2: Firebase Web SDK (متصفح)
   const wb = await getFirebaseWebAuth();
   if(wb){
     try{
       const provider = new wb.GoogleAuthProvider();
-      const result = await wb.signInWithPopup(wb.auth, provider);
+      let result;
+      if(isAnon && wb.auth.currentUser){
+        const { linkWithPopup } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+        result = await linkWithPopup(wb.auth.currentUser, provider);
+      } else {
+        result = await wb.signInWithPopup(wb.auth, provider);
+      }
       const u = result.user;
-      if(u.email) storeSet('authEmail', u.email);
-      completeLogin(u.displayName || u.email || 'لاعب', 'google', u.uid);
+      if(u.email){ storeSet('authEmail', u.email); savePermanentProfile(u.uid, u.displayName, u.email, 'google'); }
+      afterAuthSuccess(u.displayName || u.email || storeGet('playerName','لاعب'), 'google', u.uid, u.email);
       return;
     }catch(e){
+      if(await handleAuthConflict(e, 'google', wb)) return;
       console.error('Web Google:', e);
-      showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية أو ادخل باسمك',false);
+      showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية',false);
       return;
     }
   }
-  showToast('🔵','الإعداد ناقص','يحتاج Firebase config — ادخل باسمك في الوقت الحالي',false);
+  showToast('🔵','الإعداد ناقص','يحتاج Firebase config',false);
 }
-function completeLogin(name, provider, uid){
-  sfx('start'); vibrate(20);
-  storeSet('playerName', name);
-  storeSet('authProvider', provider);
-  // تأكد دائماً من وجود uid (للمستخدمين بالاسم نولّد device_id)
-  if(!uid){
-    uid = storeGet('deviceId','');
-    if(!uid){
-      uid = 'anon_' + Date.now().toString(36) + Math.random().toString(36).substr(2,6);
-      storeSet('deviceId', uid);
+
+// ============ دخول بالبريد وكلمة المرور ============
+async function emailAuth(mode){
+  sfx('tap');
+  const email    = (document.getElementById('auth-email').value||'').trim();
+  const password = document.getElementById('auth-password').value||'';
+  const msg = document.getElementById('auth-msg');
+  msg.style.color=''; msg.textContent='';
+  if(!email || !email.includes('@')){ msg.style.color='#ff8a8a'; msg.textContent='أدخل بريداً إلكترونياً صحيحاً'; return; }
+  if(password.length < 6){ msg.style.color='#ff8a8a'; msg.textContent='كلمة المرور ٦ أحرف على الأقل'; return; }
+  const isAnon = storeGet('authProvider','')==='anonymous';
+
+  try{
+    const FA = getFirebaseAuth();
+    if(FA){
+      let res;
+      if(mode==='signup'){
+        res = isAnon ? await FA.linkWithEmailAndPassword({email, password})
+                     : await FA.createUserWithEmailAndPassword({email, password});
+      } else {
+        res = await FA.signInWithEmailAndPassword({email, password});
+        clearPendingLinkNative();
+      }
+      const u = res && res.user;
+      savePermanentProfile(u && u.uid, (u && u.displayName) || storeGet('playerName',''), email, 'password');
+      afterAuthSuccess(storeGet('playerName','لاعب'), 'password', u && u.uid, email);
+      return;
+    }
+    const wb = await getFirebaseWebAuth();
+    if(wb){
+      const authMod = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+      const { createUserWithEmailAndPassword, signInWithEmailAndPassword, linkWithCredential, EmailAuthProvider } = authMod;
+      let cred;
+      if(mode==='signup'){
+        if(isAnon && wb.auth.currentUser){
+          const emailCred = EmailAuthProvider.credential(email, password);
+          cred = await linkWithCredential(wb.auth.currentUser, emailCred);
+        } else {
+          cred = await createUserWithEmailAndPassword(wb.auth, email, password);
+        }
+      } else {
+        cred = await signInWithEmailAndPassword(wb.auth, email, password);
+        await resolvePendingLinkWeb(wb, cred.user);
+      }
+      const u = cred.user;
+      savePermanentProfile(u.uid, u.displayName || storeGet('playerName',''), email, 'password');
+      afterAuthSuccess(storeGet('playerName','لاعب'), 'password', u.uid, email);
+      return;
+    }
+    msg.style.color='#ff8a8a'; msg.textContent='الإعداد ناقص — Firebase غير مهيأ';
+  }catch(e){
+    console.error('email auth:', e);
+    const code = String((e && e.code) || '');
+    if(code.includes('email-already-in-use') || code.includes('credential-already-in-use')){
+      msg.style.color='#f5c542';
+      msg.textContent='لديك حساب بهذا البريد بالفعل — اضغط "تسجيل الدخول" بدل إنشاء حساب';
+    } else if(code.includes('wrong-password') || code.includes('invalid-credential') || code.includes('user-not-found')){
+      msg.style.color='#ff8a8a'; msg.textContent='البريد أو كلمة المرور غير صحيحة';
+    } else if(code.includes('weak-password')){
+      msg.style.color='#ff8a8a'; msg.textContent='كلمة المرور ضعيفة — اختر كلمة أقوى';
+    } else {
+      msg.style.color='#ff8a8a'; msg.textContent='تعذّر إكمال العملية — حاول مرة أخرى';
     }
   }
-  storeSet('authUid', uid);
-  window._currentUid = uid;
-  document.getElementById('user-name').textContent = name;
-  checkSubscriptionAndRoute(uid);
 }
 
 // ────────── RevenueCat — Apple IAP
@@ -2000,8 +2300,90 @@ function fireConfetti(){
   setTimeout(()=>box.innerHTML='',4500);
 }
 
-// ────────── الإحصاءات والإنجازات
-function openStats(){ renderStats(); go('s-stats'); }
+// ============ الإحصاءات والإنجازات ============
+function openStats(){ renderStats(); renderAccountLinks(); go('s-stats'); }
+
+// ============ شاشة ربط الحسابات (Proactive linking) ============
+const PROVIDER_INFO = {
+  'apple.com': {label:'Apple',   icon:'🍎'},
+  'google.com':{label:'Google',  icon:'🔵'},
+  'password':  {label:'البريد وكلمة المرور', icon:'📧'},
+};
+async function getCurrentProviderData(){
+  const FA=getFirebaseAuth();
+  if(FA){
+    try{ const cur=await FA.getCurrentUser(); return (cur && cur.user && cur.user.providerData) || []; }
+    catch(e){ return []; }
+  }
+  const wb=await getFirebaseWebAuth();
+  if(wb && wb.auth.currentUser) return wb.auth.currentUser.providerData || [];
+  return [];
+}
+async function renderAccountLinks(){
+  const box=document.getElementById('account-links');
+  if(!box) return;
+  const linked = await getCurrentProviderData();
+  const linkedIds = new Set(linked.map(p=>p.providerId));
+  box.innerHTML = Object.keys(PROVIDER_INFO).map(pid=>{
+    const info=PROVIDER_INFO[pid];
+    const isLinked=linkedIds.has(pid);
+    const status = isLinked
+      ? '<span style="color:#7CFC7C;font-size:12px;">✓ مرتبط</span>'
+      : '<span style="color:var(--muted);font-size:12px;">غير مرتبط</span>';
+    const action = isLinked
+      ? `<button class="btn btn-ghost" style="padding:6px 14px;font-size:13px;width:auto;" onclick="unlinkProvider('${pid}')">فك الربط</button>`
+      : `<button class="btn btn-primary" style="padding:6px 14px;font-size:13px;width:auto;" onclick="linkProvider('${pid}')">ربط</button>`;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+      <span>${info.icon} ${info.label} ${status}</span>
+      ${action}
+    </div>`;
+  }).join('');
+}
+function linkProvider(pid){
+  sfx('tap');
+  window._authReturnScreen = 's-stats';
+  if(pid==='apple.com'){ appleSignIn(); return; }
+  if(pid==='google.com'){ googleSignIn(); return; }
+  openAuth('s-stats');
+  document.getElementById('auth-title').textContent='أضف طريقة دخول جديدة';
+  document.getElementById('auth-sub').textContent='أضف البريد وكلمة المرور كوسيلة دخول إضافية لحسابك الحالي';
+  document.getElementById('auth-email-form').style.display='block';
+}
+async function unlinkProvider(pid){
+  sfx('tap');
+  const linked = await getCurrentProviderData();
+  if(linked.length<=1){
+    showToast('⚠️','لا يمكن فك الربط','هذه آخر وسيلة دخول لحسابك — أضف وسيلة أخرى أولاً قبل فك هذه',false);
+    return;
+  }
+  const label = (PROVIDER_INFO[pid]||{}).label || pid;
+  const ok=confirm(`هل تريد فك ربط الدخول عبر ${label}؟ ستحتاج وسيلة أخرى لتسجيل الدخول لاحقاً.`);
+  if(!ok) return;
+  try{
+    const FA=getFirebaseAuth();
+    if(FA){
+      await FA.unlink({providerId: pid});
+    } else {
+      const wb=await getFirebaseWebAuth();
+      if(wb && wb.auth.currentUser){
+        const { unlink } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+        await unlink(wb.auth.currentUser, pid);
+      }
+    }
+    if(pid==='password') storeSet('authEmail','');
+    if(storeGet('authProvider','')===('apple.com'===pid?'apple':'google.com'===pid?'google':'password')){
+      // إن كان المزوّد الذي فُكّ ربطه هو المسجَّل حالياً، حدِّث المخزَّن لأقرب مزوّد متبقٍ
+      const remaining = await getCurrentProviderData();
+      const first = remaining[0];
+      if(first){
+        const np = first.providerId==='apple.com'?'apple':first.providerId==='google.com'?'google':'password';
+        storeSet('authProvider', np);
+      }
+    }
+    showToast('✅','تم فك الربط','',false);
+    renderAccountLinks();
+  }catch(e){ console.error('unlink:', e); showToast('⚠️','تعذّر فك الربط','',false); }
+}
 function renderStats(){
   const acc=stats.totalQ?Math.round((stats.correct/stats.totalQ)*100):0;
   const g=document.getElementById('stats-grid');
@@ -2267,18 +2649,24 @@ renderTeamNames();
 })();
 (function initSavedName(){
   const saved=storeGet('playerName', '');
-  if(saved){
-    const nameInput=document.getElementById('auth-name');
-    if(nameInput) nameInput.value=saved;
-    const userNameEl=document.getElementById('user-name');
-    if(userNameEl) userNameEl.textContent=saved;
-  }
+  const userNameEl=document.getElementById('user-name');
+  if(saved && userNameEl) userNameEl.textContent=saved;
 })();
 
 // حمّل Firebase مسبقاً حتى يكون جاهزاً فور ضغط الأزرار (بدون تأخير async)
 getFirebaseWebAuth();
-// هيّئ RevenueCat على iOS
-initRevenueCat();
+
+// ============ إقلاع نظام الهوية الموحّد ============
+// أول فتح للتطبيق: جلسة Firebase مجهولة فورية بلا شاشة تسجيل إجبارية.
+// فتح لاحق: نثق بـ authUid المحفوظ (الجلسة محفوظة تلقائياً من طبقة Firebase)
+// وننتقل مباشرة للرئيسية بدل إجبار المستخدم على تسجيل الدخول من جديد.
+(async function bootAuth(){
+  const { uid } = await ensureAnonymousSession();
+  window._currentUid = uid;
+  // هيّئ RevenueCat على iOS بعد التأكد من وجود uid
+  initRevenueCat();
+  checkSubscriptionAndRoute(uid);
+})();
 
 // تحقق من العودة بعد دفع Stripe — لا نثق بـ ?subscribed=1 وحده (قابل للتزوير)
 // نستخدم uid المحفوظ مسبقاً في localStorage فقط (لا uid من URL)
