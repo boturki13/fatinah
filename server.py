@@ -582,6 +582,40 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
 
+        elif path == '/api/admin/env-status':
+            # ─── فحص البيئة للمشرف ──────────────────────────────────────────
+            admin_secret = os.environ.get('ADMIN_SECRET', '')
+            auth_header  = self.headers.get('X-Admin-Secret', '')
+            if not admin_secret or auth_header != admin_secret:
+                self.send_json(403, {'error': 'غير مصرح'}); return
+            required_vars = [
+                ('ANTHROPIC_API_KEY',            'توليد الأسئلة بالذكاء الاصطناعي (Claude)'),
+                ('GOOGLE_API_KEY',               'التحقق من هوية Firebase'),
+                ('FIREBASE_AUTH_DOMAIN',         'تسجيل الدخول Google/Apple'),
+                ('FIREBASE_PROJECT_ID',          'تسجيل الدخول Google/Apple'),
+                ('FIREBASE_APP_ID',              'تسجيل الدخول Google/Apple'),
+                ('FIREBASE_MESSAGING_SENDER_ID', 'تسجيل الدخول Google/Apple'),
+                ('FIREBASE_STORAGE_BUCKET',      'تسجيل الدخول Google/Apple'),
+                ('RC_API_KEY',                   'RevenueCat — الاشتراكات'),
+                ('ADMIN_SECRET',                 'حماية نقاط الأدمن'),
+            ]
+            is_production = os.environ.get('REPLIT_DEPLOYMENT', '') == '1'
+            vars_status = [
+                {
+                    'name':        var,
+                    'description': desc,
+                    'present':     bool(os.environ.get(var, '')),
+                }
+                for var, desc in required_vars
+            ]
+            missing_count = sum(1 for v in vars_status if not v['present'])
+            self.send_json(200, {
+                'ok':           missing_count == 0,
+                'environment':  'production' if is_production else 'development',
+                'missing_count': missing_count,
+                'vars':         vars_status,
+            })
+
         else:
             self.send_response(404); self.end_headers()
 
