@@ -96,6 +96,18 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 .field-label{font-size:14px; color:var(--muted); font-weight:600; margin-bottom:10px;}
 .seg{display:flex; gap:8px;}
 .seg button{flex:1; border:1.5px solid var(--line2); background:var(--glass); border-radius:14px; padding:15px; font-family:inherit; font-size:17px; font-weight:800; color:var(--muted); cursor:pointer; transition:.15s;}
+#seg-catcount{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+#seg-catcount button{padding:12px 4px; font-size:14.5px; white-space:nowrap;}
+/* عرض أفقي: تصغير المسافات ليظهر أكبر قدر من الصفحة */
+@media (orientation:landscape) and (max-height:500px){
+  #app{max-width:none; padding:10px 24px; padding-top:calc(8px + env(safe-area-inset-top)); padding-bottom:calc(14px + env(safe-area-inset-bottom)); padding-left:calc(24px + env(safe-area-inset-left)); padding-right:calc(24px + env(safe-area-inset-right));}
+  .card{padding:12px 14px; margin-bottom:10px;}
+  .title{font-size:20px; margin-bottom:8px;}
+  .btn{padding:11px 16px;}
+  .seg button{padding:9px;}
+  #seg-catcount{grid-template-columns:repeat(7,1fr);}
+  .q-sheet{max-height:100vh; border-radius:0; height:100%;}
+}
 .seg button.on{background:linear-gradient(120deg,var(--hot2),var(--hot)); color:#fff; border-color:transparent; box-shadow:0 6px 18px rgba(255,61,113,.35);}
 
 .team-row{display:flex; align-items:center; gap:10px; margin-bottom:11px;}
@@ -245,6 +257,11 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 .ach .ai{font-size:26px; width:34px; text-align:center;}
 .ach .at{font-weight:800; font-size:15px;}
 .ach .ad{font-size:12.5px; color:var(--muted); margin-top:1px;}
+/* شريط وضع دون اتصال */
+.offline-bar{position:fixed; bottom:0; left:0; right:0; z-index:90; background:rgba(30,15,55,.97); border-top:1.5px solid rgba(255,90,110,.5); padding:calc(8px + env(safe-area-inset-bottom)) 16px 8px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; font-weight:700; color:#FF8FA0; transform:translateY(100%); transition:transform .35s ease; pointer-events:none;}
+.offline-bar.show{transform:translateY(0);}
+.offline-bar .ob-dot{width:8px; height:8px; border-radius:50%; background:#FF5A6E; flex-shrink:0; animation:pulse-dot 1.5s ease-in-out infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:.3;}}
 .toast{position:fixed; top:calc(16px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%) translateY(-120px); background:linear-gradient(120deg,#3A1F6E,var(--bg3)); border:1.5px solid var(--gold); border-radius:16px; padding:12px 18px; display:flex; align-items:center; gap:11px; z-index:80; box-shadow:var(--sh); transition:transform .5s cubic-bezier(.2,.9,.3,1.3); max-width:90%;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 .toast .ti{font-size:24px;}
@@ -331,6 +348,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
 .pw-links{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:10px;font-size:12px;padding-bottom:8px;}
 .pw-links a{color:#A79FBE;text-decoration:none;padding:6px 4px;}
 .pw-dot{color:rgba(255,255,255,.2);}
+/* ── كود مكافأة ── */
+.pw-promo{width:100%;max-width:380px;margin-top:14px;text-align:center;}
+.pw-promo-toggle{background:none;border:1.5px solid rgba(255,255,255,.15);border-radius:12px;color:#C4B8E0;font-size:14px;font-family:inherit;font-weight:700;padding:10px 20px;cursor:pointer;width:100%;transition:.2s;}
+.pw-promo-toggle:hover{border-color:var(--gold);color:var(--gold);}
+.pw-promo-form{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+.pw-promo-form input{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:12px;color:#fff;font-family:inherit;font-size:17px;font-weight:800;padding:12px 16px;text-align:center;letter-spacing:3px;outline:none;}
+.pw-promo-form input:focus{border-color:var(--gold);}
+.pw-promo-form input::placeholder{letter-spacing:0;font-size:14px;font-weight:600;color:rgba(255,255,255,.35);}
+.pw-promo-form button{background:linear-gradient(120deg,var(--hot2),var(--hot));border:none;border-radius:12px;color:#fff;font-family:inherit;font-size:16px;font-weight:800;padding:12px;cursor:pointer;}
 @media (prefers-reduced-motion:no-preference){
   .pw-rise{opacity:0;transform:translateY(14px);animation:pwRise .6s cubic-bezier(.2,.7,.2,1) forwards;}
   .pw-d1{animation-delay:.05s}.pw-d2{animation-delay:.14s}.pw-d3{animation-delay:.23s}
@@ -463,34 +489,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     </div>
   </section>
 
-  <section class="screen" id="s-terms" style="padding:24px 20px 40px;overflow-y:auto;">
-    <div style="max-width:560px;margin:0 auto;">
-      <h2 style="font-weight:800;font-size:22px;margin:8px 0 14px;">شروط الاستخدام</h2>
-      <div style="color:#CFC9DF;font-size:14px;line-height:1.9;">
-        <p>«فَطِنة» لعبة أسئلة جماعية للترفيه العائلي. باستخدامك التطبيق فأنت توافق على هذه الشروط.</p>
-        <p><b>الاشتراك:</b> يوفّر التطبيق اشتراكاً شهرياً وسنوياً يفتح كل الميزات. تُحصَّل القيمة عبر حساب Apple، ويتجدّد تلقائياً ما لم تلغِه قبل نهاية الفترة الحالية بـ24 ساعة على الأقل.</p>
-        <p><b>الإلغاء:</b> يمكنك إدارة الاشتراك أو إلغاؤه من الإعدادات ← Apple ID ← الاشتراكات. طلبات الاسترداد تتم عبر Apple مباشرة.</p>
-        <p><b>الاستخدام العادل:</b> يُمنع إساءة استخدام التطبيق أو تجاوز أنظمة الدفع أو إعادة توزيع المحتوى.</p>
-        <p><b>التواصل:</b> boturkialshareef@gmail.com</p>
-      </div>
-      <button class="btn btn-ghost btn-block" style="margin-top:18px;" onclick="go('s-paywall')">رجوع</button>
-    </div>
-  </section>
-
-  <section class="screen" id="s-privacy" style="padding:24px 20px 40px;overflow-y:auto;">
-    <div style="max-width:560px;margin:0 auto;">
-      <h2 style="font-weight:800;font-size:22px;margin:8px 0 14px;">سياسة الخصوصية</h2>
-      <div style="color:#CFC9DF;font-size:14px;line-height:1.9;">
-        <p>خصوصيتك تهمّنا. هذه السياسة توضّح ما نجمعه وكيف نستخدمه.</p>
-        <p><b>ما نجمعه:</b> الاسم الذي تدخله للعب، ومعرّف مستخدم لتشغيل التطبيق، وبيانات الدخول إن اخترت Apple أو Google. تُحفظ نقاطك وإعداداتك على جهازك.</p>
-        <p><b>المدفوعات:</b> تتم عبر Apple، ونستخدم RevenueCat للتحقق من حالة الاشتراك. لا نطّلع على بيانات بطاقتك ولا نخزّنها.</p>
-        <p><b>المشاركة:</b> لا نبيع بياناتك ولا نشاركها لأغراض إعلانية.</p>
-        <p><b>الحذف:</b> راسلنا على boturkialshareef@gmail.com</p>
-      </div>
-      <button class="btn btn-ghost btn-block" style="margin-top:18px;" onclick="go('s-paywall')">رجوع</button>
-    </div>
-  </section>
-
   <!-- الرئيسية -->
   <section class="screen active" id="s-home">
     <div class="topbar">
@@ -524,8 +522,25 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     </div>
     <div class="card">
       <div class="field-label">كم عدد الفئات؟ <b id="catcount-lbl" style="color:var(--gold)">6</b></div>
-      <input type="range" id="catcount" min="4" max="10" value="6" step="1" style="width:100%;" oninput="updateCatCount(this.value)">
+      <div class="seg" id="seg-catcount">
+        <button data-n="2" onclick="updateCatCount(2)">٢ فئات</button>
+        <button data-n="3" onclick="updateCatCount(3)">٣ فئات</button>
+        <button data-n="4" onclick="updateCatCount(4)">٤ فئات</button>
+        <button data-n="5" onclick="updateCatCount(5)">٥ فئات</button>
+        <button class="on" data-n="6" onclick="updateCatCount(6)">٦ فئات</button>
+        <button data-n="7" onclick="updateCatCount(7)">٧ فئات</button>
+        <button data-n="8" onclick="updateCatCount(8)">٨ فئات</button>
+      </div>
       <div id="catcount-split" style="font-size:12.5px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.6;"></div>
+    </div>
+    <div class="card">
+      <div class="field-label">مستوى الصعوبة</div>
+      <div class="seg" id="seg-diff">
+        <button data-d="easy"   onclick="setDifficulty('easy')">🟢 سهل</button>
+        <button class="on" data-d="normal" onclick="setDifficulty('normal')">🟡 عادي</button>
+        <button data-d="hard"   onclick="setDifficulty('hard')">🔴 صعب</button>
+      </div>
+      <div id="diff-hint" style="font-size:12.5px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.6;">⏱ وقت الإجابة: 30 ثانية</div>
     </div>
     <div class="card" id="team-names"></div>
     <button class="btn btn-primary" onclick="sfx('tap');toCats()">التالي: اختيار الفئات</button>
@@ -723,6 +738,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
 
 <div class="toast" id="toast"><div class="ti">🏆</div><div><div class="tt" id="toast-t"></div><div class="td" id="toast-d"></div></div></div>
 <div class="confetti" id="confetti"></div>
+<div class="offline-bar" id="offline-bar" aria-live="polite" aria-label="وضع دون اتصال"><span class="ob-dot"></span>وضع دون اتصال</div>
 
 <!-- نافذة تأكيد الخروج -->
 <div class="modal-wrap" id="exit-modal">
@@ -790,7 +806,7 @@ const CAT_GROUPS={
 };
 const GROUP_ICONS={"إسلاميات":"🕌","معرفة وعلوم":"🧠","تاريخ وجغرافيا":"🏛️","رياضة":"⚽","محرّكات":"🏎️","ثقافة وتراث":"🐪","ألغاز وذكاء":"🧩","فنون وأدب":"📜","طبيعة وحيوانات":"🦁"};
 
-let state={teamCount:2, catCount:6, teams:[], cats:[], turn:0, cells:{}, answered:0, cur:null,
+let state={teamCount:2, catCount:6, difficulty:'normal', teams:[], cats:[], turn:0, cells:{}, answered:0, cur:null,
   timer:null, timeLeft:60, paused:false, searchTimer:null, answering:true};
 
 // ────────── التخزين الدائم
@@ -1039,7 +1055,7 @@ async function confirmDeleteAccount(){
   setTimeout(()=>go('s-auth'),1500);
 }
 
-// ============ نظام الهوية الموحّد ============
+// ---- نظام الهوية الموحّد ----
 // كل شخص = uid واحد ثابت بغض النظر عن وسيلة الدخول. عند أول فتح للتطبيق نبدأ
 // بجلسة Firebase مجهولة (anonymous) تلقائياً بلا شاشة تسجيل إجبارية، وعند
 // التسجيل لاحقاً بأي مزوّد نربطه بنفس الحساب (linkWithCredential) بدل إنشاء
@@ -1349,7 +1365,7 @@ async function googleSignIn(){
   showToast('🔵','الإعداد ناقص','يحتاج Firebase config',false);
 }
 
-// ============ دخول بالبريد وكلمة المرور ============
+// ---- دخول بالبريد وكلمة المرور ----
 async function emailAuth(mode){
   sfx('tap');
   const email    = (document.getElementById('auth-email').value||'').trim();
@@ -1419,8 +1435,6 @@ async function emailAuth(mode){
 const RC_API_KEY = 'appl_uqcDNORwLPcxPWRUDjmPPpoMeNM';
 const RC_CONFIGURED = !RC_API_KEY.includes('XXXX'); // true = مفتاح حقيقي
 const RC_ENTITLEMENT = 'premium';
-const TRIAL_GAMES = 3;
-let _isSubscribed = false;
 
 function getRC(){
   return window.Capacitor && window.Capacitor.isNativePlatform()
@@ -1430,7 +1444,7 @@ function getRC(){
 
 async function initRevenueCat(){
   const RC = getRC();
-  if(!RC) return;
+  if(!RC || !RC_CONFIGURED) return; // لا تهيّئ إذا كان المفتاح placeholder
   try{
     const uid = storeGet('authUid','');
     await RC.configure({ apiKey: RC_API_KEY });
@@ -1440,17 +1454,32 @@ async function initRevenueCat(){
 
 async function rcIsActive(){
   const RC = getRC();
-  if(!RC) return null; // null = غير متاح (ويب)
+  if(!RC || !RC_CONFIGURED) return null; // null = غير متاح (ويب أو مفتاح placeholder)
   try{
     const { customerInfo } = await RC.getCustomerInfo();
-    return !!(customerInfo.entitlements.active &&
-              customerInfo.entitlements.active[RC_ENTITLEMENT]);
-  }catch(e){ console.error('RC status:', e); return null; }
+    const active = !!(customerInfo.entitlements.active &&
+                      customerInfo.entitlements.active[RC_ENTITLEMENT]);
+    // احفظ آخر حالة معروفة (للاستخدام عند انعدام الإنترنت)
+    storeSet('rcSubCache', { active, ts: Date.now() });
+    return active;
+  }catch(e){
+    console.error('RC status:', e);
+    // إذا كنا بلا إنترنت على iOS، أعد الحالة المحفوظة (صالحة 7 أيام)
+    if(!navigator.onLine){
+      const cache = storeGet('rcSubCache', null);
+      if(cache && (Date.now() - cache.ts) < 7 * 24 * 60 * 60 * 1000){
+        console.log('RC offline — using cached state:', cache.active);
+        return cache.active;
+      }
+    }
+    return null;
+  }
 }
 
 async function rcPurchase(plan){
   const RC = getRC();
   if(!RC) throw new Error('RevenueCat غير متاح');
+  if(!RC_CONFIGURED) throw new Error('RevenueCat غير مهيَّأ — أضف مفتاح iOS الحقيقي في RC_API_KEY');
   const { offerings } = await RC.getOfferings();
   const current = offerings.current;
   if(!current) throw new Error('لا توجد عروض متاحة');
@@ -1475,7 +1504,7 @@ async function rcRestore(){
     const { customerInfo } = await RC.restorePurchases();
     const active = !!(customerInfo.entitlements.active &&
                       customerInfo.entitlements.active[RC_ENTITLEMENT]);
-    if(active){ _isSubscribed = true; go('s-home'); showToast('✅','تم استعادة اشتراكك','',false); }
+    if(active){ go('s-home'); showToast('✅','تم استعادة اشتراكك','',false); }
     else{ showToast('ℹ️','لا يوجد اشتراك سابق','',false); }
   }catch(e){ showToast('⚠️','تعذّر الاستعادة', e.message||'', false); }
 }
@@ -1493,15 +1522,13 @@ async function promoIsActive(uid){
 async function checkSubscriptionAndRoute(uid){
   // iOS: RevenueCat أولاً
   const rcActive = await rcIsActive();
-  _isSubscribed = (rcActive === true);
   if(rcActive === true){ go('s-home'); return; }
   if(rcActive === false){
     // تحقق من كود مجاني قبل صفحة الاشتراك
     if(uid && await promoIsActive(uid)){ go('s-home'); return; }
     go('s-paywall'); return;
   }
-  if(rcActive === false){ go('s-paywall'); return; }
-  // ويب: Stripe
+  // ويب: Stripe — فشل مغلق (fail-closed): أي خطأ = paywall لا home
   try{
     const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
     if(!resp.ok) throw new Error('status error');
@@ -1587,7 +1614,6 @@ async function startCheckout(){
     if(window.Capacitor && window.Capacitor.isNativePlatform()){
       const purchased = await rcPurchase(_pwPlan);
       if(purchased){
-        _isSubscribed = true;
         go('s-home');
         showToast('🎉','مرحباً بك!','اشتراكك فعّال — استمتع بفطنة!',false);
       } else {
@@ -1617,6 +1643,15 @@ async function startCheckout(){
   }
 }
 
+// ────────── مستوى الصعوبة
+const DIFF_TIMES={easy:{normal:45,speed:25,steal:18,bomb:45},normal:{normal:30,speed:15,steal:30,bomb:30},hard:{normal:20,speed:10,steal:20,bomb:20}};
+function setDifficulty(d){
+  sfx('tap'); state.difficulty=d;
+  document.querySelectorAll('#seg-diff button').forEach(b=>b.classList.toggle('on',b.dataset.d===d));
+  const labels={easy:'⏱ وقت الإجابة: 45 ثانية',normal:'⏱ وقت الإجابة: 30 ثانية',hard:'⏱ وقت الإجابة: 20 ثانية'};
+  document.getElementById('diff-hint').textContent=labels[d]||'';
+}
+
 // ────────── إعداد الفرق
 function setTeamCount(n){
   sfx('tap'); state.teamCount=n;
@@ -1625,8 +1660,10 @@ function setTeamCount(n){
   updateCatSplitPreview();
 }
 function updateCatCount(v){
+  sfx('tap');
   state.catCount=+v;
   document.getElementById('catcount-lbl').textContent=v;
+  document.querySelectorAll('#seg-catcount button').forEach(b=>b.classList.toggle('on', +b.dataset.n===+v));
   updateCatSplitPreview();
 }
 // حساب توزيع الفئات على الفرق بالتناوب، والزائد للأوائل
@@ -1787,16 +1824,6 @@ function advancePickTurn(){
 
 // ────────── بدء
 function startGame(){
-  const _nat = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
-  if(_nat && !_isSubscribed){
-    const _used = +storeGet('trialGames','0') || 0;
-    if(_used >= TRIAL_GAMES){
-      go('s-paywall');
-      showToast('🔒','انتهت جولاتك المجانية','اشترك للعب بلا حدود',false);
-      return;
-    }
-    storeSet('trialGames', String(_used+1));
-  }
   state.familyRound=null; state.usedQ=new Set();
   vibrate(30); state.turn=0; state.answered=0; state.cells={};
   buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
@@ -1847,7 +1874,7 @@ function renderTurn(){
   const st=TEAM_STYLES[state.teams[state.turn].idx];
   const p=document.getElementById('turn-pill');
   p.style.background=st.bg; p.style.color=st.color; p.style.borderColor=st.dot;
-  p.innerHTML=`▶ دور ${state.teams[state.turn].name}`;
+  p.innerHTML=`▶ دور ${esc(state.teams[state.turn].name)}`;
   updateBombButton();
 }
 
@@ -1890,7 +1917,7 @@ function fireBomb(targetIdx){
     for(let c=0;c<n;c++){ const key=c+'-'+lvl; if(state.cells[key] && !state.cells[key].used) candidates.push(c); }
     if(candidates.length){ col=candidates[Math.floor(Math.random()*candidates.length)]; r=lvl; }
   }
-  if(col===-1) return; // لا خانات متبقية إطلاقاً (نادر جداً قرب نهاية اللعبة)
+  if(col===-1){ state.teams[state.turn].bombUsed=true; return; } // لا خانات متبقية — سجّل القنبلة مستخدمة
   const key=col+'-'+r;
   const cellEls=document.querySelectorAll('#board .cell');
   const cell=cellEls[(r-1)*n+col];
@@ -1988,10 +2015,11 @@ function openQuestion(col,r,key,cell){
 function startPhase(phase){
   state.cur.phase=phase;
   const c=state.cur;
+  const dt=DIFF_TIMES[state.difficulty]||DIFF_TIMES.normal;
   if(c.isBomb){
     if(phase==='bomb'){
       setPhasePill(c.bombTarget, '💣 قنبلة! دور فريق '+state.teams[c.bombTarget].name+' — يجاوب شفهياً');
-      showTimer(30);
+      showTimer(dt.bomb);
       renderFlow();
     } else if(phase==='reveal'){
       clearInterval(state.timer);
@@ -2004,14 +2032,14 @@ function startPhase(phase){
   }
   const isSpeed = c.cat==='إجابة سريعة';
   if(phase==='owner'){
-    const t=isSpeed?15:30;
+    const t=isSpeed?dt.speed:dt.normal;
     setPhasePill(c.owner, 'دور فريق '+state.teams[c.owner].name+' — يجاوب شفهياً'+(isSpeed?' (سريع!)':''));
     showTimer(t);
     renderFlow();
   } else if(phase==='steal'){
     const ti=c.stealQueue[c.stealPos];
     c.askedTeams.add(ti);
-    const t=isSpeed?7:30;
+    const t=isSpeed?Math.round(dt.speed*0.5):dt.steal;
     setPhasePill(ti, 'سرقة! دور فريق '+state.teams[ti].name+' — '+t+' ثانية');
     showTimer(t);
     renderFlow();
@@ -2221,7 +2249,9 @@ function useLifeline(id, teamIdx){
     const nq=pickQuestion(c.cat,c.d); c.q=nq;
     document.getElementById('q-text').textContent=nq.q;
     document.getElementById('ans-text').textContent = nq.answer || (nq.o && typeof nq.a==='number' ? nq.o[nq.a] : '');
-    showTimer(c.phase==='steal'?30:60);
+    const dt2=DIFF_TIMES[state.difficulty]||DIFF_TIMES.normal;
+    const isSpd=c.cat==='إجابة سريعة';
+    showTimer(c.phase==='steal'?(isSpd?Math.round(dt2.speed*0.5):dt2.steal):(isSpd?dt2.speed:dt2.normal));
   } else if(id==='double'){
     c.doubled=true;
     document.getElementById('q-points').textContent='+'+(c.points*2)+' نقطة (مضاعف!)';
@@ -2273,7 +2303,7 @@ function showResult(sorted,win,tie){
   if(!tie){ sfx('win'); vibrate([60,40,60,40,120]); fireConfetti(); }
 }
 function restart(){
-  state.teams.forEach(t=>{ t.score=0; t.ll=3; t.used=new Set(); t.bombUsed=false; });
+  state.teams.forEach(t=>{ t.score=0; t.ll=3; t.used=new Set(); });
   startGame();
 }
 function fireConfetti(){
@@ -2290,10 +2320,10 @@ function fireConfetti(){
   setTimeout(()=>box.innerHTML='',4500);
 }
 
-// ============ الإحصاءات والإنجازات ============
+// ---- الإحصاءات والإنجازات ----
 function openStats(){ renderStats(); renderAccountLinks(); go('s-stats'); }
 
-// ============ شاشة ربط الحسابات (Proactive linking) ============
+// ---- شاشة ربط الحسابات (Proactive linking) ----
 const PROVIDER_INFO = {
   'apple.com': {label:'Apple',   icon:'🍎'},
   'google.com':{label:'Google',  icon:'🔵'},
@@ -2558,7 +2588,7 @@ function addManualQuestion(){
   const o=[0,1,2,3].map(i=>(document.getElementById('fm-o-'+i).value||'').trim());
   if(!name){ shakeField('fm-name'); return; }
   if(!q){ shakeField('fm-q'); return; }
-  if(o.some(x=>!x)){ shakeField('fm-o-0'); return; }
+  const emptyIdx=o.findIndex(x=>!x); if(emptyIdx!==-1){ shakeField('fm-o-'+emptyIdx); return; }
   sfx('correct'); vibrate(15);
   manualDraft.name=name;
   manualDraft.questions.push({q, o, a:manualDraft.correct});
@@ -2631,7 +2661,31 @@ function shakeField(id){
   setTimeout(()=>{ el.style.borderColor=''; el.classList.remove('shake-x'); },500);
 }
 
-// ────────── تهيئة
+// ---- مؤشر وضع دون اتصال ----
+(function initConnectivity(){
+  const bar = document.getElementById('offline-bar');
+  if(!bar) return;
+
+  function setOffline(offline){
+    bar.classList.toggle('show', offline);
+  }
+
+  // الحالة الأولية
+  setOffline(!navigator.onLine);
+
+  // استمع لأحداث المتصفح (تعمل داخل WKWebView أيضاً)
+  window.addEventListener('online',  () => setOffline(false));
+  window.addEventListener('offline', () => setOffline(true));
+
+  // على iOS (Capacitor) — استخدم Network plugin إن توفّر للتحقق المبكّر
+  const Net = window.Capacitor?.Plugins?.Network;
+  if(Net){
+    Net.getStatus().then(s => setOffline(!s.connected)).catch(()=>{});
+    Net.addListener('networkStatusChange', s => setOffline(!s.connected));
+  }
+})();
+
+// ---- تهيئة ----
 renderTeamNames();
 (function initSoundIcon(){
   const b=document.getElementById('sound-btn');
@@ -2646,7 +2700,7 @@ renderTeamNames();
 // حمّل Firebase مسبقاً حتى يكون جاهزاً فور ضغط الأزرار (بدون تأخير async)
 getFirebaseWebAuth();
 
-// ============ إقلاع نظام الهوية الموحّد ============
+// ---- إقلاع نظام الهوية الموحّد ----
 // أول فتح للتطبيق: جلسة Firebase مجهولة فورية بلا شاشة تسجيل إجبارية.
 // فتح لاحق: نثق بـ authUid المحفوظ (الجلسة محفوظة تلقائياً من طبقة Firebase)
 // وننتقل مباشرة للرئيسية بدل إجبار المستخدم على تسجيل الدخول من جديد.
