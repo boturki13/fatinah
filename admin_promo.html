@@ -117,6 +117,7 @@ async function loadEnvStatus(){
     });
     const d = await r.json();
     if(d.error){ el.innerHTML=`<p style="color:#f85149">${d.error}</p>`; return; }
+    lastEnvLoadTime = Date.now();
     const envLabel = d.environment === 'production'
       ? '<span class="badge active">إنتاج</span>'
       : '<span class="badge" style="background:#1a3a5c;color:#79c0ff">تطوير</span>';
@@ -143,12 +144,14 @@ async function loadEnvStatus(){
 }
 
 let envAutoRefreshTimer = null;
+let lastEnvLoadTime = 0;
+const ENV_REFRESH_INTERVAL = 120000;
 
 function startEnvAutoRefresh(){
   if(envAutoRefreshTimer) return;
   envAutoRefreshTimer = setInterval(()=>{
-    if(getSecret()) loadEnvStatus();
-  }, 120000);
+    if(getSecret()){ loadEnvStatus(); lastEnvLoadTime = Date.now(); }
+  }, ENV_REFRESH_INTERVAL);
 }
 
 function stopEnvAutoRefresh(){
@@ -159,7 +162,14 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.hidden){
     stopEnvAutoRefresh();
   } else {
-    if(getSecret()) startEnvAutoRefresh();
+    if(getSecret()){
+      const elapsed = Date.now() - lastEnvLoadTime;
+      if(elapsed >= ENV_REFRESH_INTERVAL){
+        loadEnvStatus();
+        lastEnvLoadTime = Date.now();
+      }
+      startEnvAutoRefresh();
+    }
   }
 });
 
