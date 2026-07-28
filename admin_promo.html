@@ -63,33 +63,14 @@
 </div>
 
 <div class="card">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-    <h2 style="margin-bottom:0;">🖥️ حالة البيئة</h2>
-    <button class="btn btn-sm" id="env-refresh-btn" onclick="refreshEnvStatus()" title="تحديث الحالة">🔄 تحديث</button>
-  </div>
-  <div id="env-status"><p style="color:#7d8590;font-size:14px;">اضغط "تحميل الأكواد" لعرض الحالة</p></div>
-</div>
-
-<div class="card">
   <h2>📋 الأكواد الحالية</h2>
   <div id="codes-table"><p style="color:#7d8590;font-size:14px;">اضغط "تحميل الأكواد" أولاً</p></div>
 </div>
 
 <script>
 const BASE = window.location.origin;
-const SECRET_KEY = 'admin_secret';
 
 function getSecret(){ return document.getElementById('secret').value.trim(); }
-
-function saveSecret(val){ if(val) sessionStorage.setItem(SECRET_KEY, val); }
-
-function restoreSecret(){
-  const saved = sessionStorage.getItem(SECRET_KEY);
-  if(saved){
-    document.getElementById('secret').value = saved;
-    loadCodes();
-  }
-}
 
 function showMsg(text, ok){
   const el = document.getElementById('msg');
@@ -119,84 +100,7 @@ async function createCode(){
   else showMsg('❌ '+(d.error||'خطأ'), false);
 }
 
-async function loadEnvStatus(){
-  const el = document.getElementById('env-status');
-  el.innerHTML = '<p style="color:#7d8590;font-size:14px;">جارٍ التحميل…</p>';
-  try {
-    const r = await fetch(BASE+'/api/admin/env-status',{
-      headers:{'X-Admin-Secret':getSecret()}
-    });
-    const d = await r.json();
-    if(d.error){ el.innerHTML=`<p style="color:#f85149">${d.error}</p>`; return; }
-    lastEnvLoadTime = Date.now();
-    const envLabel = d.environment === 'production'
-      ? '<span class="badge active">إنتاج</span>'
-      : '<span class="badge" style="background:#1a3a5c;color:#79c0ff">تطوير</span>';
-    const summary = d.ok
-      ? '<span style="color:#56d364">✅ جميع المتغيرات موجودة</span>'
-      : `<span style="color:#f85149">❌ ${d.missing_count} متغير ناقص</span>`;
-    let rows = '';
-    for(const v of d.vars){
-      rows += `<tr>
-        <td style="font-size:18px;width:32px">${v.present?'✅':'❌'}</td>
-        <td><b style="letter-spacing:1px;font-size:13px">${v.name}</b></td>
-        <td style="color:#7d8590;font-size:13px">${v.description}</td>
-      </tr>`;
-    }
-    el.innerHTML = `
-      <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-        <span>البيئة: ${envLabel}</span>
-        <span>${summary}</span>
-      </div>
-      <table><tbody>${rows}</tbody></table>`;
-  } catch(e){
-    el.innerHTML=`<p style="color:#f85149">خطأ: ${e.message}</p>`;
-  }
-}
-
-let envAutoRefreshTimer = null;
-let lastEnvLoadTime = 0;
-const ENV_REFRESH_INTERVAL = 120000;
-
-function startEnvAutoRefresh(){
-  if(envAutoRefreshTimer) return;
-  envAutoRefreshTimer = setInterval(()=>{
-    if(getSecret()){ loadEnvStatus(); lastEnvLoadTime = Date.now(); }
-  }, ENV_REFRESH_INTERVAL);
-}
-
-function stopEnvAutoRefresh(){
-  if(envAutoRefreshTimer){ clearInterval(envAutoRefreshTimer); envAutoRefreshTimer = null; }
-}
-
-document.addEventListener('visibilitychange', ()=>{
-  if(document.hidden){
-    stopEnvAutoRefresh();
-  } else {
-    if(getSecret()){
-      const elapsed = Date.now() - lastEnvLoadTime;
-      if(elapsed >= ENV_REFRESH_INTERVAL){
-        loadEnvStatus();
-        lastEnvLoadTime = Date.now();
-      }
-      startEnvAutoRefresh();
-    }
-  }
-});
-
-window.addEventListener('pagehide', stopEnvAutoRefresh);
-
-async function refreshEnvStatus(){
-  const btn = document.getElementById('env-refresh-btn');
-  if(btn){ btn.disabled=true; btn.textContent='⏳ جارٍ…'; }
-  await loadEnvStatus();
-  if(btn){ btn.disabled=false; btn.textContent='🔄 تحديث'; }
-}
-
 async function loadCodes(){
-  saveSecret(getSecret());
-  loadEnvStatus();
-  startEnvAutoRefresh();
   const d = await adminReq({action:'list'});
   if(d.error){ document.getElementById('codes-table').innerHTML=`<p style="color:#f85149">${d.error}</p>`; return; }
   if(!d.codes.length){ document.getElementById('codes-table').innerHTML='<p style="color:#7d8590">لا توجد أكواد بعد</p>'; return; }
@@ -231,8 +135,6 @@ async function deleteCode(code){
   const d = await adminReq({action:'delete',code});
   if(d.ok) loadCodes(); else alert(d.error);
 }
-
-restoreSecret();
 </script>
 </body>
 </html>

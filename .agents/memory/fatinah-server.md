@@ -26,8 +26,3 @@ description: كيف يشتغل خادم فَطِنة على Replit وأسباب 
 طبقتان:
 1. Capacitor plugin (iOS فقط)
 2. Firebase Web SDK dynamic import من CDN — يعمل في المتصفح إذا كانت env vars جاهزة
-
-## المزامنة السحابية والتحقق من الهوية
-- endpoints المزامنة (مثل /api/family/*) تتحقق من هوية Firebase عبر Identity Toolkit REST `accounts:lookup` مع GOOGLE_API_KEY وتستخرج uid من الخادم — لا تثق أبداً بـ uid يرسله العميل (مراجعة الأمان رفضت ذلك كـ IDOR).
-- المستخدمون بالاسم فقط (anon device id) بلا idToken → لا مزامنة سحابية لهم؛ بياناتهم محلية.
-- التسجيل بالبريد عبر identitytoolkit signUp يعمل في هذا المشروع — طريقة عملية للحصول على idToken حقيقي لاختبار endpoints الموثّقة.
