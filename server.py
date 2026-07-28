@@ -112,6 +112,119 @@ def _start_periodic_kv_backup(interval_sec: int = 300):
             _time.sleep(interval_sec)
     threading.Thread(target=_loop, daemon=True, name='kv-periodic-backup').start()
 
+# ─── Firebase Firestore — النسخة الاحتياطية الثانوية للاشتراكات ──────────────
+# طبقة ثالثة: SQLite (محلي) ← KV (مضغوط) ← Firestore (سجلات فردية دائمة)
+
+FIRESTORE_COLLECTION = 'fatinah_subscriptions'
+
+def _firestore_base_url() -> str:
+    project_id = os.environ.get('FIREBASE_PROJECT_ID', '')
+    if not project_id:
+        return ''
+    return (f'https://firestore.googleapis.com/v1/projects/{project_id}'
+            f'/databases/(default)/documents/{FIRESTORE_COLLECTION}')
+
+def firestore_upsert_subscription(uid: str, record: dict):
+    """يكتب سجل اشتراك في Firestore (في خيط خلفي). record: dict بحقول الاشتراك."""
+    def _do():
+        try:
+            base = _firestore_base_url()
+            api_key = os.environ.get('GOOGLE_API_KEY', '')
+            if not base or not api_key:
+                return
+            fields = {}
+            for k, v in record.items():
+                if v is None:
+                    fields[k] = {'nullValue': None}
+                else:
+                    fields[k] = {'stringValue': str(v)}
+            payload = json.dumps({'fields': fields}).encode()
+            url = f'{base}/{urllib.parse.quote(uid, safe="")}?key={api_key}'
+            req = urllib.request.Request(url, data=payload, method='PATCH',
+                                         headers={'Content-Type': 'application/json'})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                resp.read()
+            print(f'☁️ Firestore backup: اشتراك {uid} محفوظ')
+        except Exception as e:
+            print(f'⚠️ Firestore upsert خطأ ({uid}): {e}')
+    threading.Thread(target=_do, daemon=True).start()
+
+def _firestore_delete_subscription(uid: str):
+    """يحذف سجل الاشتراك من Firestore (في خيط خلفي) عند حذف الحساب."""
+    def _do():
+        try:
+            base = _firestore_base_url()
+            api_key = os.environ.get('GOOGLE_API_KEY', '')
+            if not base or not api_key:
+                return
+            url = f'{base}/{urllib.parse.quote(uid, safe="")}?key={api_key}'
+            req = urllib.request.Request(url, method='DELETE')
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                resp.read()
+            print(f'🗑️ Firestore: سجل اشتراك {uid} محذوف')
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                pass   # لم يكن موجوداً — لا مشكلة
+            else:
+                print(f'⚠️ Firestore delete خطأ ({uid}): HTTP {e.code}')
+        except Exception as e:
+            print(f'⚠️ Firestore delete خطأ ({uid}): {e}')
+    threading.Thread(target=_do, daemon=True).start()
+
+def firestore_restore_subscriptions() -> str:
+    """
+    يحاول استعادة جدول subscriptions من Firestore.
+    يعيد: 'restored' | 'not_found' | 'error'
+    """
+    try:
+        base = _firestore_base_url()
+        api_key = os.environ.get('GOOGLE_API_KEY', '')
+        if not base or not api_key:
+            return 'error'
+        url = f'{base}?key={api_key}&pageSize=1000'
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read())
+        docs = data.get('documents') or []
+        if not docs:
+            return 'not_found'
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            for doc in docs:
+                f = doc.get('fields') or {}
+                def _sv(k, _f=f):
+                    v = _f.get(k) or {}
+                    return v.get('stringValue') or None
+                uid_val = _sv('uid')
+                if not uid_val:
+                    continue
+                conn.execute('''
+                    INSERT INTO subscriptions
+                        (uid, email, stripe_customer_id, stripe_subscription_id, status, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(uid) DO UPDATE SET
+                        email=excluded.email,
+                        stripe_customer_id=excluded.stripe_customer_id,
+                        stripe_subscription_id=excluded.stripe_subscription_id,
+                        status=excluded.status,
+                        updated_at=excluded.updated_at
+                ''', (uid_val, _sv('email'), _sv('stripe_customer_id'),
+                      _sv('stripe_subscription_id'),
+                      _sv('status') or 'inactive', _sv('updated_at')))
+            conn.commit()
+            print(f'✅ Firestore restore: استُعيد {len(docs)} اشتراك(ات)')
+            return 'restored'
+        finally:
+            conn.close()
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return 'not_found'
+        print(f'⚠️ Firestore restore HTTP خطأ: {e.code}')
+        return 'error'
+    except Exception as e:
+        print(f'⚠️ Firestore restore خطأ: {e}')
+        return 'error'
+
 # ─── قاعدة البيانات ──────────────────────────────────────────────────────────
 def db_connect():
     """اتصال sqlite آمن للخيوط المتعددة: WAL + مهلة انتظار للأقفال."""
@@ -895,6 +1008,8 @@ class Handler(BaseHTTPRequestHandler):
                 conn.commit()
                 conn.close()
                 kv_backup_db()   # احتياط فوري بعد حذف بيانات المستخدم
+                # ③ احذف سجل الاشتراك من Firestore أيضاً حتى لا يعود عند إعادة التشغيل
+                _firestore_delete_subscription(uid)
                 self.send_json(200, {'ok': True, 'deleted': cur.rowcount})
             except sqlite3.OperationalError:
                 self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
@@ -1016,6 +1131,83 @@ class Handler(BaseHTTPRequestHandler):
             finally:
                 conn.close()
 
+        # ─── اشتراك: إضافة/تعديل سجل (Admin أو Webhook) ─────────────────────────
+        elif path == '/api/subscription/upsert':
+            # محمي بـ ADMIN_SECRET (يُستدعى من Stripe/RevenueCat webhook أو يدوياً)
+            admin_secret = os.environ.get('ADMIN_SECRET', '')
+            auth_header  = self.headers.get('X-Admin-Secret', '')
+            if not admin_secret or auth_header != admin_secret:
+                self.send_json(403, {'error': 'غير مصرح'}); return
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            uid    = (data.get('uid') or '').strip()
+            if not uid:
+                self.send_json(400, {'error': 'uid مطلوب'}); return
+            email  = (data.get('email') or '').strip() or None
+            sc_id  = (data.get('stripe_customer_id') or '').strip() or None
+            ss_id  = (data.get('stripe_subscription_id') or '').strip() or None
+            status = (data.get('status') or 'inactive').strip()
+            conn = db_connect()
+            try:
+                conn.execute('''
+                    INSERT INTO subscriptions (uid, email, stripe_customer_id, stripe_subscription_id, status, updated_at)
+                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(uid) DO UPDATE SET
+                        email                  = COALESCE(excluded.email, email),
+                        stripe_customer_id     = COALESCE(excluded.stripe_customer_id, stripe_customer_id),
+                        stripe_subscription_id = COALESCE(excluded.stripe_subscription_id, stripe_subscription_id),
+                        status                 = excluded.status,
+                        updated_at             = CURRENT_TIMESTAMP
+                ''', (uid, email, sc_id, ss_id, status))
+                conn.commit()
+                # اقرأ السجل المحدّث لإرساله لـ Firestore
+                row = conn.execute(
+                    'SELECT uid, email, stripe_customer_id, stripe_subscription_id, status, updated_at FROM subscriptions WHERE uid=?',
+                    (uid,)).fetchone()
+                if row:
+                    record = {
+                        'uid': row[0], 'email': row[1],
+                        'stripe_customer_id': row[2], 'stripe_subscription_id': row[3],
+                        'status': row[4], 'updated_at': row[5]
+                    }
+                    # نسخ احتياطي فوري: KV + Firestore معاً
+                    kv_backup_db()
+                    firestore_upsert_subscription(uid, record)
+                self.send_json(200, {'ok': True, 'uid': uid, 'status': status})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+            finally:
+                conn.close()
+
+        # ─── اشتراك: فحص حالة مستخدم (Admin) ───────────────────────────────
+        elif path == '/api/subscription/status':
+            admin_secret = os.environ.get('ADMIN_SECRET', '')
+            auth_header  = self.headers.get('X-Admin-Secret', '')
+            if not admin_secret or auth_header != admin_secret:
+                self.send_json(403, {'error': 'غير مصرح'}); return
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            uid = (data.get('uid') or '').strip()
+            if not uid:
+                self.send_json(400, {'error': 'uid مطلوب'}); return
+            conn = db_connect()
+            try:
+                row = conn.execute(
+                    'SELECT uid, email, stripe_customer_id, stripe_subscription_id, status, updated_at FROM subscriptions WHERE uid=?',
+                    (uid,)).fetchone()
+                if row:
+                    self.send_json(200, {
+                        'found': True, 'uid': row[0], 'email': row[1],
+                        'stripe_customer_id': row[2], 'stripe_subscription_id': row[3],
+                        'status': row[4], 'updated_at': row[5]
+                    })
+                else:
+                    self.send_json(200, {'found': False, 'uid': uid})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+            finally:
+                conn.close()
+
         else:
             self.send_response(404); self.end_headers()
 
@@ -1065,7 +1257,6 @@ def startup_env_check():
     else:
         print('⚠️  وضع التطوير — الخادم سيعمل رغم النقص، لكن بعض الميزات قد لا تعمل.')
 
-
 # ─── تشغيل ───────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     # ① فحص متغيرات البيئة الإلزامية (يوقف الخادم في الإنتاج إن وجد نقص)
@@ -1082,26 +1273,38 @@ if __name__ == '__main__':
     print(f'🔗 رابط الخادم: {_app_url or "(غير محدد — يعمل في وضع التطوير)"}')
 
     # ③ استعادة قاعدة البيانات من KV إن لم تكن موجودة (بعد Autoscale restart)
+    #    إذا فشل KV، نحاول Firestore كمصدر ثانٍ.
     _kv_backup_safe = True   # افتراضياً: آمن للكتابة في KV
     if not os.path.exists(DB_PATH):
         print('ℹ️ subscriptions.db غير موجودة — محاولة الاستعادة من KV...')
         _restore = kv_restore_db()
         if _restore == 'restored':
-            pass   # تمت الاستعادة، سيُعاد الحفظ بعد init_db
-        elif _restore == 'not_found':
-            print('ℹ️ لا نسخة احتياطية في KV — ستُنشأ قاعدة بيانات جديدة')
-        else:   # 'error' — KV غير متاح أو خطأ في فك الضغط
-            print('⚠️ تعذّر الوصول إلى KV — سيعمل الخادم بقاعدة بيانات مؤقتة (لن يُكتب KV)')
-            _kv_backup_safe = False   # لا نكتب فوق نسخة قد تكون موجودة في KV
+            pass   # تمت الاستعادة من KV — سيُعاد الحفظ بعد init_db
+        else:
+            # not_found: انتهت صلاحية KV أو لم يُكتب بعد
+            # error:     KV غير متاح أو فشل فك الضغط
+            # في كلتا الحالتين: نحاول Firestore كمصدر ثانٍ
+            if _restore == 'error':
+                _kv_backup_safe = False   # لا نكتب فوق نسخة قد تكون موجودة في KV
+            print(f'ℹ️ KV: {_restore} — محاولة الاستعادة من Firestore...')
+            # init_db أولاً لإنشاء الجداول، ثم نستعيد سجلات الاشتراكات من Firestore
+            init_db()
+            _fs_restore = firestore_restore_subscriptions()
+            if _fs_restore == 'restored':
+                print('✅ Firestore: اشتراكات اُستعيدت بنجاح')
+            elif _fs_restore == 'not_found':
+                print('ℹ️ Firestore: لا سجلات — قاعدة بيانات جديدة فارغة')
+            else:
+                print('⚠️ Firestore: فشلت الاستعادة أيضاً — سيعمل الخادم بقاعدة بيانات فارغة')
 
-    # ③ تهيئة الجداول (تُنشئها إن لم تكن موجودة، لا تأثير إن وُجدت)
+    # ④ تهيئة الجداول (تُنشئها إن لم تكن موجودة، لا تأثير إن وُجدت)
     init_db()
 
-    # ④ حفظ نسخة احتياطية أولية في KV — فقط إذا كان KV متاحاً أو المفتاح غير موجود
+    # ⑤ حفظ نسخة احتياطية أولية في KV — فقط إذا كان KV متاحاً أو المفتاح غير موجود
     if _kv_backup_safe:
         kv_backup_db()
 
-    # ⑤ نسخ احتياطي دوري كل 5 دقائق لتغطية عمليات الكتابة خلال وقت التشغيل
+    # ⑥ نسخ احتياطي دوري كل 5 دقائق لتغطية عمليات الكتابة خلال وقت التشغيل
     _start_periodic_kv_backup(interval_sec=300)
 
     server = ThreadedHTTPServer(('0.0.0.0', PORT), Handler)
