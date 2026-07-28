@@ -63,7 +63,10 @@
 </div>
 
 <div class="card">
-  <h2>🖥️ حالة البيئة</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <h2 style="margin-bottom:0;">🖥️ حالة البيئة</h2>
+    <button class="btn btn-sm" id="env-refresh-btn" onclick="refreshEnvStatus()" title="تحديث الحالة">🔄 تحديث</button>
+  </div>
   <div id="env-status"><p style="color:#7d8590;font-size:14px;">اضغط "تحميل الأكواد" لعرض الحالة</p></div>
 </div>
 
@@ -139,8 +142,25 @@ async function loadEnvStatus(){
   }
 }
 
+let envAutoRefreshTimer = null;
+
+function startEnvAutoRefresh(){
+  if(envAutoRefreshTimer) return;
+  envAutoRefreshTimer = setInterval(()=>{
+    if(getSecret()) loadEnvStatus();
+  }, 120000);
+}
+
+async function refreshEnvStatus(){
+  const btn = document.getElementById('env-refresh-btn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ جارٍ…'; }
+  await loadEnvStatus();
+  if(btn){ btn.disabled=false; btn.textContent='🔄 تحديث'; }
+}
+
 async function loadCodes(){
   loadEnvStatus();
+  startEnvAutoRefresh();
   const d = await adminReq({action:'list'});
   if(d.error){ document.getElementById('codes-table').innerHTML=`<p style="color:#f85149">${d.error}</p>`; return; }
   if(!d.codes.length){ document.getElementById('codes-table').innerHTML='<p style="color:#7d8590">لا توجد أكواد بعد</p>'; return; }
