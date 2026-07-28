@@ -988,9 +988,56 @@ class Handler(BaseHTTPRequestHandler):
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
 
+# ─── فحص متغيرات البيئة عند بدء التشغيل ────────────────────────────────────
+def startup_env_check():
+    """
+    يتحقق من المتغيرات الإلزامية عند كل بدء تشغيل.
+    - في الإنتاج (REPLIT_DEPLOYMENT=1): يوقف الخادم عند أي نقص.
+    - في التطوير: يطبع تحذيرات فقط ويكمل.
+    """
+    is_production = os.environ.get('REPLIT_DEPLOYMENT', '') == '1'
+
+    required_vars = [
+        ('ANTHROPIC_API_KEY',            'توليد الأسئلة بالذكاء الاصطناعي (Claude)'),
+        ('GOOGLE_API_KEY',               'التحقق من هوية Firebase'),
+        ('FIREBASE_AUTH_DOMAIN',         'تسجيل الدخول Google/Apple'),
+        ('FIREBASE_PROJECT_ID',          'تسجيل الدخول Google/Apple'),
+        ('FIREBASE_APP_ID',              'تسجيل الدخول Google/Apple'),
+        ('FIREBASE_MESSAGING_SENDER_ID', 'تسجيل الدخول Google/Apple'),
+        ('FIREBASE_STORAGE_BUCKET',      'تسجيل الدخول Google/Apple'),
+        ('RC_API_KEY',                   'RevenueCat — الاشتراكات'),
+        ('ADMIN_SECRET',                 'حماية نقاط الأدمن'),
+    ]
+
+    missing = [(var, desc) for var, desc in required_vars
+               if not os.environ.get(var, '')]
+
+    if not missing:
+        print('✅ فحص البيئة: كل المتغيرات الإلزامية موجودة')
+        return
+
+    print()
+    print('══════════════════════════════════════════════════')
+    env_label = 'الإنتاج' if is_production else 'التطوير'
+    print(f'  {"❌" if is_production else "⚠️ "} فحص البيئة [{env_label}] — متغيرات ناقصة:')
+    for var, desc in missing:
+        print(f'       • {var} ({desc})')
+    print('══════════════════════════════════════════════════')
+    print()
+
+    if is_production:
+        print('❌ الخادم لن يبدأ — أضف المتغيرات الناقصة في Secrets ثم أعد النشر.')
+        import sys as _sys; _sys.exit(1)
+    else:
+        print('⚠️  وضع التطوير — الخادم سيعمل رغم النقص، لكن بعض الميزات قد لا تعمل.')
+
+
 # ─── تشغيل ───────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    # ① ضبط REPLIT_APP_URL تلقائياً من REPLIT_DOMAINS إذا لم يكن مضبوطاً
+    # ① فحص متغيرات البيئة الإلزامية (يوقف الخادم في الإنتاج إن وجد نقص)
+    startup_env_check()
+
+    # ② ضبط REPLIT_APP_URL تلقائياً من REPLIT_DOMAINS إذا لم يكن مضبوطاً
     if not os.environ.get('REPLIT_APP_URL'):
         _domains = os.environ.get('REPLIT_DOMAINS', '')
         if _domains:
@@ -1000,7 +1047,7 @@ if __name__ == '__main__':
     _app_url = os.environ.get('REPLIT_APP_URL', '')
     print(f'🔗 رابط الخادم: {_app_url or "(غير محدد — يعمل في وضع التطوير)"}')
 
-    # ② استعادة قاعدة البيانات من KV إن لم تكن موجودة (بعد Autoscale restart)
+    # ③ استعادة قاعدة البيانات من KV إن لم تكن موجودة (بعد Autoscale restart)
     _kv_backup_safe = True   # افتراضياً: آمن للكتابة في KV
     if not os.path.exists(DB_PATH):
         print('ℹ️ subscriptions.db غير موجودة — محاولة الاستعادة من KV...')
