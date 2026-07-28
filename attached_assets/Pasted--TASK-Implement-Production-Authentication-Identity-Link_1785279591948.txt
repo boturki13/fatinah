@@ -1,0 +1,166 @@
+# TASK: Implement Production Authentication & Identity Linking — فَطِنة (iOS)
+
+## 1. ROLE
+You are a senior iOS platform engineer. You are implementing a production-grade
+authentication system for a shipping consumer application. You do not write
+placeholder code, mock screens, or TODO stubs. Every path you write must be
+functional and testable on a physical device.
+
+## 2. CONTEXT
+- App: "فَطِنة" — Arabic-language party/trivia game.
+- Stack: Capacitor 6 hybrid app. HTML/CSS/JavaScript running in WKWebView,
+  wrapped in a native iOS shell. Not SwiftUI, not UIKit-native.
+- Current state: the app contains a NON-FUNCTIONAL social login screen (UI only,
+  no backend). This is an active App Store rejection risk and must be fully
+  replaced, not patched.
+- Monetization: auto-renewable subscription (monthly + annual) configured in
+  App Store Connect under group "فطنة Premium".
+- Locale: primary UI language is Arabic (RTL). All user-facing strings must be
+  Arabic and RTL-correct.
+
+## 3. OBJECTIVE
+Ship a single-identity authentication system in which one human being maps to
+exactly one persistent account UID, regardless of which provider they use to
+sign in — Apple, Google, or Email/Password.
+
+The UID is the sole primary key for all user-owned data. Email addresses are
+mutable, provider-specific, and MUST NOT be used as an identity key anywhere
+in the codebase or database schema.
+
+## 4. TECHNICAL REQUIREMENTS
+
+### 4.1 Provider Layer
+Use Firebase Authentication via `@capacitor-firebase/authentication`.
+
+Required native configuration — verify each, do not assume:
+- Xcode capability "Sign in with Apple" enabled on the app target.
+- `GoogleService-Info.plist` present and included in Build Phases.
+- `REVERSED_CLIENT_ID` registered as a URL Scheme in `Info.plist`.
+- Firebase Console: Apple, Google, and Email/Password providers enabled.
+- Firebase Console: "One account per email address" ENABLED.
+
+Constraint: all OAuth flows MUST execute through the native SDK or
+`ASWebAuthenticationSession`. Any flow that renders a Google consent screen
+inside WKWebView will be rejected by Google with `disallowed_useragent`.
+If you find such an implementation, remove it.
+
+### 4.2 Anonymous-First Session Model
+On first launch, create an anonymous Firebase session immediately. Gameplay,
+scores, and progress attach to that UID from the very first second.
+
+When the user later authenticates, UPGRADE the anonymous account by linking the
+new credential to the existing UID. Never create a second account and never
+discard anonymous progress. Sign-in must remain optional for core gameplay.
+
+### 4.3 Identity Linking
+Implement two linking paths:
+
+(a) Reactive linking — collision during sign-in.
+    When `auth/account-exists-with-different-credential` is thrown, do NOT
+    surface a raw error. Present an Arabic recovery flow that:
+      1. Explains an account already exists.
+      2. Prompts the user to authenticate with their original provider.
+      3. Links the new credential to the recovered session.
+      4. Returns the user to the exact screen they started from.
+
+    Do NOT rely on `fetchSignInMethodsForEmail` for this decision. It returns
+    empty results when Email Enumeration Protection is active. Drive the flow
+    from user input, not from enumeration.
+
+(b) Proactive linking — Account Settings screen.
+    Render each provider with live linked/unlinked state derived from
+    `user.providerData`. Support link and unlink per provider.
+    Hard rule: block unlinking the final remaining provider on a non-anonymous
+    account. Show an Arabic explanation instead of failing silently.
+
+### 4.4 Sign in with Apple — Data Retention
+Apple returns the user's full name and email ONLY on the first authorization,
+and the email may be a `@privaterelay.appleid.com` relay address.
+
+Requirements:
+- Persist name and email to Firestore on the FIRST successful authorization,
+  inside the same logical operation as account creation.
+- Treat the Apple `sub` (user identifier) as the only stable key.
+- Handle relay addresses as valid, deliverable addresses. Never display them
+  as "invalid" and never attempt to resolve them to a real address.
+- Assume subsequent sign-ins return null for name and email. Code accordingly.
+
+### 4.5 Subscription Binding
+App Store subscriptions are bound to an Apple ID, not to your UID. Bridge them.
+
+- On a successful purchase, persist the mapping
+  `originalTransactionId → uid` server-side.
+- Validate entitlement server-side via App Store Server Notifications V2.
+  Do not grant premium access based on a client-side boolean.
+- Ensure "Restore Purchases" resolves correctly when the same user signs in
+  from a different device.
+- Define and document the behavior when an `originalTransactionId` is already
+  bound to a different UID. Do not leave this case undefined.
+
+### 4.6 Account Deletion — App Store Guideline 5.1.1(v)
+Provide in-app account deletion. Not a web link. Not an email request.
+
+- Require reauthentication before deletion.
+- Delete the Firebase Auth record and all associated Firestore documents.
+- Inform the user, in Arabic, that an active subscription is managed by Apple
+  and must be cancelled separately in iOS Settings, and link them there.
+- Deletion must be reachable in no more than two taps from the account screen.
+
+## 5. COMPLIANCE CONSTRAINTS (non-negotiable)
+- Guideline 4.8: offering Google Sign-In obligates offering Sign in with Apple,
+  with equal visual prominence. Verify button hierarchy reflects this.
+- Guideline 5.1.1: do not gate core gameplay behind account creation.
+- Do not request any data scope the app does not actively consume.
+- Privacy manifest and App Store Connect data-collection disclosures must
+  match the data you actually collect. Flag any mismatch you find.
+
+## 6. SECURITY REQUIREMENTS
+- No API keys, secrets, or service-account credentials in the WebView bundle.
+- All authorization decisions enforced in Firestore Security Rules, not in
+  client JavaScript.
+- Sanitize every value rendered from a user profile. The app has a known
+  history of HTML injection; treat all provider-supplied strings as hostile.
+- Firestore rules must deny cross-UID reads and writes by default.
+
+## 7. DELIVERABLES
+1. Authentication service module with a single, documented public interface.
+2. Sign-in screen (Arabic, RTL) replacing the existing non-functional screen.
+3. Account settings screen with per-provider link state and deletion flow.
+4. Firestore Security Rules covering the user document tree.
+5. Server-side subscription validation endpoint.
+6. `AUTH_SETUP.md` documenting every native configuration step required to
+   build this project from a clean checkout.
+
+## 8. DEFINITION OF DONE
+Each item verified on a physical device, not in a simulator:
+- [ ] Anonymous progress survives an upgrade to a named account.
+- [ ] Apple, Google, and Email all resolve to the SAME UID for one person.
+- [ ] Apple name/email captured on first authorization and still present after
+      revoking access in iOS Settings and re-authorizing.
+- [ ] `auth/account-exists-with-different-credential` resolves through the
+      recovery flow with no dead ends and no raw error text.
+- [ ] Final provider cannot be unlinked.
+- [ ] Subscription entitlement resolves correctly on a second device.
+- [ ] Account deletion removes auth record and all user data.
+- [ ] No secrets present in the shipped WebView bundle.
+- [ ] All user-facing strings are Arabic and render correctly RTL.
+
+## 9. OUT OF SCOPE
+Phone/SMS authentication, Facebook login, multi-factor authentication,
+and any visual redesign of the existing paywall.
+
+## 10. EXECUTION PROTOCOL
+Before writing code, audit the existing authentication surface and report what
+is present, what is fake, and what must be removed.
+
+Then implement in this order, stopping for confirmation at each boundary:
+  1. Native configuration + Firebase provider setup
+  2. Anonymous session + upgrade path
+  3. The three providers
+  4. Linking flows (reactive, then proactive)
+  5. Account deletion
+  6. Subscription binding
+  7. Security rules + final audit pass
+
+If a requirement in this document conflicts with the existing codebase,
+surface the conflict and propose a resolution. Do not resolve it silently.
