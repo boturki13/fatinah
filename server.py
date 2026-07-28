@@ -32,6 +32,14 @@ def init_db():
             updated_at             DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    # ─── هجرة: أعمدة الهوية الموحّدة (اسم العرض + آخر مزوّد دخول) ─────────────
+    # sqlite لا يدعم ADD COLUMN IF NOT EXISTS، فنجرّب ونتجاهل الخطأ إن كان العمود موجوداً
+    for ddl in (
+        "ALTER TABLE subscriptions ADD COLUMN display_name TEXT",
+        "ALTER TABLE subscriptions ADD COLUMN auth_provider TEXT",
+    ):
+        try: conn.execute(ddl)
+        except sqlite3.OperationalError: pass  # العمود موجود مسبقاً
     conn.execute('''
         CREATE TABLE IF NOT EXISTS question_bank (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,6 +83,41 @@ def normalize_topic(topic: str) -> str:
     t = t.replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا').replace('ة', 'ه').replace('ى', 'ي')
     t = re.sub(r'\s+', ' ', t)
     return t
+
+# ─── التحقق من هوية Firebase (نظام الهوية الموحّد — Task #70) ───────────────
+# نتحقق من صحة idToken عبر Identity Toolkit REST API بدل الثقة العمياء بالـ uid
+# القادم من العميل. هذا بديل مكافئ لـ Firestore Security Rules طالما نبقى على
+# SQLite. إن كان Firebase غير مُعدّ في البيئة (بلا FIREBASE_PROJECT_ID) نتراجع
+# لسلوك الثقة بالـ uid كما كان سابقاً (بيئة تطوير محلية بلا Firebase).
+def firebase_is_configured() -> bool:
+    return bool(os.environ.get('FIREBASE_PROJECT_ID'))
+
+def verify_firebase_id_token(id_token: str):
+    """يتحقق من صحة Firebase ID Token عبر Identity Toolkit، يعيد بيانات المستخدم أو None."""
+    api_key = os.environ.get('GOOGLE_API_KEY', '')
+    if not api_key or not id_token:
+        return None
+    try:
+        payload = json.dumps({'idToken': id_token}).encode()
+        req = urllib.request.Request(
+            f'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={api_key}',
+            data=payload, method='POST',
+            headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+        users = data.get('users') or []
+        return users[0] if users else None
+    except Exception as e:
+        print(f'ID token verify error: {e}')
+        return None
+
+def uid_matches_token(uid: str, id_token: str) -> bool:
+    """يتحقق أن uid المطلوب هو نفس صاحب idToken المرسَل. يتجاوز التحقق إن كان
+    Firebase غير مُعدّ أصلاً (بيئة بلا auth حقيقي)."""
+    if not firebase_is_configured():
+        return True
+    verified = verify_firebase_id_token(id_token)
+    return bool(verified and verified.get('localId') == uid)
 
 # ─── Stripe credentials من Replit Connector ──────────────────────────────────
 def get_stripe_keys():
@@ -287,17 +330,97 @@ class Handler(BaseHTTPRequestHandler):
             if not uid:
                 self.send_json(400, {'error': 'uid مطلوب'}); return
             conn = sqlite3.connect(DB_PATH)
-
             row  = conn.execute('SELECT status FROM subscriptions WHERE uid=?', (uid,)).fetchone()
-
             conn.close()
-
             active = bool(row and row[0] == 'active')
+            self.send_json(200, {'active': active})
 
-            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
-
+        elif path in ('/', '/index.html'):
             body = read_html()
+            self.send_response(200)
+            self.send_header('Content-Type',   'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
 
+        elif path in ('/favicon.ico', '/apple-touch-icon.png', '/og-image.png'):
+            fname = path.lstrip('/')
+            ctype = 'image/x-icon' if fname.endswith('.ico') else 'image/png'
+            try:
+                with open(os.path.join(os.path.dirname(__file__), fname), 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', ctype)
+                self.send_header('Content-Length', str(len(body)))
+                self.send_header('Cache-Control', 'public, max-age=86400')
+                self.end_headers()
+                self.wfile.write(body)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
+
+        elif path.startswith('/legal/img/'):
+            fname = path[len('/legal/img/'):]
+            ctype = ('image/x-icon' if fname.endswith('.ico')
+                     else 'image/svg+xml' if fname.endswith('.svg')
+                     else 'image/png')
+            try:
+                with open(os.path.join(os.path.dirname(__file__), 'legal', 'img', fname), 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', ctype)
+                self.send_header('Content-Length', str(len(body)))
+                self.send_header('Cache-Control', 'public, max-age=86400')
+                self.end_headers()
+                self.wfile.write(body)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
+
+        elif path in ('/privacy', '/terms', '/legal', '/legal/', '/legal/index.html',
+                      '/legal/privacy.html', '/legal/terms.html', '/legal/styles.css', '/robots.txt'):
+            fname = {
+                '/privacy': 'privacy.html', '/terms': 'terms.html',
+                '/legal': 'index.html', '/legal/': 'index.html', '/legal/index.html': 'index.html',
+                '/legal/privacy.html': 'privacy.html', '/legal/terms.html': 'terms.html',
+                '/legal/styles.css': 'styles.css', '/robots.txt': 'robots.txt',
+            }[path]
+            ctype = ('text/css; charset=utf-8' if fname.endswith('.css')
+                     else 'text/plain; charset=utf-8' if fname.endswith('.txt')
+                     else 'text/html; charset=utf-8')
+            try:
+                with open(os.path.join(os.path.dirname(__file__), 'legal', fname), 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', ctype)
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
+
+        elif path == '/admin/promo':
+            try:
+                with open(os.path.join(os.path.dirname(__file__), 'admin_promo.html'), 'rb') as f:
+                    body = f.read()
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
+            return
+
+        elif path == '/download/index.html':
+            with open(HTML_FILE, 'rb') as f:
+                body = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type',        'application/octet-stream')
+            self.send_header('Content-Disposition', 'attachment; filename="index.html"')
+            self.send_header('Content-Length',      str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        else:
             self.send_response(404); self.end_headers()
 
     def do_POST(self):
@@ -307,16 +430,125 @@ class Handler(BaseHTTPRequestHandler):
 
         # ─── AI generate ────────────────────────────────────────────────────
         if path == '/api/generate':
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
 
-            self.send_header('Content-Length',      str(len(body)))
+            topic = (data.get('topic') or '').strip()
+            try:    count = min(max(int(data.get('count', 6)), 1), 30)
+            except Exception: count = 6
+            seen  = data.get('seen') or []          # قائمة معرّفات الأسئلة التي شاهدها اللاعب
+            if not topic: self.send_json(400, {'error': 'topic مطلوب'}); return
+            if not isinstance(seen, list): seen = []
+            seen = [int(s) for s in seen if str(s).isdigit()][:5000]
 
-            self.end_headers()
+            tnorm = normalize_topic(topic)
+            conn  = db_connect()
 
-            self.wfile.write(body)
+            def fetch_unseen(limit):
+                if seen:
+                    ph = ','.join('?' * len(seen))
+                    rows = conn.execute(
+                        f'SELECT id,q,answer FROM question_bank WHERE topic_norm=? AND id NOT IN ({ph}) ORDER BY RANDOM() LIMIT ?',
+                        [tnorm, *seen, limit]).fetchall()
+                else:
+                    rows = conn.execute(
+                        'SELECT id,q,answer FROM question_bank WHERE topic_norm=? ORDER BY RANDOM() LIMIT ?',
+                        (tnorm, limit)).fetchall()
+                return [{'id': r[0], 'q': r[1], 'answer': r[2]} for r in rows]
 
-        else:
+            try:
+                # 1) جرّب البنك أولاً — صفر توكن
+                result = fetch_unseen(count)
 
-            ctype = 'image/x-icon' if fname.endswith('.ico') else 'image/png'
+                # 2) إن لم يكفِ، ولّد دفعة كبيرة (30) وخزّنها ثم أعد المحاولة
+                if len(result) < count:
+                    questions, err = call_claude(topic, 30)
+                    if err and not result:
+                        self.send_json(502, {'error': err}); return
+                    for q in (questions or []):
+                        try:
+                            conn.execute('INSERT OR IGNORE INTO question_bank(topic_norm,q,answer) VALUES(?,?,?)',
+                                         (tnorm, q['q'].strip(), q['answer'].strip()))
+                        except Exception:
+                            pass
+                    try: conn.commit()
+                    except sqlite3.OperationalError: pass  # قفل مؤقت — الأسئلة المولّدة تُعاد للاعب على أي حال
+                    result = fetch_unseen(count)
+                self.send_json(200, {'questions': result, 'from_bank': True})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+            finally:
+                conn.close()
+
+        # ─── حذف الحساب: إزالة كل بيانات المستخدم المرتبطة بالـ uid ──────────
+        elif path == '/api/account/delete':
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+
+            uid      = (data.get('uid')     or '').strip()
+            id_token = (data.get('idToken') or '').strip()
+            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
+
+            # تحقّق من هوية الطالب — يمنع حذف حساب شخص آخر (بديل Firestore Rules)
+            if not uid_matches_token(uid, id_token):
+                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
+
+            try:
+                conn = db_connect()
+                cur  = conn.execute('DELETE FROM subscriptions WHERE uid=?', (uid,))
+                conn.execute('DELETE FROM promo_redemptions WHERE uid=?', (uid,))
+                conn.commit()
+                deleted = cur.rowcount
+                conn.close()
+                self.send_json(200, {'ok': True, 'deleted': deleted})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+
+        # ─── حفظ بيانات الملف الشخصي بشكل دائم (خصوصاً بريد/اسم Apple الذي
+        # لا يُرسَل إلا مرة واحدة عند أول تفويض) ─────────────────────────────
+        elif path == '/api/account/profile':
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+
+            uid      = (data.get('uid')     or '').strip()
+            name     = (data.get('name')    or '').strip()[:60]
+            email    = (data.get('email')   or '').strip()[:200]
+            provider = (data.get('provider') or '').strip()[:30]
+            id_token = (data.get('idToken') or '').strip()
+            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
+
+            if not uid_matches_token(uid, id_token):
+                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
+
+            try:
+                conn = db_connect()
+                conn.execute('''
+                    INSERT INTO subscriptions (uid, email, display_name, auth_provider)
+                    VALUES (?,?,?,?)
+                    ON CONFLICT(uid) DO UPDATE SET
+                        email        = CASE WHEN excluded.email        != '' THEN excluded.email        ELSE subscriptions.email END,
+                        display_name = CASE WHEN excluded.display_name != '' THEN excluded.display_name ELSE subscriptions.display_name END,
+                        auth_provider= CASE WHEN excluded.auth_provider!= '' THEN excluded.auth_provider ELSE subscriptions.auth_provider END
+                ''', (uid, email, name, provider))
+                conn.commit()
+                conn.close()
+                self.send_json(200, {'ok': True})
+            except sqlite3.OperationalError:
+                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+
+        # ─── Stripe: إنشاء جلسة دفع ─────────────────────────────────────────
+        elif path == '/api/stripe/create-checkout':
+            try:   data = json.loads(body)
+            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+
+            uid   = (data.get('uid')   or '').strip()
+            email = (data.get('email') or '').strip()
+            plan  = (data.get('plan')  or 'monthly').strip()  # 'monthly' أو 'annual'
+            if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
+
+            secret_key, _ = get_stripe_keys()
+            if not secret_key:
+                self.send_json(503, {'error': 'Stripe غير متاح'}); return
 
             try:
                 # ابحث عن سعر المنتج المناسب (شهري أو سنوي)
@@ -376,66 +608,6 @@ class Handler(BaseHTTPRequestHandler):
                     'cancel_url':                 f'{base_url}/?canceled=1',
                     'metadata[uid]':              uid,
                     'locale':                     'ar',
-
-            except sqlite3.OperationalError:
-                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
-
-        # ─── Stripe: إنشاء جلسة دفع ─────────────────────────────────────────
-        elif path == '/api/stripe/create-checkout':
-
-            return
-
-        elif path == '/download/index.html':
-
-            with open(HTML_FILE, 'rb') as f:
-                body = f.read()
-
-            try:   data = json.loads(body)
-
-            topic = (data.get('topic') or '').strip()
-
-            try:    count = min(max(int(data.get('count', 6)), 1), 30)
-
-            seen  = data.get('seen') or []          # قائمة معرّفات الأسئلة التي شاهدها اللاعب
-
-            if not isinstance(seen, list): seen = []
-
-            seen = [int(s) for s in seen if str(s).isdigit()][:5000]
-
-            tnorm = normalize_topic(topic)
-
-            conn  = db_connect()
-
-            def fetch_unseen(limit):
-                if seen:
-                    ph = ','.join('?' * len(seen))
-                    rows = conn.execute(
-                        f'SELECT id,q,answer FROM question_bank WHERE topic_norm=? AND id NOT IN ({ph}) ORDER BY RANDOM() LIMIT ?',
-                        [tnorm, *seen, limit]).fetchall()
-                else:
-                    rows = conn.execute(
-                        'SELECT id,q,answer FROM question_bank WHERE topic_norm=? ORDER BY RANDOM() LIMIT ?',
-                        (tnorm, limit)).fetchall()
-                return [{'id': r[0], 'q': r[1], 'answer': r[2]} for r in rows]
-
-            finally:
-                conn.close()
-
-        # ─── حذف الحساب: إزالة سجل الاشتراك المرتبط بالـ uid ────────────────
-        elif path == '/api/account/delete':
-
-            uid   = (data.get('uid')   or '').strip()
-
-            email = (data.get('email') or '').strip()
-
-            plan  = (data.get('plan')  or 'monthly').strip()  # 'monthly' أو 'annual'
-
-            secret_key, _ = get_stripe_keys()
-
-            if not secret_key:
-                self.send_json(503, {'error': 'Stripe غير متاح'}); return
-
-            body = legal_page_html('privacy' if path == '/privacy' else 'terms')
                 }
                 session = stripe_request('POST', 'checkout/sessions', session_data, secret_key)
                 self.send_json(200, {'url': session['url']})

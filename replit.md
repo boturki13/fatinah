@@ -28,11 +28,17 @@ python3 server.py
 | `FIREBASE_APP_ID` | Google/Apple sign-in في المتصفح | لـ auth |
 | `FIREBASE_MESSAGING_SENDER_ID` | Google/Apple sign-in في المتصفح | لـ auth |
 
-## Auth — كيف يشتغل
+## Auth — نظام الهوية الموحّد
 
-- **داخل iOS app:** يستخدم Capacitor FirebaseAuthentication plugin (Apple + Google)
-- **في المتصفح مع Firebase config:** يستخدم Firebase Web SDK (popup)
-- **بدون config:** "متابعة بالاسم" تعمل دائماً
+كل شخص = uid واحد ثابت بغض النظر عن وسيلة الدخول. أول فتح للتطبيق ينشئ جلسة
+Firebase Anonymous تلقائياً بلا شاشة تسجيل إجبارية؛ التسجيل لاحقاً بـ
+Apple/Google/بريد يرقّي (link) نفس الحساب بدل إنشاء حساب جديد. التفاصيل
+الكاملة (إعداد Firebase Console، Xcode، حدود معروفة على iOS الأصلي) في
+`AUTH_SETUP.md`.
+
+- **داخل iOS app:** Capacitor FirebaseAuthentication plugin (Apple + Google + بريد)
+- **في المتصفح مع Firebase config:** Firebase Web SDK (popup)
+- **بدون Firebase config:** يتراجع لمعرّف جهاز محلي (device id) — يعمل التطبيق لكن بلا مزامنة عبر الأجهزة
 
 ## ملاحظات
 
