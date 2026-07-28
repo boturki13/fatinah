@@ -63,6 +63,11 @@
 </div>
 
 <div class="card">
+  <h2>🖥️ حالة البيئة</h2>
+  <div id="env-status"><p style="color:#7d8590;font-size:14px;">اضغط "تحميل الأكواد" لعرض الحالة</p></div>
+</div>
+
+<div class="card">
   <h2>📋 الأكواد الحالية</h2>
   <div id="codes-table"><p style="color:#7d8590;font-size:14px;">اضغط "تحميل الأكواد" أولاً</p></div>
 </div>
@@ -100,7 +105,42 @@ async function createCode(){
   else showMsg('❌ '+(d.error||'خطأ'), false);
 }
 
+async function loadEnvStatus(){
+  const el = document.getElementById('env-status');
+  el.innerHTML = '<p style="color:#7d8590;font-size:14px;">جارٍ التحميل…</p>';
+  try {
+    const r = await fetch(BASE+'/api/admin/env-status',{
+      headers:{'X-Admin-Secret':getSecret()}
+    });
+    const d = await r.json();
+    if(d.error){ el.innerHTML=`<p style="color:#f85149">${d.error}</p>`; return; }
+    const envLabel = d.environment === 'production'
+      ? '<span class="badge active">إنتاج</span>'
+      : '<span class="badge" style="background:#1a3a5c;color:#79c0ff">تطوير</span>';
+    const summary = d.ok
+      ? '<span style="color:#56d364">✅ جميع المتغيرات موجودة</span>'
+      : `<span style="color:#f85149">❌ ${d.missing_count} متغير ناقص</span>`;
+    let rows = '';
+    for(const v of d.vars){
+      rows += `<tr>
+        <td style="font-size:18px;width:32px">${v.present?'✅':'❌'}</td>
+        <td><b style="letter-spacing:1px;font-size:13px">${v.name}</b></td>
+        <td style="color:#7d8590;font-size:13px">${v.description}</td>
+      </tr>`;
+    }
+    el.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <span>البيئة: ${envLabel}</span>
+        <span>${summary}</span>
+      </div>
+      <table><tbody>${rows}</tbody></table>`;
+  } catch(e){
+    el.innerHTML=`<p style="color:#f85149">خطأ: ${e.message}</p>`;
+  }
+}
+
 async function loadCodes(){
+  loadEnvStatus();
   const d = await adminReq({action:'list'});
   if(d.error){ document.getElementById('codes-table').innerHTML=`<p style="color:#f85149">${d.error}</p>`; return; }
   if(!d.codes.length){ document.getElementById('codes-table').innerHTML='<p style="color:#7d8590">لا توجد أكواد بعد</p>'; return; }
