@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com wss://*.firebaseio.com https://*.replit.app https://*.replit.dev; frame-src 'none'; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com https://api.stripe.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none';">
 <title>فَطِنة — لعبة الذكاء الجماعية</title>
 <link rel="icon" href="/favicon.ico">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -14,8 +14,9 @@
 <meta property="og:image" content="https://fatinah-replitzip.replit.app/og-image.png">
 <meta property="og:url" content="https://fatinah-replitzip.replit.app">
 <meta property="og:type" content="website">
-<link href="/fonts/tajawal.css" rel="stylesheet">
-<script src="/server-config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <script src="/firebase-config.js"></script>
 <style>
 :root{
@@ -87,7 +88,6 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 .btn-primary{color:#fff; background:linear-gradient(120deg,var(--hot2),var(--hot)); box-shadow:0 8px 24px rgba(255,61,113,.4);}
 .btn-primary:active{filter:brightness(1.08);}
 .btn-ghost{background:var(--glass); color:var(--ink); border:1.5px solid var(--line2); backdrop-filter:blur(8px);}
-.btn-share{color:#1B1030; background:linear-gradient(120deg,#FFE08A,#FFC24B); box-shadow:0 8px 24px rgba(255,194,75,.35);}
 .btn-sm{padding:10px 14px; font-size:15px; border-radius:12px; width:auto;}
 .btn-block{margin-top:12px;}
 
@@ -158,17 +158,6 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 .modal-sub{font-size:14px; color:var(--muted); line-height:1.7; margin-bottom:22px;}
 .modal-actions{display:flex; gap:10px;}
 .modal-actions .btn{flex:1;}
-/* ============ شاشة تعليمية (Onboarding) ============ */
-.onb-wrap{position:fixed; inset:0; background:rgba(8,4,16,.82); backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center; z-index:95; padding:24px;}
-.onb-wrap.show{display:flex; animation:fade .25s ease;}
-.onb-card{background:linear-gradient(180deg,var(--bg2),var(--bg1)); border:1px solid var(--line2); border-radius:24px; padding:30px 22px 22px; max-width:360px; width:100%; text-align:center; box-shadow:var(--sh); animation:pop .3s cubic-bezier(.2,.9,.3,1.3); position:relative;}
-.onb-skip{position:absolute; top:14px; inset-inline-start:16px; background:none; border:none; color:var(--muted); font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit; padding:4px 6px;}
-.onb-art{font-size:56px; margin-bottom:12px; line-height:1;}
-.onb-title{font-size:21px; font-weight:900; margin-bottom:8px;}
-.onb-sub{font-size:14px; color:var(--muted); line-height:1.8; margin-bottom:20px; min-height:66px;}
-.onb-dots{display:flex; justify-content:center; gap:7px; margin-bottom:18px;}
-.onb-dots span{width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.18); transition:all .25s;}
-.onb-dots span.on{background:var(--gold); width:22px; border-radius:5px;}
 .turn-pill{font-size:13px; font-weight:800; padding:8px 15px; border-radius:22px; display:flex; align-items:center; gap:6px; border:1.5px solid;}
 .teams-bar{display:flex; gap:8px; margin-bottom:14px;}
 .team-chip{flex:1; border-radius:14px; padding:10px 11px; border:2px solid transparent; transition:.25s; position:relative;}
@@ -203,10 +192,6 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 .timer-fill{height:100%; width:100%; background:var(--ok); border-radius:8px; transition:width 1s linear, background .3s;}
 .timer-num{font-size:17px; font-weight:900; min-width:34px; text-align:center;}
 .timer-num.warn{color:var(--no); animation:pop .3s;}
-.timer-num.urgent{color:var(--no); animation:t-pulse 1s infinite;}
-@keyframes t-pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.35); text-shadow:0 0 12px rgba(255,80,80,.8);}}
-.timer-bar.flash{animation:bar-flash 1s infinite;}
-@keyframes bar-flash{0%,100%{box-shadow:none;}50%{box-shadow:0 0 10px 2px rgba(255,80,80,.65);}}
 .bomb-box{display:none; justify-content:center; padding:8px 16px 4px;}
 .bomb-box.show{display:flex;}
 .bomb-btn{border:none; border-radius:14px; padding:10px 22px; font-family:inherit; font-weight:800; font-size:14px; color:#fff; background:linear-gradient(135deg,#ff3d71,#8b1a3d); box-shadow:0 6px 18px rgba(255,61,113,.35); cursor:pointer; display:flex; align-items:center; gap:6px;}
@@ -424,7 +409,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <ul class="pw-features pw-rise pw-d3">
         <li>
           <span class="pw-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
-          أسئلة جديدة دائماً + فئات متجددة وحصرية
+          ‎+30 فئة وأكثر من 915 سؤال
         </li>
         <li>
           <span class="pw-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
@@ -471,7 +456,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <div id="paywall-loading" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:14px;">جاري التحويل لصفحة الدفع…</div>
       <!-- كود مكافأة -->
       <div class="pw-promo pw-rise pw-d6" id="pw-promo-box">
-        <button class="pw-promo-toggle" id="pw-promo-toggle" onclick="togglePromoBox()">🎁 هنا يُكتب الكود</button>
+        <button class="pw-promo-toggle" id="pw-promo-toggle" onclick="togglePromoBox()">🎁 عندك كود مجاني؟</button>
         <div class="pw-promo-form" id="pw-promo-form" style="display:none;">
           <input id="pw-promo-input" type="text" placeholder="أدخل الكود هنا..." autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
           <button onclick="redeemPromo()">تفعيل</button>
@@ -516,7 +501,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <div class="card">
       <div class="field-label">كم فريق؟</div>
       <div class="seg" id="seg-teams">
-        <button data-n="1" onclick="setTeamCount(1)">فردي 🎯</button>
         <button class="on" data-n="2" onclick="setTeamCount(2)">فريقان</button>
         <button data-n="3" onclick="setTeamCount(3)">ثلاثة</button>
       </div>
@@ -584,7 +568,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <div class="winner-line" id="winner-line"></div>
     <div class="podium" id="podium"></div>
     <button class="btn btn-primary mt" onclick="sfx('start');restart()">🔄 جولة جديدة</button>
-    <button class="btn btn-share btn-block" onclick="sfx('tap');shareResult()">شارك النتيجة 📤</button>
     <button class="btn btn-ghost btn-block" onclick="go('s-home')">القائمة الرئيسية</button>
   </section>
 
@@ -597,7 +580,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <button class="btn btn-ghost btn-block mt" onclick="go('s-home')">رجوع</button>
     <div style="margin-top:32px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
       <div class="field-label" style="margin-bottom:12px;">الحساب</div>
-      <button class="btn btn-ghost btn-block" onclick="openOnboarding()" style="margin-bottom:8px;">📖 طريقة اللعب</button>
       <button class="btn btn-ghost btn-block" onclick="go('s-privacy')" style="margin-bottom:8px;">🔒 سياسة الخصوصية</button>
       <button class="btn btn-ghost btn-block" onclick="go('s-terms')" style="margin-bottom:8px;">📄 شروط الاستخدام</button>
       <button class="btn btn-block" onclick="confirmDeleteAccount()" style="background:rgba(220,53,69,.15);color:#ff6b7a;border:1px solid rgba(220,53,69,.3);margin-top:8px;">🗑️ حذف الحساب وكل البيانات</button>
@@ -615,13 +597,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       • إحصاءات اللعب (نقاط، إنجازات — محلية على جهازك)<br>
       • بريد إلكتروني عند التسجيل بـ Apple أو Google (لتفعيل الاشتراك فقط)</p>
       <p><b>ما لا نجمعه:</b><br>
-      لا نبيع بياناتك. لا نتتبع موقعك. لا نشارك معلوماتك مع أطراف ثالثة إلا لأغراض معالجة الدفع (Apple).</p>
+      لا نبيع بياناتك. لا نتتبع موقعك. لا نشارك معلوماتك مع أطراف ثالثة إلا لأغراض معالجة الدفع (Stripe / Apple).</p>
       <p><b>الاشتراكات:</b><br>
       تُعالَج مدفوعات iOS عبر Apple App Store وتخضع لسياسة خصوصية Apple. لإلغاء الاشتراك: الإعدادات ← اسمك ← الاشتراكات.</p>
       <p><b>التواصل:</b><br>
-      لأي استفسار: fatinahgame@gmail.com</p>
+      لأي استفسار: boturki13@gmail.com</p>
     </div>
-    <button class="btn btn-ghost btn-block mt" onclick="goBack()">رجوع</button>
+    <button class="btn btn-ghost btn-block mt" onclick="history.back ? history.back() : go('s-home')">رجوع</button>
   </section>
 
   <!-- شروط الاستخدام -->
@@ -642,9 +624,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <p><b>إخلاء المسؤولية:</b><br>
       التطبيق مقدَّم "كما هو" بدون ضمانات. المطوّر غير مسؤول عن أي أضرار ناجمة عن الاستخدام.</p>
       <p><b>التواصل:</b><br>
-      fatinahgame@gmail.com</p>
+      boturki13@gmail.com</p>
     </div>
-    <button class="btn btn-ghost btn-block mt" onclick="goBack()">رجوع</button>
+    <button class="btn btn-ghost btn-block mt" onclick="history.back ? history.back() : go('s-home')">رجوع</button>
   </section>
 
   <!-- أسئلة عائلية -->
@@ -738,21 +720,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
 <div class="confetti" id="confetti"></div>
 
 <!-- نافذة تأكيد الخروج -->
-<!-- شاشة تعليمية لأول مرة -->
-<div class="onb-wrap" id="onb-modal">
-  <div class="onb-card">
-    <button class="onb-skip" onclick="closeOnboarding()">تخطّي ✕</button>
-    <div class="onb-art" id="onb-art">🗂️</div>
-    <div class="onb-title" id="onb-title"></div>
-    <div class="onb-sub" id="onb-sub"></div>
-    <div class="onb-dots" id="onb-dots"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" id="onb-back" onclick="onbPrev()">السابق</button>
-      <button class="btn btn-primary" id="onb-next" onclick="onbNext()">التالي</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-wrap" id="exit-modal">
   <div class="modal">
     <div class="modal-icon">🚪</div>
@@ -772,17 +739,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <div class="modal-sub">سؤال صعب برصيد ±1200 نقطة لهم فقط، بلا أثر عليكم</div>
     <div class="bomb-target-list" id="bomb-target-list"></div>
     <button class="btn btn-ghost" style="margin-top:12px;" onclick="closeBombTargetPicker()">إلغاء</button>
-  </div>
-</div>
-
-<div class="modal-wrap" id="promo-expiry-modal">
-  <div class="modal">
-    <div class="modal-icon">⏳</div>
-    <div class="modal-title" id="promo-expiry-title">كودك المجاني على وشك الانتهاء</div>
-    <div class="modal-sub" id="promo-expiry-body">اشترك الآن لتتجنب الانقطاع.</div>
-    <div class="modal-actions" style="flex-direction:column; gap:10px;">
-      <button class="btn btn-primary" onclick="dismissPromoExpiryModal()">حسناً، فهمت</button>
-    </div>
   </div>
 </div>
 
@@ -859,73 +815,7 @@ let stats=loadStats();
 function loadStats(){
   return storeGet('stats', {games:0, correct:0, totalQ:0, bestScore:0, wins:0, ach:{}});
 }
-function saveStats(){ storeSet('stats', stats); pushStatsToCloud(); }
-
-// ============ مزامنة الإحصاءات سحابياً ============
-// الحفظ المحلي يبقى المصدر الفوري؛ المزامنة تعمل في الخلفية.
-async function _getStatsAuthHeader(){
-  try{
-    const FA = window.Capacitor?.Plugins?.FirebaseAuthentication;
-    if(FA){ const r=await FA.getIdToken(); if(r&&r.token) return {'Authorization':'Bearer '+r.token}; }
-  }catch(e){}
-  try{
-    if(_fbWebSDK&&_fbWebSDK.auth.currentUser){
-      const t=await _fbWebSDK.auth.currentUser.getIdToken();
-      if(t) return {'Authorization':'Bearer '+t};
-    }
-  }catch(e){}
-  return null;
-}
-// طابور موحّد لكل رحلات /api/stats/sync (رفعاً وسحباً): رحلة واحدة فقط في أي لحظة.
-let _statsSyncInFlight=false;
-let _statsSyncPending=false;      // طلب وارد أثناء رحلة قيد التنفيذ — يُنفَّذ بعد انتهائها
-let _statsSyncPendingPull=false;  // هل الطلب المجدوَل يحتاج دمج بيانات السحابة محلياً؟
-async function _statsSyncTrip(applyRemote){
-  if(_statsSyncInFlight){
-    _statsSyncPending=true; // جدوِل إعادة المحاولة بدلاً من الإهمال
-    if(applyRemote) _statsSyncPendingPull=true;
-    return;
-  }
-  _statsSyncInFlight=true;
-  _statsSyncPending=false;
-  try{
-    const auth=await _getStatsAuthHeader();
-    if(!auth) return;
-    const r=await fetch(apiUrl('/api/stats/sync'),{
-      method:'POST',
-      headers:{'Content-Type':'application/json',...auth},
-      body:JSON.stringify({
-        games:stats.games, correct:stats.correct, totalQ:stats.totalQ||0,
-        bestScore:stats.bestScore, wins:stats.wins, ach:stats.ach||{}
-      })
-    });
-    if(!applyRemote) return;
-    if(!r.ok) return;
-    const d=await r.json();
-    if(!d.ok) return;
-    // نأخذ الأعلى لكل قيمة رقمية، واتحاد الإنجازات
-    let changed=false;
-    ['games','correct','bestScore','wins'].forEach(k=>{
-      if((d[k]||0)>(stats[k]||0)){ stats[k]=d[k]; changed=true; }
-    });
-    if((d.totalQ||0)>(stats.totalQ||0)){ stats.totalQ=d.totalQ; changed=true; }
-    const remoteAch=d.ach||{};
-    stats.ach=stats.ach||{};
-    Object.keys(remoteAch).forEach(k=>{ if(!stats.ach[k]){ stats.ach[k]=remoteAch[k]; changed=true; } });
-    if(changed){ storeSet('stats',stats); }
-  }catch(e){ /* بدون إنترنت — المحلي يكفي */ }
-  finally{
-    _statsSyncInFlight=false;
-    if(_statsSyncPending){
-      _statsSyncPending=false;
-      const pull=_statsSyncPendingPull;
-      _statsSyncPendingPull=false;
-      _statsSyncTrip(pull); // نفّذ الطلب المجدوَل الذي وصل أثناء الرحلة
-    }
-  }
-}
-function pushStatsToCloud(){ return _statsSyncTrip(false); }
-function pullStatsFromCloud(){ return _statsSyncTrip(true); }
+function saveStats(){ storeSet('stats', stats); }
 
 const ACHIEVEMENTS=[
   {id:'first', icon:'🎮', t:'أول جولة', d:'أكملت أول جولة', chk:s=>s.games>=1},
@@ -954,8 +844,6 @@ function sfx(kind){
   else if(kind==='correct'){ beep(660,0.1,'sine',0.12); setTimeout(()=>beep(880,0.16,'sine',0.12),100); setTimeout(()=>beep(1100,0.2,'sine',0.1),210); }
   else if(kind==='wrong'){ beep(200,0.25,'sawtooth',0.1); }
   else if(kind==='tick') beep(700,0.05,'square',0.05);
-  else if(kind==='tick2'){ beep(950,0.07,'square',0.09); }
-  else if(kind==='warn'){ beep(880,0.12,'triangle',0.12); setTimeout(()=>beep(660,0.18,'triangle',0.12),140); }
   else if(kind==='win'){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.22,'triangle',0.12),i*130)); }
   else if(kind==='ach'){ beep(880,0.1,'sine',0.1); setTimeout(()=>beep(1320,0.2,'sine',0.1),110); }
 }
@@ -996,53 +884,10 @@ function toggleSound(){
 }
 
 // ============ تنقّل ============
-let prevScreen='s-home';
-function goBack(){ go(prevScreen||'s-home'); }
 function go(id){
-  const cur=document.querySelector('.screen.active');
-  if(cur && cur.id!==id && cur.id!=='s-terms' && cur.id!=='s-privacy') prevScreen=cur.id;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
-  if(id==='s-home') maybeShowOnboarding();
-}
-
-// ============ شاشة تعليمية (Onboarding) ============
-const ONB_STEPS=[
-  {art:'🗂️', title:'اختاروا الفئات', sub:'قسّموا المجلس إلى فريقين أو ثلاثة، وكل فريق يختار الفئات التي يحبها — رياضة، تاريخ، ألغاز وأكثر.'},
-  {art:'🎤', title:'أسئلة وأدوار', sub:'تظهر الأسئلة بالتناوب بين الفرق. السؤال يُقرأ بصوت عالٍ وعلى الفريق الإجابة قبل انتهاء الوقت!'},
-  {art:'🏆', title:'نقاط وفوز', sub:'كل إجابة صحيحة تكسب نقاط الفئة. عند انتهاء الأسئلة، الفريق صاحب أعلى النقاط هو الأفطن! 🎊'}
-];
-let onbStep=0;
-function renderOnb(){
-  const s=ONB_STEPS[onbStep];
-  document.getElementById('onb-art').textContent=s.art;
-  document.getElementById('onb-title').textContent=s.title;
-  document.getElementById('onb-sub').textContent=s.sub;
-  document.getElementById('onb-dots').innerHTML=ONB_STEPS.map((_,i)=>`<span class="${i===onbStep?'on':''}"></span>`).join('');
-  document.getElementById('onb-back').style.visibility=onbStep===0?'hidden':'visible';
-  document.getElementById('onb-next').textContent=onbStep===ONB_STEPS.length-1?'يلا نبدأ! 🎉':'التالي';
-}
-function openOnboarding(){
-  sfx&&sfx('tap');
-  onbStep=0; renderOnb();
-  document.getElementById('onb-modal').classList.add('show');
-}
-function closeOnboarding(){
-  document.getElementById('onb-modal').classList.remove('show');
-  storeSet('onboardingSeen', true);
-}
-function onbNext(){
-  sfx('tap'); vibrate(10);
-  if(onbStep>=ONB_STEPS.length-1){ closeOnboarding(); return; }
-  onbStep++; renderOnb();
-}
-function onbPrev(){
-  sfx('tap');
-  if(onbStep>0){ onbStep--; renderOnb(); }
-}
-function maybeShowOnboarding(){
-  if(!storeGet('onboardingSeen', false)) openOnboarding();
 }
 
 // ============ الخروج من الجولة ============
@@ -1076,7 +921,7 @@ async function reauthThen(provider, fn){
   const wb=await getFirebaseWebAuth();
   if(wb && wb.auth.currentUser){
     const p = provider==='google' ? new wb.GoogleAuthProvider() : new wb.OAuthProvider('apple.com');
-    const { reauthenticateWithPopup } = await import('./vendor/firebase-auth.js');
+    const { reauthenticateWithPopup } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
     await reauthenticateWithPopup(wb.auth.currentUser, p);
     return fn();
   }
@@ -1110,13 +955,13 @@ async function deleteFirebaseUser(){
     const user = wb.auth.currentUser;
     if(!user) return true; // لا يوجد مستخدم Firebase مسجَّل
     try{
-      const { deleteUser } = await import('./vendor/firebase-auth.js');
+      const { deleteUser } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
       await deleteUser(user);
       return true;
     }catch(e){
       if(e && e.code==='auth/requires-recent-login'){
         try{
-          const { deleteUser } = await import('./vendor/firebase-auth.js');
+          const { deleteUser } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
           await reauthThen(provider, ()=>deleteUser(wb.auth.currentUser));
           return true;
         }catch(e2){ console.error('web reauth+delete:', e2); return false; }
@@ -1133,12 +978,6 @@ async function confirmDeleteAccount(){
   if(!ok) return;
   const uid = storeGet('authUid','');
   const provider = storeGet('authProvider','');
-  // 0) نجلب التوكن مرة واحدة ونُدفئ كاش الخادم عبر family/purge قبل حذف Firebase
-  //    (التوكن يبطل بعد حذف مستخدم Firebase، لكن الكاش يبقى 5 دقائق للخطوة 2)
-  const auth = await getFamilyAuthHeader();
-  try{
-    if(auth) await fetch(apiUrl('/api/family/purge'),{method:'POST',headers:auth});
-  }catch(e){ console.error('cloud family purge:', e); }
   // 1) حذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login)
   if(provider==='apple' || provider==='google'){
     const deleted = await deleteFirebaseUser();
@@ -1147,12 +986,11 @@ async function confirmDeleteAccount(){
       return; // لا نمسح البيانات إن فشل حذف الحساب الفعلي
     }
   }
-  // 2) حذف سجل الاشتراك والأسئلة المشاهدة من الخادم بعد التأكد من حذف Firebase
-  // التوكن محفوظ في كاش الخادم (5 دقائق) من استدعاء family/purge أعلاه
-  if(auth){
+  // 2) حذف سجل الاشتراك من الخادم
+  if(uid){
     try{
-      await fetch(apiUrl('/api/account/delete'),{method:'POST',headers:{...auth,'Content-Type':'application/json'}});
-    }catch(e){ console.error('server account delete:', e); }
+      await fetch('/api/account/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid})});
+    }catch(e){ console.error('server delete:', e); }
   }
   // 3) حذف localStorage
   const keys=Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX));
@@ -1195,8 +1033,8 @@ async function getFirebaseWebAuth(){
   if(!window.FIREBASE_CONFIGURED) return null;
   try{
     const [appMod, authMod] = await Promise.all([
-      import('./vendor/firebase-app.js'),
-      import('./vendor/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'),
     ]);
     const { initializeApp, getApps } = appMod;
     const { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, OAuthProvider } = authMod;
@@ -1283,16 +1121,13 @@ function completeLogin(name, provider, uid){
   storeSet('authUid', uid);
   window._currentUid = uid;
   document.getElementById('user-name').textContent = name;
-  pullFamilyFromCloud();   // استرجاع الفئات العائلية من السحابة (في الخلفية)
-  pullStatsFromCloud();    // مزامنة الإحصاءات والإنجازات من السحابة (في الخلفية)
-  pullSeenFromCloud();     // مزامنة الأسئلة المشاهدة (تمنع التكرار على جهاز جديد)
   checkSubscriptionAndRoute(uid);
 }
 
 // ============ RevenueCat — Apple IAP ============
-// RC_API_KEY: يُحقن من /server-config.js (متغير البيئة RC_API_KEY على الخادم)
-const RC_API_KEY = window.RC_API_KEY || '';
-const RC_CONFIGURED = RC_API_KEY.startsWith('appl_'); // true = مفتاح حقيقي
+// RC_API_KEY: ضع هنا مفتاح iOS من لوحة RevenueCat بعد الإعداد
+const RC_API_KEY = 'appl_uqcDNORwLPcxPWRUDjmPPpoMeNM';
+const RC_CONFIGURED = !RC_API_KEY.includes('XXXX'); // true = مفتاح حقيقي
 const RC_ENTITLEMENT = 'premium';
 
 function getRC(){
@@ -1357,98 +1192,33 @@ async function rcRestore(){
 async function promoIsActive(uid){
   if(!uid) return false;
   try{
-    const auth = await _getStatsAuthHeader();
-    if(!auth) return false;
-    const r = await fetch(apiUrl('/api/promo/status'), {headers: auth});
+    const r = await fetch(`/api/promo/status?uid=${encodeURIComponent(uid)}`);
     if(!r.ok) return false;
     const d = await r.json();
     return d.active === true;
   }catch(e){ return false; }
 }
 
-async function promoStatusFull(uid){
-  if(!uid) return {active: false, expires_at: null, had_promo: false, expired_at: null};
-  try{
-    const auth = await _getStatsAuthHeader();
-    if(!auth) return {active: false, expires_at: null, had_promo: false, expired_at: null};
-    const r = await fetch(apiUrl('/api/promo/status'), {headers: auth});
-    if(!r.ok) return {active: false, expires_at: null, had_promo: false, expired_at: null};
-    const d = await r.json();
-    return {
-      active:     d.active === true,
-      expires_at: d.expires_at  || null,
-      had_promo:  d.had_promo   === true,
-      expired_at: d.expired_at  || null
-    };
-  }catch(e){ return {active: false, expires_at: null, had_promo: false, expired_at: null}; }
-}
-
-function maybeWarnPromoExpiry(expires_at){
-  if(!expires_at) return;
-  const expiryMs = new Date(expires_at).getTime();
-  const diffDays = (expiryMs - Date.now()) / (1000 * 60 * 60 * 24);
-  if(diffDays > 0 && diffDays <= 3){
-    // تحقق: هل أشعرنا اللاعب بهذا الكود مسبقاً في هذه الجلسة؟
-    const ackKey = 'promoExpiryAck';
-    const lastAck = storeGet(ackKey, null);
-    if(lastAck === expires_at) return; // سبق وأشعرناه
-    const dateStr = new Date(expires_at).toLocaleDateString('ar-SA');
-    document.getElementById('promo-expiry-title').textContent = `كودك المجاني ينتهي ${dateStr}`;
-    document.getElementById('promo-expiry-body').textContent = 'اشترك الآن لتتجنب الانقطاع والاستمرار في اللعب.';
-    // حفظ مفتاح الإشعار لتجنب تكراره
-    document.getElementById('promo-expiry-modal').dataset.expiresAt = expires_at;
-    document.getElementById('promo-expiry-modal').classList.add('show');
-  }
-}
-
-function notifyPromoExpired(expired_at){
-  let desc = 'اشترك للاستمرار في الاستمتاع بفطنة';
-  if(expired_at){
-    const dateStr = new Date(expired_at).toLocaleDateString('ar-SA');
-    desc = `انتهى بتاريخ ${dateStr} — اشترك للاستمرار`;
-  }
-  showToast('⏰', 'انتهت صلاحية كود المكافأة', desc, false);
-}
-
-function dismissPromoExpiryModal(){
-  const modal = document.getElementById('promo-expiry-modal');
-  const expiresAt = modal.dataset.expiresAt || '';
-  if(expiresAt) storeSet('promoExpiryAck', expiresAt);
-  modal.classList.remove('show');
-}
-
 async function checkSubscriptionAndRoute(uid){
-  // iOS: RevenueCat
+  // iOS: RevenueCat أولاً
   const rcActive = await rcIsActive();
   if(rcActive === true){ go('s-home'); return; }
   if(rcActive === false){
     // تحقق من كود مجاني قبل صفحة الاشتراك
-    if(uid){
-      const ps = await promoStatusFull(uid);
-      if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; }
-      if(ps.had_promo){ go('s-paywall'); notifyPromoExpired(ps.expired_at); return; }
-    }
+    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
     go('s-paywall'); return;
   }
   // ويب: Stripe — فشل مغلق (fail-closed): أي خطأ = paywall لا home
   try{
-    const resp = await fetch(apiUrl(`/api/stripe/status?uid=${encodeURIComponent(uid)}`));
+    const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
     if(!resp.ok) throw new Error('status error');
     const data = await resp.json();
     if(data.active === true){ go('s-home'); return; }
     // تحقق من كود مجاني
-    if(uid){
-      const ps = await promoStatusFull(uid);
-      if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; }
-      if(ps.had_promo){ go('s-paywall'); notifyPromoExpired(ps.expired_at); return; }
-    }
+    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
     go('s-paywall');
   }catch(e){
-    if(uid){
-      const ps = await promoStatusFull(uid);
-      if(ps.active){ go('s-home'); maybeWarnPromoExpiry(ps.expires_at); return; }
-      if(ps.had_promo){ go('s-paywall'); notifyPromoExpired(ps.expired_at); return; }
-    }
+    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
     go('s-paywall');
   }
 }
@@ -1460,7 +1230,7 @@ function togglePromoBox(){
   const open = form.style.display === 'none';
   form.style.display = open ? 'flex' : 'none';
   form.style.flexDirection = 'column';
-  btn.textContent = open ? '✖ إخفاء' : '🎁 هنا يُكتب الكود';
+  btn.textContent = open ? '✖ إخفاء' : '🎁 عندك كود مجاني؟';
   if(open) document.getElementById('pw-promo-input').focus();
 }
 
@@ -1470,12 +1240,11 @@ async function redeemPromo(){
   if(!code){ msg.style.color='#ff8a8a'; msg.textContent='أدخل الكود أولاً'; return; }
   msg.style.color='#C4B8E0'; msg.textContent='⏳ جاري التحقق...';
   try{
-    const auth = await _getStatsAuthHeader();
-    if(!auth){ msg.style.color='#ff8a8a'; msg.textContent='سجّل الدخول أولاً لتفعيل الكود'; return; }
-    const r = await fetch(apiUrl('/api/promo/redeem'),{
+    const uid = window._currentUid || '';
+    const r = await fetch('/api/promo/redeem',{
       method:'POST',
-      headers:{'Content-Type':'application/json', ...auth},
-      body: JSON.stringify({code})
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({code, uid})
     });
     const d = await r.json();
     if(d.ok){
@@ -1533,11 +1302,17 @@ async function startCheckout(){
       }
       return;
     }
-    // الويب: الاشتراك متاح على iOS فقط
-    showToast('ℹ️','متاح على iOS فقط','حمّل التطبيق من App Store',false);
-    btn.style.display = 'block';
-    loading.style.display = 'none';
-    return;
+    // ويب: Stripe Checkout
+    const uid   = storeGet('authUid','');
+    const email = storeGet('authEmail','');
+    const resp  = await fetch('/api/stripe/create-checkout', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({uid, email, plan: _pwPlan})
+    });
+    const data = await resp.json();
+    if(data.url){ window.location.href = data.url; }
+    else{ throw new Error(data.error || 'خطأ غير معروف'); }
   }catch(e){
     // تجاهل إلغاء المستخدم بصمت
     if((e.code||'').toString().includes('CANCELLED') ||
@@ -1587,9 +1362,7 @@ function updateCatSplitPreview(){
     names.push(`${TEAM_STYLES[i].name}: ${split[i]}`);
   }
   const el=document.getElementById('catcount-split');
-  if(el) el.textContent = state.teamCount===1
-    ? 'وضع التحدي الفردي — تختار كل الفئات بنفسك 🎯'
-    : 'كل فريق يختار — '+names.join(' · ');
+  if(el) el.textContent='كل فريق يختار — '+names.join(' · ');
 }
 function renderTeamNames(){
   const box=document.getElementById('team-names');
@@ -1684,9 +1457,9 @@ function renderCatGrid(){
     if(picked && state.catOwner[cat]!=null){
       const ost=TEAM_STYLES[state.teams[state.catOwner[cat]].idx];
       el.style.borderColor=ost.dot;
-      ownerBadge=`<span style="position:absolute;bottom:6px;left:8px;font-size:10px;font-weight:800;color:${ost.color}">${esc(state.teams[state.catOwner[cat]].name)}</span>`;
+      ownerBadge=`<span style="position:absolute;bottom:6px;left:8px;font-size:10px;font-weight:800;color:${ost.color}">${state.teams[state.catOwner[cat]].name}</span>`;
     }
-    el.innerHTML=`<span class="ci">${icon}</span>${esc(cat)}${ownerBadge}`;
+    el.innerHTML=`<span class="ci">${icon}</span>${cat}${ownerBadge}`;
     el.onclick=()=>toggleCat(cat,el);
     grid.appendChild(el);
   });
@@ -1734,8 +1507,6 @@ function startGame(){
   state.familyRound=null; state.usedQ=new Set();
   vibrate(30); state.turn=0; state.answered=0; state.cells={};
   buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
-  // حمّل مخزون الأسئلة دون اتصال في الخلفية (لا يعطّل اللعب)
-  try{ prefetchOfflinePacks(); }catch(e){}
 }
 function buildBoard(){
   const n=state.cats.length;
@@ -1794,7 +1565,7 @@ function renderTurn(){
 function updateBombButton(){
   const box=document.getElementById('bomb-box');
   if(!box || !state.teams.length) return;
-  const canBomb = state.teams.length>1 && state.teams[state.turn].score>=1000 && !state.teams[state.turn].bombUsed;
+  const canBomb = state.teams[state.turn].score>=1000 && !state.teams[state.turn].bombUsed;
   box.classList.toggle('show', canBomb);
 }
 function startBomb(){
@@ -2067,10 +1838,7 @@ function showTimer(sec){
   state.timer=setInterval(()=>{
     if(state.paused) return;
     state.timeLeft--; updateTimerUI();
-    // تنبيه صوتي عند 10 ثوانٍ، تكّات هادئة 10-6، تكّات سريعة + اهتزاز آخر 5 ثوانٍ
-    if(state.timeLeft===10){ sfx('warn'); vibrate([40,60,40]); }
-    else if(state.timeLeft<=9&&state.timeLeft>5) sfx('tick');
-    else if(state.timeLeft<=5&&state.timeLeft>0){ sfx('tick2'); vibrate(30); }
+    if(state.timeLeft<=5&&state.timeLeft>0) sfx('tick');
     if(state.timeLeft<=0){ clearInterval(state.timer); timeUp(); }
   },1000);
 }
@@ -2079,9 +1847,7 @@ function updateTimerUI(){
   fill.style.width=pct+'%';
   fill.style.background=state.timeLeft>state.maxTime*0.33?'var(--ok)':(state.timeLeft>state.maxTime*0.17?'var(--fire2)':'var(--no)');
   const num=document.getElementById('timer-num'); num.textContent=state.timeLeft;
-  num.classList.toggle('warn',state.timeLeft<=Math.ceil(state.maxTime*0.17)&&state.timeLeft>5);
-  num.classList.toggle('urgent',state.timeLeft<=5&&state.timeLeft>0);
-  fill.parentElement.classList.toggle('flash',state.timeLeft<=10&&state.timeLeft>0);
+  num.classList.toggle('warn',state.timeLeft<=Math.ceil(state.maxTime*0.17));
 }
 function togglePause(){
   if(state.cur&&state.cur.searching) return;
@@ -2192,19 +1958,14 @@ function endGame(){
   stats.games++;
   const bestThisGame=Math.max(...state.teams.map(t=>t.score));
   if(bestThisGame>stats.bestScore) stats.bestScore=bestThisGame;
-  if(!tie && state.teams.length>1) stats.wins++;
+  if(!tie) stats.wins++;
   saveStats();
   showResult(sorted,win,tie);
   checkAchievements();
 }
 function showResult(sorted,win,tie){
-  state.lastResult={teams:sorted.map(t=>({name:t.name,score:t.score,idx:t.idx})),tie};
   const wl=document.getElementById('winner-line');
-  if(sorted.length===1){
-    wl.innerHTML='🎯 تحدٍّ فردي — نتيجتك: <span class="brand">'+win.score+'</span> نقطة';
-  } else {
-    wl.innerHTML=tie?'تعادل! 🤝':('🏆 الفائز: <span class="brand">'+esc(win.name)+'</span>');
-  }
+  wl.innerHTML=tie?'تعادل! 🤝':('🏆 الفائز: <span class="brand">'+esc(win.name)+'</span>');
   const pod=document.getElementById('podium'); pod.innerHTML='';
   const medals=['🥇','🥈','🥉']; const heights={0:156,1:122,2:98};
   const order=[1,0,2].filter(i=>i<sorted.length);
@@ -2224,117 +1985,6 @@ function showResult(sorted,win,tie){
 function restart(){
   state.teams.forEach(t=>{ t.score=0; t.ll=3; t.used=new Set(); });
   startGame();
-}
-
-// ============ مشاركة النتيجة كصورة ============
-const SHARE_TEAM_COLORS=['#B794FF','#4FE3C4','#FFB067'];
-function buildResultCard(res){
-  const W=1080,H=1350,c=document.createElement('canvas');
-  c.width=W; c.height=H;
-  const x=c.getContext('2d');
-  // خلفية متدرجة
-  const bg=x.createLinearGradient(0,0,0,H);
-  bg.addColorStop(0,'#1B1030'); bg.addColorStop(.55,'#2A1548'); bg.addColorStop(1,'#3A1060');
-  x.fillStyle=bg; x.fillRect(0,0,W,H);
-  // نجوم خفيفة
-  for(let i=0;i<70;i++){
-    x.fillStyle='rgba(255,255,255,'+(0.06+((i*37)%10)/100)+')';
-    const sx=((i*137)%W), sy=((i*211)%H);
-    x.beginPath(); x.arc(sx,sy,1.4+((i*13)%3),0,7); x.fill();
-  }
-  // إطار
-  x.strokeStyle='rgba(255,210,75,.55)'; x.lineWidth=6;
-  const r=48; roundRect(x,34,34,W-68,H-68,r); x.stroke();
-  x.textAlign='center'; x.direction='rtl';
-  // شعار فَطِنة
-  const lg=x.createLinearGradient(0,120,0,240);
-  lg.addColorStop(0,'#FF7AA8'); lg.addColorStop(1,'#E01B55');
-  x.fillStyle=lg;
-  x.font='900 130px Tajawal, sans-serif';
-  x.shadowColor='rgba(255,45,108,.55)'; x.shadowBlur=40;
-  x.fillText('فَطِنة',W/2,225);
-  x.shadowBlur=0;
-  x.fillStyle='rgba(255,255,255,.75)';
-  x.font='500 44px Tajawal, sans-serif';
-  x.fillText('لعبة الذكاء الجماعية',W/2,295);
-  // سطر الفائز
-  x.font='800 62px Tajawal, sans-serif';
-  x.fillStyle='#FFD24B';
-  x.fillText(res.tie?'تعادل! 🤝':('🏆 الفائز: '+res.teams[0].name),W/2,430);
-  // بطاقات الفرق
-  const medals=['🥇','🥈','🥉'];
-  const cardH=170,gap=36,startY=520;
-  res.teams.slice(0,3).forEach((t,i)=>{
-    const y=startY+i*(cardH+gap);
-    const col=SHARE_TEAM_COLORS[t.idx%3]||'#FFD24B';
-    x.fillStyle='rgba(255,255,255,.07)';
-    roundRect(x,110,y,W-220,cardH,34); x.fill();
-    x.strokeStyle=col; x.lineWidth=4;
-    roundRect(x,110,y,W-220,cardH,34); x.stroke();
-    x.textAlign='right';
-    x.font='64px Tajawal, sans-serif';
-    x.fillText(medals[i]||'',W-160,y+cardH/2+22);
-    x.fillStyle='#fff';
-    x.font='800 58px Tajawal, sans-serif';
-    x.fillText(t.name,W-260,y+cardH/2+20);
-    x.textAlign='left';
-    x.fillStyle=col;
-    x.font='900 72px Tajawal, sans-serif';
-    x.fillText(String(t.score),160,y+cardH/2+26);
-    x.textAlign='center';
-  });
-  // تذييل
-  x.fillStyle='rgba(255,255,255,.65)';
-  x.font='500 40px Tajawal, sans-serif';
-  x.fillText('تحدَّ أصدقاءك في فَطِنة! 🧠✨',W/2,H-110);
-  return c;
-}
-function roundRect(x,px,py,w,h,r){
-  x.beginPath();
-  x.moveTo(px+r,py);
-  x.arcTo(px+w,py,px+w,py+h,r);
-  x.arcTo(px+w,py+h,px,py+h,r);
-  x.arcTo(px,py+h,px,py,r);
-  x.arcTo(px,py,px+w,py,r);
-  x.closePath();
-}
-async function shareResult(){
-  const res=state.lastResult;
-  if(!res||!res.teams||!res.teams.length){ showToast('⚠️','لا توجد نتيجة','العب جولة أولاً'); return; }
-  try{
-    // تأكد من تحميل الخط قبل الرسم حتى تظهر العربية بشكل جميل
-    try{ if(document.fonts&&document.fonts.load){ await Promise.all([document.fonts.load('900 130px Tajawal'),document.fonts.load('800 58px Tajawal'),document.fonts.load('500 44px Tajawal')]); } }catch(_){}
-    const canvas=buildResultCard(res);
-    const dataUrl=canvas.toDataURL('image/png');
-    const shareText='نتيجة مباراتنا في فَطِنة 🧠✨';
-    // الطبقة الأولى: مكوّن Capacitor الأصلي (iOS) — نحفظ الصورة كملف مؤقت ثم نشاركها
-    const SharePlugin=window.Capacitor?.Plugins?.Share;
-    const FS=window.Capacitor?.Plugins?.Filesystem;
-    if(window.Capacitor?.isNativePlatform?.()&&SharePlugin&&FS){
-      const b64=dataUrl.split(',')[1];
-      const w=await FS.writeFile({path:'fatinah-result.png',data:b64,directory:'CACHE'});
-      await SharePlugin.share({title:'نتيجة فَطِنة',text:shareText,url:w.uri,dialogTitle:'شارك النتيجة'});
-      return;
-    }
-    // الطبقة الثانية: Web Share API مع ملف صورة
-    const blob=await new Promise(rs=>canvas.toBlob(rs,'image/png'));
-    if(blob&&navigator.canShare&&navigator.share){
-      const file=new File([blob],'fatinah-result.png',{type:'image/png'});
-      if(navigator.canShare({files:[file]})){
-        await navigator.share({files:[file],title:'نتيجة فَطِنة',text:shareText});
-        return;
-      }
-    }
-    // الطبقة الثالثة: تنزيل الصورة مباشرة
-    const a=document.createElement('a');
-    a.href=dataUrl; a.download='fatinah-result.png';
-    document.body.appendChild(a); a.click(); a.remove();
-    showToast('📥','تم حفظ الصورة','شاركها مع أصدقائك!');
-  }catch(e){
-    if(e&&(e.name==='AbortError'||/cancel/i.test(String(e.message||'')))) return; // المستخدم أغلق نافذة المشاركة
-    console.error('share failed',e);
-    showToast('⚠️','تعذّرت المشاركة','حاول مرة أخرى');
-  }
 }
 function fireConfetti(){
   const box=document.getElementById('confetti'); box.innerHTML='';
@@ -2395,86 +2045,7 @@ let manualDraft = { name:'', questions:[], correct:0 };
 let previewData = null;                // {name, questions}
 
 function loadFamily(){ return storeGet('family', []); }
-function saveFamily(){ storeSet('family', familyCats); syncFamilyToCloud(); }
-
-// ---- مزامنة سحابية للفئات العائلية ----
-// الحفظ المحلي (localStorage + Preferences) يبقى المصدر الفوري؛
-// المزامنة مع الخادم تعمل في الخلفية ولا تعطّل اللعب عند انقطاع الإنترنت.
-// الخادم يتحقق من هوية Firebase (idToken) ويستخرج uid بنفسه — لا نرسل uid أبداً.
-async function getFamilyAuthHeader(){
-  // 1) Capacitor (iOS)
-  try{
-    const FA = window.Capacitor?.Plugins?.FirebaseAuthentication;
-    if(FA){
-      const r = await FA.getIdToken();
-      if(r && r.token) return {'Authorization':'Bearer '+r.token};
-    }
-  }catch(e){}
-  // 2) Firebase Web SDK (متصفح)
-  try{
-    if(_fbWebSDK && _fbWebSDK.auth.currentUser){
-      const t = await _fbWebSDK.auth.currentUser.getIdToken();
-      if(t) return {'Authorization':'Bearer '+t};
-    }
-  }catch(e){}
-  return null; // مستخدم بالاسم فقط — بياناته محلية على جهازه
-}
-async function syncFamilyToCloud(){
-  try{
-    if(!familyCats.length) return;
-    const auth = await getFamilyAuthHeader();
-    if(!auth) return;
-    fetch(apiUrl('/api/family/sync'),{
-      method:'POST',
-      headers:{'Content-Type':'application/json', ...auth},
-      body:JSON.stringify({categories:familyCats})
-    }).catch(()=>{});
-  }catch(e){}
-}
-async function deleteFamilyFromCloud(name){
-  try{
-    if(!name) return;
-    const auth = await getFamilyAuthHeader();
-    if(!auth) return;
-    fetch(apiUrl('/api/family/delete'),{
-      method:'POST',
-      headers:{'Content-Type':'application/json', ...auth},
-      body:JSON.stringify({name})
-    }).catch(()=>{});
-  }catch(e){}
-}
-// عند تسجيل الدخول: اجلب الفئات من السحابة وادمجها مع المحلية
-async function pullFamilyFromCloud(){
-  try{
-    const auth = await getFamilyAuthHeader();
-    if(!auth) return;
-    const r = await fetch(apiUrl('/api/family/list'),{headers:auth});
-    if(!r.ok) return;
-    const data = await r.json();
-    const remote = data.categories || [];
-    let changed = false;
-    for(const rc of remote){
-      if(!rc.name || !Array.isArray(rc.questions)) continue;
-      const local = familyCats.find(c=>c.name===rc.name);
-      if(!local){
-        familyCats.push({name:rc.name, questions:rc.questions});
-        changed = true;
-      }else{
-        // ادمج الأسئلة غير الموجودة محلياً (تفادي التكرار بنص السؤال)
-        const localQs = new Set(local.questions.map(q=>q.q));
-        for(const q of rc.questions){
-          if(q && q.q && !localQs.has(q.q)){ local.questions.push(q); changed = true; }
-        }
-      }
-    }
-    if(changed){
-      storeSet('family', familyCats);
-      if(typeof renderSavedFamily==='function' && document.getElementById('family-saved')) renderSavedFamily();
-    }
-    // ارفع أي فئات محلية غير موجودة سحابياً
-    syncFamilyToCloud();
-  }catch(e){ /* بدون إنترنت — المحلي يكفي */ }
-}
+function saveFamily(){ storeSet('family', familyCats); }
 
 function openFamily(){
   setFamilyMode('ai');
@@ -2503,19 +2074,6 @@ async function generateFamily(){
   let questions=null; let failed=false;
   try{ questions = await aiGenerate(topic,count); }
   catch(e){ failed=true; }
-  if(!failed && questions && questions.length){
-    // نجح التوليد — املأ مخزون هذا الموضوع فوراً في الخلفية
-    // حتى يكون السقوط على المخزون متاحاً لو انقطع الاتصال في نفس الجلسة
-    setTimeout(()=>{ try{ prefetchTopicPack(topic, 12); }catch(e){} }, 0);
-  }
-  if(failed || !questions || !questions.length){
-    // انقطع الاتصال؟ اسحب من المخزون المحلي المُحمَّل مسبقاً بدل رسالة الخطأ
-    const cached=takeFromQCache(topic,count);
-    if(cached && cached.length){
-      questions=cached; failed=false;
-      showToast('📴','وضع دون اتصال','أسئلة من المخزون المحفوظ على جهازك',false);
-    }
-  }
   btn.disabled=false; btn.innerHTML='✨ ولّد الأسئلة';
   if(failed || !questions || !questions.length){
     // رسالة صادقة بدل أسئلة قوالب وهمية بلا معنى
@@ -2526,35 +2084,11 @@ async function generateFamily(){
   renderPreview(); go('s-family-preview');
 }
 
-// ─── رابط API المناسب للبيئة ──────────────────────────────────────────────────
-// في المتصفح العادي: URLs نسبية تعمل مباشرةً
-// في iOS الأصلية (Capacitor): نضيف SERVER_BASE_URL أمام كل مسار
-// SERVER_BASE_URL يأتي من /server-config.js المُحقَن بواسطة server.py
-function apiUrl(path) {
-  const isNative = typeof window !== 'undefined' &&
-    window.Capacitor && window.Capacitor.isNativePlatform &&
-    window.Capacitor.isNativePlatform();
-  if (isNative) {
-    const base = (typeof window !== 'undefined' && window.SERVER_BASE_URL) || '';
-    if (base) return base + path;
-  }
-  return path;
-}
-
-// رابط توليد الأسئلة — يُستخدم في aiGenerate()
-// احتياط لـ iOS قبل ضبط SERVER_BASE_URL: Firebase Cloud Function القديمة
-function getAiBackendUrl() {
-  const isNative = typeof window !== 'undefined' &&
-    window.Capacitor && window.Capacitor.isNativePlatform &&
-    window.Capacitor.isNativePlatform();
-  if (isNative) {
-    const base = (typeof window !== 'undefined' && window.SERVER_BASE_URL) || '';
-    if (base) return base + '/api/generate';
-    return 'https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions';
-  }
-  return '/api/generate';
-}
-const AI_BACKEND_URL = getAiBackendUrl();
+// توليد الأسئلة عبر الخادم المحلي (يستخدم Claude / Anthropic بأمان من جهة الخادم)
+// في بيئة iOS الأصلية نعود للـ Firebase Cloud Function كاحتياط
+const AI_BACKEND_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1') && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+  ? 'https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions'
+  : '/api/generate';
 // تتبّع الأسئلة المُشاهدة لكل موضوع — يضمن أسئلة جديدة دائماً ويوفّر التوكن
 // نفس تطبيع الخادم (normalize_topic) حتى تتطابق المفاتيح
 function seenKey(topic){
@@ -2572,156 +2106,17 @@ function addSeen(topic, ids){
   const keys=Object.keys(m);
   if(keys.length>40){ keys.slice(0,keys.length-40).forEach(x=>delete m[x]); }
   storeSet('seenQ', m);
-  localStorage.setItem('pendingSeenSync','1'); // ضع العلم قبل الإرسال
-  syncSeenToCloud();  // ارفع التغيير للسحابة في الخلفية
-}
-// ─── مزامنة الأسئلة المشاهدة مع السحابة ──────────────────────────────────
-let _syncInFlight=false;
-let _syncPending=false; // طلب وارد أثناء رحلة قيد التنفيذ — يُنفَّذ بعد انتهائها
-async function syncSeenToCloud(){
-  if(_syncInFlight){
-    _syncPending=true; // جدوِل إعادة المحاولة بدلاً من الإهمال
-    return;
-  }
-  _syncInFlight=true;
-  _syncPending=false;
-  try{
-    const auth=await _getStatsAuthHeader();
-    if(!auth){ return; }
-    const m=storeGet('seenQ',{});
-    if(!Object.keys(m).length){ return; }
-    const r=await fetch(apiUrl('/api/seen/sync'),{
-      method:'POST',
-      headers:{'Content-Type':'application/json',...auth},
-      body:JSON.stringify({topics:m})
-    });
-    if(r.ok){
-      localStorage.removeItem('pendingSeenSync'); // نجح — ألغِ العلم
-    } else {
-      localStorage.setItem('pendingSeenSync','1'); // فشل — احتفظ بالعلم
-    }
-  }catch(e){
-    localStorage.setItem('pendingSeenSync','1');   // انقطاع — احتفظ بالعلم
-  }finally{
-    _syncInFlight=false;
-    if(_syncPending){
-      _syncPending=false;
-      syncSeenToCloud(); // نفّذ الطلب المجدوَل الذي وصل أثناء الرحلة
-    }
-  }
-}
-
-// أعِد المحاولة عند عودة الاتصال
-window.addEventListener('online', ()=>{
-  if(localStorage.getItem('pendingSeenSync')){
-    syncSeenToCloud();
-  }
-});
-
-// أعِد المحاولة عند تحميل الصفحة إذا كان هناك علم معلّق
-window.addEventListener('load', ()=>{
-  if(localStorage.getItem('pendingSeenSync')){
-    syncSeenToCloud();
-  }
-});
-async function pullSeenFromCloud(){
-  try{
-    const auth=await _getStatsAuthHeader();
-    if(!auth) return;
-    const m=storeGet('seenQ',{});
-    const r=await fetch(apiUrl('/api/seen/sync'),{
-      method:'POST',
-      headers:{'Content-Type':'application/json',...auth},
-      body:JSON.stringify({topics:m})
-    });
-    if(!r.ok) return;
-    const d=await r.json();
-    if(!d.ok || !d.topics) return;
-    // ادمج المُعادة (اتحاد سحابي+محلي) في localStorage
-    const merged=storeGet('seenQ',{});
-    let changed=false;
-    for(const [tnorm, ids] of Object.entries(d.topics)){
-      if(!Array.isArray(ids)) continue;
-      const prev=merged[tnorm]||[];
-      const union=[...new Set([...prev,...ids])].slice(-5000);
-      if(union.length!==prev.length){ merged[tnorm]=union; changed=true; }
-    }
-    if(changed) storeSet('seenQ', merged);
-  }catch(e){}
 }
 async function aiGenerate(topic,count){
-  const auth=await getFamilyAuthHeader();   // الخادم يتطلب مصادقة لتوليد الأسئلة
-  if(!auth) throw new Error('تسجيل الدخول مطلوب لتوليد الأسئلة');
   const res=await fetch(AI_BACKEND_URL,{
-    method:'POST', headers:{'Content-Type':'application/json', ...auth},
+    method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({ topic, count, seen:getSeen(topic) })
   });
   if(!res.ok) throw new Error('فشل الاتصال بالخادم');
   const data=await res.json();
   const arr=(data.questions||[]).filter(x=>x&&x.q&&x.answer).slice(0,count);
   addSeen(topic, arr.map(x=>x.id).filter(Boolean));
-  rememberTopic(topic);
   return arr;
-}
-
-// ─── مخزون الأسئلة دون اتصال (لكل موضوع) ──────────────────────────────────
-// عند نجاح أي توليد، نجلب دفعة إضافية في الخلفية ونخزّنها محلياً.
-// عند انقطاع الإنترنت، نسحب من هذا المخزون بدل رسالة الخطأ.
-const QCACHE_MAX_PER_TOPIC = 24;
-function getQCache(topic){ const m=storeGet('qCache',{}); return m[seenKey(topic)]||[]; }
-function setQCache(topic, arr){
-  const m=storeGet('qCache',{}); const k=seenKey(topic);
-  if(arr.length) m[k]=arr.slice(0,QCACHE_MAX_PER_TOPIC); else delete m[k];
-  // حد أقصى 20 موضوعاً — احذف الأقدم (حماية سعة localStorage)
-  const keys=Object.keys(m);
-  if(keys.length>20){ keys.slice(0,keys.length-20).forEach(x=>delete m[x]); }
-  storeSet('qCache', m);
-}
-function takeFromQCache(topic,count){
-  const pool=getQCache(topic);
-  if(!pool.length) return null;
-  const taken=pool.slice(0,count);
-  setQCache(topic, pool.slice(taken.length));
-  return taken;
-}
-// قائمة المواضيع الأخيرة — تُستخدم للتحميل المسبق عند بدء الجلسة
-function rememberTopic(topic){
-  const t=(topic||'').trim(); if(!t) return;
-  let list=storeGet('recentTopics',[]);
-  list=[t, ...list.filter(x=>seenKey(x)!==seenKey(t))].slice(0,8);
-  storeSet('recentTopics', list);
-}
-// تعبئة مخزون موضوع واحد في الخلفية (بصمت — الفشل غير مهم هنا)
-let _prefetchBusy=false;
-async function prefetchTopicPack(topic, want){
-  if(_prefetchBusy) return; // لا تكدّس طلبات توليد متوازية
-  if(typeof navigator!=='undefined' && navigator.onLine===false) return;
-  const have=getQCache(topic).length;
-  const need=Math.min(12, Math.max(0,(want||12)-have));
-  if(!need) return;
-  _prefetchBusy=true;
-  try{
-    const auth=await getFamilyAuthHeader();
-    if(!auth) return;
-    const res=await fetch(AI_BACKEND_URL,{
-      method:'POST', headers:{'Content-Type':'application/json', ...auth},
-      body:JSON.stringify({ topic, count:need, seen:getSeen(topic) })
-    });
-    if(!res.ok) return;
-    const data=await res.json();
-    const arr=(data.questions||[]).filter(x=>x&&x.q&&x.answer);
-    if(!arr.length) return;
-    addSeen(topic, arr.map(x=>x.id).filter(Boolean));
-    setQCache(topic, [...getQCache(topic), ...arr]);
-  }catch(e){ /* دون اتصال — المخزون الحالي يكفي */ }
-  finally{ _prefetchBusy=false; }
-}
-// تحميل مسبق للمواضيع الأخيرة — يُستدعى عند بدء الجلسة وعند عودة الاتصال
-function prefetchOfflinePacks(){
-  const topics=storeGet('recentTopics',[]);
-  (async()=>{
-    for(const t of topics.slice(0,4)){ await prefetchTopicPack(t, 12); }
-  })();
 }
 
 // مولّد نموذجي ذكي (يعمل دون إنترنت — لعرض التجربة كاملة)
@@ -2749,11 +2144,11 @@ function renderPreview(){
   list.innerHTML=previewData.questions.map((q,i)=>{
     // النظام الخفيف الجديد: سؤال + إجابة نصية فقط (بلا خيارات)
     if(q.answer && !q.o){
-      return `<div class="fp-card"><div class="fp-q">${i+1}. ${esc(q.q)}</div><div class="fp-o correct">✓ ${esc(q.answer)}</div></div>`;
+      return `<div class="fp-card"><div class="fp-q">${i+1}. ${q.q}</div><div class="fp-o correct">✓ ${q.answer}</div></div>`;
     }
     // توافق عكسي: النظام القديم بخيارات
-    const opts=(q.o||[]).map((o,j)=>`<div class="fp-o ${j===q.a?'correct':''}">${j===q.a?'✓ ':''}${esc(o)}</div>`).join('');
-    return `<div class="fp-card"><div class="fp-q">${i+1}. ${esc(q.q)}</div>${opts}</div>`;
+    const opts=(q.o||[]).map((o,j)=>`<div class="fp-o ${j===q.a?'correct':''}">${j===q.a?'✓ ':''}${o}</div>`).join('');
+    return `<div class="fp-card"><div class="fp-q">${i+1}. ${q.q}</div>${opts}</div>`;
   }).join('');
 }
 function saveFamilyCategory(){
@@ -2835,11 +2230,7 @@ function renderSavedFamily(){
       </div></div>`).join('');
 }
 function deleteFamily(i){
-  sfx('tap');
-  const removed=familyCats.splice(i,1)[0];
-  storeSet('family', familyCats);
-  if(removed) deleteFamilyFromCloud(removed.name);
-  renderSavedFamily();
+  sfx('tap'); familyCats.splice(i,1); saveFamily(); renderSavedFamily();
 }
 
 // جولة سريعة منفصلة بفئة عائلية واحدة
@@ -2884,35 +2275,30 @@ renderTeamNames();
   }
 })();
 
-// ─── وضع دون اتصال: Service Worker + مؤشر ────────────────────────────────────
-// SW يخزّن هيكل التطبيق حتى تفتح اللعبة وتشتغل كاملة بلا إنترنت
-(function initOffline(){
-  try{
-    const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
-    if(!isNative && 'serviceWorker' in navigator){
-      navigator.serviceWorker.register('/sw.js').catch(()=>{});
-    }
-  }catch(e){}
-  // مؤشر صغير «وضع دون اتصال»
-  const badge=document.createElement('div');
-  badge.id='offline-badge';
-  badge.textContent='📴 وضع دون اتصال';
-  badge.style.cssText='display:none;position:fixed;top:10px;left:10px;z-index:9999;background:#8b1a3d;color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.35);pointer-events:none;';
-  document.body.appendChild(badge);
-  function updateBadge(){ badge.style.display = navigator.onLine===false ? 'block' : 'none'; }
-  window.addEventListener('offline', updateBadge);
-  window.addEventListener('online', ()=>{
-    updateBadge();
-    try{ prefetchOfflinePacks(); }catch(e){} // أعد تعبئة المخزون عند عودة الاتصال
-  });
-  updateBadge();
-})();
-
 // حمّل Firebase مسبقاً حتى يكون جاهزاً فور ضغط الأزرار (بدون تأخير async)
 getFirebaseWebAuth();
 // هيّئ RevenueCat على iOS
 initRevenueCat();
 
+// تحقق من العودة بعد دفع Stripe — لا نثق بـ ?subscribed=1 وحده (قابل للتزوير)
+// نستخدم uid المحفوظ مسبقاً في localStorage فقط (لا uid من URL)
+(function checkStripeReturn(){
+  const p = new URLSearchParams(window.location.search);
+  if(p.get('subscribed')==='1'){
+    window.history.replaceState({},'','/');
+    // استخدم uid المحفوظ سابقاً — لا نثق بـ uid القادم من URL
+    const uid  = storeGet('authUid','');
+    const name = storeGet('playerName','لاعب');
+    document.getElementById('user-name').textContent = name;
+    showToast('🎉','جاري التحقق…','نتأكد من اشتراكك',false);
+    // تحقق من الخادم — fail-closed (بدون uid = paywall)
+    if(uid){ checkSubscriptionAndRoute(uid); }
+    else { go('s-paywall'); }
+  } else if(p.get('canceled')==='1'){
+    window.history.replaceState({},'','/');
+    showToast('ℹ️','تم الإلغاء','يمكنك الاشتراك في أي وقت',false);
+  }
+})();
 
 </script>
 </body>
