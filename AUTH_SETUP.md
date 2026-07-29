@@ -66,9 +66,16 @@
   `@capacitor-firebase/authentication` لا تعرض بيانات الاعتماد المعلّقة
   بنفس واجهة Web SDK، لذا يُحفَظ اسم المزوّد المحاوَل في
   `window._pendingLinkNativeProvider`، وبعد نجاح الدخول الأصلي تُستدعى
-  `resolveNativePendingLink(FA)` تلقائياً من مسارَي Apple وGoogle وEmail —
-  وهي تستدعي `FA.linkWithApple()` أو `FA.linkWithGoogle()` مرةً أخرى
-  (تُعيد تشغيل OAuth sheet لكنها تُكمل الربط دون إنشاء حساب جديد).
+  `resolveNativePendingLink(FA)` تلقائياً من مسارَي Apple وGoogle وEmail.
+  **المسار الهجين الرئيسي (بلا sheet ثانية — v8)**: `appleSignIn`/`googleSignIn`
+  تستخدمان `FA.signInWithApple/Google({ skipNativeAuth: true })` لاسترداد
+  بيانات الاعتماد في JS قبل أن يحاول Firebase تسجيل الدخول. ثم يتم تسجيل الدخول
+  عبر Web SDK؛ إن وقع تعارض، `handleAuthConflict(e, provider, wb)` يحفظ
+  `OAuthProvider/GoogleAuthProvider.credentialFromError(e)` في `_pendingLinkCred`.
+  عند نجاح الدخول بالمزوّد الأصلي، `resolvePendingLinkWeb(wb, user)` يربط
+  المزوّد المعلّق باستخدام `linkWithCredential` — **بلا OAuth sheet ثانية**.
+  **المسار الأصلي (احتياطي)**: للمستخدمين المجهولين (الترقية) أو عند انعدام
+  الاتصال بـ Web SDK؛ يستدعي `FA.linkWithApple/Google()` مع sheet ثانية.
   إن فشل الربط الثانوي لا يُوقف الدخول — المستخدم داخل حسابه بالفعل
   ويمكنه ربط الطريقة يدوياً من شاشة إدارة الحسابات.
 - **شاشة إدارة الحسابات**: قسم "وسائل الدخول المرتبطة" في شاشة الإحصاءات
