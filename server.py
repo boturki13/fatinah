@@ -72,6 +72,18 @@ def init_db():
             PRIMARY KEY (uid, code)
         )
     ''')
+    # ─── جدول outbox لإعادة الكتابة إلى Firestore عند الفشل ────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS subscription_outbox (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            uid         TEXT NOT NULL,
+            payload     TEXT NOT NULL,
+            attempts    INTEGER DEFAULT 0,
+            last_error  TEXT,
+            created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+            next_retry  DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     conn.commit()
     conn.close()
 
