@@ -1350,8 +1350,9 @@ async function handleAuthConflict(e, attemptedProvider, wb){
   window._pendingLinkCred    = pendingCred;
   window._pendingLinkEmail   = email || '';
   window._pendingLinkOriginal= original;
-  // مسار iOS الأصلي: نحفظ المزوّد المحاوَل لإعادة المحاولة بعد الدخول الأصلي
+  // مسار iOS الأصلي: نحفظ المزوّد المحاوَل والخطأ الأصلي (للاستخدام مع v8 getCredentialFromError)
   window._pendingLinkNativeProvider = !wb ? attemptedProvider : null;
+  window._pendingLinkNativeError    = !wb ? e : null;
 
   openAuth(window._authReturnScreen || currentScreenId());
   document.getElementById('auth-title').textContent = 'لديك حساب بالفعل';
@@ -1381,15 +1382,36 @@ async function resolvePendingLinkWeb(wb, userAfterSignIn){
   }
 }
 
-// بعد نجاح تسجيل الدخول بالطريقة الأصلية (iOS الأصلي)، نحاول ربط المزوّد المعلّق
-// عبر استدعاء FA.linkWithApple / FA.linkWithGoogle مباشرةً (تُعيد تشغيل OAuth sheet
-// لكنها تُكمل الربط دون إنشاء حساب جديد).
+// بعد نجاح تسجيل الدخول عبر المسار الأصلي (iOS Capacitor)، نُكمل الربط المعلّق.
+// هذه الدالة تُعالج فقط النزاعات التي وقعت في المسار الأصلي (isAnon أو فشل هجين).
+// النزاعات من المسار الهجين تُعالَج بـ resolvePendingLinkWeb مباشرةً.
 async function resolveNativePendingLink(FA){
-  const p = window._pendingLinkNativeProvider;
+  const p        = window._pendingLinkNativeProvider;
+  const nativeErr= window._pendingLinkNativeError;
   window._pendingLinkCred=null; window._pendingLinkEmail=null;
   window._pendingLinkOriginal=null; window._pendingLinkNativeProvider=null;
+  window._pendingLinkNativeError=null;
   if(!p || !FA) return false;
   try{
+    // ── مسار v8 (مستقبلي): getCredentialFromError + linkWithCredentials ──
+    // هذه الدوال غير موجودة في v8.3.0 حالياً لكن الكود جاهز لها عند إضافتها
+    if(nativeErr && typeof FA.getCredentialFromError === 'function'){
+      try{
+        const result = await FA.getCredentialFromError({ error: nativeErr });
+        const credential = result && result.credential;
+        if(credential){
+          await FA.linkWithCredentials({ credential });
+          console.info('[Auth] resolveNativePendingLink: used v8 no-sheet path ✓');
+          showToast('🔗','تم الربط بنجاح','أصبح بإمكانك الدخول من الطريقتين الآن',false);
+          return true;
+        }
+      }catch(v8Err){
+        console.warn('[Auth] resolveNativePendingLink: v8 path unavailable, using fallback OAuth sheet:', v8Err.code || v8Err.message);
+      }
+    }
+    // ── مسار الاحتياطي: إعادة تشغيل OAuth sheet (سلوك قديم) ──
+    // يُستخدم دائماً في v8.3.0 لأن getCredentialFromError غير متوفرة بعد
+    console.info('[Auth] resolveNativePendingLink: using fallback OAuth sheet for provider:', p);
     if(p==='apple')       await FA.linkWithApple();
     else if(p==='google') await FA.linkWithGoogle();
     else return false;
@@ -1397,7 +1419,7 @@ async function resolveNativePendingLink(FA){
     return true;
   }catch(e){
     // عدم اكتمال الربط لا يُوقف الدخول — المستخدم داخل حسابه بالفعل
-    console.warn('native pending link resolve:', e);
+    console.warn('[Auth] resolveNativePendingLink: link failed (non-blocking):', e.code || e.message);
     return false;
   }
 }
@@ -1405,6 +1427,7 @@ async function resolveNativePendingLink(FA){
 function clearPendingLinkNative(){
   window._pendingLinkCred=null; window._pendingLinkEmail=null;
   window._pendingLinkOriginal=null; window._pendingLinkNativeProvider=null;
+  window._pendingLinkNativeError=null;
 }
 
 // ────────── Firebase Auth — طبقتان: Capacitor (iOS) ثم Web SDK (متصفح)
@@ -1436,9 +1459,45 @@ async function getFirebaseWebAuth(){
 async function appleSignIn(){
   sfx('tap'); vibrate(15);
   const isAnon = storeGet('authProvider','')==='anonymous';
-  // محاولة 1: Capacitor (iOS app)
   const FA = getFirebaseAuth();
   if(FA){
+    // ── مسار هجين (لغير المجهولين): skipNativeAuth=true يُعيد بيانات الاعتماد لـ JS
+    // قبل أن يحاول Firebase تسجيل الدخول، فيُتيح معالجة تعارض المزوّدين عبر
+    // Web SDK وحفظ OAuthCredential بلا OAuth sheet ثانية ──
+    if(!isAnon){
+      try{
+        const skipRes = await FA.signInWithApple({ skipNativeAuth: true });
+        const cinfo = skipRes && skipRes.credential;
+        if(cinfo && cinfo.idToken){
+          const wb = await getFirebaseWebAuth();
+          if(wb){
+            const { OAuthProvider, signInWithCredential } =
+              await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+            const cred = new OAuthProvider('apple.com').credential({
+              idToken: cinfo.idToken, rawNonce: cinfo.nonce || ''
+            });
+            const result = await signInWithCredential(wb.auth, cred);
+            const u = result.user;
+            if(u.email){ storeSet('authEmail', u.email); savePermanentProfile(u.uid, u.displayName, u.email, 'apple'); }
+            afterAuthSuccess(u.displayName||u.email||storeGet('playerName','لاعب'),'apple',u.uid,u.email);
+            // إن كان هناك ربط معلّق من تعارض سابق (web credential)، نُكمله الآن
+            await resolvePendingLinkWeb(wb, u);
+            return;
+          }
+        }
+      }catch(e){
+        const code = String(e && e.code || '');
+        // المستخدم أغلق نافذة Apple أو Google — لا نتراجع للمسار الأصلي
+        if(code.includes('cancelled')||code.includes('dismiss')||code.includes('1001')) return;
+        // تعارض مزوّدين — handleAuthConflict سيحفظ OAuthCredential عبر Web SDK
+        // مما يُتيح الربط لاحقاً بلا sheet ثانية
+        const wb = await getFirebaseWebAuth();
+        if(await handleAuthConflict(e,'apple',wb)) return;
+        // خطأ آخر (مثل انقطاع الشبكة) → نتراجع للمسار الأصلي
+        console.warn('Hybrid Apple sign-in failed, falling back to native path:', e);
+      }
+    }
+    // ── المسار الأصلي: للمستخدمين المجهولين (الترقية) أو عند فشل المسار الهجين ──
     try{
       const res = isAnon ? await FA.linkWithApple() : await FA.signInWithApple();
       const u = res && res.user;
@@ -1447,7 +1506,7 @@ async function appleSignIn(){
         savePermanentProfile(u.uid, u.displayName, u.email, 'apple');
       }
       afterAuthSuccess((u && u.displayName) || storeGet('playerName','لاعب'), 'apple', u && u.uid, u && u.email);
-      // إن كان هناك ربط معلّق من تعارض سابق، نُكمله الآن بعد نجاح الدخول
+      // إن كان هناك ربط معلّق من تعارض سابق (native provider)، نُكمله الآن
       await resolveNativePendingLink(FA);
       return;
     }catch(e){
@@ -1458,7 +1517,7 @@ async function appleSignIn(){
       console.error('Capacitor Apple:', e);
     }
   }
-  // محاولة 2: Firebase Web SDK (متصفح) — SDK محمّل مسبقاً فلا يُمنع الـ popup
+  // ── محاولة 2: Firebase Web SDK (متصفح) ──
   const wb = await getFirebaseWebAuth();
   if(wb){
     try{
@@ -1488,9 +1547,42 @@ async function appleSignIn(){
 async function googleSignIn(){
   sfx('tap'); vibrate(15);
   const isAnon = storeGet('authProvider','')==='anonymous';
-  // محاولة 1: Capacitor (iOS app)
   const FA = getFirebaseAuth();
   if(FA){
+    // ── مسار هجين (لغير المجهولين): skipNativeAuth=true يُعيد بيانات الاعتماد لـ JS
+    // قبل أن يحاول Firebase تسجيل الدخول، فيُتيح معالجة تعارض المزوّدين عبر
+    // Web SDK وحفظ OAuthCredential بلا OAuth sheet ثانية ──
+    if(!isAnon){
+      try{
+        const skipRes = await FA.signInWithGoogle({ skipNativeAuth: true });
+        const cinfo = skipRes && skipRes.credential;
+        if(cinfo && cinfo.idToken){
+          const wb = await getFirebaseWebAuth();
+          if(wb){
+            const { GoogleAuthProvider, signInWithCredential } =
+              await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+            const cred = GoogleAuthProvider.credential(cinfo.idToken, cinfo.accessToken||'');
+            const result = await signInWithCredential(wb.auth, cred);
+            const u = result.user;
+            if(u.email){ storeSet('authEmail', u.email); savePermanentProfile(u.uid, u.displayName, u.email, 'google'); }
+            afterAuthSuccess(u.displayName||u.email||storeGet('playerName','لاعب'),'google',u.uid,u.email);
+            // إن كان هناك ربط معلّق من تعارض سابق (web credential)، نُكمله الآن
+            await resolvePendingLinkWeb(wb, u);
+            return;
+          }
+        }
+      }catch(e){
+        const code = String(e && e.code || '');
+        // المستخدم أغلق نافذة Google — لا نتراجع للمسار الأصلي
+        if(code.includes('cancelled')||code.includes('dismiss')||code.includes('12501')) return;
+        // تعارض مزوّدين — handleAuthConflict سيحفظ OAuthCredential عبر Web SDK
+        const wb = await getFirebaseWebAuth();
+        if(await handleAuthConflict(e,'google',wb)) return;
+        // خطأ آخر → نتراجع للمسار الأصلي
+        console.warn('Hybrid Google sign-in failed, falling back to native path:', e);
+      }
+    }
+    // ── المسار الأصلي: للمستخدمين المجهولين (الترقية) أو عند فشل المسار الهجين ──
     try{
       const res = isAnon ? await FA.linkWithGoogle() : await FA.signInWithGoogle();
       const u = res && res.user;
@@ -1499,7 +1591,7 @@ async function googleSignIn(){
         savePermanentProfile(u.uid, u.displayName, u.email, 'google');
       }
       afterAuthSuccess((u && u.displayName) || storeGet('playerName','لاعب'), 'google', u && u.uid, u && u.email);
-      // إن كان هناك ربط معلّق من تعارض سابق، نُكمله الآن بعد نجاح الدخول
+      // إن كان هناك ربط معلّق من تعارض سابق (native provider)، نُكمله الآن
       await resolveNativePendingLink(FA);
       return;
     }catch(e){
@@ -1510,7 +1602,7 @@ async function googleSignIn(){
       console.error('Capacitor Google:', e);
     }
   }
-  // محاولة 2: Firebase Web SDK (متصفح)
+  // ── محاولة 2: Firebase Web SDK (متصفح) ──
   const wb = await getFirebaseWebAuth();
   if(wb){
     try{
