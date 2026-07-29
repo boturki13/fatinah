@@ -62,12 +62,15 @@
   يُعالَج في `handleAuthConflict()` — على **Web SDK** نستخرج بيانات الاعتماد
   المعلّقة عبر `OAuthProvider.credentialFromError` / `GoogleAuthProvider.credentialFromError`
   ونربطها تلقائياً بعد أن يسجّل المستخدم دخوله بطريقته الأصلية
-  (`resolvePendingLinkWeb`). **قيد معروف على iOS الأصلي (Capacitor)**: حزمة
-  `@capacitor-firebase/authentication` الحالية لا تعرض بيانات الاعتماد
-  المعلّقة عبر واجهة موحّدة كما يفعل Web SDK، لذا في هذه الحالة تحديداً
-  (تعارض مزوّدين داخل تطبيق iOS الأصلي) يُوجَّه المستخدم لتسجيل الدخول بطريقته
-  الأصلية بأمان، لكن الربط التلقائي للطريقة الثانية غير مضمون حتى تحديث الحزمة
-  أو اختبار مباشر على جهاز/محاكي حقيقي.
+  (`resolvePendingLinkWeb`). على **iOS الأصلي (Capacitor)**: حزمة
+  `@capacitor-firebase/authentication` لا تعرض بيانات الاعتماد المعلّقة
+  بنفس واجهة Web SDK، لذا يُحفَظ اسم المزوّد المحاوَل في
+  `window._pendingLinkNativeProvider`، وبعد نجاح الدخول الأصلي تُستدعى
+  `resolveNativePendingLink(FA)` تلقائياً من مسارَي Apple وGoogle وEmail —
+  وهي تستدعي `FA.linkWithApple()` أو `FA.linkWithGoogle()` مرةً أخرى
+  (تُعيد تشغيل OAuth sheet لكنها تُكمل الربط دون إنشاء حساب جديد).
+  إن فشل الربط الثانوي لا يُوقف الدخول — المستخدم داخل حسابه بالفعل
+  ويمكنه ربط الطريقة يدوياً من شاشة إدارة الحسابات.
 - **شاشة إدارة الحسابات**: قسم "وسائل الدخول المرتبطة" في شاشة الإحصاءات
   (`renderAccountLinks`) يقرأ `user.providerData` مباشرة من Firebase (وليس من
   تخزين محلي) فيعكس الحالة الحقيقية، ويمنع فك آخر وسيلة متبقية.
