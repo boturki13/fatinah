@@ -1230,7 +1230,18 @@ async function ensureAnonymousSession(){
         const { signInAnonymously } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
         const result = await signInAnonymously(wb.auth);
         uid = result.user.uid;
-      }catch(e){ console.error('anon Web:', e); }
+      }catch(e){
+        if(e && e.code === 'auth/admin-restricted-operation'){
+          console.warn(
+            '%c⚠️ تسجيل الدخول المجهول (Anonymous) غير مفعّل في Firebase Console\n' +
+            'لتفعيله: Firebase Console → Authentication → Sign-in method → Anonymous → Enable\n' +
+            'حتى يُفعَّل، يعمل التطبيق بمعرّف جهاز محلي (بلا مزامنة تقدّم عبر الأجهزة).',
+            'color:#FFD24B; font-weight:bold;'
+          );
+        } else {
+          console.error('anon Web:', e);
+        }
+      }
     }
   }
   if(!uid){
@@ -1550,6 +1561,7 @@ async function emailAuth(mode){
       msg.style.color='#ff8a8a'; msg.textContent='تعذّر إكمال العملية — حاول مرة أخرى';
     }
   }
+}
 
 // ===== شاشة التعليم الأولى (onboarding) =====
 let _onbStep = 0;

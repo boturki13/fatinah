@@ -454,6 +454,86 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
 
+        elif path == '/api/auth/check-anonymous':
+            # نقطة تشخيص: تتحقق هل مزوّد Anonymous مفعّل في Firebase Console.
+            # محمية بـ X-Admin-Secret لأنها تُنشئ مستخدماً مؤقتاً ثم تحذفه.
+            admin_secret = os.environ.get('ADMIN_SECRET', '')
+            auth_header  = self.headers.get('X-Admin-Secret', '')
+            if admin_secret and auth_header != admin_secret:
+                self.send_json(403, {'error': 'غير مصرح'}); return
+    def log_message(self, fmt, *args):
+        pass
+
+    def send_json(self, code, obj):
+        body = json.dumps(obj, ensure_ascii=False).encode()
+        self.send_response(code)
+        self.send_header('Content-Type',   'application/json; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header('Access-Control-Allow-Origin',  '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Stripe-Signature')
+        self.end_headers()
+
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path   = parsed.path
+        params = urllib.parse.parse_qs(parsed.query)
+
+        if path == '/firebase-config.js':
+            body = firebase_config_js()
+            self.send_response(200)
+            self.send_header('Content-Type',   'application/javascript; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        elif path == '/api/auth/check-anonymous':
+            # نقطة تشخيص: تتحقق هل مزوّد Anonymous مفعّل في Firebase Console.
+            # محمية بـ X-Admin-Secret لأنها تُنشئ مستخدماً مؤقتاً ثم تحذفه.
+            admin_secret = os.environ.get('ADMIN_SECRET', '')
+            auth_header  = self.headers.get('X-Admin-Secret', '')
+            if admin_secret and auth_header != admin_secret:
+                self.send_json(403, {'error': 'غير مصرح'}); return
+            api_key = os.environ.get('GOOGLE_API_KEY', '')
+            if not api_key or not firebase_is_configured():
+                self.send_json(200, {'enabled': None, 'reason': 'not_configured'}); return
+            try:
+                # نحاول تسجيل دخول مجهول عبر REST
+                payload = json.dumps({'returnSecureToken': True}).encode()
+                req = urllib.request.Request(
+                    f'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}',
+                    data=payload, method='POST',
+                    headers={'Content-Type': 'application/json'})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    data = json.loads(resp.read())
+                id_token = data.get('idToken')
+                # نحذف المستخدم المؤقت فوراً تجنّباً للتلوث
+                if id_token:
+                    del_payload = json.dumps({'idToken': id_token}).encode()
+                    del_req = urllib.request.Request(
+                        f'https://identitytoolkit.googleapis.com/v1/accounts:delete?key={api_key}',
+                        data=del_payload, method='POST',
+                        headers={'Content-Type': 'application/json'})
+                    try:
+                        urllib.request.urlopen(del_req, timeout=5)
+                    except Exception:
+                        pass  # الحذف اختياري، لا يُوقف الاستجابة
+                self.send_json(200, {'enabled': True})
+            except urllib.error.HTTPError as e:
+                body = e.read().decode('utf-8', errors='replace')
+                if 'ADMIN_ONLY_OPERATION' in body:
+                    self.send_json(200, {'enabled': False, 'reason': 'ADMIN_ONLY_OPERATION'})
+                else:
+                    self.send_json(200, {'enabled': None, 'reason': body[:200]})
+            except Exception as ex:
+                self.send_json(200, {'enabled': None, 'reason': str(ex)[:200]})
+
         elif path == '/api/stripe/status':
             uid = (params.get('uid') or [''])[0]
             if not uid:
@@ -575,18 +655,6 @@ class Handler(BaseHTTPRequestHandler):
 
         else:
             self.send_response(404); self.end_headers()
-
-    # حدود حجم body لكل نقطة POST — تُعيد 413 مبكراً قبل قراءة البيانات
-    _MAX_BODY: dict = {
-        '/api/generate':               65_536,   # 64 KB  (topic + قائمة seen)
-        '/api/account/delete':          1_024,   # 1 KB   (uid فقط)
-        '/api/stripe/create-checkout':  4_096,   # 4 KB   (uid + email + plan)
-        '/api/stripe/webhook':         65_536,   # 64 KB  (حدث Stripe)
-        '/api/promo/redeem':            2_048,   # 2 KB   (code + uid)
-        '/api/promo/admin':             8_192,   # 8 KB   (إجراءات الإدارة)
-        '/api/revenuecat/webhook':     65_536,   # 64 KB  (حدث RevenueCat)
-    }
-    _DEFAULT_MAX_BODY = 16_384  # 16 KB للمسارات غير المدرجة
 
     def do_POST(self):
         path   = self.path.split('?')[0]
@@ -1038,6 +1106,49 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_response(404); self.end_headers()
 
+def _firestore_get_token():
+    """احصل على access token لـ Firestore REST API عبر Service Account (openssl)."""
+    sa_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT', '')
+    if not sa_json:
+        return None, 'FIREBASE_SERVICE_ACCOUNT غير محدد'
+    try:
+        import base64 as _b64, time as _time, subprocess, tempfile, os as _os
+        sa = json.loads(sa_json)
+        header    = _b64.urlsafe_b64encode(json.dumps({'alg':'RS256','typ':'JWT'}).encode()).rstrip(b'=')
+        now       = int(_time.time())
+        claim     = _b64.urlsafe_b64encode(json.dumps({
+            'iss':   sa['client_email'],
+            'scope': 'https://www.googleapis.com/auth/datastore',
+            'aud':   'https://oauth2.googleapis.com/token',
+            'iat':   now,
+            'exp':   now + 3600,
+        }).encode()).rstrip(b'=')
+        signing_input = header + b'.' + claim
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pem') as f:
+            f.write(sa['private_key'].encode())
+            pem_path = f.name
+        try:
+            result = subprocess.run(
+                ['openssl', 'dgst', '-sha256', '-sign', pem_path],
+                input=signing_input, capture_output=True)
+            sig = _b64.urlsafe_b64encode(result.stdout).rstrip(b'=')
+        finally:
+            _os.unlink(pem_path)
+        jwt_token = (signing_input + b'.' + sig).decode()
+        post_data = urllib.parse.urlencode({
+            'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            'assertion':  jwt_token,
+        }).encode()
+        req = urllib.request.Request(
+            'https://oauth2.googleapis.com/token',
+            data=post_data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            tok = json.loads(resp.read())
+        return tok.get('access_token'), None
+    except Exception as e:
+        return None, str(e)
+
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
 
@@ -1056,23 +1167,24 @@ _startup_status: dict = {
 
 # ─── Outbox: تخزين مؤقت لعمليات Firestore الفاشلة ──────────────────────────
 def init_outbox_table():
+    """أنشئ جدول outbox لتتبّع عمليات الكتابة المعلّقة على Firestore."""
     conn = db_connect()
     conn.execute('''
         CREATE TABLE IF NOT EXISTS subscription_outbox (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            uid        TEXT NOT NULL,
-            payload    TEXT NOT NULL,
-            attempts   INTEGER DEFAULT 0,
-            last_error TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            next_retry DATETIME DEFAULT CURRENT_TIMESTAMP
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            uid         TEXT NOT NULL,
+            payload     TEXT NOT NULL,
+            attempts    INTEGER DEFAULT 0,
+            last_error  TEXT,
+            created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+            next_retry  DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     conn.commit()
     conn.close()
 
 def enqueue_outbox(uid: str, payload: dict):
-    """أضف سجل إلى الـ outbox ليُرسَل إلى Firestore لاحقاً (عند الفشل المؤقت)."""
+    """أضف سجل اشتراك إلى الـ outbox ليُعاد إرساله إلى Firestore لاحقاً."""
     try:
         conn = db_connect()
         conn.execute(
@@ -1081,7 +1193,28 @@ def enqueue_outbox(uid: str, payload: dict):
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f'[OUTBOX] تعذّر الإضافة: {e}')
+        print(f'[OUTBOX] تعذّر الإضافة إلى الـ outbox: {e}')
+
+def _firestore_write_subscription(uid: str, payload: dict, token: str, project_id: str):
+    """يكتب سجل اشتراك واحد إلى Firestore REST API."""
+    def fs_val(v):
+        return {'stringValue': str(v)} if v else {'nullValue': None}
+    fields = {
+        'uid':                     fs_val(payload.get('uid', uid)),
+        'email':                   fs_val(payload.get('email', '')),
+        'stripe_customer_id':      fs_val(payload.get('stripe_customer_id', '')),
+        'stripe_subscription_id':  fs_val(payload.get('stripe_subscription_id', '')),
+        'status':                  fs_val(payload.get('status', 'inactive')),
+        'updated_at':              fs_val(payload.get('updated_at', '')),
+    }
+    body = json.dumps({'fields': fields}).encode()
+    url  = (f'https://firestore.googleapis.com/v1/projects/{project_id}'
+            f'/databases/(default)/documents/subscriptions/{urllib.parse.quote(uid)}')
+    req  = urllib.request.Request(url, data=body, method='PATCH',
+           headers={'Authorization': f'Bearer {token}',
+                    'Content-Type':  'application/json'})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        resp.read()
 
 def _fs_write_from_payload(uid: str, payload: dict):
     """يكتب سجل اشتراك واحد إلى Firestore مستخدِماً FIREBASE_SERVICE_ACCOUNT_JSON."""
@@ -1103,138 +1236,182 @@ def _fs_write_from_payload(uid: str, payload: dict):
         resp.read()
 
 def _outbox_worker():
-    """خيط خلفي يُعيد إرسال السجلات المعلّقة إلى Firestore كل 60 ثانية."""
+    """خيط خلفي يُعيد إرسال السجلات المعلّقة في الـ outbox إلى Firestore."""
     import time as _time
-    if not os.environ.get('FIREBASE_PROJECT_ID'):
+    project_id = os.environ.get('FIREBASE_PROJECT_ID', '')
+    if not project_id:
         return
     while True:
         _time.sleep(60)
         try:
-            conn  = db_connect()
-            rows  = conn.execute(
-                "SELECT id,uid,payload,attempts FROM subscription_outbox "
-                "WHERE attempts<10 AND next_retry<=datetime('now') ORDER BY id LIMIT 50"
-            ).fetchall()
+            conn = db_connect()
+            rows = conn.execute(
+                "SELECT id, uid, payload, attempts FROM subscription_outbox "
+                "WHERE attempts < 10 AND next_retry <= datetime('now') "
+                "ORDER BY id LIMIT 50").fetchall()
             conn.close()
         except Exception:
             continue
+        if not rows:
+            continue
+        token, err = _firestore_get_token()
+        if not token:
+            print(f'[OUTBOX] تعذّر الحصول على token: {err}')
+            continue
         for row_id, uid, payload_json, attempts in rows:
             try:
-                _fs_write_from_payload(uid, json.loads(payload_json))
-                conn = db_connect(); conn.execute('DELETE FROM subscription_outbox WHERE id=?', (row_id,))
-                conn.commit(); conn.close()
-                print(f'[OUTBOX] ✅ uid={uid} أُرسل إلى Firestore')
+                payload = json.loads(payload_json)
+                _firestore_write_subscription(uid, payload, token, project_id)
+                conn = db_connect()
+                conn.execute('DELETE FROM subscription_outbox WHERE id=?', (row_id,))
+                conn.commit()
+                conn.close()
+                print(f'[OUTBOX] ✅ أُرسل uid={uid} إلى Firestore بنجاح.')
             except Exception as e:
                 delay = min(2 ** attempts * 60, 3600)
-                conn  = db_connect()
+                conn = db_connect()
                 conn.execute(
-                    "UPDATE subscription_outbox SET attempts=attempts+1,last_error=?,"
+                    "UPDATE subscription_outbox SET attempts=attempts+1, last_error=?, "
                     "next_retry=datetime('now','+'||?||' seconds') WHERE id=?",
                     (str(e)[:500], delay, row_id))
-                conn.commit(); conn.close()
-                print(f'[OUTBOX] ❌ uid={uid} محاولة {attempts+1}: {e}')
+                conn.commit()
+                conn.close()
+                print(f'[OUTBOX] ❌ فشل uid={uid} (محاولة {attempts+1}): {e}')
 
 # ─── مزامنة Firestore عند بدء التشغيل ──────────────────────────────────────
-def _firestore_fetch_all_subs():
-    """يجلب جميع وثائق subscriptions من Firestore عبر FIREBASE_SERVICE_ACCOUNT_JSON."""
-    sa_json_str = os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON', '')
-    project_id  = os.environ.get('FIREBASE_PROJECT_ID', '')
-    if not sa_json_str or not project_id:
-        return None, 'FIREBASE_SERVICE_ACCOUNT_JSON أو FIREBASE_PROJECT_ID غير محدد'
+def _upsert_docs_to_sqlite(docs):
+    """يُدرج/يُحدّث قائمة وثائق Firestore في SQLite. يُعيد (count, error)."""
+    conn  = db_connect()
+    count = 0
     try:
-        sa_json = json.loads(sa_json_str)
-        token   = _get_gsa_access_token(sa_json)
+        for doc in docs:
+            fields = doc.get('fields') or {}
+            def fv(key):
+                f = fields.get(key) or {}
+                return f.get('stringValue') or f.get('integerValue') or ''
+            uid    = fv('uid') or (doc.get('name') or '').rsplit('/', 1)[-1]
+            email  = fv('email')
+            cid    = fv('stripe_customer_id')
+            sid    = fv('stripe_subscription_id')
+            status = fv('status') or 'inactive'
+            if not uid:
+                continue
+            conn.execute('''INSERT INTO subscriptions
+                (uid, email, stripe_customer_id, stripe_subscription_id, status)
+                VALUES (?,?,?,?,?)
+                ON CONFLICT(uid) DO UPDATE SET
+                    email                  = excluded.email,
+                    stripe_customer_id     = excluded.stripe_customer_id,
+                    stripe_subscription_id = excluded.stripe_subscription_id,
+                    status                 = excluded.status,
+                    updated_at             = CURRENT_TIMESTAMP''',
+                (uid, email, cid, sid, status))
+            count += 1
+        conn.commit()
+        return count, None
     except Exception as e:
-        return None, f'token error: {e}'
+        try: conn.rollback()
+        except Exception: pass
+        return count, f'SQLite upsert error: {e}'
+    finally:
+        conn.close()
+
+def _firestore_fetch_all_docs(project_id, token):
+    """يجلب جميع وثائق مجموعة subscriptions من Firestore مع دعم التصفّح الكامل."""
     base = (f'https://firestore.googleapis.com/v1/projects/{project_id}'
             f'/databases/(default)/documents/subscriptions')
-    docs, page_token = [], None
+    docs       = []
+    page_token = None
     try:
         while True:
             url = base + '?pageSize=300'
-            if page_token: url += f'&pageToken={urllib.parse.quote(page_token)}'
+            if page_token:
+                url += f'&pageToken={urllib.parse.quote(page_token)}'
             req = urllib.request.Request(url, headers={'Authorization': f'Bearer {token}'})
             with urllib.request.urlopen(req, timeout=20) as resp:
                 data = json.loads(resp.read())
             docs.extend(data.get('documents') or [])
             page_token = data.get('nextPageToken')
-            if not page_token: break
+            if not page_token:
+                break
         return docs, None
     except Exception as e:
-        return docs, f'fetch error: {e}'
-
-def _upsert_docs_to_sqlite(docs):
-    conn, count = db_connect(), 0
-    try:
-        for doc in docs:
-            fields = doc.get('fields') or {}
-            def fv(k): f=fields.get(k) or {}; return f.get('stringValue') or f.get('integerValue') or ''
-            uid = fv('uid') or (doc.get('name') or '').rsplit('/', 1)[-1]
-            if not uid: continue
-            conn.execute('''INSERT INTO subscriptions
-                (uid,email,stripe_customer_id,stripe_subscription_id,status)
-                VALUES(?,?,?,?,?) ON CONFLICT(uid) DO UPDATE SET
-                email=excluded.email, stripe_customer_id=excluded.stripe_customer_id,
-                stripe_subscription_id=excluded.stripe_subscription_id,
-                status=excluded.status, updated_at=CURRENT_TIMESTAMP''',
-                (uid, fv('email'), fv('stripe_customer_id'), fv('stripe_subscription_id'),
-                 fv('status') or 'inactive'))
-            count += 1
-        conn.commit(); return count, None
-    except Exception as e:
-        try: conn.rollback()
-        except Exception: pass
-        return count, f'upsert error: {e}'
-    finally: conn.close()
+        return docs, f'Firestore fetch error: {e}'
+def try_restore_from_firestore():
+    """يجلب سجلات subscriptions من Firestore ويُدمجها في SQLite."""
+    project_id = os.environ.get('FIREBASE_PROJECT_ID', '')
+    if not project_id:
+        return 0, 0, 'FIREBASE_PROJECT_ID غير محدد'
+    token, err = _firestore_get_token()
+    if not token:
+        return 0, 0, f'JWT/token error: {err}'
+    docs, fetch_err = _firestore_fetch_all_docs(project_id, token)
+    source_total    = len(docs)
+    if not docs:
+        return 0, 0, fetch_err
+    count, upsert_err = _upsert_docs_to_sqlite(docs)
+    combined_err = ' | '.join(filter(None, [fetch_err, upsert_err])) or None
+    return count, source_total, combined_err
 
 def _run_startup_recovery():
+    """يُزامن من Firestore عند بدء التشغيل للتعافي من الفقد الجزئي."""
     global _startup_status
     _startup_status['started_at'] = _dt.datetime.now(_dt.timezone.utc).isoformat()
     try:
-        conn = db_connect()
-        row  = conn.execute('SELECT COUNT(*) FROM subscriptions').fetchone()
-        conn.close(); before = row[0] if row else 0
-    except Exception: before = 0
+        conn   = db_connect()
+        row    = conn.execute('SELECT COUNT(*) FROM subscriptions').fetchone()
+        conn.close()
+        before = row[0] if row else 0
+    except Exception:
+        before = 0
     _startup_status['subscription_count'] = before
 
     if not os.environ.get('FIREBASE_PROJECT_ID'):
         _startup_status['firestore_restore'] = 'not_configured'
         if before == 0:
-            _startup_status['warning'] = '🚨 قاعدة البيانات فارغة وFirestore غير مهيّأ!'
+            _startup_status['warning'] = (
+                '🚨 تنبيه: قاعدة البيانات فارغة وFirestore غير مهيّأ. '
+                'قد تكون الاشتراكات مفقودة — تحقق فوراً!')
             print(f'[STARTUP] {_startup_status["warning"]}')
         else:
-            print(f'[STARTUP] Firestore غير مهيّأ — {before} سجل محلي.')
+            print(f'[STARTUP] Firestore غير مهيّأ — تعمل من قاعدة بيانات محلية ({before} سجل).')
         return
 
-    mode = 'مزامنة' if before > 0 else 'استعادة'
+    mode = 'مزامنة كاملة' if before > 0 else 'استعادة (قاعدة فارغة)'
     print(f'[STARTUP] ⏳ {mode} من Firestore…')
-    docs, fetch_err = _firestore_fetch_all_subs()
-    if docs is None:
-        _startup_status['firestore_restore'] = 'failed'
-        _startup_status['firestore_error']   = fetch_err
-        _startup_status['warning'] = f'⚠️ فشل الاتصال بـ Firestore: {fetch_err}'
-        print(f'[STARTUP] {_startup_status["warning"]}'); return
-
-    restored, upsert_err = _upsert_docs_to_sqlite(docs)
+    restored, source_total, err = try_restore_from_firestore()
     _startup_status['firestore_restored'] = restored
-    _startup_status['firestore_source']   = len(docs)
-    if upsert_err:
-        _startup_status['firestore_error'] = upsert_err
-    _startup_status['firestore_restore'] = 'ok' if not fetch_err else 'partial'
-    try:
-        conn = db_connect()
-        row  = conn.execute('SELECT COUNT(*) FROM subscriptions').fetchone()
-        conn.close(); after = row[0] if row else restored
-    except Exception: after = restored
-    _startup_status['subscription_count'] = after
-    print(f'[STARTUP] ✅ {mode}: {restored}/{len(docs)} سجل، إجمالي={after}.')
+    _startup_status['firestore_source']   = source_total
+
+    if err and restored == 0:
+        _startup_status['firestore_restore'] = 'failed'
+        _startup_status['firestore_error']   = err
+        _startup_status['warning'] = (
+            f'⚠️ تحذير: فشلت المزامنة مع Firestore ({err}). '
+            f'الخادم يعمل من النسخة المحلية ({before} سجل).')
+        print(f'[STARTUP] {_startup_status["warning"]}')
+    else:
+        _startup_status['firestore_restore'] = 'ok'
+        if err:
+            _startup_status['firestore_error'] = err
+        try:
+            conn  = db_connect()
+            row   = conn.execute('SELECT COUNT(*) FROM subscriptions').fetchone()
+            conn.close()
+            after = row[0] if row else restored
+        except Exception:
+            after = restored
+        _startup_status['subscription_count'] = after
+        gained = after - before
+        print(f'[STARTUP] ✅ {mode} اكتملت: {restored}/{source_total} سجل، '
+              f'إجمالي محلي={after} (+{gained} جديد).')
 
 # ─── تشغيل ───────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     init_db()
     init_outbox_table()
-    _threading.Thread(target=_run_startup_recovery, daemon=True).start()
-    _threading.Thread(target=_outbox_worker,        daemon=True).start()
+    _run_startup_recovery()
+    _threading.Thread(target=_outbox_worker, daemon=True).start()
     server = ThreadedHTTPServer(('0.0.0.0', PORT), Handler)
     print(f'فَطِنة تعمل على http://0.0.0.0:{PORT}')
     server.serve_forever()

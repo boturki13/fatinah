@@ -34,11 +34,25 @@
   .btn-secondary{background:#21262d;color:#c9d1d9;border:1px solid #30363d;}
   .btn-secondary:hover{background:#30363d;}
   #logout-btn{display:none;margin-top:12px;}
+  .status-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:8px;font-size:14px;font-weight:700;}
+  .status-ok{background:#1a4731;color:#56d364;}
+  .status-warn{background:#3d2e00;color:#f5c542;}
+  .status-err{background:#3d1f1f;color:#f85149;}
+  .status-info{background:#1c2433;color:#79c0ff;}
+  .check-step{font-size:13px;color:#8b949e;margin-top:10px;line-height:1.7;}
+  .check-step a{color:#58a6ff;text-decoration:none;}
+  .check-step a:hover{text-decoration:underline;}
 </style>
 </head>
 <body>
 <h1>🎁 إدارة أكواد فَطِنة</h1>
 <p class="sub">أنشئ أكواداً مجانية وراقب استخداماتها</p>
+
+<div class="card" id="firebase-status-card">
+  <h2>🔥 حالة Firebase Anonymous Auth</h2>
+  <div id="anon-status"><span class="status-badge status-info">⏳ جارٍ الفحص…</span></div>
+  <div id="anon-steps" class="check-step" style="display:none"></div>
+</div>
 
 <div class="card">
   <h2>🔐 كلمة مرور الإدارة</h2>
@@ -75,11 +89,44 @@
 const BASE = window.location.origin;
 const SESSION_KEY = 'admin_secret';
 
+async function checkAnonAuth(secret){
+  try{
+    const r = await fetch(BASE+'/api/auth/check-anonymous',{
+      headers: secret ? {'X-Admin-Secret': secret} : {}
+    });
+    const d = await r.json();
+    const el = document.getElementById('anon-status');
+    const steps = document.getElementById('anon-steps');
+    if(d.enabled === true){
+      el.innerHTML = '<span class="status-badge status-ok">✅ Anonymous Auth مفعّل — التسجيل المجهول يعمل</span>';
+      steps.style.display='none';
+    } else if(d.enabled === false){
+      el.innerHTML = '<span class="status-badge status-err">❌ Anonymous Auth غير مفعّل</span>';
+      steps.innerHTML =
+        '<b style="color:#f85149">⚠️ الخطوة المطلوبة:</b><br>' +
+        'افتح <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a> → Authentication → Sign-in method → Anonymous → Enable<br>' +
+        'بدون ذلك تُحفظ نقاط اللاعبين بمعرّف جهاز محلي فقط (بلا مزامنة عبر الأجهزة).';
+      steps.style.display='block';
+    } else if(d.reason === 'not_configured'){
+      el.innerHTML = '<span class="status-badge status-warn">⚠️ Firebase غير مُعدّ (FIREBASE_PROJECT_ID مفقود)</span>';
+      steps.style.display='none';
+    } else {
+      el.innerHTML = `<span class="status-badge status-warn">⚠️ تعذّر الفحص: ${d.reason||'خطأ غير معروف'}</span>`;
+      steps.style.display='none';
+    }
+  }catch(err){
+    document.getElementById('anon-status').innerHTML =
+      '<span class="status-badge status-warn">⚠️ تعذّر الاتصال بالخادم</span>';
+  }
+}
+
+
 function getSecret(){ return document.getElementById('secret').value.trim(); }
 
 function restoreSecret(){
   const saved = sessionStorage.getItem(SESSION_KEY);
   if(saved){ document.getElementById('secret').value = saved; loadCodes(); }
+  else { checkAnonAuth(''); }
 }
 
 function showLogout(show){
@@ -123,6 +170,7 @@ async function createCode(){
 }
 
 async function loadCodes(){
+  checkAnonAuth(getSecret());
   const d = await adminReq({action:'list'});
   if(d.error){ document.getElementById('codes-table').innerHTML=`<p style="color:#f85149">${d.error}</p>`; showLogout(false); return; }
   sessionStorage.setItem(SESSION_KEY, getSecret());
@@ -159,6 +207,8 @@ async function deleteCode(code){
   const d = await adminReq({action:'delete',code});
   if(d.ok) loadCodes(); else alert(d.error);
 }
+
+window.addEventListener('load', restoreSecret);
 </script>
 </body>
 </html>
