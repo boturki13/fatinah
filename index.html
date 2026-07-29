@@ -1327,6 +1327,8 @@ async function handleAuthConflict(e, attemptedProvider, wb){
   window._pendingLinkCred    = pendingCred;
   window._pendingLinkEmail   = email || '';
   window._pendingLinkOriginal= original;
+  // مسار iOS الأصلي: نحفظ المزوّد المحاوَل لإعادة المحاولة بعد الدخول الأصلي
+  window._pendingLinkNativeProvider = !wb ? attemptedProvider : null;
 
   openAuth(window._authReturnScreen || currentScreenId());
   document.getElementById('auth-title').textContent = 'لديك حساب بالفعل';
@@ -1341,7 +1343,7 @@ async function handleAuthConflict(e, attemptedProvider, wb){
   return true;
 }
 
-// بعد نجاح تسجيل الدخول بالطريقة الأصلية، إن كان هناك ربط معلّق نكمله تلقائياً
+// بعد نجاح تسجيل الدخول بالطريقة الأصلية (Web SDK)، إن كان هناك ربط معلّق نكمله تلقائياً
 async function resolvePendingLinkWeb(wb, userAfterSignIn){
   if(!window._pendingLinkCred || !userAfterSignIn) return false;
   try{
@@ -1352,13 +1354,34 @@ async function resolvePendingLinkWeb(wb, userAfterSignIn){
   }catch(e){ console.error('resolve pending link:', e); return false; }
   finally{
     window._pendingLinkCred=null; window._pendingLinkEmail=null; window._pendingLinkOriginal=null;
+    window._pendingLinkNativeProvider=null;
   }
 }
+
+// بعد نجاح تسجيل الدخول بالطريقة الأصلية (iOS الأصلي)، نحاول ربط المزوّد المعلّق
+// عبر استدعاء FA.linkWithApple / FA.linkWithGoogle مباشرةً (تُعيد تشغيل OAuth sheet
+// لكنها تُكمل الربط دون إنشاء حساب جديد).
+async function resolveNativePendingLink(FA){
+  const p = window._pendingLinkNativeProvider;
+  window._pendingLinkCred=null; window._pendingLinkEmail=null;
+  window._pendingLinkOriginal=null; window._pendingLinkNativeProvider=null;
+  if(!p || !FA) return false;
+  try{
+    if(p==='apple')       await FA.linkWithApple();
+    else if(p==='google') await FA.linkWithGoogle();
+    else return false;
+    showToast('🔗','تم الربط بنجاح','أصبح بإمكانك الدخول من الطريقتين الآن',false);
+    return true;
+  }catch(e){
+    // عدم اكتمال الربط لا يُوقف الدخول — المستخدم داخل حسابه بالفعل
+    console.warn('native pending link resolve:', e);
+    return false;
+  }
+}
+
 function clearPendingLinkNative(){
-  // على iOS الأصلي عبر Capacitor لا تتوفر واجهة موحّدة لاستخراج بيانات الاعتماد
-  // المعلّقة من الخطأ (على عكس Web SDK)، لذا نكتفي بإكمال تسجيل الدخول بالطريقة
-  // الأصلية بأمان بدل ربط تلقائي كامل. موثّق في AUTH_SETUP.md.
-  window._pendingLinkCred=null; window._pendingLinkEmail=null; window._pendingLinkOriginal=null;
+  window._pendingLinkCred=null; window._pendingLinkEmail=null;
+  window._pendingLinkOriginal=null; window._pendingLinkNativeProvider=null;
 }
 
 // ────────── Firebase Auth — طبقتان: Capacitor (iOS) ثم Web SDK (متصفح)
@@ -1401,6 +1424,8 @@ async function appleSignIn(){
         savePermanentProfile(u.uid, u.displayName, u.email, 'apple');
       }
       afterAuthSuccess((u && u.displayName) || storeGet('playerName','لاعب'), 'apple', u && u.uid, u && u.email);
+      // إن كان هناك ربط معلّق من تعارض سابق، نُكمله الآن بعد نجاح الدخول
+      await resolveNativePendingLink(FA);
       return;
     }catch(e){
       const code=String(e && e.code || '');
@@ -1451,6 +1476,8 @@ async function googleSignIn(){
         savePermanentProfile(u.uid, u.displayName, u.email, 'google');
       }
       afterAuthSuccess((u && u.displayName) || storeGet('playerName','لاعب'), 'google', u && u.uid, u && u.email);
+      // إن كان هناك ربط معلّق من تعارض سابق، نُكمله الآن بعد نجاح الدخول
+      await resolveNativePendingLink(FA);
       return;
     }catch(e){
       const code=String(e && e.code || '');
@@ -1506,11 +1533,12 @@ async function emailAuth(mode){
                      : await FA.createUserWithEmailAndPassword({email, password});
       } else {
         res = await FA.signInWithEmailAndPassword({email, password});
-        clearPendingLinkNative();
       }
       const u = res && res.user;
       savePermanentProfile(u && u.uid, (u && u.displayName) || storeGet('playerName',''), email, 'password');
       afterAuthSuccess(storeGet('playerName','لاعب'), 'password', u && u.uid, email);
+      // إن كان هناك ربط معلّق من تعارض سابق، نُكمله الآن
+      await resolveNativePendingLink(FA);
       return;
     }
     const wb = await getFirebaseWebAuth();
