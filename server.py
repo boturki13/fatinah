@@ -434,6 +434,19 @@ def legal_page_html(kind: str) -> bytes:
 
 # ─── HTTP handler ─────────────────────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
+    # حدود حجم الجسم لكل نقطة API (بايت) — يمنع الطلبات الضخمة
+    _DEFAULT_MAX_BODY = 64 * 1024          # 64 كيلوبايت للنقاط العامة
+    _MAX_BODY = {
+        '/api/generate':              8  * 1024,   # موضوع + قائمة seen
+        '/api/stripe/webhook':        32 * 1024,   # Stripe events
+        '/api/revenuecat/webhook':    32 * 1024,   # RevenueCat events
+        '/api/stripe/create-checkout': 4 * 1024,
+        '/api/account/delete':        4  * 1024,
+        '/api/account/profile':       4  * 1024,
+        '/api/promo/redeem':          4  * 1024,
+        '/api/promo/admin':           8  * 1024,
+    }
+
     def log_message(self, fmt, *args):
         pass
 

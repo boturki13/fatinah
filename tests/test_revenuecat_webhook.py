@@ -8,6 +8,8 @@
   4. مفتاح خاطئ  → 401
   5. RENEWAL      → status = 'active'
   6. حدث مجهول   → 200 (يُتجاهل)
+  7. EXPIRATION webhook → /api/stripe/status يعيد active=false فوراً (بدون تأخير أو كاش)
+  8. INITIAL_PURCHASE webhook → /api/stripe/status يعيد active=true فوراً
 
 التشغيل:
     python3 tests/test_revenuecat_webhook.py
@@ -29,6 +31,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import server as srv
 srv.DB_PATH = tmp_db.name
 srv.init_db()
+srv.init_outbox_table()
 
 # ── تشغيل الخادم على منفذ عشوائي ────────────────────────────────────────────
 httpd = HTTPServer(('127.0.0.1', 0), srv.Handler)
@@ -64,6 +67,14 @@ def insert_sub(uid, status):
         "INSERT OR REPLACE INTO subscriptions (uid, status) VALUES (?, ?)",
         (uid, status))
     conn.commit(); conn.close()
+
+def get(path):
+    req = urllib.request.Request(BASE + path, method='GET')
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return r.status, json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read())
 
 def make_event(etype, uid):
     return {'event': {'type': etype, 'id': f'evt_{etype}', 'app_user_id': uid}}
@@ -122,6 +133,23 @@ check("status → 'active'", db_status('uid_renew') == 'active',
 print('\n6. حدث غير معروف')
 code, _ = post('/api/revenuecat/webhook', make_event('UNKNOWN_TYPE', 'uid_unk'))
 check('يُرجع 200 (يُتجاهل بأمان)', code == 200, f'code={code}')
+
+# 7. EXPIRATION → /api/stripe/status يعكس active=false فوراً (بدون كاش)
+print('\n7. EXPIRATION → /api/stripe/status يعيد active=false فوراً')
+insert_sub('uid_expire_status', 'active')
+post('/api/revenuecat/webhook', make_event('EXPIRATION', 'uid_expire_status'))
+code, resp = get(f'/api/stripe/status?uid=uid_expire_status')
+check('يُرجع 200', code == 200, f'code={code}')
+check('active=false بعد EXPIRATION مباشرةً', resp.get('active') is False,
+      f"active={resp.get('active')}")
+
+# 8. INITIAL_PURCHASE → /api/stripe/status يعكس active=true فوراً
+print('\n8. INITIAL_PURCHASE → /api/stripe/status يعيد active=true فوراً')
+post('/api/revenuecat/webhook', make_event('INITIAL_PURCHASE', 'uid_new_status'))
+code, resp = get(f'/api/stripe/status?uid=uid_new_status')
+check('يُرجع 200', code == 200, f'code={code}')
+check('active=true بعد INITIAL_PURCHASE مباشرةً', resp.get('active') is True,
+      f"active={resp.get('active')}")
 
 # ── تنظيف وملخص ──────────────────────────────────────────────────────────────
 httpd.shutdown()
