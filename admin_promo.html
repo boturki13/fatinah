@@ -42,6 +42,9 @@
   .check-step{font-size:13px;color:#8b949e;margin-top:10px;line-height:1.7;}
   .check-step a{color:#58a6ff;text-decoration:none;}
   .check-step a:hover{text-decoration:underline;}
+  .badge-apple{background:#1c3a5e;color:#58a6ff;}
+  .badge-stripe{background:#1a3a2a;color:#3fb950;}
+  .badge-unknown{background:#2a2a2a;color:#8b949e;}
 </style>
 </head>
 <body>
@@ -85,9 +88,25 @@
   <div id="codes-table"><p style="color:#7d8590;font-size:14px;">اضغط "تحميل الأكواد" أولاً</p></div>
 </div>
 
+<div class="card">
+  <h2>👥 المشتركون النشطون</h2>
+  <div id="subscribers-table"><p style="color:#7d8590;font-size:14px;">اضغط "تحميل الأكواد" أولاً</p></div>
+</div>
+
 <script>
 const BASE = window.location.origin;
 const SESSION_KEY = 'admin_secret';
+
+/** يحوّل القيمة إلى نص آمن للإدراج في innerHTML — يمنع Stored XSS */
+function esc(str){
+  if(str == null) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
 
 async function checkAnonAuth(secret){
   try{
@@ -111,7 +130,7 @@ async function checkAnonAuth(secret){
       el.innerHTML = '<span class="status-badge status-warn">⚠️ Firebase غير مُعدّ (FIREBASE_PROJECT_ID مفقود)</span>';
       steps.style.display='none';
     } else {
-      el.innerHTML = `<span class="status-badge status-warn">⚠️ تعذّر الفحص: ${d.reason||'خطأ غير معروف'}</span>`;
+      el.innerHTML = `<span class="status-badge status-warn">⚠️ تعذّر الفحص: ${esc(d.reason)||'خطأ غير معروف'}</span>`;
       steps.style.display='none';
     }
   }catch(err){
@@ -137,6 +156,7 @@ function logout(){
   sessionStorage.removeItem(SESSION_KEY);
   document.getElementById('secret').value = '';
   document.getElementById('codes-table').innerHTML = '<p style="color:#7d8590;font-size:14px;">اضغط "تحميل الأكواد" أولاً</p>';
+  document.getElementById('subscribers-table').innerHTML = '<p style="color:#7d8590;font-size:14px;">اضغط "تحميل الأكواد" أولاً</p>';
   showLogout(false);
 }
 
@@ -171,42 +191,78 @@ async function createCode(){
 
 async function loadCodes(){
   checkAnonAuth(getSecret());
-  const d = await adminReq({action:'list'});
+  const [d, ds] = await Promise.all([
+    adminReq({action:'list'}),
+    adminReq({action:'list_subscribers'})
+  ]);
   if(d.error){ document.getElementById('codes-table').innerHTML=`<p style="color:#f85149">${d.error}</p>`; showLogout(false); return; }
   sessionStorage.setItem(SESSION_KEY, getSecret());
   showLogout(true);
-  if(!d.codes.length){ document.getElementById('codes-table').innerHTML='<p style="color:#7d8590">لا توجد أكواد بعد</p>'; return; }
-  let html=`<table><thead><tr>
-    <th>الكود</th><th>المدة</th><th>الاستخدامات</th><th>الحالة</th><th>الملاحظة</th><th></th>
+
+  // ── أكواد المكافآت ──
+  if(!d.codes.length){ document.getElementById('codes-table').innerHTML='<p style="color:#7d8590">لا توجد أكواد بعد</p>'; }
+  else {
+    let html=`<table><thead><tr>
+      <th>الكود</th><th>المدة</th><th>الاستخدامات</th><th>الحالة</th><th>الملاحظة</th><th></th>
+    </tr></thead><tbody>`;
+    for(const c of d.codes){
+      const usedNum = parseInt(c.used_count)||0;
+      const maxNum  = c.max_uses ? parseInt(c.max_uses) : null;
+      const uses    = maxNum ? `${usedNum}/${maxNum}` : String(usedNum);
+      html+=`<tr>
+        <td><b style="letter-spacing:2px">${esc(c.code)}</b></td>
+        <td>${esc(String(c.days||0))} يوم</td>
+        <td>${esc(uses)}</td>
+        <td><span class="badge ${c.active?'active':'inactive'}">${c.active?'فعّال':'موقوف'}</span></td>
+        <td style="color:#7d8590">${esc(c.note||'-')}</td>
+        <td style="display:flex;gap:6px;">
+          <button class="btn btn-sm js-toggle" data-code="${esc(c.code)}">${c.active?'إيقاف':'تفعيل'}</button>
+          <button class="btn btn-sm btn-danger js-delete" data-code="${esc(c.code)}">حذف</button>
+        </td>
+      </tr>`;
+    }
+    html+='</tbody></table>';
+    document.getElementById('codes-table').innerHTML=html;
+  }
+
+  // ── المشتركون النشطون ──
+  if(ds.error){ document.getElementById('subscribers-table').innerHTML=`<p style="color:#f85149">${esc(ds.error)}</p>`; return; }
+  if(!ds.subscribers.length){ document.getElementById('subscribers-table').innerHTML='<p style="color:#7d8590">لا يوجد مشتركون نشطون حالياً</p>'; return; }
+  let sh=`<p style="color:#8b949e;font-size:13px;margin-bottom:10px;">الإجمالي: ${esc(String(ds.subscribers.length))} مشترك نشط</p>`;
+  sh+=`<table><thead><tr>
+    <th>الاسم</th><th>البريد</th><th>المصدر</th><th>آخر تحديث</th>
   </tr></thead><tbody>`;
-  for(const c of d.codes){
-    const uses = c.max_uses ? `${c.used_count}/${c.max_uses}` : c.used_count;
-    html+=`<tr>
-      <td><b style="letter-spacing:2px">${c.code}</b></td>
-      <td>${c.days} يوم</td>
-      <td>${uses}</td>
-      <td><span class="badge ${c.active?'active':'inactive'}">${c.active?'فعّال':'موقوف'}</span></td>
-      <td style="color:#7d8590">${c.note||'-'}</td>
-      <td style="display:flex;gap:6px;">
-        <button class="btn btn-sm" onclick="toggleCode('${c.code}')">${c.active?'إيقاف':'تفعيل'}</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteCode('${c.code}')">حذف</button>
-      </td>
+  for(const s of ds.subscribers){
+    const badgeCls = s.source==='Apple IAP' ? 'badge-apple' : (s.source==='Stripe' ? 'badge-stripe' : 'badge-unknown');
+    const name = esc(s.display_name || s.uid.slice(0,12)+'…');
+    const email = s.email ? esc(s.email) : '<span style="color:#7d8590">—</span>';
+    const dt = s.updated_at ? esc(s.updated_at.replace('T',' ').replace(/\.\d+Z?$/,'')) : '—';
+    sh+=`<tr>
+      <td title="${esc(s.uid)}">${name}</td>
+      <td>${email}</td>
+      <td><span class="badge ${esc(badgeCls)}">${esc(s.source)}</span></td>
+      <td style="color:#7d8590;font-size:12px;">${dt}</td>
     </tr>`;
   }
-  html+='</tbody></table>';
-  document.getElementById('codes-table').innerHTML=html;
+  sh+='</tbody></table>';
+  document.getElementById('subscribers-table').innerHTML=sh;
 }
 
-async function toggleCode(code){
-  const d = await adminReq({action:'toggle',code});
-  if(d.ok) loadCodes(); else alert(d.error);
-}
-
-async function deleteCode(code){
-  if(!confirm(`حذف الكود "${code}" نهائياً؟`)) return;
-  const d = await adminReq({action:'delete',code});
-  if(d.ok) loadCodes(); else alert(d.error);
-}
+// ── إدارة الأكواد عبر event delegation (بدلاً من onclick مضمَّن) ──
+document.addEventListener('click', async function(e){
+  const toggleBtn = e.target.closest('.js-toggle');
+  const deleteBtn = e.target.closest('.js-delete');
+  if(toggleBtn){
+    const code = toggleBtn.dataset.code;
+    const d = await adminReq({action:'toggle', code});
+    if(d.ok) loadCodes(); else alert(d.error);
+  } else if(deleteBtn){
+    const code = deleteBtn.dataset.code;
+    if(!confirm(`حذف الكود "${code}" نهائياً؟`)) return;
+    const d = await adminReq({action:'delete', code});
+    if(d.ok) loadCodes(); else alert(d.error);
+  }
+});
 
 window.addEventListener('load', restoreSecret);
 </script>

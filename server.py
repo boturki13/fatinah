@@ -461,45 +461,6 @@ class Handler(BaseHTTPRequestHandler):
             auth_header  = self.headers.get('X-Admin-Secret', '')
             if admin_secret and auth_header != admin_secret:
                 self.send_json(403, {'error': 'غير مصرح'}); return
-    def log_message(self, fmt, *args):
-        pass
-
-    def send_json(self, code, obj):
-        body = json.dumps(obj, ensure_ascii=False).encode()
-        self.send_response(code)
-        self.send_header('Content-Type',   'application/json; charset=utf-8')
-        self.send_header('Content-Length', str(len(body)))
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
-        self.wfile.write(body)
-
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self.send_header('Access-Control-Allow-Origin',  '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Stripe-Signature')
-        self.end_headers()
-
-    def do_GET(self):
-        parsed = urllib.parse.urlparse(self.path)
-        path   = parsed.path
-        params = urllib.parse.parse_qs(parsed.query)
-
-        if path == '/firebase-config.js':
-            body = firebase_config_js()
-            self.send_response(200)
-            self.send_header('Content-Type',   'application/javascript; charset=utf-8')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif path == '/api/auth/check-anonymous':
-            # نقطة تشخيص: تتحقق هل مزوّد Anonymous مفعّل في Firebase Console.
-            # محمية بـ X-Admin-Secret لأنها تُنشئ مستخدماً مؤقتاً ثم تحذفه.
-            admin_secret = os.environ.get('ADMIN_SECRET', '')
-            auth_header  = self.headers.get('X-Admin-Secret', '')
-            if admin_secret and auth_header != admin_secret:
-                self.send_json(403, {'error': 'غير مصرح'}); return
             api_key = os.environ.get('GOOGLE_API_KEY', '')
             if not api_key or not firebase_is_configured():
                 self.send_json(200, {'enabled': None, 'reason': 'not_configured'}); return
@@ -655,6 +616,19 @@ class Handler(BaseHTTPRequestHandler):
 
         else:
             self.send_response(404); self.end_headers()
+
+    # حدود حجم body لكل نقطة POST — تُعيد 413 مبكراً قبل قراءة البيانات
+    _MAX_BODY: dict = {
+        '/api/generate':               65_536,   # 64 KB  (topic + قائمة seen)
+        '/api/account/delete':          1_024,   # 1 KB   (uid فقط)
+        '/api/stripe/create-checkout':  4_096,   # 4 KB   (uid + email + plan)
+        '/api/stripe/webhook':         65_536,   # 64 KB  (حدث Stripe)
+        '/api/promo/redeem':            2_048,   # 2 KB   (code + uid)
+        '/api/promo/admin':             8_192,   # 8 KB   (إجراءات الإدارة)
+        '/api/revenuecat/webhook':     65_536,   # 64 KB  (حدث RevenueCat)
+        '/api/account/profile':         2_048,   # 2 KB   (name + email + provider)
+    }
+    _DEFAULT_MAX_BODY = 16_384  # 16 KB للمسارات غير المدرجة
 
     def do_POST(self):
         path   = self.path.split('?')[0]
@@ -1024,6 +998,28 @@ class Handler(BaseHTTPRequestHandler):
                     conn.execute('DELETE FROM promo_redemptions WHERE code=?', (code,))
                     conn.commit()
                     self.send_json(200, {'ok': True})
+                elif action == 'list_subscribers':
+                    # يُعيد جميع المشتركين النشطين بغضّ النظر عن مصدر الاشتراك
+                    rows = conn.execute('''
+                        SELECT uid, email, display_name, stripe_customer_id,
+                               auth_provider, updated_at
+                        FROM subscriptions
+                        WHERE status = 'active'
+                        ORDER BY updated_at DESC
+                    ''').fetchall()
+                    subs = []
+                    for r in rows:
+                        uid, email, display_name, stripe_cid, auth_provider, updated_at = r
+                        source = 'Stripe' if stripe_cid else 'Apple IAP'
+                        subs.append({
+                            'uid':          uid,
+                            'email':        email or '',
+                            'display_name': display_name or '',
+                            'source':       source,
+                            'auth_provider': auth_provider or '',
+                            'updated_at':   updated_at or '',
+                        })
+                    self.send_json(200, {'subscribers': subs})
                 else:
                     self.send_json(400, {'error': 'action غير معروف'})
             except Exception as e:
