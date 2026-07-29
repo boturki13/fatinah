@@ -1703,7 +1703,29 @@ async function promoIsActive(uid){
 async function checkSubscriptionAndRoute(uid){
   // iOS: RevenueCat أولاً
   const rcActive = await rcIsActive();
-  if(rcActive === true){ go('s-home'); return; }
+  if(rcActive === true){
+    // اذهب للصفحة الرئيسية فوراً، ثم تحقق من الخادم في الخلفية (تحقق مزدوج)
+    go('s-home');
+    // تحقق خلفي: إن كان الخادم يعلم بإيقاف الحساب (webhook أوقف الاشتراك)
+    if(uid){
+      try{
+        const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
+        if(resp.ok){
+          const data = await resp.json();
+          // فقط إذا أعاد الخادم active:false صراحةً → أرسله للاشتراك
+          if(data.active === false){
+            console.log('checkSubscription: RC=active but server=inactive → paywall');
+            go('s-paywall');
+          }
+        }
+        // أي رد آخر (ok ولكن active:true، أو غير ok) → يبقى في s-home (fail-open)
+      }catch(e){
+        // لا إنترنت أو خطأ خادم → يبقى في s-home (fail-open)
+        console.log('checkSubscription: server check failed (fail-open):', e.message);
+      }
+    }
+    return;
+  }
   if(rcActive === false){
     // تحقق من كود مجاني قبل صفحة الاشتراك
     if(uid && await promoIsActive(uid)){ go('s-home'); return; }
