@@ -304,6 +304,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
 @keyframes spin{to{transform:rotate(360deg);}}
 .shake-x{animation:shake .4s;}
 
+/* ====== شاشة التحميل ====== */
+#s-loading{display:none; flex-direction:column; align-items:center; justify-content:center; min-height:70vh; gap:20px;}
+#s-loading.active{display:flex;}
+.loading-spinner{width:52px; height:52px; border-radius:50%; border:4px solid var(--line2); border-top-color:var(--hot); animation:spin 0.9s linear infinite;}
+.loading-label{font-size:15px; color:var(--muted); font-weight:700;}
+
 /* ====== Paywall ====== */
 #s-paywall.active{
   display:flex!important;flex-direction:column;align-items:center;
@@ -502,6 +508,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
         <a href="#" onclick="go('s-privacy');return false;">سياسة الخصوصية</a>
       </nav>
     </div>
+  </section>
+
+  <!-- شاشة التحميل — تظهر أثناء فحص الاشتراك -->
+  <section class="screen" id="s-loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-label">جارٍ التحقق…</div>
   </section>
 
   <!-- شاشة التعليم الأولى -->
@@ -1713,6 +1725,8 @@ async function promoIsActive(uid){
 }
 
 async function checkSubscriptionAndRoute(uid){
+  // أظهر شاشة التحميل أثناء الفحص
+  go('s-loading');
   // iOS: RevenueCat أولاً
   const rcActive = await rcIsActive();
   if(rcActive === true){
