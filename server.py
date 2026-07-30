@@ -129,9 +129,10 @@ def verify_firebase_id_token(id_token: str):
 
 def uid_matches_token(uid: str, id_token: str) -> bool:
     """يتحقق أن uid المطلوب هو نفس صاحب idToken المرسَل. يتجاوز التحقق إن كان
-    Firebase غير مُعدّ أصلاً (بيئة بلا auth حقيقي)."""
+    Firebase غير مُعدّ أصلاً → رفض افتراضي (deny-by-default)."""
     if not firebase_is_configured():
-        return True
+        print('WARNING: FIREBASE_PROJECT_ID غير مضبوط — رفض التحقق من الهوية (deny-by-default)')
+        return False
     verified = verify_firebase_id_token(id_token)
     return bool(verified and verified.get('localId') == uid)
 
@@ -488,7 +489,7 @@ class Handler(BaseHTTPRequestHandler):
             # محمية بـ X-Admin-Secret لأنها تُنشئ مستخدماً مؤقتاً ثم تحذفه.
             admin_secret = os.environ.get('ADMIN_SECRET', '')
             auth_header  = self.headers.get('X-Admin-Secret', '')
-            if admin_secret and auth_header != admin_secret:
+            if not admin_secret or auth_header != admin_secret:
                 self.send_json(403, {'error': 'غير مصرح'}); return
             api_key = os.environ.get('GOOGLE_API_KEY', '')
             if not api_key or not firebase_is_configured():
