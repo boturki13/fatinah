@@ -29,6 +29,8 @@ def init_db():
             stripe_customer_id     TEXT,
             stripe_subscription_id TEXT,
             status                 TEXT DEFAULT 'inactive',
+            promo_active           BOOLEAN NOT NULL DEFAULT 0,
+            promo_expires_at       DATETIME,
             updated_at             DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -37,6 +39,8 @@ def init_db():
     for ddl in (
         "ALTER TABLE subscriptions ADD COLUMN display_name TEXT",
         "ALTER TABLE subscriptions ADD COLUMN auth_provider TEXT",
+        "ALTER TABLE subscriptions ADD COLUMN promo_active BOOLEAN NOT NULL DEFAULT 0",
+        "ALTER TABLE subscriptions ADD COLUMN promo_expires_at DATETIME",
     ):
         try: conn.execute(ddl)
         except sqlite3.OperationalError: pass  # العمود موجود مسبقاً
@@ -524,10 +528,24 @@ class Handler(BaseHTTPRequestHandler):
             uid = (params.get('uid') or [''])[0]
             if not uid:
                 self.send_json(400, {'error': 'uid مطلوب'}); return
-            conn = sqlite3.connect(DB_PATH)
-            row  = conn.execute('SELECT status FROM subscriptions WHERE uid=?', (uid,)).fetchone()
-            conn.close()
-            active = bool(row and row[0] == 'active')
+            conn = db_connect()
+            try:
+                row = conn.execute(
+                    'SELECT status, promo_active, promo_expires_at '
+                    'FROM subscriptions WHERE uid=?', (uid,)).fetchone()
+                promo_active = bool(row and row[1] and row[2])
+                promo_valid = promo_active and conn.execute(
+                    "SELECT 1 WHERE ? > datetime('now')", (row[2],)).fetchone()
+                if promo_active and not promo_valid:
+                    # الانتهاء يُعالج عند القراءة، فلا نحتاج إلى job دوري.
+                    conn.execute(
+                        "UPDATE subscriptions SET promo_active=0, updated_at=CURRENT_TIMESTAMP "
+                        "WHERE uid=? AND promo_active=1", (uid,))
+                    conn.commit()
+                stripe_active = bool(row and row[0] == 'active')
+                active = stripe_active or bool(promo_valid)
+            finally:
+                conn.close()
             self.send_json(200, {'active': active})
 
         elif path in ('/', '/index.html'):
@@ -968,16 +986,44 @@ class Handler(BaseHTTPRequestHandler):
                     (uid, code)).fetchone()
                 if existing:
                     self.send_json(200, {'ok': True, 'expires_at': existing[0], 'already': True}); return
-                # سجّل الاستخدام
+                # مدّد من أبعد تاريخ بين انتهاء المكافأة الحالية ووقت التفعيل.
+                current_promo = conn.execute(
+                    "SELECT promo_expires_at FROM subscriptions "
+                    "WHERE uid=? AND promo_active=1 AND promo_expires_at > datetime('now')",
+                    (uid,)).fetchone()
+                base_expiry = current_promo[0] if current_promo else None
+                if base_expiry:
+                    expires_row = conn.execute(
+                        "SELECT datetime(?, '+' || ? || ' days')",
+                        (base_expiry, days)).fetchone()
+                else:
+                    expires_row = conn.execute(
+                        "SELECT datetime('now', '+' || ? || ' days')",
+                        (days,)).fetchone()
+                new_expires_at = expires_row[0]
+
+                # سجّل الاستخدام وحدّث حالة الاشتراك في نفس المعاملة.
                 conn.execute(
-                    "INSERT OR REPLACE INTO promo_redemptions (uid, code, expires_at) VALUES (?,?, datetime('now','+'||?||' days'))",
-                    (uid, code, days))
+                    "INSERT OR REPLACE INTO promo_redemptions (uid, code, expires_at) VALUES (?,?,?)",
+                    (uid, code, new_expires_at))
                 conn.execute(
                     'UPDATE promo_codes SET used_count=used_count+1 WHERE code=?', (code,))
+                conn.execute('''
+                    INSERT INTO subscriptions (uid, promo_active, promo_expires_at, updated_at)
+                    VALUES (?, 1, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(uid) DO UPDATE SET
+                        promo_active     = 1,
+                        promo_expires_at = excluded.promo_expires_at,
+                        updated_at       = CURRENT_TIMESTAMP
+                ''', (uid, new_expires_at))
+                # هذا payload مخصص لتحديث حقول promo فقط، مع إبقاء حقول Stripe في Firestore.
+                enqueue_outbox_on_connection(conn, uid, {
+                    'uid': uid,
+                    'promo_active': True,
+                    'promo_expires_at': new_expires_at,
+                })
                 conn.commit()
-                expires_row = conn.execute(
-                    'SELECT expires_at FROM promo_redemptions WHERE uid=? AND code=?', (uid, code)).fetchone()
-                self.send_json(200, {'ok': True, 'expires_at': expires_row[0], 'days': days})
+                self.send_json(200, {'ok': True, 'expires_at': new_expires_at, 'days': days})
             except Exception as e:
                 self.send_json(500, {'error': str(e)})
             finally:
@@ -1208,29 +1254,37 @@ def enqueue_outbox(uid: str, payload: dict):
     """أضف سجل اشتراك إلى الـ outbox ليُعاد إرساله إلى Firestore لاحقاً."""
     try:
         conn = db_connect()
-        conn.execute(
-            'INSERT OR REPLACE INTO subscription_outbox (uid, payload, attempts) VALUES (?,?,0)',
-            (uid, json.dumps(payload, ensure_ascii=False)))
+        enqueue_outbox_on_connection(conn, uid, payload)
         conn.commit()
         conn.close()
     except Exception as e:
         print(f'[OUTBOX] تعذّر الإضافة إلى الـ outbox: {e}')
 
+def enqueue_outbox_on_connection(conn, uid: str, payload: dict):
+    """نسخة من enqueue_outbox تستخدم معاملة قائمة لضمان ذرية تحديث الاشتراك."""
+    conn.execute(
+        'INSERT OR REPLACE INTO subscription_outbox (uid, payload, attempts) VALUES (?,?,0)',
+        (uid, json.dumps(payload, ensure_ascii=False)))
+
 def _firestore_write_subscription(uid: str, payload: dict, token: str, project_id: str):
     """يكتب سجل اشتراك واحد إلى Firestore REST API."""
     def fs_val(v):
+        if isinstance(v, bool):
+            return {'booleanValue': v}
         return {'stringValue': str(v)} if v else {'nullValue': None}
-    fields = {
-        'uid':                     fs_val(payload.get('uid', uid)),
-        'email':                   fs_val(payload.get('email', '')),
-        'stripe_customer_id':      fs_val(payload.get('stripe_customer_id', '')),
-        'stripe_subscription_id':  fs_val(payload.get('stripe_subscription_id', '')),
-        'status':                  fs_val(payload.get('status', 'inactive')),
-        'updated_at':              fs_val(payload.get('updated_at', '')),
-    }
+    known_fields = (
+        'uid', 'email', 'stripe_customer_id', 'stripe_subscription_id',
+        'status', 'updated_at', 'promo_active', 'promo_expires_at',
+    )
+    fields = {key: fs_val(payload[key]) for key in known_fields if key in payload}
+    fields.setdefault('uid', fs_val(payload.get('uid', uid)))
     body = json.dumps({'fields': fields}).encode()
+    # Partial outbox payloads (مثل promo) لا تمسح حقول Stripe الموجودة في الوثيقة.
+    query = urllib.parse.urlencode(
+        [('updateMask.fieldPaths', key) for key in fields], doseq=True)
     url  = (f'https://firestore.googleapis.com/v1/projects/{project_id}'
-            f'/databases/(default)/documents/subscriptions/{urllib.parse.quote(uid)}')
+            f'/databases/(default)/documents/subscriptions/{urllib.parse.quote(uid)}'
+            f'?{query}')
     req  = urllib.request.Request(url, data=body, method='PATCH',
            headers={'Authorization': f'Bearer {token}',
                     'Content-Type':  'application/json'})
@@ -1245,9 +1299,15 @@ def _fs_write_from_payload(uid: str, payload: dict):
         raise RuntimeError('FIREBASE_SERVICE_ACCOUNT_JSON أو FIREBASE_PROJECT_ID غير محدد')
     sa_json = json.loads(sa_json_str)
     token   = _get_gsa_access_token(sa_json)
-    def fs_val(v): return {'stringValue': str(v)} if v else {'nullValue': None}
-    fields = {k: fs_val(payload.get(k, '')) for k in
-              ('uid', 'email', 'stripe_customer_id', 'stripe_subscription_id', 'status', 'updated_at')}
+    def fs_val(v):
+        if isinstance(v, bool):
+            return {'booleanValue': v}
+        return {'stringValue': str(v)} if v else {'nullValue': None}
+    fields = {k: fs_val(payload[k]) for k in (
+        'uid', 'email', 'stripe_customer_id', 'stripe_subscription_id',
+        'status', 'updated_at', 'promo_active', 'promo_expires_at'
+    ) if k in payload}
+    fields.setdefault('uid', fs_val(payload.get('uid', uid)))
     body = json.dumps({'fields': fields}).encode()
     url  = (f'https://firestore.googleapis.com/v1/projects/{project_id}'
             f'/databases/(default)/documents/subscriptions/{urllib.parse.quote(uid)}')
