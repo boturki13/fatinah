@@ -424,6 +424,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
         <input class="team-input" id="auth-password" type="password" placeholder="كلمة المرور (٦ أحرف على الأقل)" autocomplete="current-password" style="width:100%; margin-bottom:12px;">
         <button class="btn btn-primary btn-block" onclick="emailAuth('signup')">📧 إنشاء حساب جديد</button>
         <button class="btn btn-ghost btn-block" onclick="emailAuth('signin')" style="margin-top:8px;">لدي حساب بالفعل — تسجيل الدخول</button>
+        <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-ghost" onclick="forgotPassword()" style="width:auto;padding:8px 10px;font-size:12px;">نسيت كلمة المرور؟</button>
+          <button type="button" class="btn btn-ghost" onclick="forgotEmail()" style="width:auto;padding:8px 10px;font-size:12px;">نسيت البريد الإلكتروني؟</button>
+        </div>
       </div>
       <div id="auth-msg" style="font-size:13px; text-align:center; margin-top:10px; min-height:18px;"></div>
 
@@ -1651,6 +1655,59 @@ async function googleSignIn(){
 }
 
 // ---------- دخول بالبريد وكلمة المرور ----------
+async function forgotPassword(){
+  sfx('tap');
+  const emailInput=document.getElementById('auth-email');
+  const email=(emailInput && emailInput.value || storeGet('authEmail','')).trim();
+  const msg=document.getElementById('auth-msg');
+  if(!email || !email.includes('@')){
+    if(emailInput) emailInput.focus();
+    msg.style.color='#f5c542';
+    msg.textContent='اكتب بريدك الإلكتروني أولاً لإرسال رابط إعادة كلمة المرور';
+    return;
+  }
+  msg.style.color='';
+  msg.textContent='جارٍ إرسال رابط إعادة كلمة المرور…';
+  try{
+    const FA=getFirebaseAuth();
+    if(FA){
+      await FA.sendPasswordResetEmail({email});
+    } else {
+      const wb=await getFirebaseWebAuth();
+      if(!wb) throw new Error('firebase-not-configured');
+      const {sendPasswordResetEmail}=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+      await sendPasswordResetEmail(wb.auth,email);
+    }
+    msg.style.color='#8ee6b0';
+    msg.textContent='تم إرسال رابط إعادة كلمة المرور إلى بريدك. افحص البريد والرسائل غير المرغوب فيها.';
+  }catch(e){
+    console.error('password reset:',e);
+    const code=String((e && e.code)||'');
+    msg.style.color='#ff8a8a';
+    if(code.includes('invalid-email')) msg.textContent='صيغة البريد الإلكتروني غير صحيحة';
+    else if(code.includes('user-not-found')) msg.textContent='لا يوجد حساب مرتبط بهذا البريد';
+    else if(code.includes('too-many-requests')) msg.textContent='تمت محاولات كثيرة. حاول لاحقاً.';
+    else if(code.includes('firebase-not-configured')) msg.textContent='الإعداد ناقص — Firebase غير مهيأ';
+    else msg.textContent='تعذّر إرسال الرابط — تأكد من البريد وحاول مرة أخرى';
+  }
+}
+
+async function forgotEmail(){
+  sfx('tap');
+  const msg=document.getElementById('auth-msg');
+  const savedEmail=String(storeGet('authEmail','')||'').trim();
+  let currentEmail='';
+  try{
+    const user=await getCurrentFirebaseUserData(false);
+    currentEmail=String((user && user.email)||'').trim();
+  }catch(e){ console.warn('forgot email lookup:',e); }
+  const email=currentEmail||savedEmail;
+  msg.style.color=email?'#8ee6b0':'#f5c542';
+  msg.textContent=email
+    ? `البريد المرتبط بهذا الجهاز هو: ${email}`
+    : 'لا يوجد بريد محفوظ على هذا الجهاز. جرّب Apple أو Google أو رقم الهاتف للدخول إلى حسابك.';
+}
+
 async function emailAuth(mode){
   sfx('tap');
   const email    = (document.getElementById('auth-email').value||'').trim();
