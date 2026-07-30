@@ -2127,7 +2127,9 @@ async function rcRestore(){
 async function promoIsActive(uid){
   if(!uid) return false;
   try{
-    const r = await fetch(`/api/promo/status?uid=${encodeURIComponent(uid)}`);
+    const idToken = await getCurrentIdToken();
+    const r = await fetch(`/api/promo/status?uid=${encodeURIComponent(uid)}`,
+      { headers: idToken ? {'Authorization':'Bearer '+idToken} : {} });
     if(!r.ok) return false;
     const d = await r.json();
     return d.active === true;
@@ -2145,7 +2147,9 @@ async function checkSubscriptionAndRoute(uid){
     // تحقق خلفي: إن كان الخادم يعلم بإيقاف الحساب (webhook أوقف الاشتراك)
     if(uid){
       try{
-        const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
+        const idToken = await getCurrentIdToken();
+        const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`,
+          { headers: idToken ? {'Authorization':'Bearer '+idToken} : {} });
         if(resp.ok){
           const data = await resp.json();
           // فقط إذا أعاد الخادم active:false صراحةً → أرسله للاشتراك
@@ -2169,7 +2173,9 @@ async function checkSubscriptionAndRoute(uid){
   }
   // ويب: Stripe — فشل مغلق (fail-closed): أي خطأ = paywall لا home
   try{
-    const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
+    const idToken = await getCurrentIdToken();
+    const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`,
+      { headers: idToken ? {'Authorization':'Bearer '+idToken} : {} });
     if(!resp.ok) throw new Error('status error');
     const data = await resp.json();
     if(data.active === true){ go('s-home'); return; }
@@ -2200,10 +2206,11 @@ async function redeemPromo(){
   msg.style.color='#C4B8E0'; msg.textContent='⏳ جاري التحقق...';
   try{
     const uid = window._currentUid || '';
+    const idToken = await getCurrentIdToken();
     const r = await fetch('/api/promo/redeem',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({code, uid})
+      body: JSON.stringify({code, uid, idToken})
     });
     const d = await r.json();
     if(d.ok){
@@ -2337,10 +2344,11 @@ async function startCheckout(){
     // ويب: Stripe Checkout
     const uid   = storeGet('authUid','');
     const email = storeGet('authEmail','');
+    const idToken = await getCurrentIdToken();
     const resp  = await fetch('/api/stripe/create-checkout', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({uid, email, plan: _pwPlan})
+      body: JSON.stringify({uid, email, plan: _pwPlan, idToken})
     });
     const data = await resp.json();
     if(data.url){ window.location.href = data.url; }
