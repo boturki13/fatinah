@@ -133,8 +133,9 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 
 /* ===== اختيار الفئات ===== */
 .cat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:11px;}
-.filter-bar{display:flex; gap:8px; overflow-x:auto; padding-bottom:10px; margin-bottom:12px; -webkit-overflow-scrolling:touch;}
-.filter-bar::-webkit-scrollbar{display:none;}
+.filter-bar{display:flex; flex-wrap:nowrap; gap:8px; width:100%; min-width:0; overflow-x:scroll; overflow-y:hidden; padding-bottom:10px; margin-bottom:12px; -webkit-overflow-scrolling:touch; scrollbar-width:none; overscroll-behavior-x:contain; touch-action:pan-y; cursor:grab; user-select:none;}
+.filter-bar.dragging{cursor:grabbing; scroll-behavior:auto;}
+.filter-bar::-webkit-scrollbar{display:none; width:0; height:0;}
 .fbtn{flex-shrink:0; background:var(--glass); border:1.5px solid var(--line2); border-radius:20px; padding:8px 15px; font-family:inherit; font-size:13px; font-weight:800; color:var(--muted); cursor:pointer; white-space:nowrap; transition:.15s;}
 .fbtn.on{background:linear-gradient(120deg,var(--hot2),var(--hot)); color:#fff; border-color:transparent;}
 .cat-pick{border:1.5px solid var(--line2); background:var(--bg2); border-radius:16px; padding:17px 12px; text-align:center; font-size:15px; font-weight:800; cursor:pointer; transition:.16s; position:relative; overflow:hidden;}
@@ -2452,6 +2453,7 @@ function updatePickTurn(){
 }
 function buildFilterBar(){
   const bar=document.getElementById('filter-bar');
+  setupFilterBarDrag();
   bar.innerHTML='';
   const groups=['الكل',...Object.keys(CAT_GROUPS)];
   if((familyCats||[]).some(f=>f.questions.length>0)) groups.push('عائلية');
@@ -2462,6 +2464,43 @@ function buildFilterBar(){
     b.onclick=()=>{ sfx('tap'); activeFilter=g; document.getElementById('cat-search').value=''; buildFilterBar(); renderCatGrid(); };
     bar.appendChild(b);
   });
+}
+function setupFilterBarDrag(){
+  const bar=document.getElementById('filter-bar');
+  if(!bar || bar.dataset.dragReady==='1') return;
+  bar.dataset.dragReady='1';
+  let dragging=false, moved=false, startX=0, startScroll=0;
+  bar.addEventListener('pointerdown', e=>{
+    if(e.pointerType==='mouse' && e.button!==0) return;
+    dragging=true; moved=false; startX=e.clientX; startScroll=bar.scrollLeft;
+    bar.classList.add('dragging');
+    if(bar.setPointerCapture) bar.setPointerCapture(e.pointerId);
+  });
+  bar.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const delta=e.clientX-startX;
+    if(Math.abs(delta)>5) moved=true;
+    bar.scrollLeft=startScroll-delta;
+  });
+  const finishDrag=e=>{
+    if(!dragging) return;
+    dragging=false; bar.classList.remove('dragging');
+    if(moved){
+      bar.dataset.suppressClick='1';
+      setTimeout(()=>{ delete bar.dataset.suppressClick; },80);
+    }
+    if(e && bar.releasePointerCapture && bar.hasPointerCapture?.(e.pointerId)){
+      bar.releasePointerCapture(e.pointerId);
+    }
+  };
+  bar.addEventListener('pointerup', finishDrag);
+  bar.addEventListener('pointercancel', finishDrag);
+  bar.addEventListener('click', e=>{
+    if(bar.dataset.suppressClick==='1'){
+      e.preventDefault(); e.stopPropagation();
+      delete bar.dataset.suppressClick;
+    }
+  }, true);
 }
 function catsForFilter(){
   if(activeFilter==='الكل') return [...ALL_CATS, ...familyNames()];
