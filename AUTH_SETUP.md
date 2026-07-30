@@ -60,12 +60,18 @@
   "Sign in with Apple" لهدف التطبيق (بدونها سيفشل `signInWithApple` الأصلي).
 - **GoogleService-Info.plist**: نزّله من Firebase Console وضَعه في مجلد iOS
   (`ios/App/App/`) حسب توثيق `@capacitor-firebase/authentication`.
-- **مراجعة إعدادات Phone على iOS**: يوجد `GoogleService-Info.plist` داخل المشروع،
-  لكنه يحتوي `BUNDLE_ID` بقيمة `com.fatinah.game` بينما Bundle ID الحالي في
-  إعدادات Xcode هو `com.fatinah.game.web`؛ نزّل ملفاً مطابقاً للـ Bundle ID
-  الفعلي قبل اختبار Firebase على iOS. لم يظهر ملف `.entitlements` أو
-  `aps-environment` في المشروع الحالي، لذلك لم يمكن تأكيد تفعيل Push
-  Notifications من الملفات وحدها.
+- **مطابقة Bundle ID مع Firebase**: تم توحيد Bundle ID على `com.fatinah.game`
+  في كل من مشروع Xcode (`project.pbxproj`) وملفات Capacitor، وهو يطابق الآن
+  `BUNDLE_ID` الموجود في `GoogleService-Info.plist` (مشروع `fatinah-game`).
+  إذا غيّرت Bundle ID مستقبلاً، نزّل ملف plist جديداً مطابقاً من Firebase Console.
+- **Push Notifications / aps-environment**: أُضيف الملف
+  `ios/App/App/App.entitlements` بقيمة `aps-environment = development` ورُبط
+  بالهدف عبر `CODE_SIGN_ENTITLEMENTS`. عند البناء للإنتاج/TestFlight يحوّله
+  Xcode تلقائياً إلى `production`. تأكد أيضاً من تفعيل **Push Notifications
+  capability** في Apple Developer لهوية `com.fatinah.game` حتى يعمل التحقق
+  الصامت لهاتف Firebase (APNs)؛ وإلا سيتراجع Firebase إلى reCAPTCHA.
+- **اختبار مطلوب على جهاز حقيقي**: بعد `npx cap sync ios`، جرّب Phone
+  Authentication على جهاز iOS فعلي (المحاكي لا يدعم APNs الصامت).
 - **REVERSED_CLIENT_ID**: أضف الـ URL Scheme الموجود في GoogleService-Info.plist
   إلى Info.plist (URL Types) لتفعيل رجوع Google OAuth للتطبيق.
 - بعد أي تغيير في `package.json` أو ملفات iOS، شغّل `npx cap sync ios`.
