@@ -601,12 +601,17 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(404); self.end_headers()
 
         elif path.startswith('/legal/img/'):
-            fname = path[len('/legal/img/'):]
+            fname = os.path.basename(path[len('/legal/img/'):])
+            img_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), 'legal', 'img'))
+            full_path = os.path.realpath(os.path.join(img_dir, fname))
+            if not full_path.startswith(img_dir + os.sep):
+                self.send_response(404); self.end_headers()
+                return
             ctype = ('image/x-icon' if fname.endswith('.ico')
                      else 'image/svg+xml' if fname.endswith('.svg')
                      else 'image/png')
             try:
-                with open(os.path.join(os.path.dirname(__file__), 'legal', 'img', fname), 'rb') as f:
+                with open(full_path, 'rb') as f:
                     body = f.read()
                 self.send_response(200)
                 self.send_header('Content-Type', ctype)
