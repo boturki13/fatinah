@@ -1,0 +1,59 @@
+# ─── حذف وثيقة الاشتراك من Firestore عبر REST ──────────────────
+def firestore_delete_subscription(uid):
+    """يرجع: 'ok' | 'not_configured' | 'failed'"""
+    try:
+        token   = _fs_access_token()      # ← استبدلها بدالة التوكن التي
+        project = FIREBASE_PROJECT_ID     #    يستخدمها _fs_write_from_payload
+    except Exception:
+        return 'not_configured'
+    if not token or not project:
+        return 'not_configured'
+
+    url = ('https://firestore.googleapis.com/v1/projects/'
+           f'{project}/databases/(default)/documents/subscriptions/'
+           + urllib.parse.quote(uid, safe=''))
+    req = urllib.request.Request(url, method='DELETE')
+    req.add_header('Authorization', 'Bearer ' + token)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return 'ok' if r.status in (200, 204) else 'failed'
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return 'ok'                    # غير موجودة أصلاً = نجاح
+        return 'failed'
+    except Exception:
+        return 'failed'
+
+
+# ─── حذف مشترك RevenueCat (أفضل-جهد) ──────────────────────────
+def revenuecat_delete_subscriber(app_user_id):
+    key = os.environ.get('REVENUECAT_SECRET_API_KEY', '').strip()
+    if not key or not app_user_id:
+        return False
+    url = ('https://api.revenuecat.com/v1/subscribers/'
+           + urllib.parse.quote(app_user_id, safe=''))
+    req = urllib.request.Request(url, method='DELETE')
+    req.add_header('Authorization', 'Bearer ' + key)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return r.status in (200, 204)
+    except urllib.error.HTTPError as e:
+        return e.code == 404
+    except Exception:
+        return False
+
+
+# ─── اكتشاف جداول المستخدم تلقائياً ────────────────────────────
+_SHARED_TABLES = {'promo_codes', 'question_bank', 'sqlite_sequence'}
+
+def _user_tables(conn):
+    names = [r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'")]
+    out = []
+    for n in names:
+        if n in _SHARED_TABLES:
+            continue
+        cols = [c[1] for c in conn.execute(f'PRAGMA table_info("{n}")')]
+        if 'uid' in cols:
+            out.append(n)
+    return out
