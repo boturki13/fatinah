@@ -1,66 +1,32 @@
 /**
- * اختبارات دالة checkSubscriptionAndRoute
- * تتحقق أن fail-open يعمل فعلاً في جميع الحالات الحدية
+ * اختبارات مسار الاشتراك الخادمي.
+ *
+ * لا تُستخدم حالة RevenueCat المحلية لمنح الصلاحية؛
+ * webhook الخادمي هو المصدر الوحيد للحالة الحساسة.
  *
  * تشغيل: node tests/subscription_routing_test.mjs
  */
 
 import assert from 'node:assert/strict';
 
-// ─── نسخة مستخلصة من checkSubscriptionAndRoute (index.html) ─────────────────
-// تُحاكي نفس المنطق بدون اعتماد على DOM أو Firebase
-async function checkSubscriptionAndRoute(uid, { rcIsActive, go, fetchFn, promoIsActive }) {
-  const rcActive = await rcIsActive();
-
-  if (rcActive === true) {
-    // iOS: اذهب للصفحة الرئيسية فوراً
-    go('s-home');
-    // تحقق خلفي من الخادم (fail-open)
-    if (uid) {
-      try {
-        const resp = await fetchFn(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
-        if (resp.ok) {
-          const data = await resp.json();
-          // فقط active:false صراحةً → paywall
-          if (data.active === false) {
-            go('s-paywall');
-          }
-        }
-        // أي رد آخر (غير ok، أو active:true) → يبقى في s-home (fail-open)
-      } catch (e) {
-        // انقطاع الشبكة أو خطأ خادم → يبقى في s-home (fail-open)
-      }
-    }
-    return;
-  }
-
-  if (rcActive === false) {
-    if (uid && await promoIsActive(uid)) { go('s-home'); return; }
-    go('s-paywall'); return;
-  }
-
-  // ويب: Stripe — fail-closed
+async function checkSubscriptionAndRoute(uid, { go, fetchFn, promoIsActive }) {
+  go('s-loading');
   try {
-    const resp = await fetchFn(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
+    const resp = await fetchFn(`/api/stripe/status?uid=${encodeURIComponent(uid || '')}`);
     if (!resp.ok) throw new Error('status error');
     const data = await resp.json();
     if (data.active === true) { go('s-home'); return; }
     if (uid && await promoIsActive(uid)) { go('s-home'); return; }
     go('s-paywall');
-  } catch (e) {
+  } catch {
     if (uid && await promoIsActive(uid)) { go('s-home'); return; }
     go('s-paywall');
   }
 }
 
-// ─── مساعدات ─────────────────────────────────────────────────────────────────
 function makeGoTracker() {
   const history = [];
-  return {
-    go: (screen) => history.push(screen),
-    history,
-    last: () => history[history.length - 1],
-  };
+  return { go: (screen) => history.push(screen), history, last: () => history.at(-1) };
 }
 
 function makeFetch(status, body) {
@@ -71,90 +37,55 @@ function makeFetch(status, body) {
   });
 }
 
-function makeNetworkErrorFetch() {
-  return async () => { throw new TypeError('Failed to fetch'); };
-}
-
+const networkError = async () => { throw new TypeError('Failed to fetch'); };
 const noPromo = async () => false;
-const rcTrue  = async () => true;
-
-// ─── الاختبارات ──────────────────────────────────────────────────────────────
+const activePromo = async () => true;
 const tests = [];
 
-// 1. الخادم يُعيد 500 → المستخدم يبقى في s-home (fail-open)
-tests.push(async function test_server_500_stays_home() {
+tests.push(async function server_active_opens_home() {
   const tracker = makeGoTracker();
   await checkSubscriptionAndRoute('uid-123', {
-    rcIsActive:   rcTrue,
-    go:           tracker.go,
-    fetchFn:      makeFetch(500, {}),
-    promoIsActive: noPromo,
+    go: tracker.go, fetchFn: makeFetch(200, { active: true }), promoIsActive: noPromo,
   });
-  assert.equal(tracker.last(), 's-home',
-    'يجب أن يبقى في s-home عند خطأ 500 من الخادم');
-  console.log('  ✓ خطأ 500 → يبقى في s-home');
+  assert.equal(tracker.last(), 's-home');
+  console.log('  ✓ active:true → s-home');
 });
 
-// 2. انقطاع الشبكة → المستخدم يبقى في s-home (fail-open)
-tests.push(async function test_network_error_stays_home() {
+tests.push(async function server_inactive_goes_paywall() {
   const tracker = makeGoTracker();
   await checkSubscriptionAndRoute('uid-123', {
-    rcIsActive:   rcTrue,
-    go:           tracker.go,
-    fetchFn:      makeNetworkErrorFetch(),
-    promoIsActive: noPromo,
+    go: tracker.go, fetchFn: makeFetch(200, { active: false }), promoIsActive: noPromo,
   });
-  assert.equal(tracker.last(), 's-home',
-    'يجب أن يبقى في s-home عند انقطاع الشبكة');
-  console.log('  ✓ انقطاع الشبكة → يبقى في s-home');
+  assert.equal(tracker.last(), 's-paywall');
+  console.log('  ✓ active:false → s-paywall');
 });
 
-// 3. الخادم يُعيد active:false → المستخدم يذهب لـ s-paywall
-tests.push(async function test_server_active_false_goes_paywall() {
+tests.push(async function server_error_fails_closed() {
   const tracker = makeGoTracker();
   await checkSubscriptionAndRoute('uid-123', {
-    rcIsActive:   rcTrue,
-    go:           tracker.go,
-    fetchFn:      makeFetch(200, { active: false }),
-    promoIsActive: noPromo,
+    go: tracker.go, fetchFn: makeFetch(500, {}), promoIsActive: noPromo,
   });
-  assert.equal(tracker.last(), 's-paywall',
-    'يجب أن يذهب لـ s-paywall عند active:false من الخادم');
-  console.log('  ✓ active:false → يذهب لـ s-paywall');
+  assert.equal(tracker.last(), 's-paywall');
+  console.log('  ✓ server 500 → s-paywall');
 });
 
-// 4. الخادم يُعيد active:true → المستخدم يبقى في s-home
-tests.push(async function test_server_active_true_stays_home() {
+tests.push(async function network_error_fails_closed() {
   const tracker = makeGoTracker();
   await checkSubscriptionAndRoute('uid-123', {
-    rcIsActive:   rcTrue,
-    go:           tracker.go,
-    fetchFn:      makeFetch(200, { active: true }),
-    promoIsActive: noPromo,
+    go: tracker.go, fetchFn: networkError, promoIsActive: noPromo,
   });
-  assert.equal(tracker.last(), 's-home',
-    'يجب أن يبقى في s-home عند active:true من الخادم');
-  console.log('  ✓ active:true → يبقى في s-home');
+  assert.equal(tracker.last(), 's-paywall');
+  console.log('  ✓ network error → s-paywall');
 });
 
-// ─── تشغيل ───────────────────────────────────────────────────────────────────
-let passed = 0;
-let failed = 0;
+tests.push(async function active_promo_opens_home() {
+  const tracker = makeGoTracker();
+  await checkSubscriptionAndRoute('uid-123', {
+    go: tracker.go, fetchFn: makeFetch(200, { active: false }), promoIsActive: activePromo,
+  });
+  assert.equal(tracker.last(), 's-home');
+  console.log('  ✓ active promo → s-home');
+});
 
-console.log('\nاختبارات fail-open في checkSubscriptionAndRoute\n');
-
-for (const test of tests) {
-  try {
-    await test();
-    passed++;
-  } catch (e) {
-    failed++;
-    console.error(`  ✗ ${test.name}: ${e.message}`);
-  }
-}
-
-console.log(`\nالنتيجة: ${passed} نجح / ${failed} فشل\n`);
-
-if (failed > 0) {
-  process.exit(1);
-}
+for (const test of tests) await test();
+console.log(`\nالنتيجة: ${tests.length} نجح / 0 فشل`);

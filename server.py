@@ -6,6 +6,7 @@
 import json, os, sqlite3, threading, time, urllib.request, urllib.error, urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
+import re
 
 # ─── ثوابت ─────────────────────────────────────────────────────────────────
 PORT      = int(os.environ.get('PORT', 5000))
@@ -88,6 +89,17 @@ def init_db():
             next_retry  DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    # لا نستخدم Firebase UID أو البريد كـ RevenueCat app_user_id.
+    # هذا الربط الداخلي يسمح للـ webhook بتحويل UUID العشوائي إلى حساب Firebase
+    # من دون كشف أي معرّف مباشر في RevenueCat.
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS revenuecat_identities (
+            uid            TEXT PRIMARY KEY,
+            rc_app_user_id TEXT NOT NULL UNIQUE,
+            created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at     DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -135,6 +147,36 @@ def uid_matches_token(uid: str, id_token: str) -> bool:
         return False
     verified = verify_firebase_id_token(id_token)
     return bool(verified and verified.get('localId') == uid)
+
+def is_valid_rc_app_user_id(value: str) -> bool:
+    """نقبل UUID canonical فقط حتى لا يعود أي مسار لاستخدام UID/email مباشرة."""
+    return bool(re.fullmatch(
+        r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}',
+        (value or '').strip().lower()))
+
+def subscription_is_active(uid: str) -> bool:
+    """حالة صلاحيات خادمية فقط: Stripe/RevenueCat webhook أو promo سارية."""
+    if not uid:
+        return False
+    conn = db_connect()
+    try:
+        row = conn.execute(
+            'SELECT status, promo_active, promo_expires_at '
+            'FROM subscriptions WHERE uid=?', (uid,)).fetchone()
+        if not row:
+            return False
+        status, promo_active, promo_expires_at = row
+        promo_valid = bool(promo_active and promo_expires_at and conn.execute(
+            "SELECT 1 WHERE ? > datetime('now')", (promo_expires_at,)
+        ).fetchone())
+        if promo_active and not promo_valid:
+            conn.execute(
+                "UPDATE subscriptions SET promo_active=0, updated_at=CURRENT_TIMESTAMP "
+                "WHERE uid=? AND promo_active=1", (uid,))
+            conn.commit()
+        return status == 'active' or promo_valid
+    finally:
+        conn.close()
 
 def bearer_token(headers) -> str:
     """يستخرج ID token من رأس Authorization: Bearer <token> (لنقاط GET)."""
@@ -709,6 +751,7 @@ class Handler(BaseHTTPRequestHandler):
         '/api/promo/redeem':            2_048,   # 2 KB   (code + uid)
         '/api/promo/admin':             8_192,   # 8 KB   (إجراءات الإدارة)
         '/api/revenuecat/webhook':     65_536,   # 64 KB  (حدث RevenueCat)
+        '/api/revenuecat/identity':     2_048,   # uid + UUID + token
         '/api/account/profile':         2_048,   # 2 KB   (name + email + provider)
     }
     _DEFAULT_MAX_BODY = 16_384  # 16 KB للمسارات غير المدرجة
@@ -727,6 +770,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/api/generate':
             try:   data = json.loads(body)
             except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+
+            uid = (data.get('uid') or '').strip()
+            id_token = (data.get('idToken') or '').strip()
+            if not uid or not uid_matches_token(uid, id_token):
+                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
+            # المحتوى الحساس لا يعتمد على CustomerInfo من العميل؛
+            # الصلاحية تُحسم من سجل حدّثه webhook موثّق فقط.
+            if not subscription_is_active(uid):
+                self.send_json(403, {'error': 'اشتراك فعّال مطلوب'}); return
 
             topic = (data.get('topic') or '').strip()
             try:    count = min(max(int(data.get('count', 6)), 1), 30)
@@ -792,6 +844,7 @@ class Handler(BaseHTTPRequestHandler):
                 conn = db_connect()
                 cur  = conn.execute('DELETE FROM subscriptions WHERE uid=?', (uid,))
                 conn.execute('DELETE FROM promo_redemptions WHERE uid=?', (uid,))
+                conn.execute('DELETE FROM revenuecat_identities WHERE uid=?', (uid,))
                 conn.commit()
                 deleted = cur.rowcount
                 conn.close()
@@ -830,6 +883,40 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(200, {'ok': True})
             except sqlite3.OperationalError:
                 self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+
+        # ─── ربط RevenueCat UUID بحساب Firebase ─────────────────────────────
+        elif path == '/api/revenuecat/identity':
+            try:
+                data = json.loads(body)
+            except Exception:
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
+
+            uid = (data.get('uid') or '').strip()
+            rc_app_user_id = (data.get('rcAppUserId') or '').strip().lower()
+            id_token = (data.get('idToken') or '').strip()
+            if not uid or not is_valid_rc_app_user_id(rc_app_user_id):
+                self.send_json(400, {'error': 'UUID RevenueCat غير صالح'}); return
+            if not uid_matches_token(uid, id_token):
+                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
+
+            conn = db_connect()
+            try:
+                claimed = conn.execute(
+                    'SELECT uid FROM revenuecat_identities WHERE rc_app_user_id=?',
+                    (rc_app_user_id,)).fetchone()
+                if claimed and claimed[0] != uid:
+                    self.send_json(409, {'error': 'هوية RevenueCat مرتبطة بحساب آخر'}); return
+                conn.execute('''
+                    INSERT INTO revenuecat_identities (uid, rc_app_user_id)
+                    VALUES (?,?)
+                    ON CONFLICT(uid) DO UPDATE SET
+                        rc_app_user_id=excluded.rc_app_user_id,
+                        updated_at=CURRENT_TIMESTAMP
+                ''', (uid, rc_app_user_id))
+                conn.commit()
+            finally:
+                conn.close()
+            self.send_json(200, {'ok': True})
 
         # ─── Stripe: إنشاء جلسة دفع ─────────────────────────────────────────
         elif path == '/api/stripe/create-checkout':
@@ -1169,7 +1256,10 @@ class Handler(BaseHTTPRequestHandler):
             edata       = event.get('event') or {}
             etype       = (edata.get('type') or '').strip()
             event_id    = edata.get('id', 'unknown')
-            app_user_id = (edata.get('app_user_id') or '').strip()
+            app_user_id = (edata.get('app_user_id') or '').strip().lower()
+            aliases     = edata.get('aliases') or []
+            if not isinstance(aliases, list):
+                aliases = []
 
             # أحداث تُفعِّل الاشتراك
             RC_ACTIVE_EVENTS = {
@@ -1204,25 +1294,46 @@ class Handler(BaseHTTPRequestHandler):
             if not app_user_id:
                 self.send_json(400, {'error': 'app_user_id مطلوب'}); return
 
+            # RevenueCat يرسل UUIDاً عشوائياً. نحلّه إلى Firebase UID من الربط
+            # الموثّق سابقاً؛ لا نثق ببريد أو UID وارد من webhook كمفتاح جديد.
+            rc_ids = [value.strip().lower() for value in [app_user_id, *aliases]
+                      if isinstance(value, str) and value.strip()]
+            conn = db_connect()
+            try:
+                placeholders = ','.join('?' * len(rc_ids))
+                identity = conn.execute(
+                    f'SELECT uid FROM revenuecat_identities '
+                    f'WHERE rc_app_user_id IN ({placeholders}) LIMIT 1',
+                    rc_ids
+                ).fetchone() if rc_ids else None
+                resolved_uid = identity[0] if identity else None
+            finally:
+                conn.close()
+            if not resolved_uid:
+                self.send_json(202, {
+                    'received': True,
+                    'note': 'app_user_id غير مربوط بحساب Firebase — تم تجاهل تغيير الحالة'
+                }); return
+
             # تحديث SQLite
-            conn = sqlite3.connect(DB_PATH)
+            conn = db_connect()
             try:
                 conn.execute('''INSERT INTO subscriptions (uid, status)
                     VALUES (?,?)
                     ON CONFLICT(uid) DO UPDATE SET
                     status=excluded.status, updated_at=CURRENT_TIMESTAMP''',
-                    (app_user_id, new_status))
+                    (resolved_uid, new_status))
                 conn.commit()
             finally:
                 conn.close()
 
             # تحديث Firestore — نحاول مباشرة؛ إن فشل نضيف للـ outbox للإعادة لاحقاً
-            fs_ok = firestore_upsert_subscription(app_user_id, new_status)
+            fs_ok = firestore_upsert_subscription(resolved_uid, new_status)
             if not fs_ok:
-                print(f'[RevenueCat] فشل Firestore لـ {app_user_id} (event={event_id}) — سيُعاد عبر outbox')
-                enqueue_outbox(app_user_id, {'uid': app_user_id, 'status': new_status})
+                print(f'[RevenueCat] فشل Firestore لـ {resolved_uid} (event={event_id}) — سيُعاد عبر outbox')
+                enqueue_outbox(resolved_uid, {'uid': resolved_uid, 'status': new_status})
 
-            self.send_json(200, {'received': True, 'uid': app_user_id, 'status': new_status})
+            self.send_json(200, {'received': True, 'uid': resolved_uid, 'status': new_status})
 
         else:
             self.send_response(404); self.end_headers()
