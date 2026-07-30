@@ -32,6 +32,9 @@ import server as srv
 srv.DB_PATH = tmp_db.name
 srv.init_db()
 srv.init_outbox_table()
+# لا تعتمد اختبارات الحالة على شبكة Firebase؛ نتحقق من أن نقاط الحالة
+# تمرّر رمزاً إلى طبقة التحقق، بينما يظل اختبار الـwebhook نفسه واقعياً.
+srv.uid_matches_token = lambda uid, token: bool(uid and token == 'TEST_ID_TOKEN')
 
 # ── تشغيل الخادم على منفذ عشوائي ────────────────────────────────────────────
 httpd = HTTPServer(('127.0.0.1', 0), srv.Handler)
@@ -68,8 +71,17 @@ def insert_sub(uid, status):
         (uid, status))
     conn.commit(); conn.close()
 
+def link_identity(uid, rc_app_user_id):
+    conn = sqlite3.connect(tmp_db.name)
+    conn.execute(
+        'INSERT OR REPLACE INTO revenuecat_identities (uid, rc_app_user_id) VALUES (?, ?)',
+        (uid, rc_app_user_id))
+    conn.commit(); conn.close()
+
 def get(path):
-    req = urllib.request.Request(BASE + path, method='GET')
+    req = urllib.request.Request(
+        BASE + path, method='GET',
+        headers={'Authorization': 'Bearer TEST_ID_TOKEN'})
     try:
         with urllib.request.urlopen(req, timeout=5) as r:
             return r.status, json.loads(r.read())
@@ -78,6 +90,13 @@ def get(path):
 
 def make_event(etype, uid):
     return {'event': {'type': etype, 'id': f'evt_{etype}', 'app_user_id': uid}}
+
+RC_EXPIRE = '11111111-1111-4111-8111-111111111111'
+RC_CANCEL = '22222222-2222-4222-8222-222222222222'
+RC_NEW = '33333333-3333-4333-8333-333333333333'
+RC_RENEW = '44444444-4444-4444-8444-444444444444'
+RC_EXPIRE_STATUS = '55555555-5555-4555-8555-555555555555'
+RC_NEW_STATUS = '66666666-6666-4666-8666-666666666666'
 
 # ── تشغيل الاختبارات ─────────────────────────────────────────────────────────
 PASS = '\033[92m✓\033[0m'
@@ -101,7 +120,8 @@ check('يُرجع 401', code == 401, f'code={code}')
 # 2. EXPIRATION → inactive
 print('\n2. EXPIRATION')
 insert_sub('uid_expire', 'active')
-code, _ = post('/api/revenuecat/webhook', make_event('EXPIRATION', 'uid_expire'))
+link_identity('uid_expire', RC_EXPIRE)
+code, _ = post('/api/revenuecat/webhook', make_event('EXPIRATION', RC_EXPIRE))
 check('يُرجع 200', code == 200, f'code={code}')
 check("status → 'inactive'", db_status('uid_expire') == 'inactive',
       f"status={db_status('uid_expire')}")
@@ -109,14 +129,16 @@ check("status → 'inactive'", db_status('uid_expire') == 'inactive',
 # 3. CANCELLATION → canceled
 print('\n3. CANCELLATION')
 insert_sub('uid_cancel', 'active')
-code, _ = post('/api/revenuecat/webhook', make_event('CANCELLATION', 'uid_cancel'))
+link_identity('uid_cancel', RC_CANCEL)
+code, _ = post('/api/revenuecat/webhook', make_event('CANCELLATION', RC_CANCEL))
 check('يُرجع 200', code == 200, f'code={code}')
 check("status → 'canceled'", db_status('uid_cancel') == 'canceled',
       f"status={db_status('uid_cancel')}")
 
 # 4. INITIAL_PURCHASE على uid جديد → ينشئ سجل active
 print('\n4. INITIAL_PURCHASE (uid جديد)')
-code, _ = post('/api/revenuecat/webhook', make_event('INITIAL_PURCHASE', 'uid_new_buyer'))
+link_identity('uid_new_buyer', RC_NEW)
+code, _ = post('/api/revenuecat/webhook', make_event('INITIAL_PURCHASE', RC_NEW))
 check('يُرجع 200', code == 200, f'code={code}')
 check("سجل جديد بـ status='active'", db_status('uid_new_buyer') == 'active',
       f"status={db_status('uid_new_buyer')}")
@@ -124,7 +146,8 @@ check("سجل جديد بـ status='active'", db_status('uid_new_buyer') == 'act
 # 5. RENEWAL → active
 print('\n5. RENEWAL')
 insert_sub('uid_renew', 'inactive')
-code, _ = post('/api/revenuecat/webhook', make_event('RENEWAL', 'uid_renew'))
+link_identity('uid_renew', RC_RENEW)
+code, _ = post('/api/revenuecat/webhook', make_event('RENEWAL', RC_RENEW))
 check('يُرجع 200', code == 200, f'code={code}')
 check("status → 'active'", db_status('uid_renew') == 'active',
       f"status={db_status('uid_renew')}")
@@ -137,7 +160,8 @@ check('يُرجع 200 (يُتجاهل بأمان)', code == 200, f'code={code}')
 # 7. EXPIRATION → /api/stripe/status يعكس active=false فوراً (بدون كاش)
 print('\n7. EXPIRATION → /api/stripe/status يعيد active=false فوراً')
 insert_sub('uid_expire_status', 'active')
-post('/api/revenuecat/webhook', make_event('EXPIRATION', 'uid_expire_status'))
+link_identity('uid_expire_status', RC_EXPIRE_STATUS)
+post('/api/revenuecat/webhook', make_event('EXPIRATION', RC_EXPIRE_STATUS))
 code, resp = get(f'/api/stripe/status?uid=uid_expire_status')
 check('يُرجع 200', code == 200, f'code={code}')
 check('active=false بعد EXPIRATION مباشرةً', resp.get('active') is False,
@@ -145,7 +169,8 @@ check('active=false بعد EXPIRATION مباشرةً', resp.get('active') is Fal
 
 # 8. INITIAL_PURCHASE → /api/stripe/status يعكس active=true فوراً
 print('\n8. INITIAL_PURCHASE → /api/stripe/status يعيد active=true فوراً')
-post('/api/revenuecat/webhook', make_event('INITIAL_PURCHASE', 'uid_new_status'))
+link_identity('uid_new_status', RC_NEW_STATUS)
+post('/api/revenuecat/webhook', make_event('INITIAL_PURCHASE', RC_NEW_STATUS))
 code, resp = get(f'/api/stripe/status?uid=uid_new_status')
 check('يُرجع 200', code == 200, f'code={code}')
 check('active=true بعد INITIAL_PURCHASE مباشرةً', resp.get('active') is True,

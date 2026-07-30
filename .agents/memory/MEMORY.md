@@ -2,3 +2,4 @@
 - [Capacitor Browser setup](capacitor-browser.md) — إضافة Browser تتطلب مزامنة iOS وTypeScript 5.x المتوافق مع Capacitor CLI 8
 - [Firebase contact verification](firebase-contact-verification.md) — تحقق البريد وSMS يستخدم Capacitor native داخل iOS وWeb SDK مع أرقام E.164
 - [iOS Bundle ID](ios-bundle-id.md) — القيمة الرسمية `com.fatinah.game`؛ يجب أن تتطابق عبر pbxproj وCapacitor وFirebase plist وStoreKit
+- [RevenueCat server authority](revenuecat-server-authority.md) — صلاحيات Apple تُحسم من webhook الخادمي مع UUID v4 مربوط بحساب Firebase

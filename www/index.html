@@ -1177,6 +1177,10 @@ async function confirmDeleteAccount(){
       }
     }catch(e){ console.error('server delete:', e); }
   }
+  const rcIds=storeGet('rcAppUserIds',{}) || {};
+  delete rcIds[uid];
+  storeSet('rcAppUserIds',rcIds);
+  storeSet('rcAppUserId','');
   // 2) احذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login) — لكل الوسائل
   // بما فيها الجلسات المجهولة، طالما توجد طبقة Firebase أصلاً
   const deleted = await deleteFirebaseUser();
@@ -1935,6 +1939,39 @@ async function loadRcKey(){
   return RC_API_KEY;
 }
 const RC_ENTITLEMENT = 'premium';
+const RC_APP_USER_ID_KEY = 'rcAppUserId';
+const RC_APP_USER_IDS_KEY = 'rcAppUserIds';
+const RC_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function createRcUuid(){
+  if(window.crypto && typeof window.crypto.randomUUID === 'function'){
+    return window.crypto.randomUUID().toLowerCase();
+  }
+  if(window.crypto && typeof window.crypto.getRandomValues === 'function'){
+    const bytes=new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    bytes[6]=(bytes[6]&0x0f)|0x40;
+    bytes[8]=(bytes[8]&0x3f)|0x80;
+    const hex=[...bytes].map(b=>b.toString(16).padStart(2,'0')).join('');
+    return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+  }
+  throw new Error('المتصفح لا يدعم مولّد UUID آمن');
+}
+
+function getRcAppUserId(){
+  const uid=String(storeGet('authUid','')||'');
+  const ids=storeGet(RC_APP_USER_IDS_KEY,{}) || {};
+  let value=String((uid && ids[uid]) || storeGet(RC_APP_USER_ID_KEY,'') || '').toLowerCase();
+  if(!RC_UUID_RE.test(value)){
+    value=createRcUuid();
+    if(uid){
+      ids[uid]=value;
+      storeSet(RC_APP_USER_IDS_KEY,ids);
+    }
+  }
+  storeSet(RC_APP_USER_ID_KEY,'');
+  return value;
+}
 
 function getRC(){
   return window.Capacitor && window.Capacitor.isNativePlatform()
@@ -1949,8 +1986,18 @@ async function initRevenueCat(){
   if(!RC_CONFIGURED) return; // لا تهيّئ إذا لم يتوفر المفتاح
   try{
     const uid = storeGet('authUid','');
-    await RC.configure({ apiKey: RC_API_KEY });
-    if(uid) await RC.logIn({ appUserID: uid });
+    const rcAppUserId=getRcAppUserId();
+    if(!uid) throw new Error('لا يمكن تهيئة RevenueCat بلا حساب Firebase');
+    const idToken=await getCurrentIdToken();
+    const identityResp=await fetch('/api/revenuecat/identity',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({uid, rcAppUserId, idToken})
+    });
+    if(!identityResp.ok) throw new Error('تعذّر تسجيل ربط هوية RevenueCat بالخادم');
+    await RC.configure({ apiKey: RC_API_KEY, appUserID: rcAppUserId });
+    // لا نرسل البريد أو Firebase UID كـ subscriber attribute.
+    // Secure Attributes غير متاحة في هذا SDK؛ الصلاحيات تُحسم بالـwebhook.
   }catch(e){ console.error('RC init:', e); }
 }
 
@@ -2006,11 +2053,9 @@ async function rcRestore(){
   const RC = getRC();
   if(!RC){ showToast('ℹ️','متاح على iOS فقط','',false); return; }
   try{
-    const { customerInfo } = await RC.restorePurchases();
-    const active = !!(customerInfo.entitlements.active &&
-                      customerInfo.entitlements.active[RC_ENTITLEMENT]);
-    if(active){ go('s-home'); showToast('✅','تم استعادة اشتراكك','',false); }
-    else{ showToast('ℹ️','لا يوجد اشتراك سابق','',false); }
+    await RC.restorePurchases();
+    await checkSubscriptionAndRoute(window._currentUid || storeGet('authUid',''));
+    showToast('ℹ️','جاري التحقق من الاستعادة','سيُفتح المحتوى بعد تأكيد الخادم',false);
   }catch(e){ showToast('⚠️','تعذّر الاستعادة', e.message||'', false); }
 }
 
@@ -2025,17 +2070,14 @@ async function promoIsActive(uid){
 }
 
 async function checkSubscriptionAndRoute(uid){
-  // iOS: RevenueCat أولاً
-  const rcActive = await rcIsActive();
-  if(rcActive === true){ go('s-home'); return; }
-  if(rcActive === false){
-    // تحقق من كود مجاني قبل صفحة الاشتراك
-    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
-    go('s-paywall'); return;
-  }
-  // ويب: Stripe — فشل مغلق (fail-closed): أي خطأ = paywall لا home
+  go('s-loading');
+  // جميع المنصات: الخادم هو مصدر الصلاحية. لا نفتح المحتوى بناءً على
+  // CustomerInfo أو cache محلي؛ webhook هو الذي يحدّث حالة الاشتراك.
   try{
-    const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`);
+    const idToken=await getCurrentIdToken();
+    const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid||'')}`,{
+      headers:idToken ? {'Authorization':'Bearer '+idToken} : {}
+    });
     if(!resp.ok) throw new Error('status error');
     const data = await resp.json();
     if(data.active === true){ go('s-home'); return; }
@@ -2105,11 +2147,8 @@ async function refreshAfterAppleRedeem(){
   const uid = window._currentUid || storeGet('authUid','');
   if(!uid || !window.Capacitor?.isNativePlatform?.()) return;
   try{
-    const active = await rcIsActive();
-    if(active === true){
-      go('s-home');
-      showToast('🎉','تم تفعيل الاشتراك','استمتع بكل ميزات فطنة!',false);
-    }
+    await checkSubscriptionAndRoute(uid);
+    showToast('ℹ️','جاري التحقق من الاشتراك','سيُفتح المحتوى بعد تأكيد الخادم',false);
   }catch(e){ console.warn('Apple redemption refresh:', e); }
 }
 
@@ -2190,13 +2229,24 @@ async function startCheckout(){
   try{
     // iOS: Apple IAP عبر RevenueCat
     if(window.Capacitor && window.Capacitor.isNativePlatform()){
-      const purchased = await rcPurchase(_pwPlan);
-      if(purchased){
+      await rcPurchase(_pwPlan);
+      const uid=window._currentUid || storeGet('authUid','');
+      let serverActive=false;
+      for(let attempt=0; attempt<6 && !serverActive; attempt++){
+        if(attempt) await new Promise(resolve=>setTimeout(resolve,1500));
+        try{
+          const idToken=await getCurrentIdToken();
+          const check=await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`,
+            {headers:idToken ? {'Authorization':'Bearer '+idToken} : {}});
+          if(check.ok) serverActive=(await check.json()).active===true;
+        }catch(e){}
+      }
+      if(serverActive){
         go('s-home');
-        showToast('🎉','مرحباً بك!','اشتراكك فعّال — استمتع بفطنة!',false);
+        showToast('🎉','مرحباً بك!','تم تأكيد اشتراكك من الخادم',false);
       } else {
-        btn.style.display = 'block';
-        loading.style.display = 'none';
+        go('s-paywall');
+        showToast('⏳','جاري تأكيد الاشتراك','سيظهر المحتوى بعد وصول تأكيد Apple',false);
       }
       return;
     }
@@ -3133,9 +3183,11 @@ function addSeen(topic, ids){
   storeSet('seenQ', m);
 }
 async function aiGenerate(topic,count){
+  const uid=window._currentUid || storeGet('authUid','');
+  const idToken=await getCurrentIdToken();
   const res=await fetch(AI_BACKEND_URL,{
     method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ topic, count, seen:getSeen(topic) })
+    body:JSON.stringify({ topic, count, seen:getSeen(topic), uid, idToken })
   });
   if(!res.ok) throw new Error('فشل الاتصال بالخادم');
   const data=await res.json();
