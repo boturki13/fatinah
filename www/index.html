@@ -1715,7 +1715,7 @@ async function startPhoneVerification(){
   const input=document.getElementById('verification-phone');
   const phone=normalizePhoneNumber(input && input.value);
   if(!phone){
-    setVerificationMessage('اكتب الرقم بصيغة دولية، مثل +9665xxxxxxxx.', true);
+    setVerificationMessage('اكتب الرقم بصيغة دولية، مثل +9655xxxxxxx.', true);
     return;
   }
   const user=await getCurrentFirebaseUserData(false);
