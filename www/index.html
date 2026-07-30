@@ -723,6 +723,24 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <div id="account-links" style="margin-bottom:8px;"></div>
       <div class="legal" style="margin-top:4px;">اربط أكثر من وسيلة حتى تستعيد تقدّمك من أي جهاز</div>
     </div>
+      <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
+        <div class="field-label" style="margin-bottom:12px;">توثيق بيانات التواصل</div>
+        <div id="verification-status" class="legal" style="text-align:right;margin:0 0 12px;"></div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button id="send-email-verification-btn" class="btn btn-ghost" onclick="sendEmailVerificationMessage()" style="flex:1;">✉️ إرسال رسالة تحقق للبريد</button>
+          <button class="btn btn-ghost" onclick="refreshEmailVerificationStatus()" style="width:auto;padding:10px 13px;" title="تحديث حالة البريد">↻</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:stretch;">
+          <input class="team-input" id="verification-phone" type="tel" inputmode="tel" placeholder="+9665xxxxxxxx" autocomplete="tel" style="flex:1;min-width:0;">
+          <button class="btn btn-primary" onclick="startPhoneVerification()" style="width:auto;padding:10px 14px;white-space:nowrap;">إرسال رمز SMS</button>
+        </div>
+        <div id="phone-code-form" style="display:none;margin-top:10px;">
+          <input class="team-input" id="verification-phone-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="أدخل رمز التحقق" style="width:100%;margin-bottom:8px;text-align:center;letter-spacing:4px;">
+          <button class="btn btn-primary btn-block" onclick="confirmPhoneVerification()">تأكيد رقم الهاتف</button>
+        </div>
+        <div id="verification-msg" class="legal" style="text-align:right;margin-top:8px;min-height:18px;"></div>
+        <div id="phone-recaptcha" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;"></div>
+      </div>
     <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
       <div class="field-label" style="margin-bottom:12px;">الحساب</div>
       <button class="btn btn-ghost btn-block" onclick="go('s-privacy')" style="margin-bottom:8px;">🔒 سياسة الخصوصية</button>
@@ -1526,6 +1544,7 @@ async function emailAuth(mode){
       }
       const u = res && res.user;
       savePermanentProfile(u && u.uid, (u && u.displayName) || storeGet('playerName',''), email, 'password');
+      if(mode==='signup') await sendEmailVerificationMessage(true);
       afterAuthSuccess(storeGet('playerName','لاعب'), 'password', u && u.uid, email);
       return;
     }
@@ -1547,6 +1566,7 @@ async function emailAuth(mode){
       }
       const u = cred.user;
       savePermanentProfile(u.uid, u.displayName || storeGet('playerName',''), email, 'password');
+      if(mode==='signup') await sendEmailVerificationMessage(true);
       afterAuthSuccess(storeGet('playerName','لاعب'), 'password', u.uid, email);
       return;
     }
@@ -1564,6 +1584,227 @@ async function emailAuth(mode){
     } else {
       msg.style.color='#ff8a8a'; msg.textContent='تعذّر إكمال العملية — حاول مرة أخرى';
     }
+  }
+}
+
+// ---------- التحقق من البريد ورقم الهاتف ----------
+let _phoneVerificationId = '';
+let _phoneConfirmation = null;
+let _phoneListenerHandles = [];
+let _phoneRecaptchaVerifier = null;
+
+function setVerificationMessage(text, error){
+  const el=document.getElementById('verification-msg');
+  if(el){
+    el.textContent=text||'';
+    el.style.color=error?'#ff8a8a':'';
+  }
+}
+
+async function getCurrentFirebaseUserData(reload=true){
+  const FA=getFirebaseAuth();
+  if(FA){
+    try{
+      if(reload && FA.reload) await FA.reload();
+      const result=await FA.getCurrentUser();
+      return (result && result.user) || null;
+    }catch(e){
+      console.warn('native auth user:',e);
+      return null;
+    }
+  }
+  const wb=await getFirebaseWebAuth();
+  if(wb && wb.auth.currentUser){
+    try{
+      if(reload) await wb.auth.currentUser.reload();
+    }catch(e){ console.warn('web auth user:',e); }
+    return wb.auth.currentUser;
+  }
+  return null;
+}
+
+async function refreshVerificationStatus(){
+  const status=document.getElementById('verification-status');
+  const emailBtn=document.getElementById('send-email-verification-btn');
+  if(!status) return;
+  const user=await getCurrentFirebaseUserData();
+  if(!user){
+    status.textContent='سجّل الدخول بحساب Firebase لتفعيل التحقق.';
+    if(emailBtn) emailBtn.style.display='none';
+    return;
+  }
+  if(emailBtn) emailBtn.style.display=user.email?'block':'none';
+  const emailLine=user.email
+    ? `البريد: ${user.email} — ${user.emailVerified ? '✅ تم التحقق' : '⚠️ لم يتم التحقق بعد'}`
+    : 'لا يوجد بريد إلكتروني مرتبط بهذا الحساب.';
+  const phoneLine=user.phoneNumber
+    ? `الهاتف: ${user.phoneNumber} — ✅ تم التحقق`
+    : 'الهاتف: لم يتم التحقق منه بعد';
+  status.innerHTML=`<div>${emailLine}</div><div style="margin-top:5px;">${phoneLine}</div>`;
+}
+
+async function sendEmailVerificationMessage(silent=false){
+  setVerificationMessage('');
+  const user=await getCurrentFirebaseUserData();
+  if(!user || !user.email){
+    setVerificationMessage('أضف وسيلة دخول بالبريد أولاً حتى نرسل رسالة التحقق.', true);
+    return false;
+  }
+  if(user.emailVerified){
+    setVerificationMessage('هذا البريد تم التحقق منه مسبقاً.');
+    return true;
+  }
+  try{
+    const FA=getFirebaseAuth();
+    if(FA){
+      await FA.sendEmailVerification();
+    }else{
+      const wb=await getFirebaseWebAuth();
+      if(!wb || !wb.auth.currentUser) throw new Error('Firebase غير مهيأ');
+      const { sendEmailVerification } =
+        await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+      await sendEmailVerification(wb.auth.currentUser);
+    }
+    setVerificationMessage('تم إرسال رسالة التحقق. افتحها ثم حدّث الحالة.');
+    if(!silent) showToast('✉️','تم إرسال رسالة التحقق','تحقق من بريدك الإلكتروني',false);
+    return true;
+  }catch(e){
+    console.error('email verification:',e);
+    setVerificationMessage('تعذّر إرسال رسالة التحقق — حاول مرة أخرى.', true);
+    return false;
+  }
+}
+
+async function refreshEmailVerificationStatus(){
+  setVerificationMessage('');
+  await refreshVerificationStatus();
+  setVerificationMessage('تم تحديث حالة التحقق.');
+}
+
+async function cleanupPhoneListeners(){
+  const handles=_phoneListenerHandles.splice(0);
+  for(const handle of handles){
+    try{ await handle.remove(); }catch(e){}
+  }
+}
+
+function normalizePhoneNumber(value){
+  const phone=(value||'').trim().replace(/[\s()-]/g,'');
+  return /^\+[1-9]\d{7,14}$/.test(phone) ? phone : '';
+}
+
+async function finishPhoneVerification(user){
+  await cleanupPhoneListeners();
+  _phoneVerificationId='';
+  _phoneConfirmation=null;
+  const form=document.getElementById('phone-code-form');
+  if(form) form.style.display='none';
+  if(user && user.phoneNumber){
+    const input=document.getElementById('verification-phone');
+    if(input) input.value=user.phoneNumber;
+  }
+  setVerificationMessage('تم التحقق من رقم الهاتف وربطه بحسابك.');
+  await refreshVerificationStatus();
+  renderAccountLinks();
+  showToast('📱','تم توثيق رقم الهاتف','تم ربط الرقم بحسابك بنجاح',false);
+}
+
+async function startPhoneVerification(){
+  sfx('tap');
+  setVerificationMessage('');
+  const input=document.getElementById('verification-phone');
+  const phone=normalizePhoneNumber(input && input.value);
+  if(!phone){
+    setVerificationMessage('اكتب الرقم بصيغة دولية، مثل +9665xxxxxxxx.', true);
+    return;
+  }
+  const user=await getCurrentFirebaseUserData(false);
+  if(!user){
+    setVerificationMessage('سجّل الدخول بحساب Firebase أولاً.', true);
+    return;
+  }
+  if(user.phoneNumber){
+    setVerificationMessage('رقم الهاتف تم التحقق منه مسبقاً.');
+    return;
+  }
+  await cleanupPhoneListeners();
+  _phoneVerificationId='';
+  _phoneConfirmation=null;
+  try{
+    const FA=getFirebaseAuth();
+    if(FA){
+      _phoneListenerHandles.push(await FA.addListener('phoneCodeSent', event=>{
+        _phoneVerificationId=event && event.verificationId || '';
+        const form=document.getElementById('phone-code-form');
+        if(form) form.style.display='block';
+        setVerificationMessage('تم إرسال رمز SMS. أدخله هنا لإكمال التحقق.');
+        document.getElementById('verification-phone-code')?.focus();
+      }));
+      _phoneListenerHandles.push(await FA.addListener('phoneVerificationCompleted', event=>{
+        const completedUser=event && event.result && event.result.user;
+        if(completedUser) finishPhoneVerification(completedUser);
+      }));
+      _phoneListenerHandles.push(await FA.addListener('phoneVerificationFailed', event=>{
+        setVerificationMessage((event && event.message) || 'تعذّر إرسال رمز SMS.', true);
+        cleanupPhoneListeners();
+      }));
+      await FA.linkWithPhoneNumber({phoneNumber:phone});
+      setVerificationMessage('جارٍ إرسال رمز SMS…');
+      return;
+    }
+    const wb=await getFirebaseWebAuth();
+    if(!wb || !wb.auth.currentUser) throw new Error('Firebase غير مهيأ');
+    const { linkWithPhoneNumber, RecaptchaVerifier } =
+      await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+    if(!_phoneRecaptchaVerifier){
+      _phoneRecaptchaVerifier=new RecaptchaVerifier(wb.auth, 'phone-recaptcha', {size:'invisible'});
+    }
+    _phoneConfirmation=await linkWithPhoneNumber(
+      wb.auth.currentUser, phone, _phoneRecaptchaVerifier
+    );
+    const form=document.getElementById('phone-code-form');
+    if(form) form.style.display='block';
+    setVerificationMessage('تم إرسال رمز SMS. أدخله هنا لإكمال التحقق.');
+    document.getElementById('verification-phone-code')?.focus();
+  }catch(e){
+    console.error('phone verification start:',e);
+    await cleanupPhoneListeners();
+    const code=String(e && e.code || '');
+    if(code.includes('provider-disabled')) setVerificationMessage('تسجيل الدخول برقم الهاتف غير مفعّل في Firebase.', true);
+    else if(code.includes('invalid-phone-number')) setVerificationMessage('رقم الهاتف غير صحيح.', true);
+    else if(code.includes('credential-already-in-use')) setVerificationMessage('رقم الهاتف مرتبط بحساب آخر.', true);
+    else setVerificationMessage('تعذّر إرسال رمز SMS — حاول مرة أخرى.', true);
+  }
+}
+
+async function confirmPhoneVerification(){
+  sfx('tap');
+  const code=(document.getElementById('verification-phone-code')?.value||'').trim();
+  if(!code){
+    setVerificationMessage('أدخل رمز التحقق المرسل برسالة SMS.', true);
+    return;
+  }
+  try{
+    let result=null;
+    const FA=getFirebaseAuth();
+    if(FA){
+      if(!_phoneVerificationId) throw new Error('verification-id-missing');
+      result=await FA.confirmVerificationCode({
+        verificationId:_phoneVerificationId, verificationCode:code
+      });
+    }else if(_phoneConfirmation){
+      result=await _phoneConfirmation.confirm(code);
+    }else{
+      throw new Error('verification-session-missing');
+    }
+    const user=result && result.user;
+    await finishPhoneVerification(user || await getCurrentFirebaseUserData());
+  }catch(e){
+    console.error('phone verification confirm:',e);
+    const errorCode=String(e && e.code || '');
+    if(errorCode.includes('invalid-verification-code')) setVerificationMessage('رمز التحقق غير صحيح.', true);
+    else if(errorCode.includes('session-expired')) setVerificationMessage('انتهت صلاحية الرمز — أرسل رمزاً جديداً.', true);
+    else setVerificationMessage('تعذّر تأكيد الرقم — تحقق من الرمز وحاول مرة أخرى.', true);
   }
 }
 
@@ -2564,13 +2805,14 @@ function fireConfetti(){
 }
 
 // ---- الإحصاءات والإنجازات ----
-function openStats(){ renderStats(); renderAccountLinks(); go('s-stats'); }
+function openStats(){ renderStats(); renderAccountLinks(); refreshVerificationStatus(); go('s-stats'); }
 
 // ---- شاشة ربط الحسابات (Proactive linking) ----
 const PROVIDER_INFO = {
   'apple.com': {label:'Apple',   icon:'🍎'},
   'google.com':{label:'Google',  icon:'🔵'},
   'password':  {label:'البريد وكلمة المرور', icon:'📧'},
+  'phone':    {label:'رقم الهاتف', icon:'📱'},
 };
 async function getCurrentProviderData(){
   const FA=getFirebaseAuth();
@@ -2607,6 +2849,12 @@ function linkProvider(pid){
   window._authReturnScreen = 's-stats';
   if(pid==='apple.com'){ appleSignIn(); return; }
   if(pid==='google.com'){ googleSignIn(); return; }
+  if(pid==='phone'){
+    const input=document.getElementById('verification-phone');
+    if(input){ input.focus(); input.scrollIntoView({behavior:'smooth',block:'center'}); }
+    setVerificationMessage('اكتب رقمك بصيغة دولية ثم أرسل رمز SMS.');
+    return;
+  }
   openAuth('s-stats');
   document.getElementById('auth-title').textContent='أضف طريقة دخول جديدة';
   document.getElementById('auth-sub').textContent='أضف البريد وكلمة المرور كوسيلة دخول إضافية لحسابك الحالي';

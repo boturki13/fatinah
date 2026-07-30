@@ -1,2 +1,3 @@
 - [Fatinah server setup](fatinah-server.md) — خادم Python stdlib بلا Flask؛ يخدم index.html + AI proxy + firebase-config.js
 - [Capacitor Browser setup](capacitor-browser.md) — إضافة Browser تتطلب مزامنة iOS وTypeScript 5.x المتوافق مع Capacitor CLI 8
+- [Firebase contact verification](firebase-contact-verification.md) — تحقق البريد وSMS يستخدم Capacitor native داخل iOS وWeb SDK مع أرقام E.164
