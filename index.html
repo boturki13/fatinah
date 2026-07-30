@@ -363,6 +363,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
 .pw-promo-form input:focus{border-color:var(--gold);}
 .pw-promo-form input::placeholder{letter-spacing:0;font-size:14px;font-weight:600;color:rgba(255,255,255,.35);}
 .pw-promo-form button{background:linear-gradient(120deg,var(--hot2),var(--hot));border:none;border-radius:12px;color:#fff;font-family:inherit;font-size:16px;font-weight:800;padding:12px;cursor:pointer;}
+.pw-apple-redeem{margin-top:8px;background:rgba(255,255,255,.07) !important;border:1px solid rgba(255,210,75,.35) !important;color:#FFD24B !important;font-size:14px !important;}
+.pw-apple-note{color:#A79FBE;font-size:11.5px;line-height:1.6;margin-top:2px;}
 @media (prefers-reduced-motion:no-preference){
   .pw-rise{opacity:0;transform:translateY(14px);animation:pwRise .6s cubic-bezier(.2,.7,.2,1) forwards;}
   .pw-d1{animation-delay:.05s}.pw-d2{animation-delay:.14s}.pw-d3{animation-delay:.23s}
@@ -496,6 +498,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
         <div class="pw-promo-form" id="pw-promo-form" style="display:none;">
           <input id="pw-promo-input" type="text" placeholder="أدخل الكود هنا..." autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
           <button onclick="redeemPromo()">تفعيل</button>
+          <button class="pw-apple-redeem" onclick="redeemAppleOfferCode()"> استرداد كود Apple</button>
+          <div class="pw-apple-note">سيُفتح App Store لإتمام استرداد كود العرض الرسمي من Apple.</div>
           <div id="pw-promo-msg" style="font-size:12.5px;text-align:center;margin-top:6px;min-height:18px;"></div>
         </div>
       </div>
@@ -1906,6 +1910,71 @@ async function redeemPromo(){
     msg.textContent='⚠️ تعذّر الاتصال — تأكد من الإنترنت';
   }
 }
+
+// ────────── Apple Offer Code عبر App Store
+// هذا هو Apple ID الرقمي للتطبيق، وليس Bundle ID.
+const APPLE_APP_ID = '6794660419';
+let _appleRedeemInProgress = false;
+
+function getCapacitorBrowser(){
+  return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser || null;
+}
+
+async function refreshAfterAppleRedeem(){
+  if(_appleRedeemInProgress) return;
+  const uid = window._currentUid || storeGet('authUid','');
+  if(!uid || !window.Capacitor?.isNativePlatform?.()) return;
+  try{
+    const active = await rcIsActive();
+    if(active === true){
+      go('s-home');
+      showToast('🎉','تم تفعيل الاشتراك','استمتع بكل ميزات فطنة!',false);
+    }
+  }catch(e){ console.warn('Apple redemption refresh:', e); }
+}
+
+async function redeemAppleOfferCode(){
+  const input = document.getElementById('pw-promo-input');
+  const msg = document.getElementById('pw-promo-msg');
+  const code = (input?.value || '').trim().toUpperCase();
+  if(!code){
+    msg.style.color='#ff8a8a';
+    msg.textContent='أدخل كود Apple أولاً';
+    input?.focus();
+    return;
+  }
+  if(!/^[A-Z0-9-]{3,80}$/.test(code)){
+    msg.style.color='#ff8a8a';
+    msg.textContent='تحقق من صيغة كود Apple';
+    return;
+  }
+  if(_appleRedeemInProgress) return;
+  _appleRedeemInProgress = true;
+  msg.style.color='#C4B8E0';
+  msg.textContent='⏳ جاري فتح App Store...';
+  const url = `https://apps.apple.com/redeem?ctx=offercodes&id=${APPLE_APP_ID}&code=${encodeURIComponent(code)}`;
+  try{
+    const Browser = getCapacitorBrowser();
+    if(Browser && window.Capacitor?.isNativePlatform?.()){
+      await Browser.open({url, presentationStyle:'popover'});
+    }else{
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+    msg.style.color='#7fff9a';
+    msg.textContent='✅ أكمل الاسترداد في App Store ثم ارجع للتطبيق.';
+  }catch(e){
+    console.warn('Apple offer code:', e);
+    msg.style.color='#ff8a8a';
+    msg.textContent='⚠️ تعذّر فتح App Store — حاول مرة أخرى';
+  }finally{
+    _appleRedeemInProgress = false;
+  }
+}
+
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible') setTimeout(refreshAfterAppleRedeem, 1200);
+});
+window.addEventListener('focus', ()=>setTimeout(refreshAfterAppleRedeem, 1200));
 
 // ────────── Paywall — اختيار الخطة
 let _pwPlan = 'monthly';

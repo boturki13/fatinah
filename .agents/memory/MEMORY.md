@@ -1,1 +1,2 @@
 - [Fatinah server setup](fatinah-server.md) — خادم Python stdlib بلا Flask؛ يخدم index.html + AI proxy + firebase-config.js
+- [Capacitor Browser setup](capacitor-browser.md) — إضافة Browser تتطلب مزامنة iOS وTypeScript 5.x المتوافق مع Capacitor CLI 8
