@@ -1,0 +1,43 @@
+اصلح المشكلتين اللي حددتهم بالضبط، بدون تغيير أي مسار موجود
+(/api/promo/admin, /api/promo/redeem, /api/promo/status, /api/stripe/status
+تبقى كما هي من ناحية الشكل الخارجي للـ request/response).
+
+المشكلة الأولى: توحيد حالة الاشتراك
+- أضف عمودين جديدين فقط على جدول subscriptions: promo_active (boolean)
+  و promo_expires_at (timestamp)، بدون تغيير أو حذف أي عمود موجود يخص
+  Stripe.
+- عدّل معالج /api/promo/redeem: عند نجاح التفعيل، بعد ما يحدّث
+  promo_codes.used_count و promo_redemptions، حدّث نفس القيم في
+  subscriptions.promo_active = true و subscriptions.promo_expires_at
+  لنفس الـ uid.
+- عدّل معالج /api/stripe/status: خلي "active" = true لو (منطق Stripe
+  الحالي يعتبره فعّال) أو (promo_active = true و promo_expires_at لسا ما
+  انتهى، يعني أكبر من الوقت الحالي). لو promo_expires_at انتهى، اعتبر
+  promo_active = false تلقائيًا (تقدر تتحقق منها وقت القراءة، ما يلزم job
+  منفصل).
+- بعد نجاح تفعيل الكود، أضف نفس السجل لـ subscription_outbox بنفس الشكل
+  المستخدم حاليًا لتحديثات الاشتراك الثانية، عشان يتزامن مع Firestore متى
+  ما توفر FIREBASE_SERVICE_ACCOUNT — طابق نفس بنية السجلات الموجودة في
+  الـ outbox حاليًا لتحديثات Stripe، بس بدل بيانات Stripe حط
+  promo_active/promo_expires_at.
+
+المشكلة الثانية: تمديد الاشتراك من الأبعد وليس من "الآن" دايمًا
+- في /api/promo/redeem، قبل ما تحسب expires_at الجديد: اجلب أعلى قيمة
+  موجودة حاليًا لهذا الـ uid بين (subscriptions.promo_expires_at لو
+  موجود ولسا ما انتهى) و(الوقت الحالي)، واحسب الانتهاء الجديد =
+  تلك القيمة + عدد الأيام (days) تبع الكود. هذا يضمن إن تفعيل كود جديد
+  لمستخدم عنده وقت باقي من كود سابق يزيد فوقه بدل ما يصفّره.
+- إذا احتجت، أعد استخدام نفس القيمة لتحديث promo_redemptions.expires_at
+  بنفس المنطق (مو بس subscriptions).
+
+بعد التعديل اختبر:
+1. مستخدم جديد يفعّل NR5 (5 أيام) → تأكد /api/stripe/status يرجع
+   active:true الآن حتى بدون Stripe.
+2. نفس المستخدم يفعّل كود ثاني بعدين بـ 3 أيام قبل ما ينتهي الأول →
+   تأكد expires_at الجديد = القديم + 3 أيام، مو من الآن + 3 أيام.
+3. بعد ما ينتهي promo_expires_at فعليًا (أو بتاريخ مزوّر للاختبار)، تأكد
+   /api/stripe/status يرجع active:false (لو ما فيه اشتراك Stripe حقيقي).
+4. تأكد subscription_outbox فيه سجل جديد بعد كل تفعيل ناجح.
+
+قلي بعد التنفيذ: هل عدّلت أسماء الأعمدة كما اقترحت أو غيّرتها لشي ثاني،
+وهل نجح كل اختبار من الأربعة فوق.
