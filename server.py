@@ -3,7 +3,7 @@
 يخدم index.html، يوفّر firebase-config.js، يولّد الأسئلة عبر Claude،
 ويدير اشتراكات Stripe.
 """
-import json, os, sqlite3, urllib.request, urllib.error, urllib.parse
+import json, os, sqlite3, threading, time, urllib.request, urllib.error, urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 
@@ -136,6 +136,32 @@ def uid_matches_token(uid: str, id_token: str) -> bool:
     verified = verify_firebase_id_token(id_token)
     return bool(verified and verified.get('localId') == uid)
 
+def bearer_token(headers) -> str:
+    """يستخرج ID token من رأس Authorization: Bearer <token> (لنقاط GET)."""
+    auth = headers.get('Authorization', '') or ''
+    if auth.startswith('Bearer '):
+        return auth[len('Bearer '):].strip()
+    return ''
+
+# ─── حد معدل بسيط في الذاكرة لكل IP (يمنع brute-force لأكواد المكافأة) ────────
+_rate_lock    = threading.Lock()
+_rate_buckets = {}   # key -> list[timestamps]
+
+def rate_limited(key: str, max_calls: int, window_sec: int) -> bool:
+    """يعيد True إن تجاوز المفتاح الحد المسموح خلال النافذة الزمنية."""
+    now = time.time()
+    with _rate_lock:
+        bucket = [t for t in _rate_buckets.get(key, []) if now - t < window_sec]
+        if len(bucket) >= max_calls:
+            _rate_buckets[key] = bucket
+            return True
+        bucket.append(now)
+        _rate_buckets[key] = bucket
+        # تنظيف دوري خفيف لمنع تضخم الذاكرة
+        if len(_rate_buckets) > 10000:
+            for k in [k for k, v in _rate_buckets.items() if not v or now - v[-1] > window_sec]:
+                _rate_buckets.pop(k, None)
+    return False
 def get_revenuecat_secret():
     """مفتاح تحقق ويبهوك RevenueCat — يُقارَن مع رأس Authorization الوارد."""
     return os.environ.get('REVENUECAT_WEBHOOK_SECRET', '')
@@ -529,6 +555,8 @@ class Handler(BaseHTTPRequestHandler):
             uid = (params.get('uid') or [''])[0]
             if not uid:
                 self.send_json(400, {'error': 'uid مطلوب'}); return
+            if not uid_matches_token(uid, bearer_token(self.headers)):
+                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
             conn = db_connect()
             try:
                 row = conn.execute(
@@ -638,6 +666,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/promo/status':
             uid = (params.get('uid') or [''])[0].strip()
             if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
+            if not uid_matches_token(uid, bearer_token(self.headers)):
+                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
             conn = db_connect()
             try:
                 row = conn.execute(
@@ -797,10 +827,14 @@ class Handler(BaseHTTPRequestHandler):
             try:   data = json.loads(body)
             except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
 
-            uid   = (data.get('uid')   or '').strip()
-            email = (data.get('email') or '').strip()
-            plan  = (data.get('plan')  or 'monthly').strip()  # 'monthly' أو 'annual'
+            uid      = (data.get('uid')     or '').strip()
+            email    = (data.get('email')   or '').strip()
+            plan     = (data.get('plan')    or 'monthly').strip()  # 'monthly' أو 'annual'
+            id_token = (data.get('idToken') or '').strip()
             if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
+
+            if not uid_matches_token(uid, id_token):
+                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
 
             secret_key, _ = get_stripe_keys()
             if not secret_key:
@@ -964,10 +998,20 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/promo/redeem':
             try:   data = json.loads(body)
             except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
-            code = (data.get('code') or '').strip().upper()
-            uid  = (data.get('uid')  or '').strip()
+            code     = (data.get('code')    or '').strip().upper()
+            uid      = (data.get('uid')     or '').strip()
+            id_token = (data.get('idToken') or '').strip()
             if not code or not uid:
                 self.send_json(400, {'error': 'code و uid مطلوبان'}); return
+
+            # حد معدل لكل IP: يمنع brute-force لأكواد قصيرة (10 محاولات/10 دقائق)
+            client_ip = (self.headers.get('X-Forwarded-For', '') or '').split(',')[0].strip() \
+                        or self.client_address[0]
+            if rate_limited(f'promo:{client_ip}', max_calls=10, window_sec=600):
+                self.send_json(429, {'error': 'محاولات كثيرة — انتظر قليلاً ثم حاول مجدداً'}); return
+
+            if not uid_matches_token(uid, id_token):
+                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
             conn = db_connect()
             try:
                 # هل الكود موجود وفعّال؟
