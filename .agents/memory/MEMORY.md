@@ -4,3 +4,4 @@
 - [iOS Bundle ID](ios-bundle-id.md) — القيمة الرسمية `com.fatinah.game`؛ يجب أن تتطابق عبر pbxproj وCapacitor وFirebase plist وStoreKit
 - [RevenueCat server authority](revenuecat-server-authority.md) — صلاحيات Apple تُحسم من webhook الخادمي مع UUID v4 مربوط بحساب Firebase
 - [iOS release validation](ios-release-validation.md) — الأرشيف النهائي وPodfile.lock يتطلبان macOS مع Xcode 26 وCocoaPods
+- [App Store readiness audit](app-store-readiness-audit.md) — الرفع بعد 28 أبريل 2026 يتطلب Xcode 26 وSDK iOS 26، مع تحقق يدوي من App Store Connect وIAP
