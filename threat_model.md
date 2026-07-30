@@ -27,7 +27,7 @@
 ## Scan Anchors
 
 - **Production entry points**: `server.py` — `do_GET` (lines ~470–744) and `do_POST` (lines ~759–1400) handlers
-- **Highest-risk areas**: promo redemption (`/api/promo/redeem`, line ~1094) — rate limiter is bypassable via X-Forwarded-For spoofing; checkout creation (`/api/stripe/create-checkout`, line ~900); account delete/profile (`/api/account/delete`, `/api/account/profile`)
+- **Highest-risk areas**: promo redemption (`/api/promo/redeem`, line ~1094) — rate limiter keys on real socket IP plus per-account limit (X-Forwarded-For spoofing fixed); checkout creation (`/api/stripe/create-checkout`, line ~900); account delete/profile (`/api/account/delete`, `/api/account/profile`)
 - **Auth enforcement**: `uid_matches_token()` (line 142) — deny-by-default when `FIREBASE_PROJECT_ID` is absent
 - **Admin surfaces**: `/api/promo/admin`, `/api/admin/db-status`, `/admin/promo` HTML page (UI served without auth but all operations require ADMIN_SECRET at API layer)
 - **Dev-only**: `setup_stripe.py` (utility script, not served over HTTP)
@@ -43,9 +43,9 @@ All mutating endpoints now require a Firebase ID token verified via Identity Too
 
 ### Tampering
 
-`/api/promo/redeem` requires a valid Firebase ID token and applies a rate limit of 10 attempts per 10 minutes per IP. However, the rate limiter trusts the first value of the `X-Forwarded-For` header, which is fully attacker-controlled. An authenticated user can cycle through spoofed IPs to bypass the limit and enumerate valid promo codes.
+`/api/promo/redeem` requires a valid Firebase ID token and applies two rate limits: a primary per-account limit (10 attempts / 10 minutes per verified uid, checked after token verification) and a coarser per-IP abuse guard (100 attempts / 10 minutes) keyed on the real socket IP. The `X-Forwarded-For` header is ignored entirely, so spoofed forwarded IPs cannot create fresh rate-limit buckets, and the per-uid limit remains effective even when many users share one socket IP behind a reverse proxy.
 
-**Required guarantee**: The rate limiter MUST key on the real socket IP (`self.client_address[0]`), ignoring `X-Forwarded-For` unless the request originates from a verified trusted proxy. ⚠️ Currently bypassable.
+**Required guarantee**: The rate limiter MUST key on the real socket IP (`self.client_address[0]`), ignoring `X-Forwarded-For` unless the request originates from a verified trusted proxy, and MUST enforce a per-account limit for authenticated abuse. ✅ Currently enforced. Residual risk: an attacker with many Firebase accounts and many source IPs could still attempt distributed guessing, mitigated by code entropy and per-account limits.
 
 ### Information Disclosure
 
