@@ -64,12 +64,15 @@
   في كل من مشروع Xcode (`project.pbxproj`) وملفات Capacitor، وهو يطابق الآن
   `BUNDLE_ID` الموجود في `GoogleService-Info.plist` (مشروع `fatinah-game`).
   إذا غيّرت Bundle ID مستقبلاً، نزّل ملف plist جديداً مطابقاً من Firebase Console.
-- **Push Notifications / aps-environment**: أُضيف الملف
-  `ios/App/App/App.entitlements` بقيمة `aps-environment = development` ورُبط
-  بالهدف عبر `CODE_SIGN_ENTITLEMENTS`. عند البناء للإنتاج/TestFlight يحوّله
-  Xcode تلقائياً إلى `production`. تأكد أيضاً من تفعيل **Push Notifications
-  capability** في Apple Developer لهوية `com.fatinah.game` حتى يعمل التحقق
-  الصامت لهاتف Firebase (APNs)؛ وإلا سيتراجع Firebase إلى reCAPTCHA.
+- **Push Notifications / aps-environment**: التطبيق لا يستخدم Push Notifications
+  حالياً، لذلك لا يحتوي `App.entitlements` على `aps-environment` غير الضروري.
+  تحقق الهاتف يمكنه استخدام reCAPTCHA عندما لا يكون APNs مفعّلاً. إذا أضيفت
+  إشعارات لاحقاً، أضف Capability وentitlement من Xcode ثم اختبر إعداد
+  التوزيع `production` مع Provisioning Profile مناسب.
+- **Privacy Manifest**: يحتوي هدف التطبيق على
+  `ios/App/App/PrivacyInfo.xcprivacy` ويصرّح بعدم استخدام التتبع وباستخدام
+  `NSUserDefaults` لحفظ تفضيلات وتقدّم اللاعب. راجع أي SDK جديد بعد
+  `npx cap sync ios` وتأكد أن manifests المدمجة لا تضيف بيانات غير موصوفة.
 - **اختبار مطلوب على جهاز حقيقي**: بعد `npx cap sync ios`، جرّب Phone
   Authentication على جهاز iOS فعلي (المحاكي لا يدعم APNs الصامت).
 - **REVERSED_CLIENT_ID**: أضف الـ URL Scheme الموجود في GoogleService-Info.plist
