@@ -1915,9 +1915,25 @@ function onbFinish(){
 }
 
 // ────────── RevenueCat — Apple IAP
-// RC_API_KEY: ضع هنا مفتاح iOS من لوحة RevenueCat بعد الإعداد
-const RC_API_KEY = 'appl_uqcDNORwLPcxPWRUDjmPPpoMeNM';
-const RC_CONFIGURED = !RC_API_KEY.includes('XXXX'); // true = مفتاح حقيقي
+// RC_API_KEY: يُجلَب من الخادم (/api/rc-config) بدلاً من تضمينه في الكود
+// مع تخزين محلي حتى يعمل التطبيق دون اتصال بعد أول جلب ناجح
+let RC_API_KEY = storeGet('rcApiKey','') || '';
+let RC_CONFIGURED = !!RC_API_KEY;
+async function loadRcKey(){
+  if(RC_API_KEY) return RC_API_KEY;
+  try{
+    const r = await fetch('/api/rc-config');
+    if(r.ok){
+      const d = await r.json();
+      if(d && d.apiKey){
+        RC_API_KEY = d.apiKey;
+        RC_CONFIGURED = true;
+        storeSet('rcApiKey', d.apiKey);
+      }
+    }
+  }catch(e){ console.error('RC config:', e); }
+  return RC_API_KEY;
+}
 const RC_ENTITLEMENT = 'premium';
 
 function getRC(){
@@ -1928,7 +1944,9 @@ function getRC(){
 
 async function initRevenueCat(){
   const RC = getRC();
-  if(!RC || !RC_CONFIGURED) return; // لا تهيّئ إذا كان المفتاح placeholder
+  if(!RC) return;
+  await loadRcKey();
+  if(!RC_CONFIGURED) return; // لا تهيّئ إذا لم يتوفر المفتاح
   try{
     const uid = storeGet('authUid','');
     await RC.configure({ apiKey: RC_API_KEY });
@@ -1938,7 +1956,9 @@ async function initRevenueCat(){
 
 async function rcIsActive(){
   const RC = getRC();
-  if(!RC || !RC_CONFIGURED) return null; // null = غير متاح (ويب أو مفتاح placeholder)
+  if(!RC) return null; // null = غير متاح (ويب)
+  await loadRcKey();
+  if(!RC_CONFIGURED) return null; // المفتاح غير متوفر
   try{
     const { customerInfo } = await RC.getCustomerInfo();
     const active = !!(customerInfo.entitlements.active &&
@@ -1963,7 +1983,8 @@ async function rcIsActive(){
 async function rcPurchase(plan){
   const RC = getRC();
   if(!RC) throw new Error('RevenueCat غير متاح');
-  if(!RC_CONFIGURED) throw new Error('RevenueCat غير مهيَّأ — أضف مفتاح iOS الحقيقي في RC_API_KEY');
+  await loadRcKey();
+  if(!RC_CONFIGURED) throw new Error('RevenueCat غير مهيَّأ — تعذّر جلب المفتاح من الخادم');
   const { offerings } = await RC.getOfferings();
   const current = offerings.current;
   if(!current) throw new Error('لا توجد عروض متاحة');

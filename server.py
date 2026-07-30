@@ -502,7 +502,11 @@ class Handler(BaseHTTPRequestHandler):
         path   = parsed.path
         params = urllib.parse.parse_qs(parsed.query)
 
-        if path == '/firebase-config.js':
+        if path == '/api/rc-config':
+            # مفتاح RevenueCat publishable (iOS) — يُقدَّم من البيئة بدلاً من تضمينه في HTML
+            self.send_json(200, {'apiKey': os.environ.get('REVENUECAT_IOS_API_KEY', '')})
+
+        elif path == '/firebase-config.js':
             body = firebase_config_js()
             self.send_response(200)
             self.send_header('Content-Type',   'application/javascript; charset=utf-8')
