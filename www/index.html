@@ -1820,6 +1820,14 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState === 'visible') setTimeout(refreshAfterAppleRedeem, 1200);
 });
 window.addEventListener('focus', ()=>setTimeout(refreshAfterAppleRedeem, 1200));
+// المتصفح داخل التطبيق (SFSafariViewController) لا يُطلق visibilitychange عند الإغلاق،
+// لذا نستمع لحدث browserFinished من Capacitor Browser لتحديث حالة RevenueCat.
+(function(){
+  const Browser = getCapacitorBrowser();
+  if(Browser?.addListener){
+    Browser.addListener('browserFinished', ()=>setTimeout(refreshAfterAppleRedeem, 1200));
+  }
+})();
 
 // ────────── Paywall — اختيار الخطة
 let _pwPlan = 'monthly';
