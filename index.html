@@ -746,7 +746,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
           <button class="btn btn-ghost" onclick="refreshEmailVerificationStatus()" style="width:auto;padding:10px 13px;" title="تحديث حالة البريد">↻</button>
         </div>
         <div style="display:flex;gap:8px;align-items:stretch;">
-          <input class="team-input" id="verification-phone" type="tel" inputmode="tel" placeholder="+9665xxxxxxxx" autocomplete="tel" style="flex:1;min-width:0;">
+          <input class="team-input" id="verification-phone" type="tel" inputmode="tel" placeholder="+96550001234" autocomplete="tel" style="flex:1;min-width:0;">
           <button class="btn btn-primary" onclick="startPhoneVerification()" style="width:auto;padding:10px 14px;white-space:nowrap;">إرسال رمز SMS</button>
         </div>
         <div id="phone-code-form" style="display:none;margin-top:10px;">
@@ -1877,8 +1877,25 @@ async function cleanupPhoneListeners(){
 }
 
 function normalizePhoneNumber(value){
-  const phone=(value||'').trim().replace(/[\s()-]/g,'');
-  return /^\+[1-9]\d{7,14}$/.test(phone) ? phone : '';
+  let phone=String(value||'').trim()
+    .replace(/[٠-٩]/g, digit=>String(digit.charCodeAt(0)-0x660))
+    .replace(/[۰-۹]/g, digit=>String(digit.charCodeAt(0)-0x6F0))
+    .replace(/[\s().-]/g,'');
+  if(phone.startsWith('00')) phone='+'+phone.slice(2);
+  let local=phone;
+  if(phone.startsWith('+965')) local=phone.slice(4);
+  else if(phone.startsWith('965')) local=phone.slice(3);
+  return /^[1-9]\d{7}$/.test(local) ? `+965${local}` : '';
+}
+
+function phoneAuthErrorMessage(code, fallback){
+  const errorCode=String(code||'');
+  if(errorCode.includes('provider-disabled')) return 'تسجيل الدخول برقم الهاتف غير مفعّل في Firebase.';
+  if(errorCode.includes('invalid-phone-number')) return 'رقم الكويت غير صحيح. أدخل ٨ أرقام بدون صفر بالبداية.';
+  if(errorCode.includes('too-many-requests')) return 'تمت محاولات كثيرة لإرسال SMS. انتظر قليلاً ثم حاول مرة أخرى.';
+  if(errorCode.includes('credential-already-in-use')) return 'رقم الهاتف مرتبط بحساب آخر.';
+  if(errorCode.includes('captcha-check-failed')) return 'تعذر التحقق الأمني. أعد المحاولة من اتصال موثوق.';
+  return fallback;
 }
 
 async function finishPhoneVerification(user){
@@ -1903,7 +1920,7 @@ async function startPhoneVerification(){
   const input=document.getElementById('verification-phone');
   const phone=normalizePhoneNumber(input && input.value);
   if(!phone){
-    setVerificationMessage('اكتب الرقم بصيغة دولية، مثل +9655xxxxxxx.', true);
+    setVerificationMessage('اكتب الرقم بصيغة دولية، مثل +96550001234.', true);
     return;
   }
   const user=await getCurrentFirebaseUserData(false);
@@ -1933,7 +1950,8 @@ async function startPhoneVerification(){
         if(completedUser) finishPhoneVerification(completedUser);
       }));
       _phoneListenerHandles.push(await FA.addListener('phoneVerificationFailed', event=>{
-        setVerificationMessage((event && event.message) || 'تعذّر إرسال رمز SMS.', true);
+        const eventCode=event && (event.code || event.errorCode || event.message);
+        setVerificationMessage(phoneAuthErrorMessage(eventCode, 'تعذّر إرسال رمز SMS — حاول مرة أخرى.'), true);
         cleanupPhoneListeners();
       }));
       await FA.linkWithPhoneNumber({phoneNumber:phone});
@@ -1958,10 +1976,7 @@ async function startPhoneVerification(){
     console.error('phone verification start:',e);
     await cleanupPhoneListeners();
     const code=String(e && e.code || '');
-    if(code.includes('provider-disabled')) setVerificationMessage('تسجيل الدخول برقم الهاتف غير مفعّل في Firebase.', true);
-    else if(code.includes('invalid-phone-number')) setVerificationMessage('رقم الهاتف غير صحيح.', true);
-    else if(code.includes('credential-already-in-use')) setVerificationMessage('رقم الهاتف مرتبط بحساب آخر.', true);
-    else setVerificationMessage('تعذّر إرسال رمز SMS — حاول مرة أخرى.', true);
+    setVerificationMessage(phoneAuthErrorMessage(code, 'تعذّر إرسال رمز SMS — حاول مرة أخرى.'), true);
   }
 }
 

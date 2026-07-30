@@ -37,7 +37,8 @@
    منفصلين لنفس البريد.
 5. **Phone** — فعّله لإرسال رمز SMS والتحقق من رقم الهاتف. في نسخة الويب
    يجب أيضاً إضافة نطاق المعاينة والنطاق المنشور إلى **Authorized domains**.
-   استخدم رقم الكويت بصيغة دولية E.164 مثل `+9655xxxxxxx`.
+   يقبل التطبيق ٨ أرقام كويتية محلية مثل `50001234`، أو `+96550001234`،
+   أو `0096550001234`، ثم يرسلها إلى Firebase بصيغة E.164.
 
 بعد إنشاء حساب بالبريد، يرسل التطبيق رسالة تحقق تلقائياً. ويمكن إعادة إرسالها
 أو تحديث حالة التحقق من شاشة **إحصاءاتي وإنجازاتي**. كما يمكن توثيق رقم الهاتف
@@ -59,6 +60,12 @@
   "Sign in with Apple" لهدف التطبيق (بدونها سيفشل `signInWithApple` الأصلي).
 - **GoogleService-Info.plist**: نزّله من Firebase Console وضَعه في مجلد iOS
   (`ios/App/App/`) حسب توثيق `@capacitor-firebase/authentication`.
+- **مراجعة إعدادات Phone على iOS**: يوجد `GoogleService-Info.plist` داخل المشروع،
+  لكنه يحتوي `BUNDLE_ID` بقيمة `com.fatinah.game` بينما Bundle ID الحالي في
+  إعدادات Xcode هو `com.fatinah.game.web`؛ نزّل ملفاً مطابقاً للـ Bundle ID
+  الفعلي قبل اختبار Firebase على iOS. لم يظهر ملف `.entitlements` أو
+  `aps-environment` في المشروع الحالي، لذلك لم يمكن تأكيد تفعيل Push
+  Notifications من الملفات وحدها.
 - **REVERSED_CLIENT_ID**: أضف الـ URL Scheme الموجود في GoogleService-Info.plist
   إلى Info.plist (URL Types) لتفعيل رجوع Google OAuth للتطبيق.
 - بعد أي تغيير في `package.json` أو ملفات iOS، شغّل `npx cap sync ios`.
