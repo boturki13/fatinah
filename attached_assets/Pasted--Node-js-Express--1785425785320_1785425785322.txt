@@ -1,0 +1,85 @@
+أبي منك تبني/تعدّل مشروع Node.js (Express) عندي بالضبط حسب المواصفات التالية.
+إذا فيه ملفات موجودة من قبل بنفس الأسماء، عدّلها لتطابق هذي المواصفات بدل
+ما تنشئ نسخة ثانية. الهدف: نظامين منفصلين تمامًا داخل نفس المشروع:
+
+===============================================
+النظام الأول (إذا مو موجود، أنشئه): التحقق من أكواد عروض أبل الرسمية
+===============================================
+هذا نظام يتحقق من إشعارات أبل (App Store Server Notifications V2) الرسمية.
+
+- ثبّت الحزم: express, dotenv, @apple/app-store-server-library
+- أنشئ lib/appleVerifier.js: يبني SignedDataVerifier من مكتبة
+  @apple/app-store-server-library، يقرأ شهادة أبل من certs/AppleRootCA-G3.cer
+  (لو ما كانت موجودة اطبع خطأ واضح يطلب مني أحملها من
+  https://www.apple.com/certificateauthority/AppleRootCA-G3.cer وأحطها هناك)،
+  ويقرأ من process.env: APPLE_BUNDLE_ID (إجباري)، APPLE_ENVIRONMENT
+  ("sandbox" أو "production"، افتراضي sandbox)، APPLE_APP_APPLE_ID (رقم
+  عددي، إجباري فقط لو production).
+- أنشئ lib/store.js: تخزين JSON بسيط في data/store.json بشكلين:
+  { attempts: [], subscriptions: {} }
+  - logRedeemAttempt({code, userId, deviceId}) يضيف سجل بحالة "pending"
+  - markSubscriptionFromNotification({originalTransactionId, transactionId,
+    offerIdentifier, productId, expiresDate, notificationType, subtype,
+    appAccountToken}) يحفظ اشتراك فعّال، ويحاول يربطه بمستخدم عن طريق
+    appAccountToken لو موجود، وإلا يخمّن آخر "attempt" معلّق خلال آخر 30 دقيقة
+  - getSubscriptionStatus({userId, deviceId}) يرجع السجل أو null
+- في server.js أضف:
+  - POST /api/redeem-attempt : body {code, userId, deviceId} يسجل المحاولة
+  - POST /api/apple-notifications : يستقبل {signedPayload}، يتحقق منه عبر
+    verifier.verifyAndDecodeNotification، ولو النوع كان OFFER_REDEEMED أو
+    SUBSCRIBED أو DID_RENEW يفك تشفير signedTransactionInfo عبر
+    verifier.verifyAndDecodeTransaction ويحدّث الاشتراك. يرد 200 دايمًا إلا لو
+    فشل التحقق (يرد 400)
+  - GET /api/subscription-status?userId=... : يرجع {ok, active, details}
+
+===============================================
+النظام الثاني (المطلوب فعليًا الآن): أكواد ترويجية أكتبها أنا بنفسي
+===============================================
+نظام مستقل 100% عن أبل، ما يفتح App Store أبدًا. أنا أحدد نص الكود بنفسي
+(مثلًا "NR5") وأحدد كم يوم بريميوم يعطي، والباك إند يتحقق ويمنح الأيام
+لحساب المستخدم داخل قاعدة بيانات المشروع مباشرة.
+
+- أنشئ lib/promoCodes.js بتخزين JSON منفصل:
+  data/promoCodes.json شكله { "CODE": {code, rewardDays, maxUses, usedCount,
+  active, createdAt} } مفتاح كل كود هو نصه بحروف كبيرة (toUpperCase)
+  data/premiumUsers.json شكله { userId: {premiumUntil, history: [...]} }
+
+  دوال مطلوبة:
+  - createCode({code, rewardDays, maxUses=1}) ينشئ/يحدّث كود
+  - listCodes() يرجع كل الأكواد
+  - disableCode(code) يعطّل كود (active=false)
+  - redeemCode({code, userId}):
+      - لو الكود غير موجود يرجع {ok:false, error:'CODE_NOT_FOUND'}
+      - لو معطّل يرجع {ok:false, error:'CODE_DISABLED'}
+      - لو usedCount >= maxUses يرجع {ok:false, error:'CODE_ALREADY_USED'}
+      - غير كذا: usedCount += 1، ويحسب premiumUntil = الأكبر بين (الآن) أو
+        (تاريخ انتهاء بريميوم موجود مسبقًا لهذا المستخدم) + rewardDays يوم،
+        يسجل في history، ويرجع {ok:true, premiumUntil}
+  - getPremiumStatus(userId) يرجع {active: هل premiumUntil > الآن, premiumUntil}
+
+- في server.js أضف middleware اسمه requireAdmin يتحقق إن هيدر x-admin-key
+  يطابق process.env.ADMIN_SECRET_KEY بالضبط (وإلا يرد 401)، وأضف:
+  - POST /api/admin/codes (محمي بـ requireAdmin) : body {code, rewardDays,
+    maxUses} ينشئ كود
+  - GET /api/admin/codes (محمي بـ requireAdmin) : يرجع كل الأكواد
+  - POST /api/admin/codes/:code/disable (محمي بـ requireAdmin) : يعطّل كود
+  - POST /api/redeem-code (بدون حماية، يستدعيها التطبيق مباشرة) : body
+    {code, userId} يستدعي redeemCode ويرجع النتيجة (200 لو ok، وإلا 400)
+  - GET /api/premium-status?userId=... (بدون حماية) : يرجع {ok, active,
+    premiumUntil}
+
+- أضف/حدّث .env.example ليشمل: APPLE_BUNDLE_ID, APPLE_ENVIRONMENT,
+  APPLE_APP_APPLE_ID, PORT, ADMIN_SECRET_KEY (كلها فاضية كقيم افتراضية،
+  مع تعليق قصير يشرح كل واحد بالعربي)
+
+===============================================
+بعد الانتهاء
+===============================================
+- شغّل npm install للتأكد كل الحزم مثبتة صح
+- اختبر بنفسك عبر curl (شغّل السيرفر محليًا مؤقتًا بمتغيرات بيئة تجريبية):
+  1) أنشئ كود تجريبي عبر POST /api/admin/codes
+  2) فعّله لمستخدم تجريبي عبر POST /api/redeem-code وتأكد يرجع premiumUntil
+  3) تأكد إعادة استخدام نفس الكود يرجع CODE_ALREADY_USED
+  4) تأكد GET /api/premium-status يرجع active:true للمستخدم اللي فعّل
+- لا تلمس أو تحذف أي كود خاص بالنظام الأول (أكواد أبل الرسمية) إذا كان موجود
+  أصلًا في المشروع، فقط تأكد الاثنين يشتغلون جنب بعض بدون تعارض بالمسارات
