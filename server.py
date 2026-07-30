@@ -1101,13 +1101,21 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(400, {'error': 'code و uid مطلوبان'}); return
 
             # حد معدل لكل IP: يمنع brute-force لأكواد قصيرة (10 محاولات/10 دقائق)
-            client_ip = (self.headers.get('X-Forwarded-For', '') or '').split(',')[0].strip() \
-                        or self.client_address[0]
-            if rate_limited(f'promo:{client_ip}', max_calls=10, window_sec=600):
+            # نستخدم عنوان المقبس الحقيقي فقط — ترويسة X-Forwarded-For يمكن تزويرها
+            # من أي عميل، ما يسمح بتجاوز الحد بعناوين IP وهمية.
+            # حد IP أعلى (حارس ضد الإساءة فقط) حتى لا يُحجب مستخدمون شرعيون
+            # يتشاركون نفس عنوان المقبس خلف وكيل عكسي؛ الحد الأساسي لكل حساب أدناه.
+            client_ip = self.client_address[0]
+            if rate_limited(f'promo:{client_ip}', max_calls=100, window_sec=600):
                 self.send_json(429, {'error': 'محاولات كثيرة — انتظر قليلاً ثم حاول مجدداً'}); return
 
             if not uid_matches_token(uid, id_token):
                 self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
+
+            # حد معدل إضافي لكل حساب: يبقى فعّالاً حتى خلف وكيل عكسي
+            # حيث قد تتشارك جميع الطلبات نفس عنوان المقبس.
+            if rate_limited(f'promo-uid:{uid}', max_calls=10, window_sec=600):
+                self.send_json(429, {'error': 'محاولات كثيرة — انتظر قليلاً ثم حاول مجدداً'}); return
             conn = db_connect()
             try:
                 # هل الكود موجود وفعّال؟
