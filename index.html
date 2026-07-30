@@ -1180,12 +1180,26 @@ async function confirmDeleteAccount(){
   if(uid){
     try{
       const idToken = await getCurrentIdToken();
-      const resp = await fetch('/api/account/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid, idToken})});
-      if(resp.status===401){
-        showToast('⚠️','يلزم إعادة تسجيل الدخول','انتهت صلاحية جلستك — سجّل دخولك مرة أخرى وحاول من جديد',false);
+      const resp = await fetch('/api/account/delete',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({uid, idToken})
+      });
+      let result = null;
+      try{ result = await resp.json(); }catch(e){}
+      if(!resp.ok){
+        if(resp.status===401){
+          showToast('⚠️','يلزم إعادة تسجيل الدخول','انتهت صلاحية جلستك — سجّل دخولك مرة أخرى وحاول من جديد',false);
+        }else{
+          showToast('⚠️','تعذّر حذف بيانات الحساب',result?.error||'حاول مرة أخرى',false);
+        }
         return;
       }
-    }catch(e){ console.error('server delete:', e); }
+    }catch(e){
+      console.error('server delete:', e);
+      showToast('⚠️','تعذّر الاتصال بالخادم','لم يتم حذف الحساب. تحقق من الإنترنت وحاول مرة أخرى',false);
+      return;
+    }
   }
   const rcIds=storeGet('rcAppUserIds',{}) || {};
   delete rcIds[uid];
@@ -1196,8 +1210,8 @@ async function confirmDeleteAccount(){
   // بما فيها الجلسات المجهولة، طالما توجد طبقة Firebase أصلاً
   const deleted = await deleteFirebaseUser();
   if(!deleted){
-    showToast('⚠️','تعذّر حذف حساب Firebase بالكامل','بيانات لعبك حُذفت من الخادم، لكن يلزم إعادة تسجيل الدخول لإكمال حذف حساب الدخول',false);
-    // نكمل مسح البيانات المحلية رغم ذلك لأن بيانات الخادم حُذفت فعلاً
+    showToast('⚠️','تعذّر حذف الحساب بالكامل','لم يتم إكمال الحذف. أعد تسجيل الدخول وحاول مرة أخرى',false);
+    return;
   }
   // 3) حذف localStorage
   const keys=Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX));

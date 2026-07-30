@@ -376,6 +376,34 @@ def firestore_upsert_subscription(uid: str, status: str,
         print(f'[Firestore] خطأ: {exc}')
         return False
 
+def firestore_delete_subscription(uid: str) -> None:
+    """احذف وثيقة subscriptions/{uid} من Firestore."""
+    project_id = os.environ.get('FIREBASE_PROJECT_ID', '').strip()
+    if not project_id:
+        raise RuntimeError('FIREBASE_PROJECT_ID غير محدد')
+
+    token, error = _firestore_get_token()
+    if not token:
+        raise RuntimeError(error or 'تعذّر الحصول على Firestore access token')
+
+    url = (
+        f'https://firestore.googleapis.com/v1/projects/{project_id}'
+        f'/databases/(default)/documents/subscriptions/'
+        f'{urllib.parse.quote(uid, safe="")}'
+    )
+    req = urllib.request.Request(
+        url,
+        method='DELETE',
+        headers={'Authorization': f'Bearer {token}'}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            raise
+        # عدم وجود الوثيقة يحقق النتيجة المطلوبة بالفعل.
+
 # ─── قراءة index.html ────────────────────────────────────────────────────────
 def read_html():
     with open(HTML_FILE, 'rb') as f:
@@ -840,17 +868,63 @@ class Handler(BaseHTTPRequestHandler):
             if not uid_matches_token(uid, id_token):
                 self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
 
+            conn = None
             try:
                 conn = db_connect()
-                cur  = conn.execute('DELETE FROM subscriptions WHERE uid=?', (uid,))
-                conn.execute('DELETE FROM promo_redemptions WHERE uid=?', (uid,))
-                conn.execute('DELETE FROM revenuecat_identities WHERE uid=?', (uid,))
+                # بعض الجداول القديمة لا تُنشأ في كل تثبيت جديد؛ احذف فقط
+                # الجداول الموجودة فعلاً حتى يبقى endpoint متوافقاً مع الهجرة.
+                candidates = (
+                    'subscriptions',
+                    'promo_redemptions',
+                    'revenuecat_identities',
+                    'archived_stats',
+                    'family_categories',
+                    'player_stats',
+                    'seen_questions',
+                    'subscription_outbox',
+                )
+                present = {
+                    row[0] for row in conn.execute(
+                        "SELECT name FROM sqlite_master "
+                        "WHERE type='table' AND name IN ({})".format(
+                            ','.join('?' for _ in candidates)
+                        ),
+                        candidates,
+                    ).fetchall()
+                }
+                deleted = {}
+                for table in candidates:
+                    if table not in present:
+                        continue
+                    cur = conn.execute(
+                        f'DELETE FROM "{table}" WHERE uid=?',
+                        (uid,)
+                    )
+                    deleted[table] = cur.rowcount
+
+                # لا نعلن نجاحاً محلياً قبل حذف النسخة السحابية. تبقى
+                # المعاملة مفتوحة وقابلة للتراجع إذا تعذر Firestore.
+                try:
+                    firestore_delete_subscription(uid)
+                except Exception as exc:
+                    conn.rollback()
+                    print(f'[Account Delete] فشل حذف Firestore uid={uid}: {exc}')
+                    self.send_json(503, {
+                        'error': 'تعذّر حذف بيانات الحساب السحابية — حاول مرة أخرى'
+                    })
+                    return
+
                 conn.commit()
-                deleted = cur.rowcount
-                conn.close()
                 self.send_json(200, {'ok': True, 'deleted': deleted})
             except sqlite3.OperationalError:
-                self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
+                if conn is not None:
+                    conn.rollback()
+                self.send_json(503, {
+                    'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'
+                })
+            finally:
+                if conn is not None:
+                    conn.close()
 
         # ─── حفظ بيانات الملف الشخصي بشكل دائم (خصوصاً بريد/اسم Apple الذي
         # لا يُرسَل إلا مرة واحدة عند أول تفويض) ─────────────────────────────
@@ -1348,9 +1422,12 @@ class Handler(BaseHTTPRequestHandler):
 
 def _firestore_get_token():
     """احصل على access token لـ Firestore REST API عبر Service Account (openssl)."""
-    sa_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT', '')
+    sa_json = (
+        os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON', '')
+        or os.environ.get('FIREBASE_SERVICE_ACCOUNT', '')
+    )
     if not sa_json:
-        return None, 'FIREBASE_SERVICE_ACCOUNT غير محدد'
+        return None, 'FIREBASE_SERVICE_ACCOUNT_JSON غير محدد'
     try:
         import base64 as _b64, time as _time, subprocess, tempfile, os as _os
         sa = json.loads(sa_json)
