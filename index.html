@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com https://api.stripe.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none';">
 <title>فَطِنة — لعبة الذكاء الجماعية</title>
 <link rel="icon" href="/favicon.ico">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -491,10 +491,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
         </div>
       </div>
       <button class="pw-cta pw-rise pw-d5" id="paywall-btn" onclick="startCheckout()">
-        ابدأ اللعب الآن
+        اشترك عبر Apple
         <small id="pw-cta-sub">‏$3.99 / شهر — تُلغى في أي وقت</small>
       </button>
-      <div id="paywall-loading" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:14px;">جاري التحويل لصفحة الدفع…</div>
+      <div id="paywall-loading" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:14px;">جاري تجهيز اشتراك Apple…</div>
+      <div id="web-payment-note" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:13px;line-height:1.7;">الاشتراك متاح حصرياً عبر Apple داخل تطبيق فَطِنة على iPhone وiPad.</div>
       <!-- كود مكافأة -->
       <div class="pw-promo pw-rise pw-d6" id="pw-promo-box">
         <button class="pw-promo-toggle" id="pw-promo-toggle" onclick="togglePromoBox()">🎁 عندك كود مجاني؟</button>
@@ -2252,7 +2253,7 @@ async function checkSubscriptionAndRoute(uid){
     if(uid && await promoIsActive(uid)){ go('s-home'); return; }
     go('s-paywall'); return;
   }
-  // ويب: Stripe — فشل مغلق (fail-closed): أي خطأ = paywall لا home
+  // الويب لا يبيع الاشتراكات؛ Apple IAP هو وسيلة الدفع الوحيدة.
   try{
     const idToken = await getCurrentIdToken();
     const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`,
@@ -2382,18 +2383,12 @@ async function startCheckout(){
       }
       return;
     }
-    // ويب: Stripe Checkout
-    const uid   = storeGet('authUid','');
-    const email = storeGet('authEmail','');
-    const idToken = await getCurrentIdToken();
-    const resp  = await fetch('/api/stripe/create-checkout', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({uid, email, plan: _pwPlan, idToken})
-    });
-    const data = await resp.json();
-    if(data.url){ window.location.href = data.url; }
-    else{ throw new Error(data.error || 'خطأ غير معروف'); }
+    const note = document.getElementById('web-payment-note');
+    if(note) note.style.display = 'block';
+    showToast('ℹ️','الاشتراك عبر Apple فقط','افتح تطبيق فَطِنة على iPhone أو iPad لإتمام الاشتراك',false);
+    btn.style.display = 'block';
+    loading.style.display = 'none';
+    return;
   }catch(e){
     // تجاهل إلغاء المستخدم بصمت
     if((e.code||'').toString().includes('CANCELLED') ||
@@ -3542,23 +3537,11 @@ getFirebaseWebAuth();
   checkSubscriptionAndRoute(uid);
 })();
 
-// تحقق من العودة بعد دفع Stripe — لا نثق بـ ?subscribed=1 وحده (قابل للتزوير)
-// نستخدم uid المحفوظ مسبقاً في localStorage فقط (لا uid من URL)
-(function checkStripeReturn(){
+// لا توجد عودة من بوابة دفع خارجية؛ تُنظَّف معاملات الروابط القديمة فقط.
+(function clearLegacyPaymentReturn(){
   const p = new URLSearchParams(window.location.search);
-  if(p.get('subscribed')==='1'){
+  if(p.has('subscribed') || p.has('canceled')){
     window.history.replaceState({},'','/');
-    // استخدم uid المحفوظ سابقاً — لا نثق بـ uid القادم من URL
-    const uid  = storeGet('authUid','');
-    const name = storeGet('playerName','لاعب');
-    document.getElementById('user-name').textContent = name;
-    showToast('🎉','جاري التحقق…','نتأكد من اشتراكك',false);
-    // تحقق من الخادم — fail-closed (بدون uid = paywall)
-    if(uid){ checkSubscriptionAndRoute(uid); }
-    else { go('s-paywall'); }
-  } else if(p.get('canceled')==='1'){
-    window.history.replaceState({},'','/');
-    showToast('ℹ️','تم الإلغاء','يمكنك الاشتراك في أي وقت',false);
   }
 })();
 
