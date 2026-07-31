@@ -1,0 +1,149 @@
+`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+Reading from public effective user settings.
+Could not create a sandbox extension for '/var/containers/Bundle/Application/84FDF981-D411-44BC-9FED-BBABA1DC308F/App.app'
+11.15.0 - [FirebaseCore][I-COR000003] The default Firebase app has not yet been configured. Add `FirebaseApp.configure()` to your application initialization. This can be done in in the App Delegate's application(_:didFinishLaunchingWithOptions:)` (or the `@main` struct's initializer in SwiftUI). Read more: https://firebase.google.com/docs/ios/setup#initialize_firebase_in_your_app
+⚡️  Loading app at capacitor://localhost...
+WebContent[17248] Could not register system wide server: -25204
+WebContent[17248] _AXAddToElementCache was called even though the element was in the cache: <WKAccessibilityWebPageObject: 0x10112d0a0>
+WebContent[17248] Unable to hide query parameters from script (missing data)
+⚡️  To Native ->  Purchases configure -1
+⚡️  To Native ->  Purchases logIn 120262177
+DEBUG: ℹ️ Configuring SDK using RevenueCat's UserDefaults suite.
+WebContent[17248] xpc_user_sessions_get_foreground_uid() failed with error 1 - Operation not permitted
+DEBUG: 👤 Identifying App User ID
+DEBUG: ℹ️ Debug logging enabled
+DEBUG: ℹ️ SDK Version - 5.20.0
+DEBUG: ℹ️ Bundle ID - com.fatinah.game
+DEBUG: ℹ️ System Version - Version 26.5.2 (Build 23F84)
+DEBUG: ℹ️ Not using a simulator.
+DEBUG: 👤 No initial App User ID
+DEBUG: ℹ️ Purchases is configured with informational response verification
+DEBUG: ℹ️ Observing StoreKit.Transaction.updates
+DEBUG: ℹ️ Purchases is configured with StoreKit version 2
+DEBUG: ℹ️ Delegate set
+⚡️  TO JS undefined
+DEBUG: ℹ️ Offerings cache is stale, updating from network in foreground
+DEBUG: ℹ️ GetOfferingsOperation: Started
+DEBUG: ℹ️ Observing StoreKit.PurchaseIntent.intents
+DEBUG: ℹ️ There are no requests currently running, starting request GET /v1/subscribers/ukF4rIrPLgS1CknVYGIAA78rXCK2/offerings
+DEBUG: ℹ️ API request started: GET '/v1/subscribers/ukF4rIrPLgS1CknVYGIAA78rXCK2/offerings'
+⚡️  WebView loaded
+WebContent[17248] Service "com.apple.CARenderServer" failed bootstrap look up (1) - (os/kern) invalid address
+WebContent[17248] Failed to initialize application enviroment context
+WebContent[17248] Failed to load a device context.
+WebContent[17248] Failed to initialize application enviroment context
+WebContent[17248] Failed to load a device context.
+SplashScreen.hideSplash: SplashScreen was automatically hidden after default timeout. You should call `SplashScreen.hide()` as soon as your web app is loaded (or increase the timeout). Read more at https://capacitorjs.com/docs/apis/splash-screen#hiding-the-splash-screen
+DEBUG: ℹ️ API request completed: GET '/v1/subscribers/ukF4rIrPLgS1CknVYGIAA78rXCK2/offerings' (304)
+DEBUG: ℹ️ No existing products cached, starting store products request for: ["com.fatinah.game.monthly", "com.fatinah.game.annual"]
+DEBUG: ℹ️ GetOfferingsOperation: Finished
+DEBUG: ℹ️ Serial request done: GET /v1/subscribers/ukF4rIrPLgS1CknVYGIAA78rXCK2/offerings, 0 requests left in the queue
+DEBUG: ℹ️ LogInOperation: Started
+DEBUG: 😻 Store products request received response
+DEBUG: ℹ️ Store products request finished
+WARN: ⚠️ Empty Product titles are not supported. Found in product with identifier: com.fatinah.game.monthly
+WARN: ⚠️ Empty Product titles are not supported. Found in product with identifier: com.fatinah.game.annual
+DEBUG: ℹ️ There are no requests currently running, starting request POST /v1/subscribers/identify
+DEBUG: 😻 Offerings updated from network.
+DEBUG: ℹ️ API request started: POST '/v1/subscribers/identify'
+DEBUG: ℹ️ API request completed: POST '/v1/subscribers/identify' (200)
+DEBUG: 👤 Log in successful
+DEBUG: ℹ️ Sending updated CustomerInfo to delegate.
+DEBUG: ℹ️ Detected active subscriptions changed. Clearing trial or intro eligibility cache.
+DEBUG: ℹ️ PurchasedProductsFetcher: invalidating cache
+DEBUG: ℹ️ LogInOperation: Finished
+DEBUG: ℹ️ Serial request done: POST /v1/subscribers/identify, 0 requests left in the queue
+DEBUG: ℹ️ GetCustomerInfoOperation: Started
+⚡️  TO JS {"created":false,"customerInfo":{"originalPurchaseDateMillis":null,"originalApplicationVersion":null,"firstSeenMillis":1785522565000,"allPurchasedProductIdentifiers":[],"latestExpirationDate":null,"requestDate":"2026-07-31T18:33:49Z","allPurchaseDatesMilli
+DEBUG: ℹ️ Offerings cache is stale, updating from network in foreground
+DEBUG: ℹ️ There are no requests currently running, starting request GET /v1/subscribers/ukF4rIrPLgS1CknVYGIAA78rXCK2
+DEBUG: ℹ️ API request started: GET '/v1/subscribers/ukF4rIrPLgS1CknVYGIAA78rXCK2'
+DEBUG: ℹ️ API request completed: GET '/v1/subscribers/ukF4rIrPLgS1CknVYGIAA78rXCK2' (304)
+DEBUG: ℹ️ Sending updated CustomerInfo to delegate.
+DEBUG: 😻 CustomerInfo updated from network.
+DEBUG: ℹ️ Detected active subscriptions changed. Clearing trial or intro eligibility cache.
+DEBUG: ℹ️ GetCustomerInfoOperation: Finished
+DEBUG: ℹ️ PurchasedProductsFetcher: invalidating cache
+DEBUG: ℹ️ Serial request done: GET /v1/subscribers/ukF4rIrPLgS1CknVYGIAA78rXCK2, 0 requests left in the queue
+DEBUG: ℹ️ GetOfferingsOperation: Started
+DEBUG: ℹ️ There are no requests currently running, starting request GET /v1/subscribers/anon_ms4mx2ao48z6te/offerings
+DEBUG: ℹ️ API request started: GET '/v1/subscribers/anon_ms4mx2ao48z6te/offerings'
+DEBUG: ℹ️ API request completed: GET '/v1/subscribers/anon_ms4mx2ao48z6te/offerings' (304)
+DEBUG: ℹ️ Skipping products request for these products because they were already cached: ["com.fatinah.game.monthly", "com.fatinah.game.annual"]
+DEBUG: 😻 Offerings updated from network.
+DEBUG: ℹ️ GetOfferingsOperation: Finished
+DEBUG: ℹ️ Serial request done: GET /v1/subscribers/anon_ms4mx2ao48z6te/offerings, 0 requests left in the queue
+⚡️  To Native ->  Haptics impact 120262178
+⚡️  To Native ->  FirebaseAuthentication signInWithApple 120262179
+⚡️  TO JS undefined
+⚡️  TO JS {"additionalUserInfo":{"providerId":"apple.com","profile":{"sub":"001288.f7969f61d1964377aa287139913c63f5.2108","iat":1785522841,"email_verified":true,"nonce":"e2d3d39ad1a0a3c031005c3404cc91c8adeda4ba2e88ead48262eb2c75481469","auth_time":1785522841,"nonce_
+⚡️  To Native ->  Haptics impact 120262180
+⚡️  TO JS undefined
+⚡️  To Native ->  Preferences set 120262181
+⚡️  To Native ->  Preferences set 120262182
+⚡️  To Native ->  Preferences set 120262183
+⚡️  To Native ->  Purchases getCustomerInfo 120262184
+⚡️  TO JS undefined
+⚡️  TO JS undefined
+⚡️  TO JS undefined
+DEBUG: ℹ️ Vending CustomerInfo from cache.
+⚡️  TO JS {"customerInfo":{"latestExpirationDateMillis":null,"originalApplicationVersion":null,"originalPurchaseDate":null,"requestDate":"2026-07-31T18:33:49Z","nonSubscriptionTransactions":[],"activeSubscriptions":[],"subscriptionsByProductIdentifier":{},"originalA
+⚡️  To Native ->  Purchases getOfferings 120262185
+DEBUG: ℹ️ Vending Offerings from memory cache
+⚡️  TO JS {"current":{"serverDescription":"The standard set of packages","annual":{"packageType":"ANNUAL","product":{"subscriptionPeriod":"P1Y","price":29.99,"priceString":"$29.99","identifier":"com.fatinah.game.annual","pricePerYear":29.99,"introPrice":null,"curren
+⚡️  To Native ->  Purchases getOfferings 120262186
+DEBUG: ℹ️ Vending Offerings from memory cache
+⚡️  TO JS {"all":{"default":{"serverDescription":"The standard set of packages","identifier":"default","metadata":{},"availablePackages":[{"product":{"productType":"AUTO_RENEWABLE_SUBSCRIPTION","discounts":[],"currencyCode":"USD","pricePerWeek":0.92,"description":""
+UIKeyboardLayoutStar implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+Unable to simultaneously satisfy constraints.
+	Probably at least one of the constraints in the following list is one you don't want. 
+	Try this: 
+		(1) look at each constraint and try to figure out which you don't expect; 
+		(2) find the code that added the unwanted constraint or constraints and fix it. 
+(
+    "<NSLayoutConstraint:0x15c2014f0 _TtC5UIKitP33_DDE14AA6B49FCAFC5A54255A118E1D8713ButtonWrapper:0x15c2a8000.width == _UIButtonBarButton:0x15c136a80.width   (active)>",
+    "<NSLayoutConstraint:0x15c201630 'IB_Leading_Leading' H:|-(8)-[_UIModernBarButton:0x15c2bc000]   (active, names: '|':_UIButtonBarButton:0x15c136a80 )>",
+    "<NSLayoutConstraint:0x15c201680 'IB_Trailing_Trailing' H:[_UIModernBarButton:0x15c2bc000]-(8)-|   (active, names: '|':_UIButtonBarButton:0x15c136a80 )>",
+    "<NSLayoutConstraint:0x15c201bd0 'UIView-Encapsulated-Layout-Width' _TtC5UIKitP33_DDE14AA6B49FCAFC5A54255A118E1D8713ButtonWrapper:0x15c2a8000.width == 0   (active)>"
+)
+
+Will attempt to recover by breaking constraint 
+<NSLayoutConstraint:0x15c201680 'IB_Trailing_Trailing' H:[_UIModernBarButton:0x15c2bc000]-(8)-|   (active, names: '|':_UIButtonBarButton:0x15c136a80 )>
+
+Make a symbolic breakpoint at UIViewAlertForUnsatisfiableConstraints to catch this in the debugger.
+The methods in the UIConstraintBasedLayoutDebugging category on UIView listed in <UIKitCore/UIView.h> may also be helpful.
+Unable to simultaneously satisfy constraints.
+	Probably at least one of the constraints in the following list is one you don't want. 
+	Try this: 
+		(1) look at each constraint and try to figure out which you don't expect; 
+		(2) find the code that added the unwanted constraint or constraints and fix it. 
+(
+    "<NSLayoutConstraint:0x15c2021c0 _TtC5UIKitP33_DDE14AA6B49FCAFC5A54255A118E1D8713ButtonWrapper:0x15c2a8400.width == _UIButtonBarButton:0x15c136f80.width   (active)>",
+    "<NSLayoutConstraint:0x15c202300 'IB_Leading_Leading' H:|-(8)-[_UIModernBarButton:0x15c2bc380]   (active, names: '|':_UIButtonBarButton:0x15c136f80 )>",
+    "<NSLayoutConstraint:0x15c202350 'IB_Trailing_Trailing' H:[_UIModernBarButton:0x15c2bc380]-(8)-|   (active, names: '|':_UIButtonBarButton:0x15c136f80 )>",
+    "<NSLayoutConstraint:0x15c202800 'UIView-Encapsulated-Layout-Width' _TtC5UIKitP33_DDE14AA6B49FCAFC5A54255A118E1D8713ButtonWrapper:0x15c2a8400.width == 0   (active)>"
+)
+
+Will attempt to recover by breaking constraint 
+<NSLayoutConstraint:0x15c202350 'IB_Trailing_Trailing' H:[_UIModernBarButton:0x15c2bc380]-(8)-|   (active, names: '|':_UIButtonBarButton:0x15c136f80 )>
+
+Make a symbolic breakpoint at UIViewAlertForUnsatisfiableConstraints to catch this in the debugger.
+The methods in the UIConstraintBasedLayoutDebugging category on UIView listed in <UIKitCore/UIView.h> may also be helpful.
+Unable to simultaneously satisfy constraints.
+	Probably at least one of the constraints in the following list is one you don't want. 
+	Try this: 
+		(1) look at each constraint and try to figure out which you don't expect; 
+		(2) find the code that added the unwanted constraint or constraints and fix it. 
+(
+    "<NSLayoutConstraint:0x15c202c10 _TtC5UIKitP33_DDE14AA6B49FCAFC5A54255A118E1D8713ButtonWrapper:0x15c2a8800.width == _UIButtonBarButton:0x15c137480.width   (active)>",
+    "<NSLayoutConstraint:0x15c202d00 'IB_Leading_Leading' H:|-(8)-[_UIModernBarButton:0x15c2bc700]   (active, names: '|':_UIButtonBarButton:0x15c137480 )>",
+    "<NSLayoutConstraint:0x15c202d50 'IB_Trailing_Trailing' H:[_UIModernBarButton:0x15c2bc700]-(8)-|   (active, names: '|':_UIButtonBarButton:0x15c137480 )>",
+    "<NSLayoutConstraint:0x15c203200 'UIView-Encapsulated-Layout-Width' _TtC5UIKitP33_DDE14AA6B49FCAFC5A54255A118E1D8713ButtonWrapper:0x15c2a8800.width == 0   (active)>"
+)
+
+Will attempt to recover by breaking constraint 
+<NSLayoutConstraint:0x15c202d50 'IB_Trailing_Trailing' H:[_UIModernBarButton:0x15c2bc700]-(8)-|   (active, names: '|':_UIButtonBarButton:0x15c137480 )>
+
+Make a symbolic breakpoint at UIViewAlertForUnsatisfiableConstraints to catch this in the debugger.
+The methods in the UIConstraintBasedLayoutDebugging category on UIView listed in <UIKitCore/UIView.h> may also be helpful.
+-[RTIInputSystemClient remoteTextInputSessionWithID:textSuggestionsChanged:]  Can only set suggestions for an active session. sessionID = 39F05080-3D4E-44D9-A336-BF4BDC26C26B
