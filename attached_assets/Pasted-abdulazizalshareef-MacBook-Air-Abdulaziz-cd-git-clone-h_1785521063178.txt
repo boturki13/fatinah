@@ -1,0 +1,43 @@
+abdulazizalshareef@MacBook-Air-Abdulaziz ~ % cd ~
+git clone https://github.com/boturki13/fatinah.git Fatinah
+cd ~/Fatinah
+pwd
+ls
+Cloning into 'Fatinah'...
+Username for 'https://github.com': https://github.com/boturki13/fatinah.git        
+Password for 'https://https%3A%2F%2Fgithub.com%2Fboturki13%2Ffatinah.git@github.com': 
+remote: Invalid username or token. Password authentication is not supported for Git operations.
+fatal: Authentication failed for 'https://github.com/boturki13/fatinah.git/'
+cd: no such file or directory: /Users/abdulazizalshareef/Fatinah
+/Users/abdulazizalshareef
+Applications		FlexVibe		Music			age-of-masonry		package-lock.json
+Desktop			FlexVibe1		Pictures		fitna			package.json
+Documents		Library			Public			gravity-flip-prototype	print_numbers.py
+Downloads		Movies			UnrealEngine		node_modules		python
+abdulazizalshareef@MacBook-Air-Abdulaziz ~ % 
+abdulazizalshareef@MacBook-Air-Abdulaziz ~ % brew install gh
+gh auth login
+==> Auto-updating Homebrew...
+Adjust how often this is run with `$HOMEBREW_AUTO_UPDATE_SECS` or disable with
+`$HOMEBREW_NO_AUTO_UPDATE=1`. Hide these hints with `$HOMEBREW_NO_ENV_HINTS=1` (see `man brew`).
+==> Downloading https://ghcr.io/v2/homebrew/core/portable-ruby/blobs/sha256:83a3ff85d83acf0e3dd8105de0fdb01da96b7c0eaf2dfaae2ba6500ec2ae4a64
+################################################################################################################# 100.0%
+==> Pouring portable-ruby-4.0.6.arm64_big_sur.bottle.tar.gz
+==> Would install 1 formula:
+gh
+==> Downloading https://ghcr.io/v2/homebrew/core/gh/manifests/2.97.0
+################################################################################################################# 100.0%
+==> Fetching downloads for: gh
+✔︎ Bottle gh (2.97.0)                                                                         Downloaded   13.6MB/ 13.6MB
+==> Pouring gh--2.97.0.arm64_tahoe.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/gh/2.97.0: 238 files, 39.4MB
+==> Running `brew cleanup gh`...
+Disable this behaviour by setting `HOMEBREW_NO_INSTALL_CLEANUP=1`.
+Hide these hints with `HOMEBREW_NO_ENV_HINTS=1` (see `man brew`).
+==> Caveats
+zsh completions have been installed to:
+  /opt/homebrew/share/zsh/site-functions
+? Where do you use GitHub?  [Use arrows to move, type to filter]
+> GitHub.com
+  Other
+
