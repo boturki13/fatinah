@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 async function checkSubscriptionAndRoute(uid, { go, fetchFn, promoIsActive }) {
   go('s-loading');
   try {
-    const resp = await fetchFn(`/api/stripe/status?uid=${encodeURIComponent(uid || '')}`);
+    const resp = await fetchFn(`/api/subscription/status?uid=${encodeURIComponent(uid || '')}`);
     if (!resp.ok) throw new Error('status error');
     const data = await resp.json();
     if (data.active === true) { go('s-home'); return; }

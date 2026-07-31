@@ -2230,7 +2230,7 @@ async function checkSubscriptionAndRoute(uid){
     if(uid){
       try{
         const idToken = await getCurrentIdToken();
-        const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`,
+        const resp = await fetch(`/api/subscription/status?uid=${encodeURIComponent(uid)}`,
           { headers: idToken ? {'Authorization':'Bearer '+idToken} : {} });
         if(resp.ok){
           const data = await resp.json();
@@ -2256,7 +2256,7 @@ async function checkSubscriptionAndRoute(uid){
   // الويب لا يبيع الاشتراكات؛ Apple IAP هو وسيلة الدفع الوحيدة.
   try{
     const idToken = await getCurrentIdToken();
-    const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`,
+    const resp = await fetch(`/api/subscription/status?uid=${encodeURIComponent(uid)}`,
       { headers: idToken ? {'Authorization':'Bearer '+idToken} : {} });
     if(!resp.ok) throw new Error('status error');
     const data = await resp.json();
@@ -2276,7 +2276,7 @@ async function checkSubscriptionAndRouteServerOnly(uid){
   go('s-loading');
   try{
     const idToken=await getCurrentIdToken();
-    const resp=await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid||'')}`,{
+    const resp=await fetch(`/api/subscription/status?uid=${encodeURIComponent(uid||'')}`,{
       headers:idToken ? {'Authorization':'Bearer '+idToken} : {}
     });
     if(!resp.ok) throw new Error('server subscription check failed');
@@ -2369,7 +2369,7 @@ async function startCheckout(){
         if(attempt) await new Promise(resolve=>setTimeout(resolve,1500));
         try{
           const idToken=await getCurrentIdToken();
-          const check=await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`,
+          const check=await fetch(`/api/subscription/status?uid=${encodeURIComponent(uid)}`,
             {headers:idToken ? {'Authorization':'Bearer '+idToken} : {}});
           if(check.ok) serverActive=(await check.json()).active===true;
         }catch(e){}
