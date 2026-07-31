@@ -37,7 +37,8 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST \
 نفّذ هذه الأوامر من جذر المشروع على جهاز Mac يحتوي Xcode 26 أو أحدث وCocoaPods:
 
 ```bash
-npm ci
+# يتجاهل package-lock الناتج داخل Replit، الذي قد يحتوي روابط Package Firewall داخلية
+npm install --package-lock=false --registry=https://registry.npmjs.org --no-audit --no-fund
 npx cap sync ios
 cd ios/App
 pod install --repo-update
