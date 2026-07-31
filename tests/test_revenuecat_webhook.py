@@ -35,6 +35,12 @@ srv.init_outbox_table()
 # لا تعتمد اختبارات الحالة على شبكة Firebase؛ نتحقق من أن نقاط الحالة
 # تمرّر رمزاً إلى طبقة التحقق، بينما يظل اختبار الـwebhook نفسه واقعياً.
 srv.uid_matches_token = lambda uid, token: bool(uid and token == 'TEST_ID_TOKEN')
+_real_firestore_upsert = srv.firestore_upsert_subscription
+firestore_calls = []
+def recording_firestore_upsert(uid, status, *args, **kwargs):
+    firestore_calls.append((uid, status))
+    return _real_firestore_upsert(uid, status, *args, **kwargs)
+srv.firestore_upsert_subscription = recording_firestore_upsert
 
 # ── تشغيل الخادم على منفذ عشوائي ────────────────────────────────────────────
 httpd = HTTPServer(('127.0.0.1', 0), srv.Handler)
@@ -116,6 +122,7 @@ code, _ = post('/api/revenuecat/webhook',
                make_event('EXPIRATION', 'uid_auth_test'),
                auth='WRONG_KEY')
 check('يُرجع 401', code == 401, f'code={code}')
+check('لا يستدعي Firestore', not firestore_calls)
 
 # 2. EXPIRATION → inactive
 print('\n2. EXPIRATION')
@@ -174,6 +181,54 @@ post('/api/revenuecat/webhook', make_event('INITIAL_PURCHASE', RC_NEW_STATUS))
 code, resp = get(f'/api/stripe/status?uid=uid_new_status')
 check('يُرجع 200', code == 200, f'code={code}')
 check('active=true بعد INITIAL_PURCHASE مباشرةً', resp.get('active') is True,
+      f"active={resp.get('active')}")
+
+# 9. Bearer <secret> مقبول أيضاً (كما قد يُضبط في RevenueCat dashboard)
+print('\n9. Authorization: Bearer <secret> مقبول')
+RC_BEARER = '77777777-7777-4777-8777-777777777777'
+link_identity('uid_bearer', RC_BEARER)
+code, _ = post('/api/revenuecat/webhook', make_event('RENEWAL', RC_BEARER),
+               auth=f'Bearer {SECRET}')
+check('يُرجع 200 مع Bearer', code == 200, f'code={code}')
+check("status → 'active'", db_status('uid_bearer') == 'active',
+      f"status={db_status('uid_bearer')}")
+
+# 10. UUID غير مربوط بأي حساب → 202 ولا يُنشأ أي سجل (لا وصول)
+print('\n10. app_user_id غير مربوط → 202 بلا أي سجل')
+RC_ORPHAN = '88888888-8888-4888-8888-888888888888'
+calls_before_orphan = len(firestore_calls)
+code, _ = post('/api/revenuecat/webhook', make_event('INITIAL_PURCHASE', RC_ORPHAN))
+check('يُرجع 202', code == 202, f'code={code}')
+conn = sqlite3.connect(tmp_db.name)
+orphan_rows = conn.execute('SELECT COUNT(*) FROM subscriptions').fetchone()[0]
+conn.close()
+check('لم يُنشأ سجل اشتراك جديد', db_status(RC_ORPHAN) is None)
+check('لا يستدعي Firestore لهوية غير مربوطة',
+      len(firestore_calls) == calls_before_orphan)
+
+# 11. الحل عبر aliases عندما يختلف app_user_id الرئيسي
+print('\n11. حلّ الهوية عبر aliases')
+RC_ALIAS = '99999999-9999-4999-8999-999999999999'
+link_identity('uid_alias', RC_ALIAS)
+evt = {'event': {'type': 'RENEWAL', 'id': 'evt_alias',
+                 'app_user_id': '$RCAnonymousID:abc123',
+                 'aliases': [RC_ALIAS]}}
+code, _ = post('/api/revenuecat/webhook', evt)
+check('يُرجع 200', code == 200, f'code={code}')
+check("status → 'active' عبر alias", db_status('uid_alias') == 'active',
+      f"status={db_status('uid_alias')}")
+
+# 12. سر غير مهيَّأ → 503 (fail-closed، لا تحديث أبداً)
+print('\n12. سر webhook غير مهيَّأ → 503')
+os.environ['REVENUECAT_WEBHOOK_SECRET'] = ''
+code, _ = post('/api/revenuecat/webhook', make_event('RENEWAL', RC_RENEW))
+check('يُرجع 503', code == 503, f'code={code}')
+os.environ['REVENUECAT_WEBHOOK_SECRET'] = SECRET
+
+# 13. مستخدم منتهي الاشتراك لا يملك وصولاً حتى لو فشل Firestore (SQLite هو المرجع)
+print('\n13. لا وصول بعد الانتهاء حتى مع فشل Firestore')
+code, resp = get('/api/stripe/status?uid=uid_expire')
+check('active=false للاشتراك المنتهي', resp.get('active') is False,
       f"active={resp.get('active')}")
 
 # ── تنظيف وملخص ──────────────────────────────────────────────────────────────
