@@ -8,3 +8,4 @@
 - [iOS release validation](ios-release-validation.md) — الأرشيف النهائي وPodfile.lock يتطلبان macOS مع Xcode 26 وCocoaPods
 - [App Store readiness audit](app-store-readiness-audit.md) — الرفع بعد 28 أبريل 2026 يتطلب Xcode 26 وSDK iOS 26، مع تحقق يدوي من App Store Connect وIAP
 - [Apple-only payments](apple-only-payments.md) — الاشتراكات الرقمية تُباع عبر Apple IAP وRevenueCat فقط؛ لا تستخدم Tap أو Stripe
+- [Mac npm registry](mac-npm-registry.md) — package-lock قد يحتوي روابط Replit الداخلية؛ استخدم سجل npm العام عند التثبيت خارج Replit
