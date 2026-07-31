@@ -1,0 +1,74 @@
+abdulazizalshareef@MacBook-Air-Abdulaziz ~ % gh auth status
+gh repo clone boturki13/fatinah ~/Fatinah
+cd ~/Fatinah
+pwd
+ls
+github.com
+  ✓ Logged in to github.com account boturki13 (keyring)
+  - Active account: true
+  - Git operations protocol: https
+  - Token: gho_************************************
+  - Token scopes: 'gist', 'read:org', 'repo', 'workflow'
+Cloning into '/Users/abdulazizalshareef/Fatinah'...
+remote: Enumerating objects: 6717, done.
+remote: Counting objects: 100% (361/361), done.
+remote: Compressing objects: 100% (220/220), done.
+remote: Total 6717 (delta 196), reused 294 (delta 138), pack-reused 6356 (from 2)
+Receiving objects: 100% (6717/6717), 85.65 MiB | 17.60 MiB/s, done.
+Resolving deltas: 100% (1857/1857), done.
+/Users/abdulazizalshareef/Fatinah
+CLAUDE.md		capacitor.config.ts	legal			replit.md		tests
+README.md		fatinah_updated.zip	main.py			replit.nix		threat_model.md
+admin_promo.html	favicon.ico		og-image.png		scripts			uv.lock
+apple-touch-icon.png	functions		package-lock.json	server.py		vendor
+attached_assets		index.html		package.json		setup_stripe.py		www
+capacitor.config.json	ios			pyproject.toml		sw.js			zipFile.zip
+abdulazizalshareef@MacBook-Air-Abdulaziz Fatinah % /Users/abdulazizalshareef/Fatinah                                 
+zsh: permission denied: /Users/abdulazizalshareef/Fatinah
+abdulazizalshareef@MacBook-Air-Abdulaziz Fatinah % npm ci
+npx cap sync ios
+cd ios/App
+pod install --repo-update
+open App.xcworkspace
+npm warn deprecated tar@6.2.1: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@9.3.5: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+
+added 182 packages, and audited 183 packages in 3s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+6 vulnerabilities (5 high, 1 critical)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn allow-scripts   protobufjs@7.6.5 (postinstall: node scripts/postinstall)
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+✔ Copying web assets from www to ios/App/App/public in 9.04ms
+✔ Creating capacitor.config.json in ios/App/App in 433.38μs
+✔ copy ios in 27.45ms
+✔ Updating iOS plugins in 818.83μs
+✔ Updating iOS native dependencies with pod install in 4.07s
+[info] Found 9 Capacitor plugins for ios:
+       @capacitor-community/keep-awake@5.0.1
+       @capacitor-firebase/authentication@6.3.1
+       @capacitor/filesystem@6.0.4
+       @capacitor/haptics@6.0.3
+       @capacitor/preferences@6.0.4
+       @capacitor/share@6.0.4
+       @capacitor/splash-screen@6.0.4
+       @capacitor/status-bar@6.0.3
+       @revenuecat/purchases-capacitor@9.2.2
+✔ update ios in 4.10s
+[info] Sync finished in 4.376s
+Updating local specs repositories
+Analyzing dependencies
+Downloading dependencies
+Generating Pods project
+Integrating client project
+Pod installation complete! There are 11 dependencies from the Podfile and 22 total pods installed.
+abdulazizalshareef@MacBook-Air-Abdulaziz App % 
