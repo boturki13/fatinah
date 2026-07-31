@@ -369,8 +369,7 @@ def firestore_upsert_subscription(uid: str, status: str,
             resp.read()
         return True
     except urllib.error.HTTPError as e:
-        body = e.read().decode(errors='ignore')
-        print(f'[Firestore] HTTP {e.code}: {body[:300]}')
+        print(f'[Firestore] {_firestore_http_error(e, "upsert")}')
         return False
     except Exception as exc:
         print(f'[Firestore] خطأ: {exc}')
@@ -400,9 +399,10 @@ def firestore_delete_subscription(uid: str) -> None:
         with urllib.request.urlopen(req, timeout=15) as resp:
             resp.read()
     except urllib.error.HTTPError as exc:
-        if exc.code != 404:
-            raise
-        # عدم وجود الوثيقة يحقق النتيجة المطلوبة بالفعل.
+        if exc.code == 404:
+            # عدم وجود الوثيقة يحقق النتيجة المطلوبة بالفعل.
+            return
+        raise RuntimeError(_firestore_http_error(exc, 'delete')) from exc
 
 # ─── قراءة index.html ────────────────────────────────────────────────────────
 def read_html():
@@ -1431,6 +1431,11 @@ def _firestore_get_token():
     try:
         import base64 as _b64, time as _time, subprocess, tempfile, os as _os
         sa = json.loads(sa_json)
+        configured_project = os.environ.get('FIREBASE_PROJECT_ID', '').strip()
+        service_project = (sa.get('project_id') or '').strip()
+        if (configured_project and service_project
+                and configured_project != service_project):
+            return None, 'FIREBASE_PROJECT_ID لا يطابق project_id داخل حساب الخدمة'
         header    = _b64.urlsafe_b64encode(json.dumps({'alg':'RS256','typ':'JWT'}).encode()).rstrip(b'=')
         now       = int(_time.time())
         claim     = _b64.urlsafe_b64encode(json.dumps({
@@ -1465,6 +1470,25 @@ def _firestore_get_token():
         return tok.get('access_token'), None
     except Exception as e:
         return None, str(e)
+
+def _firestore_http_error(exc, operation='request'):
+    """استخرج رسالة Google المفيدة من HTTPError دون تسجيل أي اعتماد سري."""
+    if not isinstance(exc, urllib.error.HTTPError):
+        return f'Firestore {operation} error: {exc}'
+    try:
+        raw = exc.read().decode('utf-8', errors='replace')
+        details = json.loads(raw).get('error') or {}
+        status = details.get('status') or ''
+        message = details.get('message') or raw[:240]
+        reason = ''
+        for item in details.get('details') or []:
+            if item.get('@type', '').endswith('ErrorInfo'):
+                reason = item.get('reason') or ''
+                break
+        suffix = f' ({reason})' if reason else ''
+        return f'Firestore HTTP {exc.code}: {status or "HTTP_ERROR"}: {message}{suffix}'
+    except Exception:
+        return f'Firestore HTTP {exc.code}: تعذّر قراءة تفاصيل الخطأ'
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
@@ -1538,8 +1562,11 @@ def _firestore_write_subscription(uid: str, payload: dict, token: str, project_i
     req  = urllib.request.Request(url, data=body, method='PATCH',
            headers={'Authorization': f'Bearer {token}',
                     'Content-Type':  'application/json'})
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        resp.read()
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp.read()
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(_firestore_http_error(exc, 'write')) from exc
 
 def _fs_write_from_payload(uid: str, payload: dict):
     """يكتب سجل اشتراك واحد إلى Firestore مستخدِماً FIREBASE_SERVICE_ACCOUNT_JSON."""
@@ -1563,8 +1590,11 @@ def _fs_write_from_payload(uid: str, payload: dict):
             f'/databases/(default)/documents/subscriptions/{urllib.parse.quote(uid)}')
     req = urllib.request.Request(url, data=body, method='PATCH',
           headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'})
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        resp.read()
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp.read()
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(_firestore_http_error(exc, 'write')) from exc
 
 def _outbox_worker():
     """خيط خلفي يُعيد إرسال السجلات المعلّقة في الـ outbox إلى Firestore."""
@@ -1667,7 +1697,7 @@ def _firestore_fetch_all_docs(project_id, token):
                 break
         return docs, None
     except Exception as e:
-        return docs, f'Firestore fetch error: {e}'
+        return docs, _firestore_http_error(e, 'fetch')
 def try_restore_from_firestore():
     """يجلب سجلات subscriptions من Firestore ويُدمجها في SQLite."""
     project_id = os.environ.get('FIREBASE_PROJECT_ID', '')
