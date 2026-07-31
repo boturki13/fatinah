@@ -120,8 +120,8 @@
   أي `idToken` عبر `identitytoolkit.googleapis.com/v1/accounts:lookup` (بدل
   Firestore Security Rules، بما أن القرار المعماري هو البقاء على SQLite) ويُطبَّق
   حالياً على `/api/account/delete` و`/api/account/profile`. تحصين بقية نقاط
-  الـ API الحساسة (مثل `/api/stripe/create-checkout`) مهمة منفصلة متابَعة عبر
-  مهام أخرى في المشروع.
+  نقاط الاشتراك الحساسة تُدار عبر `/api/subscription/status` وRevenueCat
+  Webhook الموثّق، ولا توجد نقاط دفع خارجية.
 
 ## 5. حذف الحساب
 

@@ -8,8 +8,8 @@
   4. مفتاح خاطئ  → 401
   5. RENEWAL      → status = 'active'
   6. حدث مجهول   → 200 (يُتجاهل)
-  7. EXPIRATION webhook → /api/stripe/status يعيد active=false فوراً (بدون تأخير أو كاش)
-  8. INITIAL_PURCHASE webhook → /api/stripe/status يعيد active=true فوراً
+  7. EXPIRATION webhook → /api/subscription/status يعيد active=false فوراً (بدون تأخير أو كاش)
+  8. INITIAL_PURCHASE webhook → /api/subscription/status يعيد active=true فوراً
 
 التشغيل:
     python3 tests/test_revenuecat_webhook.py
@@ -164,21 +164,21 @@ print('\n6. حدث غير معروف')
 code, _ = post('/api/revenuecat/webhook', make_event('UNKNOWN_TYPE', 'uid_unk'))
 check('يُرجع 200 (يُتجاهل بأمان)', code == 200, f'code={code}')
 
-# 7. EXPIRATION → /api/stripe/status يعكس active=false فوراً (بدون كاش)
-print('\n7. EXPIRATION → /api/stripe/status يعيد active=false فوراً')
+# 7. EXPIRATION → /api/subscription/status يعكس active=false فوراً (بدون كاش)
+print('\n7. EXPIRATION → /api/subscription/status يعيد active=false فوراً')
 insert_sub('uid_expire_status', 'active')
 link_identity('uid_expire_status', RC_EXPIRE_STATUS)
 post('/api/revenuecat/webhook', make_event('EXPIRATION', RC_EXPIRE_STATUS))
-code, resp = get(f'/api/stripe/status?uid=uid_expire_status')
+code, resp = get(f'/api/subscription/status?uid=uid_expire_status')
 check('يُرجع 200', code == 200, f'code={code}')
 check('active=false بعد EXPIRATION مباشرةً', resp.get('active') is False,
       f"active={resp.get('active')}")
 
-# 8. INITIAL_PURCHASE → /api/stripe/status يعكس active=true فوراً
-print('\n8. INITIAL_PURCHASE → /api/stripe/status يعيد active=true فوراً')
+# 8. INITIAL_PURCHASE → /api/subscription/status يعكس active=true فوراً
+print('\n8. INITIAL_PURCHASE → /api/subscription/status يعيد active=true فوراً')
 link_identity('uid_new_status', RC_NEW_STATUS)
 post('/api/revenuecat/webhook', make_event('INITIAL_PURCHASE', RC_NEW_STATUS))
-code, resp = get(f'/api/stripe/status?uid=uid_new_status')
+code, resp = get(f'/api/subscription/status?uid=uid_new_status')
 check('يُرجع 200', code == 200, f'code={code}')
 check('active=true بعد INITIAL_PURCHASE مباشرةً', resp.get('active') is True,
       f"active={resp.get('active')}")
@@ -227,7 +227,7 @@ os.environ['REVENUECAT_WEBHOOK_SECRET'] = SECRET
 
 # 13. مستخدم منتهي الاشتراك لا يملك وصولاً حتى لو فشل Firestore (SQLite هو المرجع)
 print('\n13. لا وصول بعد الانتهاء حتى مع فشل Firestore')
-code, resp = get('/api/stripe/status?uid=uid_expire')
+code, resp = get('/api/subscription/status?uid=uid_expire')
 check('active=false للاشتراك المنتهي', resp.get('active') is False,
       f"active={resp.get('active')}")
 

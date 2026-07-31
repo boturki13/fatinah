@@ -2089,7 +2089,7 @@ async function checkSubscriptionAndRoute(uid){
   // CustomerInfo أو cache محلي؛ webhook هو الذي يحدّث حالة الاشتراك.
   try{
     const idToken=await getCurrentIdToken();
-    const resp = await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid||'')}`,{
+    const resp = await fetch(`/api/subscription/status?uid=${encodeURIComponent(uid||'')}`,{
       headers:idToken ? {'Authorization':'Bearer '+idToken} : {}
     });
     if(!resp.ok) throw new Error('status error');
@@ -2180,7 +2180,7 @@ async function startCheckout(){
         if(attempt) await new Promise(resolve=>setTimeout(resolve,1500));
         try{
           const idToken=await getCurrentIdToken();
-          const check=await fetch(`/api/stripe/status?uid=${encodeURIComponent(uid)}`,
+          const check=await fetch(`/api/subscription/status?uid=${encodeURIComponent(uid)}`,
             {headers:idToken ? {'Authorization':'Bearer '+idToken} : {}});
           if(check.ok) serverActive=(await check.json()).active===true;
         }catch(e){}
@@ -3326,7 +3326,7 @@ getFirebaseWebAuth();
   checkSubscriptionAndRoute(uid);
 })();
 
-// تحقق من العودة بعد دفع Stripe — لا نثق بـ ?subscribed=1 وحده (قابل للتزوير)
+// لا نعتمد على معاملات عودة دفع قديمة أو على cache محلي لمنح الصلاحية
 // نستخدم uid المحفوظ مسبقاً في localStorage فقط (لا uid من URL)
 (function clearLegacyPaymentReturn(){
   const p = new URLSearchParams(window.location.search);
