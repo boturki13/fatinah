@@ -176,4 +176,5 @@ python3 tests/test_revenuecat_webhook.py
 
 اختبار دورة Apple الفعلية يحتاج شراء Sandbox/TestFlight ثم التحقق من وصول
 `INITIAL_PURCHASE` و`RENEWAL` و`EXPIRATION` من سجل RevenueCat؛ لا تستخدم بيئة
-Sandbox مع webhook مضبوط على Production.
+Sandbox مع webhook مضبوط على Production. القائمة الكاملة خطوة بخطوة في
+`TESTFLIGHT_CHECKLIST.md`.
