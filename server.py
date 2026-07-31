@@ -1003,7 +1003,13 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {'ok': True})
 
         # ─── Stripe: إنشاء جلسة دفع ─────────────────────────────────────────
-        elif path == '/api/stripe/create-checkout':
+        elif path in ('/api/stripe/create-checkout', '/api/tap/create-checkout'):
+            # الاشتراكات الرقمية داخل فَطِنة تُباع عبر Apple IAP فقط.
+            # نُبقي المسار مرفوضاً صراحةً لمنع أي دفع خارجي قديم أو مخفي.
+            self.send_json(410, {
+                'error': 'الدفع الخارجي معطّل — الاشتراك متاح عبر Apple داخل التطبيق فقط'
+            }); return
+
             try:   data = json.loads(body)
             except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
 
@@ -1012,13 +1018,6 @@ class Handler(BaseHTTPRequestHandler):
             plan     = (data.get('plan')    or 'monthly').strip()  # 'monthly' أو 'annual'
             id_token = (data.get('idToken') or '').strip()
             if not uid: self.send_json(400, {'error': 'uid مطلوب'}); return
-
-            if not uid_matches_token(uid, id_token):
-                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
-
-            secret_key, _ = get_stripe_keys()
-            if not secret_key:
-                self.send_json(503, {'error': 'Stripe غير متاح'}); return
 
             try:
                 # ابحث عن سعر المنتج المناسب (شهري أو سنوي)
@@ -1087,6 +1086,12 @@ class Handler(BaseHTTPRequestHandler):
 
         # ─── Stripe Webhook ──────────────────────────────────────────────────
         elif path == '/api/stripe/webhook':
+            # الاشتراكات الرقمية تُدار عبر Apple IAP وRevenueCat فقط.
+            # نرفض أي أحداث Stripe قديمة حتى لا تغيّر صلاحيات المستخدمين.
+            self.send_json(410, {
+                'error': 'Stripe webhook معطّل — صلاحية الاشتراك تُحدَّث عبر RevenueCat فقط'
+            }); return
+
             signature = self.headers.get('Stripe-Signature', '')
             secret_key, webhook_secret = get_stripe_keys()
             if not secret_key:
