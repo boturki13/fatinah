@@ -13,6 +13,16 @@ PORT      = int(os.environ.get('PORT', 5000))
 HTML_FILE = os.path.join(os.path.dirname(__file__), 'index.html')
 DB_PATH   = os.path.join(os.path.dirname(__file__), 'subscriptions.db')
 
+def firestore_database_name():
+    """اسم قاعدة Firestore بصيغة REST، مع دعم default القديم."""
+    database_id = os.environ.get('FIRESTORE_DATABASE_ID', 'default').strip()
+    if not database_id or database_id == 'default':
+        return '(default)'
+    return database_id
+
+def firestore_database_path():
+    return urllib.parse.quote(firestore_database_name(), safe='()')
+
 # ─── قاعدة البيانات ──────────────────────────────────────────────────────────
 def db_connect():
     """اتصال sqlite آمن للخيوط المتعددة: WAL + مهلة انتظار للأقفال."""
@@ -344,7 +354,7 @@ def firestore_upsert_subscription(uid: str, status: str,
 
     url = (
         f'https://firestore.googleapis.com/v1/projects/{project_id}'
-        f'/databases/(default)/documents/subscriptions/{uid}'
+        f'/databases/{firestore_database_path()}/documents/subscriptions/{uid}'
     )
 
     # بناء الحقول بتنسيق Firestore REST (stringValue)
@@ -387,7 +397,7 @@ def firestore_delete_subscription(uid: str) -> None:
 
     url = (
         f'https://firestore.googleapis.com/v1/projects/{project_id}'
-        f'/databases/(default)/documents/subscriptions/'
+        f'/databases/{firestore_database_path()}/documents/subscriptions/'
         f'{urllib.parse.quote(uid, safe="")}'
     )
     req = urllib.request.Request(
@@ -1557,7 +1567,7 @@ def _firestore_write_subscription(uid: str, payload: dict, token: str, project_i
     query = urllib.parse.urlencode(
         [('updateMask.fieldPaths', key) for key in fields], doseq=True)
     url  = (f'https://firestore.googleapis.com/v1/projects/{project_id}'
-            f'/databases/(default)/documents/subscriptions/{urllib.parse.quote(uid)}'
+            f'/databases/{firestore_database_path()}/documents/subscriptions/{urllib.parse.quote(uid)}'
             f'?{query}')
     req  = urllib.request.Request(url, data=body, method='PATCH',
            headers={'Authorization': f'Bearer {token}',
@@ -1587,7 +1597,7 @@ def _fs_write_from_payload(uid: str, payload: dict):
     fields.setdefault('uid', fs_val(payload.get('uid', uid)))
     body = json.dumps({'fields': fields}).encode()
     url  = (f'https://firestore.googleapis.com/v1/projects/{project_id}'
-            f'/databases/(default)/documents/subscriptions/{urllib.parse.quote(uid)}')
+            f'/databases/{firestore_database_path()}/documents/subscriptions/{urllib.parse.quote(uid)}')
     req = urllib.request.Request(url, data=body, method='PATCH',
           headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'})
     try:
@@ -1680,7 +1690,7 @@ def _upsert_docs_to_sqlite(docs):
 def _firestore_fetch_all_docs(project_id, token):
     """يجلب جميع وثائق مجموعة subscriptions من Firestore مع دعم التصفّح الكامل."""
     base = (f'https://firestore.googleapis.com/v1/projects/{project_id}'
-            f'/databases/(default)/documents/subscriptions')
+            f'/databases/{firestore_database_path()}/documents/subscriptions')
     docs       = []
     page_token = None
     try:
