@@ -1,0 +1,55 @@
+abdulazizalshareef@MacBook-Air-Abdulaziz App % cd ~/Fatinah
+
+git fetch origin
+git reset --hard origin/main
+
+rm -rf node_modules
+npm ci
+npx cap sync ios
+
+cd ios/App
+pod deintegrate
+rm -rf Pods Podfile.lock
+pod install --repo-update
+open App.xcworkspace
+remote: Enumerating objects: 454, done.
+remote: Counting objects: 100% (453/453), done.
+remote: Compressing objects: 100% (173/173), done.
+remote: Total 417 (delta 254), reused 405 (delta 242), pack-reused 0 (from 0)
+Receiving objects: 100% (417/417), 2.83 MiB | 3.40 MiB/s, done.
+Resolving deltas: 100% (254/254), completed with 23 local objects.
+From https://github.com/boturki13/fatinah
+   d9141f3..b9a69cb  main       -> origin/main
+HEAD is now at b9a69cb Add git clone log for documentation
+npm error code ENOTFOUND
+npm error syscall getaddrinfo
+npm error errno ENOTFOUND
+npm error network request to http://package-firewall.replit.local/npm/xml2js/-/xml2js-0.6.2.tgz failed, reason: getaddrinfo ENOTFOUND package-firewall.replit.local
+npm error network This is a problem related to network connectivity.
+npm error network In most cases you are behind a proxy or have bad network settings.
+npm error network
+npm error network If you are behind a proxy, please make sure that the 'proxy' config is set properly.  See: 'npm help config'
+npm error A complete log of this run can be found in: /Users/abdulazizalshareef/.npm/_logs/2026-07-31T18_37_38_903Z-debug-0.log
+npm error could not determine executable to run
+npm error A complete log of this run can be found in: /Users/abdulazizalshareef/.npm/_logs/2026-07-31T18_41_10_750Z-debug-0.log
+Deintegrating `App.xcodeproj`
+Deleted 1 'Check Pods Manifest.lock' build phases.
+Deleted 1 'Embed Pods Frameworks' build phases.
+- Pods_App.framework
+- Pods-App.debug.xcconfig
+- Pods-App.release.xcconfig
+Deleted 1 empty `Pods` groups from project.
+Deleted 1 empty `Frameworks` groups from project.
+Removing `Pods` directory.
+
+Project has been deintegrated. No traces of CocoaPods left in project.
+Note: The workspace referencing the Pods project still remains.
+
+[!] Invalid `Podfile` file: cannot load such file -- /Users/abdulazizalshareef/Fatinah/node_modules/@capacitor/ios/scripts/pods_helpers.
+
+ #  from /Users/abdulazizalshareef/Fatinah/ios/App/Podfile:1
+ #  -------------------------------------------
+ >  require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+ #  
+ #  -------------------------------------------
+abdulazizalshareef@MacBook-Air-Abdulaziz App % 
