@@ -1343,8 +1343,13 @@ class Handler(BaseHTTPRequestHandler):
             if not rc_secret:
                 print('[RevenueCat] REVENUECAT_WEBHOOK_SECRET غير مهيَّأ — الـ endpoint معطَّل')
                 self.send_json(503, {'error': 'Webhook غير مهيَّأ — تواصل مع المسؤول'}); return
-            auth_val = self.headers.get('Authorization', '')
-            if auth_val != rc_secret:
+            import hmac as _hmac
+            auth_val = self.headers.get('Authorization', '') or ''
+            # نقبل القيمة الخام أو بصيغة "Bearer <secret>" (كما يرسلها RevenueCat
+            # حسب ما يُدخله المستخدم في حقل Authorization header value)
+            candidate = auth_val[len('Bearer '):].strip() if auth_val.startswith('Bearer ') else auth_val
+            if not (_hmac.compare_digest(candidate, rc_secret)
+                    or _hmac.compare_digest(auth_val, rc_secret)):
                 self.send_json(401, {'error': 'Unauthorized'}); return
 
             try:   event = json.loads(body)

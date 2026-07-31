@@ -129,3 +129,51 @@
 صالحة لإثبات الهوية عبر idToken)، ثم يحذف مستخدم Firebase فعلياً (مع طلب
 إعادة تسجيل دخول تلقائي عند `requires-recent-login`، بما فيها كلمة المرور لو
 كان المزوّد `password`)، ثم يمسح كل التخزين المحلي.
+
+## 6. Apple IAP وRevenueCat — إعداد الإنتاج والتحقق الخادمي
+
+الاشتراكات الرقمية في iOS تُباع عبر Apple App Store، بينما يقرر الخادم فتح
+المزايا بعد وصول webhook موثّق من RevenueCat. لا يعتمد التطبيق على
+`CustomerInfo` أو cache محلي لفتح المزايا.
+
+### إعداد RevenueCat Dashboard
+
+من **Integrations → Webhooks → New webhook** استخدم:
+
+| الحقل | القيمة |
+|---|---|
+| Webhook name | `Fatinah Apple IAP Production` |
+| Webhook URL | `https://ata20.com/api/revenuecat/webhook` |
+| Authorization header value | نفس قيمة السر `REVENUECAT_WEBHOOK_SECRET` المحفوظة في Replit Secrets |
+| Environment | `Production` |
+| App | تطبيق فَطِنة iOS |
+| Event type | All، أو الأحداث الموضحة أدناه |
+
+اترك **Paywall events** معطّلة؛ فهي أحداث واجهة وليست أحداث اشتراك. إذا لم
+يتوفر خيار All، فعّل `INITIAL_PURCHASE` و`RENEWAL` و`CANCELLATION`
+و`EXPIRATION` و`BILLING_ISSUE` و`BILLING_ISSUE_RESOLVED` و`PRODUCT_CHANGE`
+و`UNCANCELLATION`.
+
+بعد حفظ webhook، استخدم زر **Send test** إن ظهر، ثم راقب استجابة 200. يجب
+نشر آخر نسخة من التطبيق بعد إضافة السر أو تعديل الخادم، لأن النطاق المنشور
+لا يقرأ تغييرات بيئة التطوير قبل إعادة النشر.
+
+### ضمان عدم فتح المزايا قبل التأكيد
+
+- سر مفقود: `503` ولا تعديل لأي اشتراك.
+- سر خاطئ: `401` ولا تعديل لأي اشتراك.
+- `app_user_id` غير مربوط بهوية Firebase: `202` ولا يُنشأ اشتراك.
+- شراء أو استعادة ناجحة: `INITIAL_PURCHASE` يجعل الحالة `active`.
+- التجديد: `RENEWAL` يجعل الحالة `active`.
+- الإلغاء أو الانتهاء أو مشكلة الفوترة: الحالة تصبح غير فعّالة.
+- فشل Firestore لا يفتح صلاحية جديدة؛ تُحفظ المحاولة في outbox لإعادة الإرسال.
+
+اختبار المسار المحلي:
+
+```bash
+python3 tests/test_revenuecat_webhook.py
+```
+
+اختبار دورة Apple الفعلية يحتاج شراء Sandbox/TestFlight ثم التحقق من وصول
+`INITIAL_PURCHASE` و`RENEWAL` و`EXPIRATION` من سجل RevenueCat؛ لا تستخدم بيئة
+Sandbox مع webhook مضبوط على Production.

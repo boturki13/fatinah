@@ -41,6 +41,23 @@ Apple/Google/بريد يرقّي (link) نفس الحساب بدل إنشاء ح
 - **في المتصفح مع Firebase config:** Firebase Web SDK (popup)
 - **بدون Firebase config:** يتراجع لمعرّف جهاز محلي (device id) — يعمل التطبيق لكن بلا مزامنة عبر الأجهزة
 
+## الاشتراكات — Apple IAP عبر RevenueCat
+
+الاشتراكات الرقمية تُباع عبر Apple IAP فقط (لا Stripe ولا Tap). الخادم هو مصدر
+الحقيقة: الصلاحية تُفتح فقط بعد وصول webhook موثّق من RevenueCat إلى
+`POST /api/revenuecat/webhook`.
+
+**إعداد الإنتاج (RevenueCat Dashboard → Integrations → Webhooks):**
+1. Webhook URL: `https://<النطاق المنشور>/api/revenuecat/webhook`
+2. Authorization header value: نفس قيمة السر `REVENUECAT_WEBHOOK_SECRET`
+   في Replit Secrets (يُقبل خاماً أو بصيغة `Bearer <secret>`).
+3. Environment: Production.
+
+**سلوك fail-closed:** بدون السر يعيد الـ endpoint ‏503 ولا يُحدَّث أي اشتراك؛
+سر خاطئ → 401؛ UUID غير مربوط بحساب Firebase → 202 بلا فتح صلاحية. عند فشل
+كتابة Firestore يُحدَّث SQLite (المرجع) ويُعاد إرسال Firestore عبر outbox.
+الاختبار: `python3 tests/test_revenuecat_webhook.py`.
+
 ## ملاحظات
 
 - لا يحتاج npm install لتشغيل الخادم — Python stdlib فقط
