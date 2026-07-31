@@ -13,6 +13,7 @@
 | `GOOGLE_API_KEY` | يُستخدم كـ `apiKey` في تهيئة Firebase Web SDK، وأيضاً للتحقق من `idToken` عبر Identity Toolkit REST API من الخادم |
 | `FIREBASE_AUTH_DOMAIN` | نطاق Firebase Auth |
 | `FIREBASE_PROJECT_ID` | معرّف مشروع Firebase — وجوده هو ما يفعّل التحقق من الهوية في الخادم (`server.py`) |
+| `FIRESTORE_DATABASE_ID` | معرّف قاعدة Firestore Native (حالياً `fatinah-native`) |
 | `FIREBASE_APP_ID`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_STORAGE_BUCKET` | بقية إعداد Firebase Web SDK |
 
 إن لم تكن `FIREBASE_PROJECT_ID` موجودة، يتراجع الخادم تلقائياً لسلوك "الثقة

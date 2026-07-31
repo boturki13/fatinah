@@ -51,6 +51,7 @@ FIREBASE_MESSAGING_SENDER_ID = "508338410340"
 FIREBASE_PROJECT_ID = "fatinah-game"
 FIREBASE_STORAGE_BUCKET = "fatinah-game.firebasestorage.app"
 REVENUECAT_IOS_API_KEY = "appl_uqcDNORwLPcxPWRUDjmPPpoMeNM"
+FIRESTORE_DATABASE_ID = "fatinah-native"
 
 [nix]
 channel = "stable-25_05"

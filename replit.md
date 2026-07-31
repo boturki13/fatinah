@@ -25,6 +25,7 @@ python3 server.py
 | `FIREBASE_API_KEY` | Google/Apple sign-in في المتصفح | لـ auth |
 | `FIREBASE_AUTH_DOMAIN` | Google/Apple sign-in في المتصفح | لـ auth |
 | `FIREBASE_PROJECT_ID` | Google/Apple sign-in في المتصفح | لـ auth |
+| `FIRESTORE_DATABASE_ID` | معرّف قاعدة Firestore Native | `fatinah-native` |
 | `FIREBASE_APP_ID` | Google/Apple sign-in في المتصفح | لـ auth |
 | `FIREBASE_MESSAGING_SENDER_ID` | Google/Apple sign-in في المتصفح | لـ auth |
 
