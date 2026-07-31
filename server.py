@@ -3,7 +3,7 @@
 يخدم index.html، يوفّر firebase-config.js، يولّد الأسئلة عبر Claude،
 ويدير اشتراكات Apple IAP عبر RevenueCat.
 """
-import json, os, sqlite3, threading, time, urllib.request, urllib.error, urllib.parse
+import json, os, sqlite3, threading, time, urllib.request, urllib.error, urllib.parse, uuid
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 import re
@@ -1031,7 +1031,9 @@ class Handler(BaseHTTPRequestHandler):
                 conn.commit()
                 self.send_json(200, {'ok': True, 'expires_at': new_expires_at, 'days': days})
             except Exception as e:
-                self.send_json(500, {'error': str(e)})
+                err_id = uuid.uuid4().hex[:8]
+                print(f'[Promo Redeem] خطأ داخلي (ref={err_id}): {e}')
+                self.send_json(500, {'error': 'خطأ داخلي في الخادم', 'ref': err_id})
             finally:
                 conn.close()
 
@@ -1099,7 +1101,9 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     self.send_json(400, {'error': 'action غير معروف'})
             except Exception as e:
-                self.send_json(500, {'error': str(e)})
+                err_id = uuid.uuid4().hex[:8]
+                print(f'[Promo Admin] خطأ داخلي (ref={err_id}): {e}')
+                self.send_json(500, {'error': 'خطأ داخلي في الخادم', 'ref': err_id})
             finally:
                 conn.close()
 
