@@ -425,10 +425,14 @@ def call_claude(topic: str, count: int):
                          if isinstance(questions, list) else []
             return valid, None
     except urllib.error.HTTPError as e:
+        err_id = uuid.uuid4().hex[:8]
         body = e.read().decode(errors='ignore')
-        return None, f'Anthropic {e.code}: {body[:200]}'
+        print(f'[Claude] خطأ من Anthropic (ref={err_id}): HTTP {e.code}: {body[:200]}')
+        return None, f'تعذّر توليد الأسئلة حالياً، حاول لاحقاً (ref={err_id})'
     except Exception as exc:
-        return None, str(exc)
+        err_id = uuid.uuid4().hex[:8]
+        print(f'[Claude] خطأ داخلي (ref={err_id}): {exc}')
+        return None, f'تعذّر توليد الأسئلة حالياً، حاول لاحقاً (ref={err_id})'
 
 # ─── صفحات قانونية عامة (لمتطلبات App Store Connect) ────────────────────────
 PRIVACY_BODY = '''
