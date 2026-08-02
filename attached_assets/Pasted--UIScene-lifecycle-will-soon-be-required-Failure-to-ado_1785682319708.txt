@@ -1,0 +1,91 @@
+`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+Reading from public effective user settings.
+Could not create a sandbox extension for '/var/containers/Bundle/Application/48F1C284-E777-46D3-A5F6-793E9A284DD1/App.app'
+12.7.0 - [FirebaseCore][I-COR000003] The default Firebase app has not yet been configured. Add `FirebaseApp.configure()` to your application initialization. This can be done in in the App Delegate's application(_:didFinishLaunchingWithOptions:)` (or the `@main` struct's initializer in SwiftUI). Read more: https://firebase.google.com/docs/ios/setup#initialize_firebase_in_your_app
+⚡️  Loading app at capacitor://localhost...
+void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+WebContent[3449] Could not register system wide server: -25204
+WebContent[3449] _AXAddToElementCache was called even though the element was in the cache: <WKAccessibilityWebPageObject: 0x101438010>
+WebContent[3449] Unable to hide query parameters from script (missing data)
+WebContent[3449] Service "com.apple.CARenderServer" failed bootstrap look up (1) - (os/kern) invalid address
+WebContent[3449] Failed to initialize application enviroment context
+WebContent[3449] Failed to load a device context.
+WebContent[3449] Failed to initialize application enviroment context
+WebContent[3449] Failed to load a device context.
+SplashScreen.hideSplash: SplashScreen was automatically hidden after default timeout. You should call `SplashScreen.hide()` as soon as your web app is loaded (or increase the timeout). Read more at https://capacitorjs.com/docs/apis/splash-screen#hiding-the-splash-screen
+WebContent[3449] xpc_user_sessions_get_foreground_uid() failed with error 1 - Operation not permitted
+⚡️  WebView loaded
+⚡️  To Native ->  Preferences set 5367998
+⚡️  To Native ->  Preferences set 5367999
+⚡️  To Native ->  Preferences set 5368000
+⚡️  To Native ->  FirebaseAuthentication getIdToken 5368001
+⚡️  TO JS undefined
+⚡️  TO JS undefined
+⚡️  TO JS undefined
+⚡️  TO JS {"token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwY2FkODZkNzY5ZmFkZTViODkxNmQ5Y2U1MDc0YzgyMGYwNjdkNTIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vZmF0aW5haC1nYW1lIiwiYXVkIjoiZmF0aW5haC1nYW1lIiwiYXV0aF90aW1lIjoxNzg1NTIyODQyLCJ1c2VyX2lkIjo
+⚡️  To Native ->  Purchases configure -1
+DEBUG: ℹ️ Configuring SDK using RevenueCat's UserDefaults suite.
+DEBUG: 👤 Identifying App User ID
+DEBUG: ℹ️ Debug logging enabled
+DEBUG: ℹ️ SDK Version - 5.83.0
+DEBUG: ℹ️ Bundle ID - com.fatinah.game
+DEBUG: ℹ️ System Version - Version 26.5.2 (Build 23F84)
+DEBUG: ℹ️ Not using a simulator.
+DEBUG: 👤 Initial App User ID set
+DEBUG: ℹ️ Purchases is configured with informational response verification
+DEBUG: ℹ️ Observing StoreKit.Transaction.updates
+DEBUG: ℹ️ Purchases is configured with StoreKit version 2
+DEBUG: ℹ️ Delegate set
+⚡️  TO JS undefined
+DEBUG: ℹ️ Observing StoreKit.PurchaseIntent.intents
+DEBUG: ℹ️ ProductEntitlementMapping cache is stale, updating from network.
+DEBUG: ℹ️ Offerings cache is stale, updating from network in foreground
+DEBUG: ℹ️ GetProductEntitlementMappingOperation: Started
+DEBUG: ℹ️ GetRemoteConfigOperation: Started
+DEBUG: ℹ️ There are no requests currently running, starting request GET /v1/product_entitlement_mapping
+DEBUG: ℹ️ There are no requests currently running, starting request POST /v1/config/app
+DEBUG: ℹ️ API request started: GET '/v1/product_entitlement_mapping'
+DEBUG: ℹ️ API request started: POST '/v1/config/app'
+DEBUG: ℹ️ API request completed: POST '/v1/config/app' (200)
+DEBUG: ℹ️ Received remote config with 4 active topics (product_entitlement_mapping, sources, ui_config, workflows) and 4 changed topics (product_entitlement_mapping, sources, ui_config, workflows).
+DEBUG: ℹ️ API request completed: GET '/v1/product_entitlement_mapping' (200)
+DEBUG: ℹ️ ProductEntitlementMapping cache updated from network.
+DEBUG: ℹ️ Persisted remote config for domain 'app' with 4 active topics and 0 referenced blobs.
+DEBUG: ℹ️ GetRemoteConfigOperation: Finished
+DEBUG: ℹ️ Serial request done: POST /v1/config/app, 0 requests left in the queue
+DEBUG: ℹ️ GetProductEntitlementMappingOperation: Finished
+DEBUG: ℹ️ Serial request done: GET /v1/product_entitlement_mapping, 0 requests left in the queue
+DEBUG: ℹ️ GetOfferingsOperation: Started
+DEBUG: ℹ️ There are no requests currently running, starting request GET /v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0/offerings
+DEBUG: ℹ️ API request started: GET '/v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0/offerings'
+DEBUG: ℹ️ API request completed: GET '/v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0/offerings' (200)
+DEBUG: ℹ️ No existing products cached, starting store products request for: ["com.fatinah.game.monthly", "com.fatinah.game.annual"]
+DEBUG: ℹ️ GetOfferingsOperation: Finished
+DEBUG: ℹ️ Serial request done: GET /v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0/offerings, 0 requests left in the queue
+DEBUG: ℹ️ HealthReportAvailabilityOperation: Started
+DEBUG: ℹ️ There are no requests currently running, starting request GET /v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0/health_report_availability
+DEBUG: ℹ️ API request started: GET '/v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0/health_report_availability'
+DEBUG: 😻 Store products request received response
+DEBUG: ℹ️ Store products request finished
+WARN: ⚠️ Empty Product titles are not supported. Found in product with identifier: com.fatinah.game.monthly
+WARN: ⚠️ Empty Product titles are not supported. Found in product with identifier: com.fatinah.game.annual
+DEBUG: 😻 Offerings updated from network.
+WARN: ⚠️ Unable to merge remote config blob data for topic 'ui_config': unavailable item keys: app, custom_variables, localizations, variable_config.
+WARN: ⚠️ Failed to assemble ui_config: one or more parts are unavailable.
+DEBUG: ℹ️ Warming up intro eligibility cache for 2 products
+DEBUG: ℹ️ No existing products cached, starting store products request for: ["com.fatinah.game.annual", "com.fatinah.game.monthly"]
+DEBUG: 😻 Store products request received response
+DEBUG: ℹ️ Store products request finished
+DEBUG: ℹ️ Caching trial or intro eligibility for products: ["com.fatinah.game.monthly", "com.fatinah.game.annual"]
+DEBUG: ℹ️ API request completed: GET '/v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0/health_report_availability' (200)
+DEBUG: ℹ️ HealthReportAvailabilityOperation: Finished
+DEBUG: ℹ️ Serial request done: GET /v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0/health_report_availability, 0 requests left in the queue
+DEBUG: ℹ️ GetCustomerInfoOperation: Started
+DEBUG: ℹ️ There are no requests currently running, starting request GET /v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0
+DEBUG: ℹ️ API request started: GET '/v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0'
+DEBUG: ℹ️ Finished syncing all cached transaction metadata
+DEBUG: ℹ️ API request completed: GET '/v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0' (201)
+DEBUG: ℹ️ Sending latest CustomerInfo to delegate.
+DEBUG: 😻 CustomerInfo updated from network.
+DEBUG: ℹ️ GetCustomerInfoOperation: Finished
+DEBUG: ℹ️ Serial request done: GET /v1/subscribers/04cc38ec-0305-4d38-a210-ab8efd1ea0b0, 0 requests left in the queue
