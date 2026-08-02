@@ -1,0 +1,71 @@
+abdulazizalshareef@MacBook-Air-Abdulaziz App % cd ~/Fatinah
+
+git fetch origin
+git reset --hard origin/main
+
+rm -rf node_modules
+npm install \
+  --package-lock=false \
+  --registry=https://registry.npmjs.org \
+  --no-audit \
+  --no-fund
+
+npx cap sync ios
+
+cd ios/App
+pod install --repo-update
+open App.xcworkspace
+remote: Enumerating objects: 32, done.
+remote: Counting objects: 100% (32/32), done.
+remote: Compressing objects: 100% (12/12), done.
+remote: Total 26 (delta 14), reused 26 (delta 14), pack-reused 0 (from 0)
+Unpacking objects: 100% (26/26), 801.65 KiB | 564.00 KiB/s, done.
+From https://github.com/boturki13/fatinah
+   b9a69cb..5f74793  main       -> origin/main
+HEAD is now at 5f74793 Add screenshot asset
+npm warn deprecated uuid@7.0.3: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+
+added 180 packages in 51s
+npm warn allow-scripts 2 packages have install scripts not yet covered by allowScripts:
+npm warn allow-scripts   @firebase/util@1.15.2 (postinstall: node ./postinstall.js)
+npm warn allow-scripts   protobufjs@7.6.5 (postinstall: node scripts/postinstall)
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+✔ Copying web assets from www to ios/App/App/public in 3.60ms
+✔ Creating capacitor.config.json in ios/App/App in 632.21μs
+✔ copy ios in 13.59ms
+✔ Updating iOS plugins in 578.25μs
+✖ Updating iOS native dependencies with pod install - failed!
+✖ update ios - failed!
+[error] Analyzing dependencies
+        [!] CocoaPods could not find compatible versions for pod "PurchasesHybridCommon":
+        In snapshot (Podfile.lock):
+        PurchasesHybridCommon (= 13.26.0)
+        
+        In Podfile:
+        RevenuecatPurchasesCapacitor (from `../../node_modules/@revenuecat/purchases-capacitor`) was resolved to 13.3.0,
+        which depends on
+        PurchasesHybridCommon (= 18.28.0)
+        
+        
+        You have either:
+        * out-of-date source repos which you can update with `pod repo update` or with `pod install --repo-update`.
+        * changed the constraints of dependency `PurchasesHybridCommon` inside your development pod
+        `RevenuecatPurchasesCapacitor`.
+        You should run `pod update PurchasesHybridCommon` to apply changes you've made.
+        
+Updating local specs repositories
+Analyzing dependencies
+[!] CocoaPods could not find compatible versions for pod "PurchasesHybridCommon":
+  In snapshot (Podfile.lock):
+    PurchasesHybridCommon (= 13.26.0)
+
+  In Podfile:
+    RevenuecatPurchasesCapacitor (from `../../node_modules/@revenuecat/purchases-capacitor`) was resolved to 13.3.0, which depends on
+      PurchasesHybridCommon (= 18.28.0)
+
+
+You have either:
+ * changed the constraints of dependency `PurchasesHybridCommon` inside your development pod `RevenuecatPurchasesCapacitor`.
+   You should run `pod update PurchasesHybridCommon` to apply changes you've made.
+abdulazizalshareef@MacBook-Air-Abdulaziz App % 
