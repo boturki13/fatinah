@@ -1274,6 +1274,19 @@ async function ensureAnonymousSession(){
 
   const FA=getFirebaseAuth();
   if(FA){
+    // جلسة Firebase قد تبقى في Keychain بعد إعادة تثبيت التطبيق رغم مسح Preferences —
+    // استرجعها أولاً حتى لا نستبدل حساباً حقيقياً بجلسة مجهولة أو معرّف محلي.
+    try{
+      const cur = await FA.getCurrentUser();
+      const u = cur && cur.user;
+      if(u && u.uid){
+        const prov=(u.providerData && u.providerData[0] && u.providerData[0].providerId)
+          || (u.isAnonymous ? 'anonymous' : 'firebase');
+        storeSet('authUid', u.uid);
+        storeSet('authProvider', prov);
+        return {uid: u.uid, provider: prov};
+      }
+    }catch(e){}
     try{
       const res = await FA.signInAnonymously();
       uid = res && res.user && res.user.uid;
@@ -1283,6 +1296,14 @@ async function ensureAnonymousSession(){
     const wb=await getFirebaseWebAuth();
     if(wb){
       try{
+        const cu = wb.auth && wb.auth.currentUser;
+        if(cu && cu.uid){
+          const prov=(cu.providerData && cu.providerData[0] && cu.providerData[0].providerId)
+            || (cu.isAnonymous ? 'anonymous' : 'firebase');
+          storeSet('authUid', cu.uid);
+          storeSet('authProvider', prov);
+          return {uid: cu.uid, provider: prov};
+        }
         const { signInAnonymously } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
         const result = await signInAnonymously(wb.auth);
         uid = result.user.uid;
