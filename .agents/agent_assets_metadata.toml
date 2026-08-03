@@ -13,3 +13,31 @@ uri = "file://screenshots/app-store-paywall.jpg"
 type = "image"
 title = "لقطة شاشة فَطِنة — شاشة الاشتراك"
 description = "لقطة حقيقية من شاشة الاشتراك داخل التطبيق. هذه نسخة معاينة بمقاس 1280×720؛ لرفعها في App Store Connect يلزم التقاط اللقطات العمودية من iPhone Simulator داخل Xcode."
+
+[[outputs]]
+id = "QdEM4hiixP0zqEi1yyUYT"
+uri = "file://screenshots/fatinah-paywall-1242x2688.png"
+type = "image"
+title = "فَطِنة — شاشة الاشتراك — 1242×2688"
+description = "لقطة من شاشة الاشتراك في تطبيق فَطِنة، بأبعاد App Store Connect المطلوبة."
+
+[[outputs]]
+id = "DuKaZASWdT0UKyvCyIf-U"
+uri = "file://screenshots/fatinah-paywall-1284x2778.png"
+type = "image"
+title = "فَطِنة — شاشة الاشتراك — 1284×2778"
+description = "لقطة من شاشة الاشتراك في تطبيق فَطِنة، بأبعاد App Store Connect المطلوبة."
+
+[[outputs]]
+id = "Um6tklUeTfdBssXqHycNg"
+uri = "file://screenshots/fatinah-paywall-2688x1242.png"
+type = "image"
+title = "فَطِنة — شاشة الاشتراك — 2688×1242"
+description = "لقطة من شاشة الاشتراك في تطبيق فَطِنة، بأبعاد App Store Connect المطلوبة."
+
+[[outputs]]
+id = "42KCyk7UhfPbXSHAr9yyJ"
+uri = "file://screenshots/fatinah-paywall-2778x1284.png"
+type = "image"
+title = "فَطِنة — شاشة الاشتراك — 2778×1284"
+description = "لقطة من شاشة الاشتراك في تطبيق فَطِنة، بأبعاد App Store Connect المطلوبة."
