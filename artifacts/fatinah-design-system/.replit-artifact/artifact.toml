@@ -1,0 +1,19 @@
+kind = "design-system"
+previewPath = "/__fatinah-ds/"
+title = "فَطِنة Design System"
+description = "Design system extracted from fatinah-replit.zip: a dark Arabic party-game visual language with fire gradient accents, glass cards, Tajawal typography, and game-state colors."
+version = "1.0.0"
+id = "artifacts/fatinah-design-system"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/__fatinah-ds/" ]
+localPort = 19799
+
+[services.development]
+run = "pnpm --filter @workspace/fatinah-design-system run dev"
+
+[services.env]
+PORT = "19799"
+BASE_PATH = "/__fatinah-ds/"
