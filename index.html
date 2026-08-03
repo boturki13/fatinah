@@ -418,16 +418,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
         متابعة بالبريد الإلكتروني
       </button>
 
-      <div id="auth-email-form" style="display:none; margin-top:14px;">
+      <form id="auth-email-form" onsubmit="return false;" style="display:none; margin-top:14px;">
         <input class="team-input" id="auth-email" type="email" placeholder="البريد الإلكتروني" autocomplete="email" style="width:100%; margin-bottom:10px;">
         <input class="team-input" id="auth-password" type="password" placeholder="كلمة المرور (٦ أحرف على الأقل)" autocomplete="current-password" style="width:100%; margin-bottom:12px;">
-        <button class="btn btn-primary btn-block" onclick="emailAuth('signup')">📧 إنشاء حساب جديد</button>
-        <button class="btn btn-ghost btn-block" onclick="emailAuth('signin')" style="margin-top:8px;">لدي حساب بالفعل — تسجيل الدخول</button>
+        <button type="button" class="btn btn-primary btn-block" onclick="emailAuth('signup')">📧 إنشاء حساب جديد</button>
+        <button type="button" class="btn btn-ghost btn-block" onclick="emailAuth('signin')" style="margin-top:8px;">لدي حساب بالفعل — تسجيل الدخول</button>
         <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;flex-wrap:wrap;">
           <button type="button" class="btn btn-ghost" onclick="forgotPassword()" style="width:auto;padding:8px 10px;font-size:12px;">نسيت كلمة المرور؟</button>
           <button type="button" class="btn btn-ghost" onclick="forgotEmail()" style="width:auto;padding:8px 10px;font-size:12px;">نسيت البريد الإلكتروني؟</button>
         </div>
-      </div>
+      </form>
       <div id="auth-msg" style="font-size:13px; text-align:center; margin-top:10px; min-height:18px;"></div>
 
       <button class="btn btn-ghost btn-block" style="margin-top:16px;" onclick="skipAuth()">متابعة بدون ربط الآن</button>
@@ -1302,7 +1302,14 @@ async function ensureAnonymousSession(){
     try{
       const res = await FA.signInAnonymously();
       uid = res && res.user && res.user.uid;
-    }catch(e){ console.error('anon Capacitor:', e); }
+    }catch(e){
+      const code=String(e && (e.code||e.message) || '');
+      if(code.includes('admin-restricted-operation') || code.includes('restricted to administrators')){
+        console.warn('Firebase Anonymous sign-in is disabled; using the local fallback until it is enabled in Firebase Console.');
+      } else {
+        console.error('anon Capacitor:', e);
+      }
+    }
   }
   if(!uid){
     const wb=await getFirebaseWebAuth();
@@ -1367,14 +1374,14 @@ function afterAuthSuccess(name, provider, uid, email){
 }
 
 // جلب ID token للمستخدم الحالي (لإثبات الهوية للخادم)
-async function getCurrentIdToken(){
+async function getCurrentIdToken(forceRefresh=false){
   try{
     const FA=getFirebaseAuth();
-    if(FA){ const r=await FA.getIdToken(); return (r && r.token) || ''; }
+    if(FA){ const r=await FA.getIdToken({forceRefresh:!!forceRefresh}); return (r && r.token) || ''; }
   }catch(e){}
   try{
     const wb=await getFirebaseWebAuth();
-    if(wb && wb.auth.currentUser) return await wb.auth.currentUser.getIdToken();
+    if(wb && wb.auth.currentUser) return await wb.auth.currentUser.getIdToken(!!forceRefresh);
   }catch(e){}
   return '';
 }
@@ -2159,25 +2166,43 @@ function getRC(){
 
 async function initRevenueCat(){
   const RC = getRC();
-  if(!RC) return;
+  if(!RC) return false;
   await loadRcKey();
-  if(!RC_CONFIGURED) return; // لا تهيّئ إذا لم يتوفر المفتاح
+  if(!RC_CONFIGURED) return false; // لا تهيّئ إذا لم يتوفر المفتاح
   try{
     const uid = storeGet('authUid','');
     const rcAppUserId=getRcAppUserId();
     if(!uid) throw new Error('لا يمكن تهيئة RevenueCat بلا حساب Firebase');
-    const idToken=await getCurrentIdToken();
-    const identityResp=await fetch(apiUrl('/api/revenuecat/identity'),{
+    let idToken=await getCurrentIdToken();
+    const identityRequest=token=>fetch(apiUrl('/api/revenuecat/identity'),{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({uid, rcAppUserId, idToken})
+      body:JSON.stringify({uid, rcAppUserId, idToken:token})
     });
-    if(!identityResp.ok) throw new Error('تعذّر تسجيل ربط هوية RevenueCat بالخادم');
+    let identityResp=await identityRequest(idToken);
+    // Firebase قد يعيد token مخزناً من جلسة سابقة؛ جدّده مرة واحدة قبل الفشل.
+    if(identityResp.status===401){
+      idToken=await getCurrentIdToken(true);
+      identityResp=await identityRequest(idToken);
+    }
+    if(!identityResp.ok){
+      let detail='';
+      try{
+        const payload=await identityResp.json();
+        detail=payload && payload.error ? `: ${payload.error}` : '';
+      }catch(e){}
+      throw new Error(`ربط هوية RevenueCat فشل (HTTP ${identityResp.status})${detail}`);
+    }
     await RC.configure({ apiKey: RC_API_KEY, appUserID: rcAppUserId });
     // لا نرسل البريد أو Firebase UID كـ subscriber attribute.
     // RevenueCat لا يوفر Secure Attributes من هذا الـSDK؛ السمات العامة ليست
     // وسيلة صلاحيات، لذلك يعتمد فتح المحتوى على webhook الخادمي فقط.
-  }catch(e){ console.error('RC init:', e); }
+    return true;
+  }catch(e){
+    const detail=String(e && (e.message||e.code) || e || 'خطأ غير معروف');
+    console.error('RC init:', detail);
+    return false;
+  }
 }
 
 async function rcIsActive(){
@@ -2242,6 +2267,7 @@ async function promoIsActive(uid){
   if(!uid) return false;
   try{
     const idToken = await getCurrentIdToken();
+    if(!idToken) return false;
     const r = await fetch(apiUrl(`/api/promo/status?uid=${encodeURIComponent(uid)}`),
       { headers: idToken ? {'Authorization':'Bearer '+idToken} : {} });
     if(!r.ok) return false;
@@ -2288,6 +2314,10 @@ async function checkSubscriptionAndRoute(uid){
   // الويب لا يبيع الاشتراكات؛ Apple IAP هو وسيلة الدفع الوحيدة.
   try{
     const idToken = await getCurrentIdToken();
+    if(!idToken){
+      go('s-paywall');
+      return false;
+    }
     const resp = await fetch(apiUrl(`/api/subscription/status?uid=${encodeURIComponent(uid)}`),
       { headers: idToken ? {'Authorization':'Bearer '+idToken} : {} });
     if(!resp.ok) throw new Error('status error');
@@ -2308,6 +2338,7 @@ async function checkSubscriptionAndRouteServerOnly(uid){
   go('s-loading');
   try{
     const idToken=await getCurrentIdToken();
+    if(!idToken) throw new Error('لا توجد جلسة Firebase موثّقة');
     const resp=await fetch(apiUrl(`/api/subscription/status?uid=${encodeURIComponent(uid||'')}`),{
       headers:idToken ? {'Authorization':'Bearer '+idToken} : {}
     });
@@ -2343,9 +2374,14 @@ async function redeemPromo(){
   try{
     const uid = window._currentUid || '';
     const idToken = await getCurrentIdToken();
+    if(!uid || !idToken){
+      msg.style.color='#ff8a8a';
+      msg.textContent='⚠️ سجّل الدخول أولاً ثم أعد المحاولة';
+      return;
+    }
     const r = await fetch(apiUrl('/api/promo/redeem'),{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
       body: JSON.stringify({code, uid, idToken})
     });
     const d = await r.json();
