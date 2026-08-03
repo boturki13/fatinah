@@ -6,3 +6,10 @@ id = "UNN_ZMV7wQsfFYPcB-1Wg"
 uri = "file://fatinah_updated.zip"
 type = "unspecified"
 title = "fatinah_updated.zip — آخر نسخة من index.html"
+
+[[outputs]]
+id = "pU0qDQwfxJ729FTHfv5u6"
+uri = "file://screenshots/app-store-paywall.jpg"
+type = "image"
+title = "لقطة شاشة فَطِنة — شاشة الاشتراك"
+description = "لقطة حقيقية من شاشة الاشتراك داخل التطبيق. هذه نسخة معاينة بمقاس 1280×720؛ لرفعها في App Store Connect يلزم التقاط اللقطات العمودية من iPhone Simulator داخل Xcode."
