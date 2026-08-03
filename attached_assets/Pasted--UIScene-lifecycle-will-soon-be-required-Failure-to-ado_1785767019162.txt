@@ -1,0 +1,22 @@
+`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+12.7.0 - [FirebaseCore][I-COR000003] The default Firebase app has not yet been configured. Add `FirebaseApp.configure()` to your application initialization. This can be done in in the App Delegate's application(_:didFinishLaunchingWithOptions:)` (or the `@main` struct's initializer in SwiftUI). Read more: https://firebase.google.com/docs/ios/setup#initialize_firebase_in_your_app
+Reading from public effective user settings.
+Could not create a sandbox extension for '/var/containers/Bundle/Application/C7894C79-3C30-4127-B281-F7A8DFF714A5/App.app'
+⚡️  Loading app at capacitor://localhost...
+void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+WebContent[5375] Could not register system wide server: -25204
+WebContent[5375] _AXAddToElementCache was called even though the element was in the cache: <WKAccessibilityWebPageObject: 0x106b80000>
+WebContent[5375] Unable to hide query parameters from script (missing data)
+⚡️  To Native ->  Preferences set 26200855
+⚡️  To Native ->  FirebaseAuthentication getIdToken 26200856
+WebContent[5375] xpc_user_sessions_get_foreground_uid() failed with error 1 - Operation not permitted
+⚡️  TO JS undefined
+⚡️  WebView loaded
+WebContent[5375] Service "com.apple.CARenderServer" failed bootstrap look up (1) - (os/kern) invalid address
+WebContent[5375] Failed to initialize application enviroment context
+WebContent[5375] Failed to load a device context.
+WebContent[5375] Failed to initialize application enviroment context
+WebContent[5375] Failed to load a device context.
+⚡️  TO JS {"token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwY2FkODZkNzY5ZmFkZTViODkxNmQ5Y2U1MDc0YzgyMGYwNjdkNTIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vZmF0aW5haC1nYW1lIiwiYXVkIjoiZmF0aW5haC1nYW1lIiwiYXV0aF90aW1lIjoxNzg1NTIyODQyLCJ1c2VyX2lkIjo
+SplashScreen.hideSplash: SplashScreen was automatically hidden after default timeout. You should call `SplashScreen.hide()` as soon as your web app is loaded (or increase the timeout). Read more at https://capacitorjs.com/docs/apis/splash-screen#hiding-the-splash-screen
+⚡️  [error] - RC init: {}
