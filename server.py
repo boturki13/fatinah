@@ -767,6 +767,13 @@ class Handler(BaseHTTPRequestHandler):
             if not subscription_is_active(uid):
                 self.send_json(403, {'error': 'اشتراك فعّال مطلوب'}); return
 
+            # حد معدل لكل مستخدم ولكل IP — يمنع استنزاف تكلفة Anthropic API
+            client_ip = self.client_address[0]
+            if rate_limited(f'generate-ip:{client_ip}', max_calls=60, window_sec=60):
+                self.send_json(429, {'error': 'طلبات كثيرة جداً — حاول بعد قليل'}); return
+            if rate_limited(f'generate-uid:{uid}', max_calls=20, window_sec=60):
+                self.send_json(429, {'error': 'طلبات كثيرة جداً — حاول بعد قليل'}); return
+
             topic = (data.get('topic') or '').strip()
             try:    count = min(max(int(data.get('count', 6)), 1), 30)
             except Exception: count = 6
