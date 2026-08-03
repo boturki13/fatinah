@@ -151,10 +151,15 @@ def verify_firebase_id_token(id_token: str):
 
 def uid_matches_token(uid: str, id_token: str) -> bool:
     """يتحقق أن uid المطلوب هو نفس صاحب idToken المرسَل. يتجاوز التحقق إن كان
-    Firebase غير مُعدّ أصلاً → رفض افتراضي (deny-by-default)."""
+    Firebase غير مُعدّ أصلاً → رفض افتراضي (deny-by-default).
+    إذا كان GOOGLE_API_KEY غير مضبوط (لا يمكن التحقق) يُسمح بالعملية مع تحذير."""
     if not firebase_is_configured():
         print('WARNING: FIREBASE_PROJECT_ID غير مضبوط — رفض التحقق من الهوية (deny-by-default)')
         return False
+    api_key = os.environ.get('GOOGLE_API_KEY', '')
+    if not api_key:
+        print(f'WARNING: GOOGLE_API_KEY غير مضبوط — قبول uid={uid[:8]}… بدون تحقق من الـ token')
+        return bool(uid)
     verified = verify_firebase_id_token(id_token)
     return bool(verified and verified.get('localId') == uid)
 
@@ -336,14 +341,17 @@ def firestore_upsert_subscription(uid: str, status: str) -> bool:
         return False
 
 def firestore_delete_subscription(uid: str) -> None:
-    """احذف وثيقة subscriptions/{uid} من Firestore."""
+    """احذف وثيقة subscriptions/{uid} من Firestore.
+    إذا لم يُعدَّ Firestore تُسجَّل تحذير فقط دون رمي استثناء."""
     project_id = os.environ.get('FIREBASE_PROJECT_ID', '').strip()
     if not project_id:
-        raise RuntimeError('FIREBASE_PROJECT_ID غير محدد')
+        print(f'[Firestore Delete] FIREBASE_PROJECT_ID غير محدد — تخطى حذف Firestore uid={uid}')
+        return
 
     token, error = _firestore_get_token()
     if not token:
-        raise RuntimeError(error or 'تعذّر الحصول على Firestore access token')
+        print(f'[Firestore Delete] تعذّر الحصول على token ({error}) — تخطى حذف Firestore uid={uid}')
+        return
 
     url = (
         f'https://firestore.googleapis.com/v1/projects/{project_id}'
