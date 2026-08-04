@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import FirebaseCore
+import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -29,7 +30,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        if let rootVC = window?.rootViewController,
+           let webView = findWKWebView(in: rootVC.view) {
+            webView.scrollView.alwaysBounceHorizontal = false
+            webView.scrollView.showsHorizontalScrollIndicator = false
+        }
+    }
+
+    private func findWKWebView(in view: UIView) -> WKWebView? {
+        if let wk = view as? WKWebView { return wk }
+        for sub in view.subviews {
+            if let found = findWKWebView(in: sub) { return found }
+        }
+        return nil
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

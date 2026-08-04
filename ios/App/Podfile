@@ -25,7 +25,26 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+      config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
     end
   end
   assertDeploymentTarget(installer)
+
+  # إصلاح خطأ RecaptchaInterop: double-quoted includes في framework headers
+  recaptcha_headers = [
+    'Pods/RecaptchaInterop/RecaptchaEnterprise/RecaptchaInterop/Public/RecaptchaInterop/RCARecaptchaClientProtocol.h',
+    'Pods/RecaptchaInterop/RecaptchaEnterprise/RecaptchaInterop/Public/RecaptchaInterop/RCARecaptchaProtocol.h',
+    'Pods/RecaptchaInterop/RecaptchaEnterprise/RecaptchaInterop/Public/RecaptchaInterop/RecaptchaInterop.h',
+    'Pods/Target Support Files/RecaptchaInterop/RecaptchaInterop-umbrella.h',
+  ]
+  recaptcha_headers.each do |header_path|
+    full_path = File.join(File.dirname(__FILE__), header_path)
+    next unless File.exist?(full_path)
+    content = File.read(full_path)
+    updated = content.gsub(/#import "RCAActionProtocol\.h"/, '#import <RecaptchaInterop/RCAActionProtocol.h>')
+                     .gsub(/#import "RCARecaptchaClientProtocol\.h"/, '#import <RecaptchaInterop/RCARecaptchaClientProtocol.h>')
+                     .gsub(/#import "RCARecaptchaProtocol\.h"/, '#import <RecaptchaInterop/RCARecaptchaProtocol.h>')
+                     .gsub(/#import "RecaptchaInterop\.h"/, '#import <RecaptchaInterop/RecaptchaInterop.h>')
+    File.write(full_path, updated) if updated != content
+  end
 end
