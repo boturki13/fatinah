@@ -3506,6 +3506,7 @@ getFirebaseWebAuth();
 // فتح لاحق: نثق بـ authUid المحفوظ (الجلسة محفوظة تلقائياً من طبقة Firebase)
 // وننتقل مباشرة للرئيسية بدل إجبار المستخدم على تسجيل الدخول من جديد.
 (async function bootAuth(){
+  hideSplash();
   const { uid } = await ensureAnonymousSession();
   window._currentUid = uid;
   // هيّئ RevenueCat على iOS بعد التأكد من وجود uid
