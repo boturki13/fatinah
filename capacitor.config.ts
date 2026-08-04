@@ -8,8 +8,7 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'always',
     backgroundColor: '#120B24',
-    // منع التكبير/التصغير غير المقصود في اللعبة
-    scrollEnabled: false,
+    scrollEnabled: true,
     limitsNavigationsToAppBoundDomains: true
   },
   plugins: {
