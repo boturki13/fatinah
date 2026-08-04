@@ -742,7 +742,7 @@ class Handler(BaseHTTPRequestHandler):
     # حدود حجم body لكل نقطة POST — تُعيد 413 مبكراً قبل قراءة البيانات
     _MAX_BODY: dict = {
         '/api/generate':               65_536,   # 64 KB  (topic + قائمة seen)
-        '/api/account/delete':          1_024,   # 1 KB   (uid فقط)
+        '/api/account/delete':          4_096,   # 4 KB   (uid + idToken)
         '/api/promo/redeem':            2_048,   # 2 KB   (code + uid)
         '/api/promo/admin':             8_192,   # 8 KB   (إجراءات الإدارة)
         '/api/revenuecat/webhook':     65_536,   # 64 KB  (حدث RevenueCat)
