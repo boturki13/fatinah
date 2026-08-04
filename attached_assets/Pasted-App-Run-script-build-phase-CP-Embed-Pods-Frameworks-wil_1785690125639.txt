@@ -1,0 +1,21 @@
+App
+Run script build phase '[CP] Embed Pods Frameworks' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase.
+
+Pods
+/Users/abdulazizalshareef/Fatinah/ios/App/Pods/Pods.xcodeproj Update to recommended settings
+
+Capacitor
+/Users/abdulazizalshareef/Fatinah/node_modules/@capacitor/ios/Capacitor/Capacitor/CAPSceneDelegateProxy.swift
+/Users/abdulazizalshareef/Fatinah/node_modules/@capacitor/ios/Capacitor/Capacitor/CAPSceneDelegateProxy.swift:24:15 'token' mutated after capture by sendable closure
+
+CapacitorFirebaseAuthentication
+/Users/abdulazizalshareef/Fatinah/node_modules/@capacitor-firebase/authentication/ios/Plugin/FirebaseAuthentication.swift
+/Users/abdulazizalshareef/Fatinah/node_modules/@capacitor-firebase/authentication/ios/Plugin/FirebaseAuthentication.swift:29:21 Result of call to 'addStateDidChangeListener' is unused
+
+/Users/abdulazizalshareef/Fatinah/node_modules/@capacitor-firebase/authentication/ios/Plugin/FirebaseAuthentication.swift:101:21 'fetchSignInMethods(forEmail:completion:)' is deprecated: `fetchSignInMethods` is deprecated and will be removed in a future release. This method returns an empty list when Email Enumeration Protection is enabled.
+
+/Users/abdulazizalshareef/Fatinah/node_modules/@capacitor-firebase/authentication/ios/Plugin/FirebaseAuthentication.swift:548:14 'updateEmail(to:completion:)' is deprecated: `updateEmail` is deprecated and will be removed in a future release. Use sendEmailVerification(beforeUpdatingEmail:) instead.
+
+RevenuecatPurchasesCapacitor
+/Users/abdulazizalshareef/Fatinah/node_modules/@revenuecat/purchases-capacitor/ios/Sources/RevenuecatPurchasesCapacitor/PurchasesPlugin.swift
+/Users/abdulazizalshareef/Fatinah/node_modules/@revenuecat/purchases-capacitor/ios/Sources/RevenuecatPurchasesCapacitor/PurchasesPlugin.swift:173:40 Expression implicitly coerced from '[String : Any]?' to 'Any'

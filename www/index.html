@@ -51,16 +51,18 @@
   --glow:0 0 24px;
 }
 *{margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-html,body{height:100%;}
+html,body{height:100%; overflow-x:hidden; max-width:100vw;}
 body{
   font-family:'Tajawal',system-ui,sans-serif;
   background:radial-gradient(140% 100% at 50% 0%, #2A1550 0%, var(--bg1) 45%, var(--bg0) 100%);
   background-attachment:fixed;
-  color:var(--ink); overflow-x:hidden; -webkit-font-smoothing:antialiased;
+  color:var(--ink); -webkit-font-smoothing:antialiased;
 }
 #app{max-width:840px; margin:0 auto; min-height:100%; padding:18px; padding-top:calc(18px + env(safe-area-inset-top)); padding-bottom:calc(32px + env(safe-area-inset-bottom));}
 .screen{display:none;}
 .screen.active{display:block; animation:fade .4s ease;}
+#s-loading.active{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:18px;}
+#s-account.active,#s-stats.active,#s-auth.active,#s-result.active,#s-teams.active,#s-home.active{overflow-x:hidden;}
 @keyframes fade{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;}}
 @keyframes pop{0%{transform:scale(.8); opacity:0;} 55%{transform:scale(1.06);} 100%{transform:scale(1); opacity:1;}}
 @keyframes rise{from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:none;}}
@@ -100,13 +102,95 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 #seg-catcount button{padding:12px 4px; font-size:14.5px; white-space:nowrap;}
 /* عرض أفقي: تصغير المسافات ليظهر أكبر قدر من الصفحة */
 @media (orientation:landscape) and (max-height:500px){
+  /* تمكين التمرير العمودي لجميع الشاشات في وضع landscape */
+  .screen.active{overflow-y:auto;}
+
+  /* تقليص الحشوة الخارجية مع الحفاظ على safe areas (Notch/Dynamic Island) */
   #app{max-width:none; padding:10px 24px; padding-top:calc(8px + env(safe-area-inset-top)); padding-bottom:calc(14px + env(safe-area-inset-bottom)); padding-left:calc(24px + env(safe-area-inset-left)); padding-right:calc(24px + env(safe-area-inset-right));}
+
+  /* الشعار الرئيسي */
+  .logo-xl{font-size:clamp(32px,7vw,46px);}
+  .tag{font-size:12px; margin-top:1px;}
+
+  /* البطاقات والعناوين والأزرار */
   .card{padding:12px 14px; margin-bottom:10px;}
   .title{font-size:20px; margin-bottom:8px;}
   .btn{padding:11px 16px;}
   .seg button{padding:9px;}
   #seg-catcount{grid-template-columns:repeat(7,1fr);}
-  .q-sheet{max-height:100vh; border-radius:0; height:100%;}
+
+  /* اختيار الفئات — 3 أعمدة بدل 2 لاستغلال المساحة الأفقية */
+  .cat-grid{grid-template-columns:repeat(3,1fr); gap:8px;}
+  .cat-pick{padding:12px 8px;}
+  .cat-pick .ci{font-size:18px; margin-bottom:3px;}
+
+  /* شريط الفرق — تصغير ليظهر اللوح كاملاً */
+  .team-chip{padding:6px 8px;}
+  .team-chip .cs{font-size:16px;}
+  .team-chip .cn{font-size:11px;}
+  .teams-bar{margin-bottom:8px;}
+  .board-top{margin-bottom:8px;}
+  .cats-head{margin-bottom:4px;}
+  .cat-h{font-size:9px; min-height:36px; padding:5px 2px;}
+  .cell{font-size:clamp(11px,2.8vw,15px);}
+
+  /* ورقة السؤال في landscape — تخطيط شبكي بعمودين يُظهر كل شيء بلا تمرير */
+  .q-wrap{align-items:stretch;}
+  .q-sheet{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto auto auto 1fr auto;
+    grid-template-areas:
+      "meta   phase"
+      "qtext  timer"
+      "qtext  srch"
+      "qtext  ll"
+      "ans    flow";
+    column-gap:14px; row-gap:5px;
+    height:100dvh; max-height:100dvh;
+    border-radius:0; overflow:hidden;
+    padding:6px 16px;
+    padding-top:calc(6px + env(safe-area-inset-top));
+    padding-bottom:calc(6px + env(safe-area-inset-bottom));
+    padding-left:calc(16px + env(safe-area-inset-left));
+    padding-right:calc(16px + env(safe-area-inset-right));
+  }
+  /* إخفاء القبضة (لا لزوم لها في landscape) */
+  .q-grip{display:none;}
+  /* العمود الأول — النص والإجابة */
+  .q-meta{grid-area:meta; margin:0;}
+  .q-badge{font-size:11px; padding:5px 10px;}
+  .q-points{font-size:13px;}
+  .q-text{grid-area:qtext; font-size:16px; line-height:1.4; margin:0; overflow-y:auto;}
+  .q-paused{grid-area:qtext; padding:10px 8px; margin:0;}
+  .qp-icon{font-size:28px;}
+  .qp-title{font-size:14px;}
+  .qp-sub{font-size:11px;}
+  .answer-box{grid-area:ans; margin:0; padding:7px 12px;}
+  .ans-label{font-size:11px;}
+  .ans-text{font-size:15px;}
+  /* العمود الثاني — التحكم */
+  .phase-pill{grid-area:phase; margin:0; font-size:11px; padding:5px 7px;}
+  .timer{grid-area:timer; margin:0; gap:7px;}
+  .timer-bar{height:7px;}
+  .timer-num{font-size:13px; min-width:22px;}
+  .search-timer{grid-area:srch; font-size:18px; margin:0;}
+  .lifelines{grid-area:ll; margin:0; gap:4px; align-content:start;}
+  .ll{padding:5px 3px; font-size:9.5px; min-width:48px; gap:2px;}
+  .ll .lli{font-size:13px;}
+  .q-flow{grid-area:flow; margin:0; gap:4px; overflow-y:auto;}
+  .q-flow .btn{padding:7px 8px; font-size:13px; border-radius:11px;}
+  .verdict-row{gap:4px;}
+  .verdict-row .btn{padding:7px 5px; font-size:12px;}
+  .vb{padding:7px 5px; font-size:12px; border-radius:10px;}
+  .bomb-box{padding:3px 8px 2px;}
+  .bomb-btn{padding:7px 14px; font-size:12px;}
+
+  /* وسائل المساعدة */
+  .ll-btn{font-size:13px !important; padding:8px 10px !important;}
+
+  /* شاشة التحميل والتوجيه */
+  #s-loading.active{min-height:100svh;}
 }
 .seg button.on{background:linear-gradient(120deg,var(--hot2),var(--hot)); color:#fff; border-color:transparent; box-shadow:0 6px 18px rgba(255,61,113,.35);}
 
@@ -133,7 +217,7 @@ h2.title{font-size:24px; font-weight:800; margin:4px 0 16px;}
 
 /* ===== اختيار الفئات ===== */
 .cat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:11px;}
-.filter-bar{display:flex; flex-wrap:nowrap; gap:8px; width:100%; min-width:0; overflow-x:scroll; overflow-y:hidden; padding-bottom:10px; margin-bottom:12px; -webkit-overflow-scrolling:touch; scrollbar-width:none; overscroll-behavior-x:contain; touch-action:pan-y; cursor:grab; user-select:none;}
+.filter-bar{display:flex; flex-wrap:nowrap; gap:8px; width:100%; min-width:0; overflow-x:scroll; overflow-y:hidden; padding-bottom:10px; margin-bottom:12px; -webkit-overflow-scrolling:touch; scrollbar-width:none; overscroll-behavior-x:contain; touch-action:pan-x; cursor:grab; user-select:none;}
 .filter-bar.dragging{cursor:grabbing; scroll-behavior:auto;}
 .filter-bar::-webkit-scrollbar{display:none; width:0; height:0;}
 .fbtn{flex-shrink:0; background:var(--glass); border:1.5px solid var(--line2); border-radius:20px; padding:8px 15px; font-family:inherit; font-size:13px; font-weight:800; color:var(--muted); cursor:pointer; white-space:nowrap; transition:.15s;}
@@ -412,16 +496,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
         متابعة بالبريد الإلكتروني
       </button>
 
-      <div id="auth-email-form" style="display:none; margin-top:14px;">
+      <form id="auth-email-form" onsubmit="return false;" style="display:none; margin-top:14px;">
         <input class="team-input" id="auth-email" type="email" placeholder="البريد الإلكتروني" autocomplete="email" style="width:100%; margin-bottom:10px;">
         <input class="team-input" id="auth-password" type="password" placeholder="كلمة المرور (٦ أحرف على الأقل)" autocomplete="current-password" style="width:100%; margin-bottom:12px;">
-        <button class="btn btn-primary btn-block" onclick="emailAuth('signup')">📧 إنشاء حساب جديد</button>
-        <button class="btn btn-ghost btn-block" onclick="emailAuth('signin')" style="margin-top:8px;">لدي حساب بالفعل — تسجيل الدخول</button>
+        <button type="button" class="btn btn-primary btn-block" onclick="emailAuth('signup')">📧 إنشاء حساب جديد</button>
+        <button type="button" class="btn btn-ghost btn-block" onclick="emailAuth('signin')" style="margin-top:8px;">لدي حساب بالفعل — تسجيل الدخول</button>
         <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;flex-wrap:wrap;">
           <button type="button" class="btn btn-ghost" onclick="forgotPassword()" style="width:auto;padding:8px 10px;font-size:12px;">نسيت كلمة المرور؟</button>
           <button type="button" class="btn btn-ghost" onclick="forgotEmail()" style="width:auto;padding:8px 10px;font-size:12px;">نسيت البريد الإلكتروني؟</button>
         </div>
-      </div>
+      </form>
       <div id="auth-msg" style="font-size:13px; text-align:center; margin-top:10px; min-height:18px;"></div>
 
       <button class="btn btn-ghost btn-block" style="margin-top:16px;" onclick="skipAuth()">متابعة بدون ربط الآن</button>
@@ -620,6 +704,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
   </section>
 
 
+  <!-- شاشة التحميل -->
+  <section class="screen" id="s-loading">
+    <div style="font-size:52px;animation:pulse 1.2s ease-in-out infinite;">🔥</div>
+    <p style="color:#A99BC9;font-size:16px;font-weight:700;">جاري التحميل…</p>
+  </section>
+
   <!-- الرئيسية -->
   <section class="screen active" id="s-home">
     <div class="topbar">
@@ -639,6 +729,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <button class="btn btn-primary btn-block" onclick="sfx('tap');go('s-teams')">🎯 ابدأ اللعب</button>
     <button class="btn btn-ghost btn-block" onclick="sfx('tap');openFamily()">👨‍👩‍👧‍👦 أسئلة عائلية</button>
     <button class="btn btn-ghost btn-block" onclick="sfx('tap');openStats()">📊 إحصاءاتي وإنجازاتي</button>
+    <button class="btn btn-ghost btn-block" onclick="sfx('tap');go('s-paywall')" style="background:linear-gradient(120deg,rgba(255,45,108,.15),rgba(255,122,60,.10)); border-color:rgba(255,45,108,.4); color:var(--hot);">👑 اشترك في فطنة برو</button>
+    <button class="btn btn-ghost btn-block" onclick="sfx('tap');openAccountSettings()">⚙️ إعدادات الحساب</button>
   </section>
 
   <!-- إعداد الفرق -->
@@ -724,35 +816,41 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <div class="field-label" style="margin-top:18px;">الإنجازات</div>
     <div class="ach-list" id="ach-list"></div>
     <button class="btn btn-ghost btn-block mt" onclick="go('s-home')">رجوع</button>
-    <div style="margin-top:32px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
+  </section>
+
+  <!-- إعدادات الحساب -->
+  <section class="screen" id="s-account">
+    <h2 class="title">إعدادات الحساب</h2>
+    <div style="margin-top:8px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
       <div class="field-label" style="margin-bottom:12px;">وسائل الدخول المرتبطة بحسابك</div>
       <div id="account-links" style="margin-bottom:8px;"></div>
       <div class="legal" style="margin-top:4px;">اربط أكثر من وسيلة حتى تستعيد تقدّمك من أي جهاز</div>
     </div>
-      <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
-        <div class="field-label" style="margin-bottom:12px;">توثيق بيانات التواصل</div>
-        <div id="verification-status" class="legal" style="text-align:right;margin:0 0 12px;"></div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <button id="send-email-verification-btn" class="btn btn-ghost" onclick="sendEmailVerificationMessage()" style="flex:1;">✉️ إرسال رسالة تحقق للبريد</button>
-          <button class="btn btn-ghost" onclick="refreshEmailVerificationStatus()" style="width:auto;padding:10px 13px;" title="تحديث حالة البريد">↻</button>
-        </div>
-        <div style="display:flex;gap:8px;align-items:stretch;">
-          <input class="team-input" id="verification-phone" type="tel" inputmode="tel" placeholder="+965XXXXXXXX" autocomplete="tel" style="flex:1;min-width:0;">
-          <button class="btn btn-primary" onclick="startPhoneVerification()" style="width:auto;padding:10px 14px;white-space:nowrap;">إرسال رمز SMS</button>
-        </div>
-        <div id="phone-code-form" style="display:none;margin-top:10px;">
-          <input class="team-input" id="verification-phone-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="أدخل رمز التحقق" style="width:100%;margin-bottom:8px;text-align:center;letter-spacing:4px;">
-          <button class="btn btn-primary btn-block" onclick="confirmPhoneVerification()">تأكيد رقم الهاتف</button>
-        </div>
-        <div id="verification-msg" class="legal" style="text-align:right;margin-top:8px;min-height:18px;"></div>
-        <div id="phone-recaptcha" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;"></div>
+    <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
+      <div class="field-label" style="margin-bottom:12px;">توثيق بيانات التواصل</div>
+      <div id="verification-status" class="legal" style="text-align:right;margin:0 0 12px;"></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button id="send-email-verification-btn" class="btn btn-ghost" onclick="sendEmailVerificationMessage()" style="flex:1;">✉️ إرسال رسالة تحقق للبريد</button>
+        <button class="btn btn-ghost" onclick="refreshEmailVerificationStatus()" style="width:auto;padding:10px 13px;" title="تحديث حالة البريد">↻</button>
       </div>
+      <div style="display:flex;gap:8px;align-items:stretch;">
+        <input class="team-input" id="verification-phone" type="tel" inputmode="tel" placeholder="+965XXXXXXXX" autocomplete="tel" style="flex:1;min-width:0;">
+        <button class="btn btn-primary" onclick="startPhoneVerification()" style="width:auto;padding:10px 14px;white-space:nowrap;">إرسال رمز SMS</button>
+      </div>
+      <div id="phone-code-form" style="display:none;margin-top:10px;">
+        <input class="team-input" id="verification-phone-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="أدخل رمز التحقق" style="width:100%;margin-bottom:8px;text-align:center;letter-spacing:4px;">
+        <button class="btn btn-primary btn-block" onclick="confirmPhoneVerification()">تأكيد رقم الهاتف</button>
+      </div>
+      <div id="verification-msg" class="legal" style="text-align:right;margin-top:8px;min-height:18px;"></div>
+      <div id="phone-recaptcha" style="position:fixed;left:-9999px;width:1px;height:1px;overflow:hidden;"></div>
+    </div>
     <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
       <div class="field-label" style="margin-bottom:12px;">الحساب</div>
       <button class="btn btn-ghost btn-block" onclick="go('s-privacy')" style="margin-bottom:8px;">🔒 سياسة الخصوصية</button>
       <button class="btn btn-ghost btn-block" onclick="go('s-terms')" style="margin-bottom:8px;">📄 شروط الاستخدام</button>
       <button class="btn btn-block" onclick="confirmDeleteAccount()" style="background:rgba(220,53,69,.15);color:#ff6b7a;border:1px solid rgba(220,53,69,.3);margin-top:8px;">🗑️ حذف الحساب وكل البيانات</button>
     </div>
+    <button class="btn btn-ghost btn-block mt" onclick="go('s-home')">رجوع</button>
   </section>
 
   <!-- سياسة الخصوصية -->
@@ -775,7 +873,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <p><b>التواصل:</b><br>
       لأي استفسار: fatinahgame@gmail.com</p>
     </div>
-    <button class="btn btn-ghost btn-block mt" onclick="history.back ? history.back() : go('s-home')">رجوع</button>
+    <button class="btn btn-ghost btn-block mt" onclick="go('s-account')">رجوع</button>
   </section>
 
   <!-- شروط الاستخدام -->
@@ -798,7 +896,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <p><b>التواصل:</b><br>
       fatinahgame@gmail.com</p>
     </div>
-    <button class="btn btn-ghost btn-block mt" onclick="history.back ? history.back() : go('s-home')">رجوع</button>
+    <button class="btn btn-ghost btn-block mt" onclick="go('s-account')">رجوع</button>
   </section>
 
   <!-- أسئلة عائلية -->
@@ -1180,7 +1278,7 @@ async function confirmDeleteAccount(){
   // 1) احذف بيانات الخادم أولاً بينما جلسة Firebase لا تزال صالحة للتحقق من الهوية
   if(uid){
     try{
-      const idToken = await getCurrentIdToken();
+      const idToken = await getCurrentIdToken(true); // force-refresh لتجنب انتهاء الجلسة
       const resp = await fetch(apiUrl('/api/account/delete'),{
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -1274,15 +1372,43 @@ async function ensureAnonymousSession(){
 
   const FA=getFirebaseAuth();
   if(FA){
+    // جلسة Firebase قد تبقى في Keychain بعد إعادة تثبيت التطبيق رغم مسح Preferences —
+    // استرجعها أولاً حتى لا نستبدل حساباً حقيقياً بجلسة مجهولة أو معرّف محلي.
+    try{
+      const cur = await FA.getCurrentUser();
+      const u = cur && cur.user;
+      if(u && u.uid){
+        const prov=(u.providerData && u.providerData[0] && u.providerData[0].providerId)
+          || (u.isAnonymous ? 'anonymous' : 'firebase');
+        storeSet('authUid', u.uid);
+        storeSet('authProvider', prov);
+        return {uid: u.uid, provider: prov};
+      }
+    }catch(e){}
     try{
       const res = await FA.signInAnonymously();
       uid = res && res.user && res.user.uid;
-    }catch(e){ console.error('anon Capacitor:', e); }
+    }catch(e){
+      const code=String(e && (e.code||e.message) || '');
+      if(code.includes('admin-restricted-operation') || code.includes('restricted to administrators')){
+        console.warn('Firebase Anonymous sign-in is disabled; using the local fallback until it is enabled in Firebase Console.');
+      } else {
+        console.error('anon Capacitor:', e);
+      }
+    }
   }
   if(!uid){
     const wb=await getFirebaseWebAuth();
     if(wb){
       try{
+        const cu = wb.auth && wb.auth.currentUser;
+        if(cu && cu.uid){
+          const prov=(cu.providerData && cu.providerData[0] && cu.providerData[0].providerId)
+            || (cu.isAnonymous ? 'anonymous' : 'firebase');
+          storeSet('authUid', cu.uid);
+          storeSet('authProvider', prov);
+          return {uid: cu.uid, provider: prov};
+        }
         const { signInAnonymously } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
         const result = await signInAnonymously(wb.auth);
         uid = result.user.uid;
@@ -1334,14 +1460,14 @@ function afterAuthSuccess(name, provider, uid, email){
 }
 
 // جلب ID token للمستخدم الحالي (لإثبات الهوية للخادم)
-async function getCurrentIdToken(){
+async function getCurrentIdToken(forceRefresh=false){
   try{
     const FA=getFirebaseAuth();
-    if(FA){ const r=await FA.getIdToken(); return (r && r.token) || ''; }
+    if(FA){ const r=await FA.getIdToken({forceRefresh:!!forceRefresh}); return (r && r.token) || ''; }
   }catch(e){}
   try{
     const wb=await getFirebaseWebAuth();
-    if(wb && wb.auth.currentUser) return await wb.auth.currentUser.getIdToken();
+    if(wb && wb.auth.currentUser) return await wb.auth.currentUser.getIdToken(!!forceRefresh);
   }catch(e){}
   return '';
 }
@@ -1722,10 +1848,10 @@ async function refreshVerificationStatus(){
   }
   if(emailBtn) emailBtn.style.display=user.email?'block':'none';
   const emailLine=user.email
-    ? `البريد: ${user.email} — ${user.emailVerified ? '✅ تم التحقق' : '⚠️ لم يتم التحقق بعد'}`
+    ? `البريد: ${esc(user.email)} — ${user.emailVerified ? '✅ تم التحقق' : '⚠️ لم يتم التحقق بعد'}`
     : 'لا يوجد بريد إلكتروني مرتبط بهذا الحساب.';
   const phoneLine=user.phoneNumber
-    ? `الهاتف: ${user.phoneNumber} — ✅ تم التحقق`
+    ? `الهاتف: ${esc(user.phoneNumber)} — ✅ تم التحقق`
     : 'الهاتف: لم يتم التحقق منه بعد';
   status.innerHTML=`<div>${emailLine}</div><div style="margin-top:5px;">${phoneLine}</div>`;
 }
@@ -2006,24 +2132,42 @@ function getRC(){
 
 async function initRevenueCat(){
   const RC = getRC();
-  if(!RC) return;
+  if(!RC) return false;
   await loadRcKey();
-  if(!RC_CONFIGURED) return; // لا تهيّئ إذا لم يتوفر المفتاح
+  if(!RC_CONFIGURED) return false; // لا تهيّئ إذا لم يتوفر المفتاح
   try{
     const uid = storeGet('authUid','');
     const rcAppUserId=getRcAppUserId();
     if(!uid) throw new Error('لا يمكن تهيئة RevenueCat بلا حساب Firebase');
-    const idToken=await getCurrentIdToken();
-    const identityResp=await fetch(apiUrl('/api/revenuecat/identity'),{
+    let idToken=await getCurrentIdToken();
+    const identityRequest=token=>fetch(apiUrl('/api/revenuecat/identity'),{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({uid, rcAppUserId, idToken})
+      body:JSON.stringify({uid, rcAppUserId, idToken:token})
     });
-    if(!identityResp.ok) throw new Error('تعذّر تسجيل ربط هوية RevenueCat بالخادم');
+    let identityResp=await identityRequest(idToken);
+    // Firebase قد يعيد token مخزناً من جلسة سابقة؛ جدّده مرة واحدة قبل الفشل.
+    if(identityResp.status===401){
+      idToken=await getCurrentIdToken(true);
+      identityResp=await identityRequest(idToken);
+    }
+    if(!identityResp.ok){
+      let detail='';
+      try{
+        const payload=await identityResp.json();
+        detail=payload && payload.error ? `: ${payload.error}` : '';
+      }catch(e){}
+      throw new Error(`ربط هوية RevenueCat فشل (HTTP ${identityResp.status})${detail}`);
+    }
     await RC.configure({ apiKey: RC_API_KEY, appUserID: rcAppUserId });
     // لا نرسل البريد أو Firebase UID كـ subscriber attribute.
     // Secure Attributes غير متاحة في هذا SDK؛ الصلاحيات تُحسم بالـwebhook.
-  }catch(e){ console.error('RC init:', e); }
+    return true;
+  }catch(e){
+    const detail=String(e && (e.message||e.code) || e || 'خطأ غير معروف');
+    console.error('RC init:', detail);
+    return false;
+  }
 }
 
 async function rcIsActive(){
@@ -2087,7 +2231,10 @@ async function rcRestore(){
 async function promoIsActive(uid){
   if(!uid) return false;
   try{
-    const r = await fetch(apiUrl(`/api/promo/status?uid=${encodeURIComponent(uid)}`));
+    const idToken = await getCurrentIdToken();
+    if(!idToken) return false;
+    const r = await fetch(apiUrl(`/api/promo/status?uid=${encodeURIComponent(uid)}`),
+      {headers:{'Authorization':'Bearer '+idToken}});
     if(!r.ok) return false;
     const d = await r.json();
     return d.active === true;
@@ -2100,19 +2247,30 @@ async function checkSubscriptionAndRoute(uid){
   // CustomerInfo أو cache محلي؛ webhook هو الذي يحدّث حالة الاشتراك.
   try{
     const idToken=await getCurrentIdToken();
-    const resp = await fetch(apiUrl(`/api/subscription/status?uid=${encodeURIComponent(uid||'')}`),{
-      headers:idToken ? {'Authorization':'Bearer '+idToken} : {}
-    });
+    if(!idToken) throw new Error('لا توجد جلسة Firebase موثّقة');
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 8000); // 8 ثوانٍ حد أقصى
+    let resp;
+    try{
+      resp = await fetch(apiUrl(`/api/subscription/status?uid=${encodeURIComponent(uid||'')}`),{
+        headers:{'Authorization':'Bearer '+idToken},
+        signal: ctrl.signal
+      });
+    }finally{ clearTimeout(timer); }
     if(!resp.ok) throw new Error('status error');
     const data = await resp.json();
-    if(data.active === true){ go('s-home'); return; }
+    if(data.active === true){ hideSplash(); go('s-home'); return; }
     // تحقق من كود مجاني
-    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
-    go('s-paywall');
+    if(uid && await promoIsActive(uid)){ hideSplash(); go('s-home'); return; }
+    hideSplash(); go('s-paywall');
   }catch(e){
-    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
-    go('s-paywall');
+    // فشل التحقق من الخادم (شبكة بطيئة أو خطأ) — اعرض الـ Paywall مباشرة
+    hideSplash(); go('s-paywall');
   }
+}
+
+function hideSplash(){
+  try{ window.Capacitor?.Plugins?.SplashScreen?.hide(); }catch(e){}
 }
 
 // ────────── كود مكافأة مجاني
@@ -2133,10 +2291,16 @@ async function redeemPromo(){
   msg.style.color='#C4B8E0'; msg.textContent='⏳ جاري التحقق...';
   try{
     const uid = window._currentUid || '';
+    const idToken = await getCurrentIdToken();
+    if(!uid || !idToken){
+      msg.style.color='#ff8a8a';
+      msg.textContent='⚠️ سجّل الدخول أولاً ثم أعد المحاولة';
+      return;
+    }
     const r = await fetch(apiUrl('/api/promo/redeem'),{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({code, uid})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+      body: JSON.stringify({code, uid, idToken})
     });
     const d = await r.json();
     if(d.ok){
@@ -2335,38 +2499,28 @@ function setupFilterBarDrag(){
   const bar=document.getElementById('filter-bar');
   if(!bar || bar.dataset.dragReady==='1') return;
   bar.dataset.dragReady='1';
-  let dragging=false, moved=false, startX=0, startScroll=0;
-  bar.addEventListener('pointerdown', e=>{
-    if(e.pointerType==='mouse' && e.button!==0) return;
-    dragging=true; moved=false; startX=e.clientX; startScroll=bar.scrollLeft;
+  let scrolledRecently=false, scrollTimer;
+  bar.addEventListener('scroll',()=>{
+    scrolledRecently=true;
+    clearTimeout(scrollTimer);
+    scrollTimer=setTimeout(()=>{ scrolledRecently=false; },200);
+  });
+  bar.addEventListener('click',e=>{
+    if(scrolledRecently){ e.preventDefault(); e.stopPropagation(); scrolledRecently=false; }
+  },true);
+  let dragging=false, startX=0, startScroll=0;
+  bar.addEventListener('mousedown',e=>{
+    if(e.button!==0) return;
+    dragging=true; startX=e.clientX; startScroll=bar.scrollLeft;
     bar.classList.add('dragging');
-    if(bar.setPointerCapture) bar.setPointerCapture(e.pointerId);
   });
-  bar.addEventListener('pointermove', e=>{
+  bar.addEventListener('mousemove',e=>{
     if(!dragging) return;
-    const delta=e.clientX-startX;
-    if(Math.abs(delta)>5) moved=true;
-    bar.scrollLeft=startScroll-delta;
+    bar.scrollLeft=startScroll-(e.clientX-startX);
   });
-  const finishDrag=e=>{
-    if(!dragging) return;
-    dragging=false; bar.classList.remove('dragging');
-    if(moved){
-      bar.dataset.suppressClick='1';
-      setTimeout(()=>{ delete bar.dataset.suppressClick; },80);
-    }
-    if(e && bar.releasePointerCapture && bar.hasPointerCapture?.(e.pointerId)){
-      bar.releasePointerCapture(e.pointerId);
-    }
-  };
-  bar.addEventListener('pointerup', finishDrag);
-  bar.addEventListener('pointercancel', finishDrag);
-  bar.addEventListener('click', e=>{
-    if(bar.dataset.suppressClick==='1'){
-      e.preventDefault(); e.stopPropagation();
-      delete bar.dataset.suppressClick;
-    }
-  }, true);
+  const endMouse=()=>{ dragging=false; bar.classList.remove('dragging'); };
+  bar.addEventListener('mouseup',endMouse);
+  bar.addEventListener('mouseleave',endMouse);
 }
 function catsForFilter(){
   if(activeFilter==='الكل') return [...ALL_CATS, ...familyNames()];
@@ -2937,7 +3091,8 @@ function fireConfetti(){
 }
 
 // ---- الإحصاءات والإنجازات ----
-function openStats(){ renderStats(); renderAccountLinks(); refreshVerificationStatus(); go('s-stats'); }
+function openStats(){ renderStats(); go('s-stats'); }
+function openAccountSettings(){ renderAccountLinks(); refreshVerificationStatus(); go('s-account'); }
 
 // ---- شاشة ربط الحسابات (Proactive linking) ----
 const PROVIDER_INFO = {
