@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>فَطِنة — لعبة الذكاء الجماعية</title>
+<meta name="description" content="لعبة أسئلة جماعية عربية مُولَّدة بالذكاء الاصطناعي. العب مع عائلتك وأصدقائك على أجهزة iOS.">
+<meta property="og:title" content="فَطِنة — لعبة الذكاء الجماعية">
+<meta property="og:description" content="لعبة أسئلة جماعية عربية مُولَّدة بالذكاء الاصطناعي. العب مع عائلتك وأصدقائك على أجهزة iOS.">
+<meta property="og:image" content="https://ata20.com/og-image.png">
+<meta property="og:url" content="https://ata20.com">
+<meta property="og:type" content="website">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Lalezar&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg0:#0D0820;
+  --bg1:#140F2E;
+  --bg2:#1E1444;
+  --bg3:#271A58;
+  --ink:#F4EEFF;
+  --muted:#A99BC9;
+  --dim:#6B5E90;
+  --gold:#F5C542;
+  --hot:#FF3D71;
+  --hot2:#FF6B35;
+  --line:rgba(255,255,255,.10);
+  --line2:rgba(255,255,255,.16);
+  --sh:0 12px 40px rgba(0,0,0,.5);
+}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Tajawal',system-ui,sans-serif;
+  background:var(--bg0);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ── ترويسة ── */
+header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(13,8,32,.85);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+  padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  max-width:1100px;margin:0 auto;
+  width:100%;
+}
+.header-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;max-width:1100px;margin:0 auto;
+}
+nav-wrap{display:contents;}
+.logo{
+  font-family:'Lalezar',sans-serif;
+  font-size:32px;color:#fff;
+  text-decoration:none;letter-spacing:.5px;
+}
+.logo span{
+  background:linear-gradient(120deg,var(--gold),var(--hot));
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+nav{display:flex;align-items:center;gap:6px;}
+.nav-link{
+  color:var(--muted);font-size:15px;font-weight:600;
+  text-decoration:none;padding:8px 14px;border-radius:10px;
+  transition:color .2s,background .2s;
+}
+.nav-link:hover{color:var(--ink);background:rgba(255,255,255,.06);}
+.nav-btn{
+  background:linear-gradient(120deg,var(--hot2),var(--hot));
+  color:#fff;font-size:15px;font-weight:800;
+  padding:9px 20px;border-radius:12px;
+  text-decoration:none;
+  box-shadow:0 6px 20px rgba(255,61,113,.35);
+  transition:transform .12s,filter .2s;
+}
+.nav-btn:hover{filter:brightness(1.08);transform:translateY(-1px);}
+
+/* ── Hero ── */
+.hero{
+  text-align:center;
+  padding:90px 24px 80px;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% -10%, rgba(124,58,237,.28), transparent 65%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(255,61,113,.14), transparent 60%),
+    var(--bg0);
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  opacity:.04;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(245,197,66,.10);border:1px solid rgba(245,197,66,.28);
+  padding:7px 18px;border-radius:999px;
+  font-size:13px;font-weight:700;color:var(--gold);
+  margin-bottom:28px;letter-spacing:.3px;
+}
+.hero-badge::before{content:'✦';font-size:10px;}
+.hero-logo{
+  font-family:'Lalezar',sans-serif;
+  font-size:clamp(72px,18vw,130px);
+  color:#fff;line-height:1;
+  animation:glow 3.5s ease-in-out infinite;
+  position:relative;z-index:1;
+}
+@keyframes glow{
+  0%,100%{filter:drop-shadow(0 0 18px rgba(255,61,113,.5));}
+  50%{filter:drop-shadow(0 0 42px rgba(255,61,113,.85));}
+}
+.hero-tagline{
+  font-size:clamp(18px,4vw,26px);font-weight:700;
+  color:var(--muted);margin-top:14px;line-height:1.55;
+  max-width:540px;margin-inline:auto;
+}
+.hero-tagline b{color:var(--ink);}
+.hero-cta{
+  display:flex;align-items:center;justify-content:center;
+  gap:14px;margin-top:40px;flex-wrap:wrap;
+}
+/* زر App Store — استبدل href="#" برابط App Store الحقيقي عند نشر التطبيق */
+.btn-appstore{
+  display:inline-flex;align-items:center;gap:11px;
+  background:#000;color:#fff;
+  border:1px solid rgba(255,255,255,.18);
+  padding:14px 28px;border-radius:16px;
+  font-family:inherit;font-size:17px;font-weight:800;
+  text-decoration:none;
+  box-shadow:0 8px 28px rgba(0,0,0,.6);
+  transition:transform .12s,box-shadow .2s;
+}
+.btn-appstore:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(0,0,0,.7);}
+.btn-appstore svg{width:24px;height:24px;flex-shrink:0;}
+.btn-play-web{
+  display:inline-flex;align-items:center;gap:9px;
+  background:rgba(255,255,255,.07);
+  color:var(--muted);
+  border:1.5px solid var(--line2);
+  padding:14px 26px;border-radius:16px;
+  font-family:inherit;font-size:16px;font-weight:700;
+  text-decoration:none;
+  transition:color .2s,background .2s,border-color .2s;
+}
+.btn-play-web:hover{color:var(--ink);background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.28);}
+.hero-note{color:var(--dim);font-size:12.5px;margin-top:18px;}
+
+/* ── مقاطع ── */
+section{padding:80px 24px;max-width:1100px;margin:0 auto;}
+.section-label{
+  font-size:12.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:14px;
+}
+.section-title{
+  font-size:clamp(26px,5vw,40px);font-weight:900;
+  line-height:1.3;margin-bottom:18px;
+}
+.section-sub{
+  font-size:16px;color:var(--muted);line-height:1.75;
+  max-width:580px;margin-bottom:48px;
+}
+
+/* ── بطاقات المزايا ── */
+.features{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:20px;
+}
+.feat{
+  background:var(--bg2);
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:28px 24px;
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+}
+.feat:hover{
+  transform:translateY(-4px);
+  border-color:rgba(255,255,255,.22);
+  box-shadow:var(--sh);
+}
+.feat-icon{
+  width:52px;height:52px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;margin-bottom:18px;
+  background:linear-gradient(135deg,rgba(255,61,113,.18),rgba(255,107,53,.10));
+  border:1px solid rgba(255,61,113,.22);
+}
+.feat-title{font-size:18px;font-weight:800;margin-bottom:8px;}
+.feat-desc{font-size:14px;color:var(--muted);line-height:1.7;}
+
+/* ── فئات الأسئلة ── */
+.cats-section{
+  background:linear-gradient(180deg,var(--bg1) 0%,var(--bg0) 100%);
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:80px 24px;
+}
+.cats-inner{max-width:1100px;margin:0 auto;}
+.cats-grid{
+  display:flex;flex-wrap:wrap;gap:12px;margin-top:36px;
+}
+.cat-chip{
+  display:inline-flex;align-items:center;gap:9px;
+  background:var(--bg2);border:1px solid var(--line2);
+  padding:12px 18px;border-radius:14px;
+  font-size:15px;font-weight:700;
+  transition:background .2s,border-color .2s,transform .15s;
+}
+.cat-chip:hover{background:var(--bg3);border-color:rgba(255,255,255,.24);transform:translateY(-2px);}
+.cat-chip span{font-size:20px;}
+
+/* ── كيف تلعب ── */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;margin-top:48px;}
+.step{position:relative;padding-top:16px;}
+.step-num{
+  font-family:'Lalezar',sans-serif;
+  font-size:72px;line-height:1;
+  color:rgba(245,197,66,.10);
+  position:absolute;top:0;right:0;
+  user-select:none;
+}
+.step-title{font-size:18px;font-weight:800;margin-bottom:8px;position:relative;}
+.step-desc{font-size:14px;color:var(--muted);line-height:1.7;position:relative;}
+
+/* ── نهاية / CTA ── */
+.cta-section{
+  text-align:center;
+  padding:100px 24px;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(124,58,237,.22), transparent 60%),
+    var(--bg0);
+}
+.cta-section .section-title{margin-inline:auto;max-width:520px;}
+.cta-section .hero-cta{margin-top:36px;}
+
+/* ── فوتر ── */
+footer{
+  background:var(--bg1);
+  border-top:1px solid var(--line);
+  padding:36px 24px;
+  text-align:center;
+}
+.footer-inner{max-width:1100px;margin:0 auto;}
+.footer-logo{
+  font-family:'Lalezar',sans-serif;
+  font-size:28px;color:#fff;
+  margin-bottom:16px;display:inline-block;
+}
+.footer-links{
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;flex-wrap:wrap;margin-bottom:20px;
+}
+.footer-links a{
+  color:var(--dim);font-size:14px;font-weight:600;
+  text-decoration:none;padding:4px 10px;
+  transition:color .2s;
+}
+.footer-links a:hover{color:var(--muted);}
+.footer-sep{color:var(--dim);font-size:12px;}
+.footer-copy{font-size:12.5px;color:var(--dim);}
+
+/* ── تجاوب ── */
+@media(max-width:600px){
+  header{padding:12px 16px;}
+  .nav-link{display:none;}
+  .hero{padding:60px 18px 56px;}
+  section{padding:56px 18px;}
+  .cats-section{padding:56px 18px;}
+  .cta-section{padding:68px 18px;}
+  .steps{gap:32px;}
+  .step-num{font-size:54px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── ترويسة ── -->
+<header>
+  <div class="header-inner">
+    <a href="/" class="logo">فَطِنة</a>
+    <nav>
+      <a href="#features" class="nav-link">المزايا</a>
+      <a href="#how" class="nav-link">كيف تلعب</a>
+      <!-- زر App Store — استبدل href="#" برابط App Store الحقيقي عند نشر التطبيق -->
+      <a href="#" class="nav-btn">📲 حمّل التطبيق</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ── Hero ── -->
+<div class="hero">
+  <div class="hero-badge">لعبة الأسئلة العربية الأولى بالذكاء الاصطناعي</div>
+  <div class="hero-logo">فَطِنة</div>
+  <p class="hero-tagline">
+    <b>العب مع عائلتك وأصدقائك</b> — أسئلة ذكية، فئات متنوعة،<br>
+    ومنافسة لا تُنسى بين الفرق
+  </p>
+  <div class="hero-cta">
+    <!-- زر App Store — استبدل href="#" برابط App Store الحقيقي عند نشر التطبيق -->
+    <a href="#" class="btn-appstore" aria-label="حمّل من App Store">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+      </svg>
+      App Store
+    </a>
+    <a href="/play" class="btn-play-web">🎮 جرّب على المتصفح</a>
+  </div>
+  <p class="hero-note">متاح على iOS · قريباً على Android</p>
+</div>
+
+<!-- ── المزايا ── -->
+<section id="features">
+  <div class="section-label">لماذا فَطِنة؟</div>
+  <h2 class="section-title">كل ما تحتاجه في لعبة أسئلة</h2>
+  <p class="section-sub">صمّمنا فَطِنة لتكون التجربة المثلى للعب الجماعي بالعربية — سهلة البداية، عميقة الإثارة.</p>
+  <div class="features">
+    <div class="feat">
+      <div class="feat-icon">🤖</div>
+      <div class="feat-title">أسئلة بالذكاء الاصطناعي</div>
+      <p class="feat-desc">كل سؤال يُولَّد لحظيًا بالذكاء الاصطناعي — آلاف الأسئلة الجديدة في كل جلسة، لا تكرار أبدًا.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">👥</div>
+      <div class="feat-title">لعب الفرق</div>
+      <p class="feat-desc">نظام فرق متكامل بألوان ونقاط لكل فريق، مثالي للعائلات والسهرات والمجموعات.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🏆</div>
+      <div class="feat-title">نقاط ومنافسة</div>
+      <p class="feat-desc">لوحة نتائج حية، نقاط قابلة للتعديل، ومكافآت خاصة لأسرع المجيبين.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📚</div>
+      <div class="feat-title">فئات متنوعة</div>
+      <p class="feat-desc">ثقافة عامة، علوم، تاريخ، فن، رياضة، ترفيه وأكثر — اختر ما يناسب مجموعتك.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🎯</div>
+      <div class="feat-title">وسائل المساعدة</div>
+      <p class="feat-desc">استعن بوسائل مساعدة ذكية مثل حذف الإجابات الخاطئة والبحث السريع عند الضيق.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">⚡</div>
+      <div class="feat-title">سريعة وسلسة</div>
+      <p class="feat-desc">تصميم خفيف ومتجاوب يعمل بسرعة — لا انتظار، لا تعقيد، ادخل والعب مباشرة.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── فئات الأسئلة ── -->
+<div class="cats-section">
+  <div class="cats-inner">
+    <div class="section-label">فئات الأسئلة</div>
+    <h2 class="section-title">موضوع لكل ذوق</h2>
+    <div class="cats-grid">
+      <div class="cat-chip"><span>🌍</span> ثقافة عامة</div>
+      <div class="cat-chip"><span>🔬</span> علوم وتكنولوجيا</div>
+      <div class="cat-chip"><span>📜</span> تاريخ وحضارات</div>
+      <div class="cat-chip"><span>⚽</span> رياضة</div>
+      <div class="cat-chip"><span>🎬</span> سينما وترفيه</div>
+      <div class="cat-chip"><span>🎵</span> موسيقى وفنون</div>
+      <div class="cat-chip"><span>🍽️</span> طعام وثقافة</div>
+      <div class="cat-chip"><span>📖</span> أدب ولغة</div>
+      <div class="cat-chip"><span>🌐</span> جغرافيا ودول</div>
+      <div class="cat-chip"><span>💡</span> معلومات طريفة</div>
+      <div class="cat-chip"><span>👨‍👩‍👧</span> عائلي للجميع</div>
+      <div class="cat-chip"><span>🎲</span> متنوع مفاجئ</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── كيف تلعب ── -->
+<section id="how">
+  <div class="section-label">كيف تلعب</div>
+  <h2 class="section-title">ابدأ خلال ثوانٍ</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">١</div>
+      <div class="step-title">سمّ الفرق</div>
+      <p class="step-desc">أضف اسم كل فريق واضغط ابدأ — يكفي فريق واحد أو أكثر.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">٢</div>
+      <div class="step-title">اختر الفئات</div>
+      <p class="step-desc">حدد الموضوعات التي تحب وعدد الأسئلة لكل فئة.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">٣</div>
+      <div class="step-title">تنافسوا</div>
+      <p class="step-desc">كل فريق يختار خانة، يظهر السؤال، أجب بسرعة واكسب النقاط.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">٤</div>
+      <div class="step-title">احتفلوا بالفائز</div>
+      <p class="step-desc">تعلن اللعبة الفائز في نهاية الجولة مع الإحصاءات الكاملة.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<div class="cta-section">
+  <div class="section-label">ابدأ الآن</div>
+  <h2 class="section-title">جاهز للتحدي؟</h2>
+  <p class="section-sub" style="margin-inline:auto;text-align:center;">حمّل فَطِنة واستمتع بأذكى لعبة أسئلة عربية مع عائلتك وأصدقائك.</p>
+  <div class="hero-cta">
+    <!-- زر App Store — استبدل href="#" برابط App Store الحقيقي عند نشر التطبيق -->
+    <a href="#" class="btn-appstore" aria-label="حمّل من App Store">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+      </svg>
+      حمّل من App Store
+    </a>
+    <a href="/play" class="btn-play-web">🎮 جرّب على المتصفح</a>
+  </div>
+</div>
+
+<!-- ── فوتر ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">فَطِنة</div>
+    <div class="footer-links">
+      <a href="/privacy">سياسة الخصوصية</a>
+      <span class="footer-sep">·</span>
+      <a href="/terms">شروط الاستخدام</a>
+      <span class="footer-sep">·</span>
+      <a href="/play">النسخة التجريبية</a>
+    </div>
+    <p class="footer-copy">© 2025 فَطِنة · جميع الحقوق محفوظة</p>
+  </div>
+</footer>
+
+</body>
+</html>
