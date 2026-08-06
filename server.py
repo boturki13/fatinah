@@ -10,7 +10,8 @@ import re
 
 # ─── ثوابت ─────────────────────────────────────────────────────────────────
 PORT      = int(os.environ.get('PORT', 5000))
-HTML_FILE = os.path.join(os.path.dirname(__file__), 'index.html')
+HTML_FILE     = os.path.join(os.path.dirname(__file__), 'index.html')
+LANDING_FILE  = os.path.join(os.path.dirname(__file__), 'landing.html')
 DB_PATH   = os.path.join(os.path.dirname(__file__), 'subscriptions.db')
 
 def firestore_database_name():
@@ -377,6 +378,10 @@ def read_html():
     with open(HTML_FILE, 'rb') as f:
         return f.read()
 
+def read_landing():
+    with open(LANDING_FILE, 'rb') as f:
+        return f.read()
+
 # ─── Firebase config ─────────────────────────────────────────────────────────
 def firebase_config_js():
     cfg = {
@@ -621,6 +626,14 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {'active': active})
 
         elif path in ('/', '/index.html'):
+            body = read_landing()
+            self.send_response(200)
+            self.send_header('Content-Type',   'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        elif path == '/play':
             body = read_html()
             self.send_response(200)
             self.send_header('Content-Type',   'text/html; charset=utf-8')
