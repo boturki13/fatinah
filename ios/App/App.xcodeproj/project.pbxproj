@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1C23825130275B5600505F7F /* FatinahWordmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C23825030275B5500505F7F /* FatinahWordmark.swift */; };
+		1C238253302760E600505F7F /* alfont_com_KOMedia-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = 1C238252302760E600505F7F /* alfont_com_KOMedia-Black.otf */; };
 		1C85B34C30163BC90064AC1B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1C85B34B30163BC90064AC1B /* GoogleService-Info.plist */; };
 		1CD85F513020C83500C9D0B6 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1CD85F503020C83500C9D0B6 /* StoreKit.framework */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
@@ -21,6 +23,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1C23825030275B5500505F7F /* FatinahWordmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FatinahWordmark.swift; sourceTree = "<group>"; };
+		1C238252302760E600505F7F /* alfont_com_KOMedia-Black.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "alfont_com_KOMedia-Black.otf"; sourceTree = "<group>"; };
 		1C85B34B30163BC90064AC1B /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		1C85B34D301670760064AC1B /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = Products.storekit; path = App/Products.storekit; sourceTree = "<group>"; };
 		1CD85F503020C83500C9D0B6 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
@@ -64,6 +68,7 @@
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
+				1C238252302760E600505F7F /* alfont_com_KOMedia-Black.otf */,
 				1C85B34D301670760064AC1B /* Products.storekit */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
@@ -93,6 +98,7 @@
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				A7E2F1C30101010100000001 /* PrivacyInfo.xcprivacy */,
 				50B271D01FEDC1A000F3C39B /* public */,
+				1C23825030275B5500505F7F /* FatinahWordmark.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -174,6 +180,7 @@
 				50B271D11FEDC1A000F3C39B /* public in Resources */,
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
+				1C238253302760E600505F7F /* alfont_com_KOMedia-Black.otf in Resources */,
 				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
 				2FAD9763203C412B000D30F8 /* config.xml in Resources */,
 				1C85B34C30163BC90064AC1B /* GoogleService-Info.plist in Resources */,
@@ -225,6 +232,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1C23825130275B5600505F7F /* FatinahWordmark.swift in Sources */,
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -378,7 +386,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = A787MTL6U4;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = App/Info.plist;
@@ -404,7 +412,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = A787MTL6U4;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = App/Info.plist;

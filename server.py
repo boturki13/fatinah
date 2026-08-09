@@ -393,24 +393,31 @@ def firebase_config_js():
         f'window.FIREBASE_CONFIGURED = {"true" if configured else "false"};\n'
     ).encode()
 
-# ─── توليد الأسئلة عبر Claude ────────────────────────────────────────────────
-def call_claude(topic: str, count: int):
-    api_key = os.environ.get('ANTHROPIC_API_KEY', '')
-    if not api_key:
-        return None, 'ANTHROPIC_API_KEY غير موجود في البيئة'
-
+# ─── توليد الأسئلة عبر AI providers ──────────────────────────────────────────
+def question_prompt(topic: str, count: int):
     safe_count = min(max(int(count), 4), 30)
-    prompt = (
+    return (
         f'ولّد {safe_count} أسئلة مسابقات بالعربية بلهجة خليجية بسيطة عن: "{topic}".\n'
         'كل سؤال يجب أن يكون دقيقاً وصحيحاً واقعياً.\n'
         'أعد فقط مصفوفة JSON بالشكل: [{"q":"نص السؤال","answer":"الإجابة الصحيحة"}] '
         'بدون أي نص إضافي أو علامات markdown.'
     )
 
+def parse_questions_text(raw: str):
+    clean = (raw or '[]').replace('```json', '').replace('```', '').strip()
+    questions = json.loads(clean)
+    return [q for q in questions if q.get('q') and q.get('answer')] \
+        if isinstance(questions, list) else []
+
+def call_claude(topic: str, count: int):
+    api_key = os.environ.get('ANTHROPIC_API_KEY', '')
+    if not api_key:
+        return None, 'ANTHROPIC_API_KEY غير موجود في البيئة'
+
     payload = json.dumps({
-        'model':      'claude-opus-4-5',
+        'model':      os.environ.get('ANTHROPIC_MODEL', 'claude-opus-4-5'),
         'max_tokens': 4096,
-        'messages':   [{'role': 'user', 'content': prompt}],
+        'messages':   [{'role': 'user', 'content': question_prompt(topic, count)}],
     }).encode()
 
     req = urllib.request.Request(
@@ -426,12 +433,7 @@ def call_claude(topic: str, count: int):
         with urllib.request.urlopen(req, timeout=30) as resp:
             result     = json.loads(resp.read())
             text_block = next((b for b in result.get('content', []) if b.get('type') == 'text'), None)
-            raw        = (text_block or {}).get('text', '[]')
-            clean      = raw.replace('```json', '').replace('```', '').strip()
-            questions  = json.loads(clean)
-            valid      = [q for q in questions if q.get('q') and q.get('answer')] \
-                         if isinstance(questions, list) else []
-            return valid, None
+            return parse_questions_text((text_block or {}).get('text', '[]')), None
     except urllib.error.HTTPError as e:
         err_id = uuid.uuid4().hex[:8]
         body = e.read().decode(errors='ignore')
@@ -441,6 +443,44 @@ def call_claude(topic: str, count: int):
         err_id = uuid.uuid4().hex[:8]
         print(f'[Claude] خطأ داخلي (ref={err_id}): {exc}')
         return None, f'تعذّر توليد الأسئلة حالياً، حاول لاحقاً (ref={err_id})'
+
+def call_kimi(topic: str, count: int):
+    api_key = os.environ.get('MOONSHOT_API_KEY', '')
+    if not api_key:
+        return None, 'MOONSHOT_API_KEY غير موجود في البيئة'
+
+    payload = json.dumps({
+        'model': os.environ.get('KIMI_MODEL', 'kimi-k3'),
+        'max_tokens': 4096,
+        'messages': [{'role': 'user', 'content': question_prompt(topic, count)}],
+    }).encode()
+
+    req = urllib.request.Request(
+        'https://api.moonshot.ai/v1/chat/completions',
+        data=payload,
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}',
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read())
+            choice = (result.get('choices') or [{}])[0]
+            message = choice.get('message') or {}
+            return parse_questions_text(message.get('content', '[]')), None
+    except urllib.error.HTTPError as e:
+        err_id = uuid.uuid4().hex[:8]
+        body = e.read().decode(errors='ignore')
+        print(f'[Kimi] خطأ من Moonshot (ref={err_id}): HTTP {e.code}: {body[:200]}')
+        return None, f'تعذّر توليد الأسئلة حالياً، حاول لاحقاً (ref={err_id})'
+    except Exception as exc:
+        err_id = uuid.uuid4().hex[:8]
+        print(f'[Kimi] خطأ داخلي (ref={err_id}): {exc}')
+        return None, f'تعذّر توليد الأسئلة حالياً، حاول لاحقاً (ref={err_id})'
+
+def call_ai_provider(provider: str, topic: str, count: int):
+    return call_kimi(topic, count) if provider == 'kimi' else call_claude(topic, count)
 
 # ─── صفحات قانونية عامة (لمتطلبات App Store Connect) ────────────────────────
 PRIVACY_BODY = '''
@@ -776,6 +816,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(403, {'error': 'اشتراك فعّال مطلوب'}); return
 
             topic = (data.get('topic') or '').strip()
+            provider = (data.get('provider') or data.get('agent') or 'claude').strip().lower()
+            if provider not in ('claude', 'kimi'): provider = 'claude'
             try:    count = min(max(int(data.get('count', 6)), 1), 30)
             except Exception: count = 6
             seen  = data.get('seen') or []          # قائمة معرّفات الأسئلة التي شاهدها اللاعب
@@ -804,7 +846,7 @@ class Handler(BaseHTTPRequestHandler):
 
                 # 2) إن لم يكفِ، ولّد دفعة كبيرة (30) وخزّنها ثم أعد المحاولة
                 if len(result) < count:
-                    questions, err = call_claude(topic, 30)
+                    questions, err = call_ai_provider(provider, topic, 30)
                     if err and not result:
                         self.send_json(502, {'error': err}); return
                     for q in (questions or []):
@@ -816,7 +858,7 @@ class Handler(BaseHTTPRequestHandler):
                     try: conn.commit()
                     except sqlite3.OperationalError: pass  # قفل مؤقت — الأسئلة المولّدة تُعاد للاعب على أي حال
                     result = fetch_unseen(count)
-                self.send_json(200, {'questions': result, 'from_bank': True})
+                self.send_json(200, {'questions': result, 'from_bank': True, 'provider': provider})
             except sqlite3.OperationalError:
                 self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
             finally:
