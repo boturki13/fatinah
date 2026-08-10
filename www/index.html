@@ -850,6 +850,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <div class="field-label" style="margin-bottom:12px;">الحساب</div>
       <button class="btn btn-ghost btn-block" onclick="go('s-privacy')" style="margin-bottom:8px;">🔒 سياسة الخصوصية</button>
       <button class="btn btn-ghost btn-block" onclick="go('s-terms')" style="margin-bottom:8px;">📄 شروط الاستخدام</button>
+      <button class="btn btn-ghost btn-block" onclick="signOut()" style="margin-bottom:8px;">🚪 تسجيل الخروج</button>
       <button class="btn btn-block" onclick="confirmDeleteAccount()" style="background:rgba(220,53,69,.15);color:#ff6b7a;border:1px solid rgba(220,53,69,.3);margin-top:8px;">🗑️ حذف الحساب وكل البيانات</button>
     </div>
     <button class="btn btn-ghost btn-block mt" onclick="go('s-home')">رجوع</button>
@@ -1272,61 +1273,69 @@ async function deleteFirebaseUser(){
   return true; // لا توجد طبقة Firebase أصلاً (دخول بالاسم)
 }
 
+async function signOut(){
+  const ok=confirm('هل تريد تسجيل الخروج؟ ستبقى بياناتك المحلية محفوظة على هذا الجهاز.');
+  if(!ok) return;
+  // امسح توكن Firebase من Keychain (يمنع الدخول التلقائي بعد إعادة التثبيت)
+  try{
+    const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
+    if(FA) await FA.signOut();
+  }catch(e){ console.warn('signOut FA:', e); }
+  // امسح مفاتيح الهوية فقط من التخزين المحلي (ابقِ الإحصاءات والإنجازات)
+  ['authUid','authProvider','authEmail','playerName','rcAppUserId','deviceId'].forEach(k=>{
+    localStorage.removeItem(STORAGE_PREFIX+k);
+    try{
+      const P=window.Capacitor?.Plugins?.Preferences;
+      if(P) P.remove({key:STORAGE_PREFIX+k});
+    }catch(e){}
+  });
+  window._currentUid = '';
+  stats={games:0,correct:0,totalQ:0,bestScore:0,wins:0,ach:{}};
+  showToast('✅','تم تسجيل الخروج','يمكنك الدخول بحساب آخر',false);
+  setTimeout(()=>go('s-auth'),1200);
+}
+
 async function confirmDeleteAccount(){
   const ok=confirm('سيتم حذف حسابك نهائياً من النظام مع جميع بياناتك (نقاط، إنجازات، إعدادات، اشتراك). لا يمكن التراجع. هل أنت متأكد؟');
   if(!ok) return;
   const uid = storeGet('authUid','');
-  const provider = storeGet('authProvider','');
-  // 1) احذف بيانات الخادم أولاً بينما جلسة Firebase لا تزال صالحة للتحقق من الهوية
+  // 1) احذف بيانات الخادم — best-effort، لا يوقف الحذف المحلي عند الفشل
   if(uid){
     try{
-      const idToken = await getCurrentIdToken(true); // force-refresh لتجنب انتهاء الجلسة
+      const idToken = await getCurrentIdToken(true);
       const resp = await fetch(apiUrl('/api/account/delete'),{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({uid, idToken})
       });
-      let result = null;
-      try{ result = await resp.json(); }catch(e){}
-      if(!resp.ok){
-        if(resp.status===401){
-          showToast('⚠️','يلزم إعادة تسجيل الدخول','انتهت صلاحية جلستك — سجّل دخولك مرة أخرى وحاول من جديد',false);
-        }else{
-          showToast('⚠️','تعذّر حذف بيانات الحساب',result?.error||'حاول مرة أخرى',false);
-        }
-        return;
-      }
+      if(!resp.ok) console.warn('server delete returned', resp.status);
     }catch(e){
-      console.error('server delete:', e);
-      showToast('⚠️','تعذّر الاتصال بالخادم','لم يتم حذف الحساب. تحقق من الإنترنت وحاول مرة أخرى',false);
-      return;
+      console.warn('server delete failed (continuing locally):', e);
     }
   }
+  // 2) امسح RevenueCat
   const rcIds=storeGet('rcAppUserIds',{}) || {};
   delete rcIds[uid];
   storeSet('rcAppUserIds',rcIds);
   storeSet('rcAppUserId','');
-  // 2) احذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login) — لكل الوسائل
-  // بما فيها الجلسات المجهولة، طالما توجد طبقة Firebase أصلاً
+  // 3) احذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login)
   const deleted = await deleteFirebaseUser();
   if(!deleted){
-    showToast('⚠️','تعذّر حذف الحساب بالكامل','لم يتم إكمال الحذف. أعد تسجيل الدخول وحاول مرة أخرى',false);
+    showToast('⚠️','تعذّر حذف الحساب بالكامل','لم يتم إكمال الحذف. أعد تسجيل الدخول وحاول من جديد',false);
     return;
   }
-  // 3) حذف localStorage
-  const keys=Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX));
-  keys.forEach(k=>localStorage.removeItem(k));
-  // 4) حذف Capacitor Preferences
-  try{
-    const P=window.Capacitor?.Plugins?.Preferences;
-    if(P) await P.clear();
-  }catch(e){}
-  // 5) تسجيل خروج احتياطي (في حال بقيت جلسة)
+  // 4) امسح Keychain عبر signOut صريح
   try{
     const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
     if(FA) await FA.signOut();
   }catch(e){}
-  // إعادة التهيئة
+  // 5) امسح localStorage و Capacitor Preferences بالكامل
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX));
+  keys.forEach(k=>localStorage.removeItem(k));
+  try{
+    const P=window.Capacitor?.Plugins?.Preferences;
+    if(P) await P.clear();
+  }catch(e){}
   stats={games:0,correct:0,totalQ:0,bestScore:0,wins:0,ach:{}};
   showToast('✅','تم حذف حسابك','حُذف الحساب وجميع البيانات نهائياً',false);
   setTimeout(()=>go('s-auth'),1500);
@@ -3506,7 +3515,7 @@ getFirebaseWebAuth();
 // فتح لاحق: نثق بـ authUid المحفوظ (الجلسة محفوظة تلقائياً من طبقة Firebase)
 // وننتقل مباشرة للرئيسية بدل إجبار المستخدم على تسجيل الدخول من جديد.
 // ⚠️ SCREENSHOT MODE — يُحذف بعد أخذ اللقطات
-const __SCREENSHOT_SCREEN = 'home'; // home | teams | board | paywall | result
+const __SCREENSHOT_SCREEN = null; // home | teams | board | paywall | result
 (async function bootAuth(){
   hideSplash();
   storeSet('playerName','مجلس فطنة');
