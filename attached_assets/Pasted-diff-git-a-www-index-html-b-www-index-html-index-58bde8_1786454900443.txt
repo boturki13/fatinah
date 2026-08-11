@@ -1,0 +1,143 @@
+diff --git a/www/index.html b/www/index.html
+index 58bde8a..38268c5 100644
+--- a/www/index.html
++++ b/www/index.html
+@@ -466,9 +466,97 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
+ .onb-title{font-size:22px; font-weight:900; color:var(--ink); text-align:center; margin-bottom:10px; letter-spacing:.3px;}
+ .onb-desc{font-size:15px; color:var(--muted); text-align:center; line-height:1.7; max-width:280px;}
+ .onb-actions{width:100%; max-width:340px; margin-top:28px;}
++
++/* ────────── شاشة الترحيب — تُعرض مرة واحدة (طبقة مستقلة فوق نظام .screen) ────────── */
++#s-welcome{
++  position:fixed; inset:0; z-index:9000;
++  display:flex; flex-direction:column;
++  background-color:var(--bg0);
++  background-image:
++    radial-gradient(120% 68% at 50% -12%, rgba(255,122,61,.14), transparent 62%),
++    radial-gradient(95% 55% at 50% 114%, rgba(244,43,124,.10), transparent 60%);
++  color:var(--ink);
++  padding-block-start:calc(env(safe-area-inset-top) + 2.25rem);
++  padding-block-end:calc(env(safe-area-inset-bottom) + 1.25rem);
++  padding-inline:1.5rem;
++  overflow-y:auto; overscroll-behavior:none;
++  -webkit-tap-highlight-color:transparent;
++}
++#s-welcome[hidden]{display:none !important;} /* تخطٍّ كامل بلا وميض */
++.wlc-inner{
++  margin:auto; inline-size:100%; max-inline-size:24rem;
++  display:flex; flex-direction:column; align-items:center; text-align:center;
++  gap:1.4rem;
++}
++.wlc-wordmark{
++  margin:0;
++  font-family:'KO Media Black','KOMedia-Black','Lalezar',system-ui,sans-serif;
++  font-weight:400; font-size:4.5rem; line-height:1.15;
++  background:linear-gradient(170deg,var(--fire1) 8%,var(--fire3) 52%,var(--fire5) 96%);
++  -webkit-background-clip:text; background-clip:text;
++  color:transparent; -webkit-text-fill-color:transparent;
++  filter:drop-shadow(0 0 .9rem rgba(255,122,61,.45)) drop-shadow(0 0 2.4rem rgba(244,43,124,.25));
++}
++.wlc-tagline{margin:0; max-inline-size:20rem; font-size:1.1rem; line-height:1.8; color:var(--muted); font-weight:500;}
++.wlc-points{list-style:none; margin:.35rem 0 0; padding:0; inline-size:100%; display:flex; flex-direction:column; gap:1.1rem;}
++.wlc-point{display:flex; align-items:center; gap:1rem; text-align:start;}
++.wlc-point>svg{inline-size:1.9rem; block-size:1.9rem; flex:none; color:var(--fire2);}
++.wlc-point>span{font-size:1.05rem; line-height:1.55; color:var(--ink); font-weight:500;}
++.wlc-cta{
++  margin-block-start:.65rem; inline-size:100%; min-block-size:3.25rem; /* ≈52px ≥ هدف لمس 44pt */
++  border:0; border-radius:1rem; cursor:pointer; touch-action:manipulation;
++  font-family:'Lalezar',system-ui,sans-serif; font-weight:400; font-size:1.35rem; line-height:1;
++  color:var(--fire1t);
++  background:linear-gradient(160deg,var(--fire1),var(--fire3));
++  box-shadow:0 .55rem 1.6rem rgba(255,122,61,.30);
++}
++.wlc-cta:active{transform:translateY(1px); filter:brightness(.94);}
++.wlc-cta:focus-visible{outline:.18rem solid var(--fire1); outline-offset:.2rem;}
++/* الحركة: دخول متدرّج ناعم يكتمل خلال ~380ms — ومعطّلة كلياً مع تقليل الحركة */
++@media (prefers-reduced-motion: no-preference){
++  #s-welcome.wlc-enter .wlc-inner>*{opacity:0; transform:translateY(.5rem); animation:wlcIn .26s ease-out forwards;}
++  #s-welcome.wlc-enter .wlc-inner>*:nth-child(2){animation-delay:.04s;}
++  #s-welcome.wlc-enter .wlc-inner>*:nth-child(3){animation-delay:.08s;}
++  #s-welcome.wlc-enter .wlc-inner>*:nth-child(4){animation-delay:.12s;}
++  #s-welcome.wlc-leave{transition:opacity .26s ease-out; opacity:0;}
++}
++@keyframes wlcIn{to{opacity:1; transform:none;}}
+ </style>
+ </head>
+ <body>
++
++  <!-- ────────── شاشة الترحيب — تُعرض مرة واحدة فقط (مستقلة عن نظام .screen عمداً) ────────── -->
++  <section id="s-welcome" hidden role="dialog" aria-modal="true" aria-labelledby="wlc-title">
++    <div class="wlc-inner">
++      <h1 id="wlc-title" class="wlc-wordmark">فَطِنة</h1>
++      <p class="wlc-tagline">لعبة معلومات جماعية — فرق تتنافس على الإجابة… وتسرقها من بعض</p>
++      <ul class="wlc-points">
++        <li class="wlc-point">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
++            <circle cx="7" cy="9" r="2.4"/><path d="M3.2 18.6c.5-2.9 2-4.5 3.8-4.5s3.3 1.6 3.8 4.5"/>
++            <circle cx="17" cy="9" r="2.4"/><path d="M13.2 18.6c.5-2.9 2-4.5 3.8-4.5s3.3 1.6 3.8 4.5"/>
++            <path d="M9.1 4.5c1.8-1.6 4-1.6 5.8 0"/><path d="M14.9 4.5l-1.9.2m1.9-.2l-.6-1.8"/>
++          </svg>
++          <span>منافسة فرق وسرقة إجابات</span>
++        </li>
++        <li class="wlc-point">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
++            <rect x="3.6" y="3.6" width="7" height="7" rx="1.8"/><rect x="13.4" y="3.6" width="7" height="7" rx="1.8"/>
++            <rect x="3.6" y="13.4" width="7" height="7" rx="1.8"/><rect x="13.4" y="13.4" width="7" height="7" rx="1.8"/>
++          </svg>
++          <span>فئات عربية متنوعة</span>
++        </li>
++        <li class="wlc-point">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
++            <path d="M4 10.4 12 4l8 6.4"/><path d="M5.8 9.4V20h12.4V9.4"/>
++            <path d="M12 16.8c-1.9-1.4-2.9-2.5-2.9-3.7 0-.9.7-1.6 1.6-1.6.5 0 1 .2 1.3.7.3-.5.8-.7 1.3-.7.9 0 1.6.7 1.6 1.6 0 1.2-1 2.3-2.9 3.7Z"/>
++          </svg>
++          <span>فئات عائلية خاصة</span>
++        </li>
++      </ul>
++      <button id="wlc-start" class="wlc-cta" type="button" aria-label="يلا نبدأ">يلا نبدأ</button>
++    </div>
++  </section>
+ <div id="app">
+ 
+   <!-- تسجيل الدخول -->
+@@ -3540,8 +3628,40 @@ getFirebaseWebAuth();
+ // وننتقل مباشرة للرئيسية بدل إجبار المستخدم على تسجيل الدخول من جديد.
+ // ⚠️ SCREENSHOT MODE — يُحذف بعد أخذ اللقطات
+ const __SCREENSHOT_SCREEN = null; // home | teams | board | paywall | result
++
++// ────────── شاشة الترحيب: تُعرض مرة واحدة، بلا أي طلب شبكة.
++// تُتخطى كلياً (بلا وميض) إن سبقت رؤيتها أو في وضع لقطات الشاشة.
++// العلم يُخزَّن عبر storeSet → المفتاح الفعلي في localStorage: fatinah_welcome_seen_v1
++function presentFatinahWelcome(){
++  try{
++    const el = document.getElementById('s-welcome');
++    if(!el) return;
++    const shot = (typeof __SCREENSHOT_SCREEN!=='undefined') && __SCREENSHOT_SCREEN;
++    if(shot || storeGet('welcome_seen_v1', false) === true){ el.remove(); return; }
++    storeSet('welcome_seen_v1', true); // «مرة واحدة فقط» مضمونة من لحظة العرض
++    el.classList.add('wlc-enter');
++    el.hidden = false;
++    const btn = document.getElementById('wlc-start');
++    // حصر قارئ الشاشة والتركيز داخل الترحيب حتى لا يصل لما يُوجَّه خلفه
++    const keepFocus = (e)=>{ if(btn && !el.contains(e.target)) btn.focus({preventScroll:true}); };
++    document.addEventListener('focusin', keepFocus, true);
++    if(btn) btn.focus({preventScroll:true});
++    let done = false;
++    const dismiss = ()=>{
++      if(done) return; done = true;
++      document.removeEventListener('focusin', keepFocus, true);
++      try{ sfx('tap'); vibrate(15); }catch(e){}
++      if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches){ el.remove(); return; }
++      el.classList.add('wlc-leave');
++      setTimeout(()=>el.remove(), 300);
++    };
++    if(btn) btn.addEventListener('click', dismiss, {once:true});
++  }catch(e){ /* أي خلل هنا يجب ألا يعطّل الإقلاع */ }
++}
++
+ (async function bootAuth(){
+   hideSplash();
++  presentFatinahWelcome(); // ← نقطة الإدراج الوحيدة: الترحيب يظهر فوراً، والفحص يكمل خلفه بالتوازي
+   storeSet('playerName','مجلس فطنة');
+   const nameEl=document.getElementById('user-name');
+   if(nameEl) nameEl.textContent='مجلس فطنة';
