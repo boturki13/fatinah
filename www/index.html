@@ -1193,11 +1193,27 @@ function doExit(){
 // ────────── حذف الحساب (5.1.1)
 // إعادة المصادقة عند requires-recent-login حسب مزوّد الدخول المخزَّن
 async function reauthThen(provider, fn){
+  // Normalize Firebase providerId format (stored as 'apple.com'/'google.com' in old sessions)
+  if(provider==='apple.com') provider='apple';
+  if(provider==='google.com') provider='google';
+  console.log('[reauthThen] normalized provider:', provider);
   const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
   if(FA){
-    if(provider==='google') await FA.signInWithGoogle();
-    else if(provider==='apple') await FA.signInWithApple();
-    else if(provider==='password'){
+    if(provider==='google'){
+      if(typeof FA.reauthenticateWithGoogle==='function') await FA.reauthenticateWithGoogle();
+      else await FA.signInWithGoogle();
+    } else if(provider==='apple'){
+      const hasReauth = typeof FA.reauthenticateWithApple==='function';
+      console.log('[reauth] apple hasReauth:', hasReauth);
+      try{
+        if(hasReauth) await FA.reauthenticateWithApple();
+        else await FA.signInWithApple();
+      }catch(appleErr){
+        console.error('[reauth] apple error — json:', JSON.stringify(appleErr),
+          'msg:', appleErr?.message, 'code:', appleErr?.code, 'type:', typeof appleErr);
+        throw appleErr;
+      }
+    } else if(provider==='password'){
       const email = storeGet('authEmail','');
       const password = prompt('لتأكيد الحذف، أدخل كلمة مرور حساب ' + email + ':');
       if(!password) throw new Error('cancelled');
@@ -1231,6 +1247,7 @@ async function reauthThen(provider, fn){
 // حذف مستخدم Firebase فعلياً (شرط Apple 5.1.1) — وليس تسجيل خروج فقط
 async function deleteFirebaseUser(){
   const provider = storeGet('authProvider','');
+  console.log('[deleteFirebaseUser] stored provider:', JSON.stringify(provider));
   // الطبقة الأولى: مكوّن Capacitor الأصلي (iOS)
   const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
   if(FA){
@@ -1243,7 +1260,14 @@ async function deleteFirebaseUser(){
       const msg = String(e?.code||e?.message||e);
       if(msg.includes('requires-recent-login')){
         try{ await reauthThen(provider, ()=>FA.deleteUser()); return true; }
-        catch(e2){ console.error('reauth+delete:', e2); return false; }
+        catch(e2){
+          console.error('reauth+delete:', e2, 'json:', JSON.stringify(e2));
+          const isCancelled = !e2 || JSON.stringify(e2)==='{}' ||
+            (e2?.code||'').includes('CANCEL') || (e2?.message||'').toLowerCase().includes('cancel') ||
+            e2?.code==='1001'; // ASAuthorizationError.canceled
+          if(isCancelled) showToast('❌','إلغاء التحقق','لإتمام حذف الحساب، أكمل التحقق عبر Apple',false);
+          return false;
+        }
       }
       console.error('Capacitor deleteUser:', e);
       return false;
