@@ -17,7 +17,7 @@
 
 ## Trust Boundaries
 
-- **Browser / iOS App → Server**: All HTTP requests cross here. The server verifies Firebase ID tokens (`uid_matches_token`) on all mutating endpoints. If `FIREBASE_PROJECT_ID` is unset `uid_matches_token` returns `False` (deny-by-default).
+- **Browser / iOS App → Server**: All HTTP requests cross here. The server verifies Firebase ID tokens (`uid_matches_token`) on all mutating endpoints. If `FIREBASE_PROJECT_ID` is unset `uid_matches_token` returns `False` (deny-by-default). **⚠️ If `GOOGLE_API_KEY` is unset while `FIREBASE_PROJECT_ID` is set, token verification is silently skipped — this is the current production state.**
 - **Server → SQLite**: Direct file access on the same host. No network exposure.
 - **Server → RevenueCat Webhook**: Webhook authenticity is verified via `hmac.compare_digest` of an Authorization header secret (no body HMAC; this is the RevenueCat model). Fail-closed: endpoint returns 503 if secret is not configured.
 - **Server → Firebase/Firestore**: Service Account JWT-based auth for Firestore writes; Firebase Identity Toolkit REST for token verification.
@@ -29,9 +29,9 @@
 
 - **Production entry points**: `server.py` — `do_GET` (lines ~585–760) and `do_POST` (lines ~807–1350) handlers
 - **Highest-risk areas**: promo redemption (`/api/promo/redeem`, line ~1030) — dual rate limiter (per-socket-IP + per-uid); RevenueCat webhook (`/api/revenuecat/webhook`, line ~1177); account delete (`/api/account/delete`, line ~881)
-- **Auth enforcement**: `uid_matches_token()` (line 153) — deny-by-default when `FIREBASE_PROJECT_ID` is absent
+- **Auth enforcement**: `uid_matches_token()` (line 153) — deny-by-default when `FIREBASE_PROJECT_ID` is absent; **⚠️ bypass when `GOOGLE_API_KEY` is absent but `FIREBASE_PROJECT_ID` is set**
 - **Admin surfaces**: `/api/promo/admin`, `/api/admin/db-status`, `/admin/promo` HTML page (UI served without auth but all operations require ADMIN_SECRET at API layer)
-- **Dev-only**: `setup_stripe.py` (utility script, not served over HTTP); prints first 12 chars of Stripe key when run — minor info disclosure
+- **Dev-only**: `setup_stripe.py` (utility script, not served over HTTP)
 - **Client-side code**: `index.html` fetches the RevenueCat iOS publishable key from `/api/rc-config`; Firebase client config from `/firebase-config.js`. No secrets hardcoded in HTML; `REVENUECAT_IOS_API_KEY` (appl_ prefix) is an intentionally public iOS publishable key.
 
 ## Threat Categories
@@ -40,7 +40,9 @@
 
 All mutating endpoints require a Firebase ID token verified via Identity Toolkit REST. `uid_matches_token` returns `False` by default when Firebase is not configured, preventing auth bypass in misconfigured environments.
 
-**Required guarantee**: Every endpoint that mutates state attributed to a specific uid MUST verify a valid Firebase ID token for that uid before executing. ✅ Currently enforced.
+**⚠️ ACTIVE ISSUE**: When `GOOGLE_API_KEY` is absent but `FIREBASE_PROJECT_ID` is set (current production state), `uid_matches_token` silently returns `True` for any non-empty uid with no token validation. An attacker who knows a victim's Firebase UID can invoke any authenticated endpoint on their behalf, including account deletion.
+
+**Required guarantee**: Every endpoint that mutates state attributed to a specific uid MUST verify a valid Firebase ID token for that uid before executing. `GOOGLE_API_KEY` MUST be set in all production environments. ❌ Currently bypassed.
 
 ### Tampering
 
@@ -56,9 +58,9 @@ The `/legal/img/` path traversal was fixed in commit `e784ef9` using `os.path.ba
 
 Exception error propagation to clients has been fixed: all POST handlers now return generic error messages with a server-side `ref` ID rather than `str(e)`. ✅ Fixed.
 
-`setup_stripe.py` prints the first 12 characters of the Stripe secret key when run by a developer. This is a dev-only script (not HTTP-reachable) and the partial key cannot be used to reconstruct the full secret, but the prefix confirms live-key usage in captured logs.
+`setup_stripe.py` prints the first 12 characters of the Stripe secret key when run by a developer — partial key prefix was removed in commit `dceb0b7`. Dev-only script, not HTTP-reachable.
 
-**Required guarantee**: Exception messages MUST NOT be sent verbatim to clients in production. ✅ Enforced. Dev tool key logging is low-impact but should be cleaned up.
+**Required guarantee**: Exception messages MUST NOT be sent verbatim to clients in production. ✅ Enforced.
 
 ### Denial of Service
 
