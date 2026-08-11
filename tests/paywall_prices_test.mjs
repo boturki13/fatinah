@@ -29,15 +29,30 @@ function offeringsWith({ monthly, annual } = {}) {
 }
 
 // تُشغَّل داخل صفحة المتصفح — لا وصول لمتغيرات Node، كل شيء يُمرَّر عبر arg
-function installCapacitorStub({ offeringsResult, shouldThrow }) {
+// configureDelayMs: يحاكي زمن RC.configure() الحقيقي على الجهاز (شبكة + Keychain)،
+// وgetOfferings يرمي "There is no singleton instance" (خطأ RevenueCat الحقيقي)
+// طالما configure() لم يخلص بعد — هذا هو سباق التهيئة عند الإقلاع.
+function installCapacitorStub({ authUid, rcApiKey, offeringsResult, shouldThrow, configureDelayMs }) {
+  if (authUid) localStorage.setItem('fatinah_authUid', JSON.stringify(authUid));
+  if (rcApiKey) localStorage.setItem('fatinah_rcApiKey', JSON.stringify(rcApiKey));
+  let configured = false;
   window.Capacitor = {
     isNativePlatform: () => true,
     Plugins: {
       Purchases: {
-        getOfferings: () =>
-          shouldThrow
+        configure: () =>
+          new Promise((resolve) => {
+            setTimeout(() => {
+              configured = true;
+              resolve();
+            }, configureDelayMs || 0);
+          }),
+        getOfferings: () => {
+          if (!configured) return Promise.reject(new Error('There is no singleton instance'));
+          return shouldThrow
             ? Promise.reject(new Error(shouldThrow))
-            : Promise.resolve(offeringsResult),
+            : Promise.resolve(offeringsResult);
+        },
         purchasePackage: () => Promise.resolve({ customerInfo: { entitlements: { active: {} } } }),
         restorePurchases: () => Promise.resolve({}),
       },
@@ -64,6 +79,10 @@ async function withPage(fn) {
         body: JSON.stringify({ apiKey: 'appl_TESTKEY' }),
       })
     );
+    // زوّر ربط الهوية حتى يكمل initRevenueCat() إلى RC.configure()
+    await page.route('**/api/revenuecat/identity', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+    );
     await fn(page);
     await context.close();
   } finally {
@@ -72,7 +91,13 @@ async function withPage(fn) {
 }
 
 async function gotoPaywall(page, offeringsResult, shouldThrow) {
-  await page.addInitScript(installCapacitorStub, { offeringsResult, shouldThrow });
+  await page.addInitScript(installCapacitorStub, {
+    authUid: 'test-uid-001',
+    rcApiKey: 'appl_TESTKEY',
+    offeringsResult,
+    shouldThrow,
+    configureDelayMs: 0,
+  });
   await page.goto(FILE_URL);
   await page.evaluate(() => window.go('s-paywall'));
   await page.waitForFunction(
@@ -248,6 +273,40 @@ tests.push(async function web_without_capacitor_hides_purchase() {
     assert.equal(r.annualPrice, '', 'لا يُعرض أي سعر على الويب');
   });
   console.log('  ✓ الويب بلا Capacitor: الزر مخفي، ملاحظة الدفع تظهر، بلا أسعار');
+});
+
+tests.push(async function boot_race_condition_rc_not_ready_before_paywall() {
+  // يحاكي جهازاً حقيقياً: initRevenueCat() (وبداخله RC.configure()) يبدأ عند
+  // الإقلاع بلا await، والمستخدم يفتح شاشة الاشتراك بسرعة قبل أن يخلص —
+  // configure() يأخذ 900ms هنا (شبكة + Keychain على جهاز حقيقي). إذا لم
+  // تنتظر fetchPackages اكتمال rcReady() قبل getOfferings، سترمي RevenueCat
+  // "There is no singleton instance" وتعلق الشاشة على disabled للأبد.
+  await withPage(async (page) => {
+    const offerings = offeringsWith({
+      monthly: product({ priceString: '$3.99', price: 3.99, currencyCode: 'USD' }),
+      annual: product({ priceString: '$29.99', price: 29.99, currencyCode: 'USD' }),
+    });
+    await page.addInitScript(installCapacitorStub, {
+      authUid: 'test-uid-race',
+      rcApiKey: 'appl_TESTKEY',
+      offeringsResult: offerings,
+      configureDelayMs: 900,
+    });
+    await page.goto(FILE_URL);
+    // bootAuth() الطبيعي عند تحميل الصفحة يستدعي initRevenueCat() بلا await
+    // بالفعل (نفس مسار الجهاز الحقيقي). نفتح الـ paywall فوراً فوق هذا —
+    // قبل ما يخلص RC.configure() بكثير — لإعادة إنتاج السباق كما يحصل فعلياً.
+    await page.evaluate(() => window.go('s-paywall'));
+    // ننتظر أطول من زمن configure() (900ms) حتى نتأكد إن الشاشة تعافت
+    // ولم تعلق على حالة الفشل المبكر — لا استقرار مبكر على أول حالة نشوفها
+    await page.waitForTimeout(2500);
+    const r = await readPaywall(page);
+    assert.equal(r.btnDisabled, false, `الزر ما زال disabled بعد اكتمال configure() — سباق تهيئة: ${JSON.stringify(r)}`);
+    assert.equal(r.monthlyPrice, '$3.99');
+    assert.equal(r.annualPrice, '$29.99');
+    assert.equal(r.errDisplay, 'none', 'لا رسالة خطأ بعد نجاح الجلب');
+  });
+  console.log('  ✓ سباق تهيئة RC عند الإقلاع: الأسعار تظهر والزر يتفعّل بعد اكتمال configure()، لا يعلق على disabled');
 });
 
 let failed = 0;
