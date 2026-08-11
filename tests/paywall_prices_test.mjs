@@ -21,11 +21,42 @@ function product({ priceString, price, currencyCode }) {
   return { priceString, price, currencyCode };
 }
 
+// شكل PurchasesPackage الحقيقي — معرّفات RevenueCat الافتراضية هي
+// $rc_monthly/$rc_annual لا "monthly"/"annual"
+function makePackage(plan, productData) {
+  return {
+    identifier: '$rc_' + plan,
+    packageType: plan === 'annual' ? 'ANNUAL' : 'MONTHLY',
+    offeringIdentifier: 'default',
+    product: productData,
+  };
+}
+
+// شكل PurchasesOfferings الحقيقي كما يرجعه RC.getOfferings() مباشرة —
+// {all, current} بلا مفتاح "offerings" يغلّفه (راجع definitions.d.ts)
 function offeringsWith({ monthly, annual } = {}) {
-  const availablePackages = [];
-  if (monthly) availablePackages.push({ identifier: 'monthly', packageType: 'MONTHLY', product: monthly });
-  if (annual) availablePackages.push({ identifier: 'annual', packageType: 'ANNUAL', product: annual });
-  return { offerings: { current: availablePackages.length ? { availablePackages } : null } };
+  const monthlyPkg = monthly ? makePackage('monthly', monthly) : null;
+  const annualPkg = annual ? makePackage('annual', annual) : null;
+  const availablePackages = [monthlyPkg, annualPkg].filter(Boolean);
+  const offering = {
+    identifier: 'default',
+    serverDescription: '',
+    metadata: {},
+    webCheckoutUrl: null,
+    monthly: monthlyPkg,
+    annual: annualPkg,
+    lifetime: null,
+    sixMonth: null,
+    threeMonth: null,
+    twoMonth: null,
+    weekly: null,
+    availablePackages,
+  };
+  const hasAny = availablePackages.length > 0;
+  return {
+    all: hasAny ? { default: offering } : {},
+    current: hasAny ? offering : null,
+  };
 }
 
 // تُشغَّل داخل صفحة المتصفح — لا وصول لمتغيرات Node، كل شيء يُمرَّر عبر arg

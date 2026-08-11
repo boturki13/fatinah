@@ -1171,7 +1171,7 @@ function go(id){
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
   if(id==='s-paywall' && typeof loadPaywallPrices==='function'){
-    loadPaywallPrices().catch(e=>console.error('paywall prices:', e));
+    loadPaywallPrices().catch(e=>console.error('paywall prices:', (e && e.message) || e));
   }
 }
 
@@ -2242,10 +2242,18 @@ async function rcIsActive(){
 }
 
 // ────────── Paywall — أسعار حقيقية من StoreKit عبر RevenueCat (App Store Guideline 3.1.2)
-function pickPackage(pkgs, plan){
-  return plan === 'annual'
-    ? pkgs.find(p=>p.packageType==='ANNUAL')   || pkgs.find(p=>p.identifier==='annual')
-    : pkgs.find(p=>p.packageType==='MONTHLY')  || pkgs.find(p=>p.identifier==='monthly');
+// getOfferings() يرجّع PurchasesOfferings مباشرة ({all, current}) بلا مفتاح
+// "offerings" يغلّفه — راجع node_modules/@revenuecat/purchases-capacitor/dist/esm/definitions.d.ts
+function pickPackage(offering, plan){
+  if(!offering) return null;
+  const direct = plan === 'annual' ? offering.annual : offering.monthly;
+  if(direct) return direct;
+  const pkgs = offering.availablePackages || [];
+  const type = plan === 'annual' ? 'ANNUAL' : 'MONTHLY';
+  return pkgs.find(p=>p.packageType === type)
+      || pkgs.find(p=>p.identifier === plan)
+      || pkgs.find(p=>p.identifier === '$rc_' + plan)
+      || null;
 }
 
 let _pwPkgs = null; // {monthly, annual} — كاش لنتيجة getOfferings
@@ -2256,13 +2264,13 @@ async function fetchPackages(force){
   await loadRcKey();
   if(!RC_CONFIGURED) throw new Error('RevenueCat غير مهيَّأ — تعذّر جلب المفتاح من الخادم');
   if(!(await rcReady())) throw new Error('تعذّرت تهيئة RevenueCat — راجع سجلّ Xcode');
-  const { offerings } = await RC.getOfferings();
+  const res = await RC.getOfferings();
+  const offerings = (res && res.offerings) ? res.offerings : res; // تسامح مع الشكلين
   const current = offerings && offerings.current;
-  if(!current) throw new Error('لا توجد عروض متاحة');
-  const pkgs = current.availablePackages || [];
+  if(!current) throw new Error('لا توجد عروض متاحة — تأكد من تعليم Offering كـ Current بلوحة RevenueCat');
   _pwPkgs = {
-    monthly: pickPackage(pkgs, 'monthly') || null,
-    annual:  pickPackage(pkgs, 'annual')  || null
+    monthly: pickPackage(current, 'monthly') || null,
+    annual:  pickPackage(current, 'annual')  || null
   };
   return _pwPkgs;
 }
@@ -2373,7 +2381,7 @@ async function loadPaywallPrices(force){
     if(err) err.style.display = 'none';
     if(btn) btn.disabled = false;
   }catch(e){
-    console.error('paywall prices:', e);
+    console.error('paywall prices:', (e && e.message) || e);
     if(err) err.style.display = 'block';
     if(sub) sub.textContent = '';
     if(btn) btn.disabled = true;
