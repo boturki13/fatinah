@@ -1,5 +1,5 @@
 """
-خادم فَطِنة — Python stdlib فقط، بدون حزم خارجية.
+خادم فطنة — Python stdlib فقط، بدون حزم خارجية.
 يخدم index.html، يوفّر firebase-config.js، يولّد الأسئلة عبر Claude،
 ويدير اشتراكات Apple IAP عبر RevenueCat.
 """
@@ -548,7 +548,8 @@ def legal_page_html(kind: str) -> bytes:
 <footer>فَطِنة © 2026 — <a href="/privacy">سياسة الخصوصية</a> · <a href="/terms">شروط الاستخدام</a></footer>
 </body>
 </html>'''
-    return page.encode()
+    # الاسم المرئي الرسمي بدون تشكيل، كما يظهر في هوية التطبيق.
+    return page.replace('فَطِنة', 'فطنة').encode()
 
 # ─── HTTP handler ─────────────────────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):

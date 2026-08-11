@@ -10,3 +10,4 @@
 - [Apple-only payments](apple-only-payments.md) — الاشتراكات الرقمية تُباع عبر Apple IAP وRevenueCat فقط؛ لا تستخدم Tap أو Stripe
 - [Mac npm registry](mac-npm-registry.md) — package-lock قد يحتوي روابط Replit الداخلية؛ استخدم سجل npm العام عند التثبيت خارج Replit
 - [Git synchronization](git-sync.md) — عند ظهور تعارض سحب وهمي، افحص حالة الدمج ثم استخدم fetch وmerge يدوياً دون reset
+- [Arabic brand spelling](brand-name.md) — الاسم الظاهر الرسمي هو «فطنة» بدون تشكيل؛ المعرّفات التقنية لا تتغير
