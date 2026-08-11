@@ -1,7 +1,7 @@
 {
   "name": "fatinah",
   "version": "1.2.0",
-  "description": "فَطِنة — لعبة الذكاء والفطنة الجماعية",
+  "description": "فطنة — لعبة الذكاء والفطنة الجماعية",
   "private": true,
   "scripts": {
     "sync": "npx cap sync",
