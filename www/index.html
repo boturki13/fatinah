@@ -2169,6 +2169,12 @@ function getRC(){
     || null;
 }
 
+let _rcReady = null;
+function rcReady(){
+  if(!_rcReady) _rcReady = initRevenueCat();
+  return _rcReady;
+}
+
 async function initRevenueCat(){
   const RC = getRC();
   if(!RC) return false;
@@ -2249,6 +2255,7 @@ async function fetchPackages(force){
   if(!RC) throw new Error('RevenueCat غير متاح');
   await loadRcKey();
   if(!RC_CONFIGURED) throw new Error('RevenueCat غير مهيَّأ — تعذّر جلب المفتاح من الخادم');
+  if(!(await rcReady())) throw new Error('تعذّرت تهيئة RevenueCat — راجع سجلّ Xcode');
   const { offerings } = await RC.getOfferings();
   const current = offerings && offerings.current;
   if(!current) throw new Error('لا توجد عروض متاحة');
@@ -3695,7 +3702,7 @@ const __SCREENSHOT_SCREEN = null; // home | teams | board | paywall | result
   }
   const { uid } = await ensureAnonymousSession();
   window._currentUid = uid;
-  initRevenueCat();
+  _rcReady = initRevenueCat();
   checkSubscriptionAndRoute(uid);
 })();
 
