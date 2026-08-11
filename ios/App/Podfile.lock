@@ -1,9 +1,9 @@
 PODS:
-  - Capacitor (8.5.0):
+  - Capacitor (8.4.2):
     - CapacitorCordova
   - CapacitorCommunityKeepAwake (8.0.1):
     - Capacitor
-  - CapacitorCordova (8.5.0)
+  - CapacitorCordova (8.4.2)
   - CapacitorFirebaseAuthentication (8.3.0):
     - Capacitor
     - CapacitorFirebaseAuthentication/Lite (= 8.3.0)
@@ -59,14 +59,14 @@ PODS:
   - GoogleUtilities/Reachability (8.1.2):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
-  - GTMSessionFetcher/Core (5.3.0)
-  - PurchasesHybridCommon (18.28.0):
-    - RevenueCat (= 5.83.0)
+  - GTMSessionFetcher/Core (5.3.1)
+  - PurchasesHybridCommon (18.22.2):
+    - RevenueCat (= 5.81.1)
   - RecaptchaInterop (101.0.0)
-  - RevenueCat (5.83.0)
-  - RevenuecatPurchasesCapacitor (13.3.0):
+  - RevenueCat (5.81.1)
+  - RevenuecatPurchasesCapacitor (13.2.4):
     - Capacitor
-    - PurchasesHybridCommon (= 18.28.0)
+    - PurchasesHybridCommon (= 18.22.2)
 
 DEPENDENCIES:
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
@@ -114,9 +114,9 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@revenuecat/purchases-capacitor"
 
 SPEC CHECKSUMS:
-  Capacitor: 00b87168591cc006ea6f5c0de681ec5c39a2c8eb
+  Capacitor: 52f999235b8bd6a7d01694753f4f4d54d182e3a3
   CapacitorCommunityKeepAwake: d41922812644562e94a79acaf7f41e6d9413af8c
-  CapacitorCordova: 9d3acbb574048e7167d2af127a0af2123e619f2f
+  CapacitorCordova: 345eacdc4c8282415446aea4acd8c77d82480bd4
   CapacitorFirebaseAuthentication: d1f4c78c96f2669351781692071260ac79573876
   CapacitorHaptics: 296f771ecd89c7a1bd92a7b6826a7d268e2e70f5
   CapacitorPreferences: cca2021f386efb75947c850334447d9ff22b14f1
@@ -129,11 +129,11 @@ SPEC CHECKSUMS:
   FirebaseCoreExtension: 731a5744970bcd73ad95ab2a2b8a1f46353e86dd
   FirebaseCoreInternal: 571a2dd8c975410966199623351db3a3265c874d
   GoogleUtilities: 766ace00c6b10d8148408f329d10c4f051931850
-  GTMSessionFetcher: 127211aeec0b1e904fc49f4f6f895dcc535b0ecf
-  PurchasesHybridCommon: 8563d6a7d832332beb9b30478dbe56eeaa0dd425
+  GTMSessionFetcher: a6d2b2aa203485893d4511ff64642dc811f7c09f
+  PurchasesHybridCommon: e47bc4f611e86fcf8295bf1c984f187982270f02
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
-  RevenueCat: a83de0391a1061302699cb55eb1ff0662f5768b5
-  RevenuecatPurchasesCapacitor: 20f023d4f31122bd0a459631da47eca36685fcc5
+  RevenueCat: 693b033863262f9776130cc6c1f9255a74ab23ff
+  RevenuecatPurchasesCapacitor: cfbab60a6bcc32d5050f6802e49b884beb2d936c
 
 PODFILE CHECKSUM: ca6de3419f4efb84744bd55b229bed78f0724634
 
