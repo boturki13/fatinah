@@ -546,36 +546,37 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
         </li>
       </ul>
       <div class="pw-plans pw-rise pw-d4" role="radiogroup" aria-label="اختر خطة الاشتراك">
-        <div class="pw-plan" role="radio" aria-checked="false" tabindex="0" data-plan="annual">
-          <span class="pw-badge">الأفضل قيمة · وفّر 37%</span>
+        <div class="pw-plan" role="radio" aria-checked="false" tabindex="0" data-plan="annual" id="pw-plan-annual">
+          <span class="pw-badge" id="pw-annual-badge" hidden></span>
           <span class="pw-radio"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
           <div class="pw-plan-info">
             <div class="pw-plan-name">سنوي</div>
-            <div class="pw-plan-sub">يعادل <bdi>$2.49</bdi> شهرياً فقط</div>
+            <div class="pw-plan-sub" id="pw-annual-sub"></div>
           </div>
           <div class="pw-plan-price">
-            <span class="pw-price"><bdi>$29.99</bdi></span>
+            <span class="pw-price"><bdi id="pw-annual-price"></bdi></span>
             <span class="pw-per">في السنة</span>
           </div>
         </div>
-        <div class="pw-plan" role="radio" aria-checked="true" tabindex="0" data-plan="monthly">
+        <div class="pw-plan" role="radio" aria-checked="true" tabindex="0" data-plan="monthly" id="pw-plan-monthly">
           <span class="pw-radio"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
           <div class="pw-plan-info">
             <div class="pw-plan-name">شهري</div>
             <div class="pw-plan-sub">مرونة كاملة، شهر بشهر</div>
           </div>
           <div class="pw-plan-price">
-            <span class="pw-price"><bdi>$3.99</bdi></span>
+            <span class="pw-price"><bdi id="pw-monthly-price"></bdi></span>
             <span class="pw-per">في الشهر</span>
           </div>
         </div>
       </div>
-      <button class="pw-cta pw-rise pw-d5" id="paywall-btn" onclick="startCheckout()">
+      <button class="pw-cta pw-rise pw-d5" id="paywall-btn" onclick="startCheckout()" disabled>
         اشترك عبر Apple
-        <small id="pw-cta-sub">‏$3.99 / شهر — تُلغى في أي وقت</small>
+        <small id="pw-cta-sub">جاري جلب الأسعار…</small>
       </button>
       <div id="paywall-loading" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:14px;">جاري تجهيز اشتراك Apple…</div>
       <div id="web-payment-note" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:13px;line-height:1.7;">الاشتراك متاح حصرياً عبر Apple داخل تطبيق فَطِنة على iPhone وiPad.</div>
+      <div id="pw-price-error" style="display:none;text-align:center;padding:10px;color:#ff8a8a;font-size:13px;line-height:1.7;">تعذّر جلب الأسعار من App Store — تأكد من الإنترنت وحاول مرة أخرى.</div>
       <!-- كود مكافأة -->
       <div class="pw-promo pw-rise pw-d6" id="pw-promo-box">
         <button class="pw-promo-toggle" id="pw-promo-toggle" onclick="togglePromoBox()">🎁 عندك كود مجاني؟</button>
@@ -886,8 +887,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <p><b>آخر تحديث: يوليو 2025</b></p>
       <p>باستخدامك تطبيق <b>فَطِنة</b> فأنت توافق على هذه الشروط.</p>
       <p><b>الاشتراك:</b><br>
-      • الاشتراك الشهري: $3.99 شهرياً<br>
-      • الاشتراك السنوي: $29.99 سنوياً<br>
+      • الاشتراك الشهري: <span id="terms-monthly-price">—</span><br>
+      • الاشتراك السنوي: <span id="terms-annual-price">—</span><br>
       • يتجدد الاشتراك تلقائياً ما لم يُلغَ قبل 24 ساعة من انتهاء الفترة الحالية<br>
       • يمكن إلغاؤه في أي وقت من إعدادات Apple ID</p>
       <p><b>الاستخدام المقبول:</b><br>
@@ -1169,6 +1170,9 @@ function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
+  if(id==='s-paywall' && typeof loadPaywallPrices==='function'){
+    loadPaywallPrices().catch(e=>console.error('paywall prices:', e));
+  }
 }
 
 // ────────── الخروج من الجولة
@@ -2231,18 +2235,151 @@ async function rcIsActive(){
   }
 }
 
-async function rcPurchase(plan){
+// ────────── Paywall — أسعار حقيقية من StoreKit عبر RevenueCat (App Store Guideline 3.1.2)
+function pickPackage(pkgs, plan){
+  return plan === 'annual'
+    ? pkgs.find(p=>p.packageType==='ANNUAL')   || pkgs.find(p=>p.identifier==='annual')
+    : pkgs.find(p=>p.packageType==='MONTHLY')  || pkgs.find(p=>p.identifier==='monthly');
+}
+
+let _pwPkgs = null; // {monthly, annual} — كاش لنتيجة getOfferings
+async function fetchPackages(force){
+  if(_pwPkgs && !force) return _pwPkgs;
   const RC = getRC();
   if(!RC) throw new Error('RevenueCat غير متاح');
   await loadRcKey();
   if(!RC_CONFIGURED) throw new Error('RevenueCat غير مهيَّأ — تعذّر جلب المفتاح من الخادم');
   const { offerings } = await RC.getOfferings();
-  const current = offerings.current;
+  const current = offerings && offerings.current;
   if(!current) throw new Error('لا توجد عروض متاحة');
   const pkgs = current.availablePackages || [];
-  const pkg = plan === 'annual'
-    ? pkgs.find(p=>p.packageType==='ANNUAL')   || pkgs.find(p=>p.identifier==='annual')
-    : pkgs.find(p=>p.packageType==='MONTHLY')  || pkgs.find(p=>p.identifier==='monthly');
+  _pwPkgs = {
+    monthly: pickPackage(pkgs, 'monthly') || null,
+    annual:  pickPackage(pkgs, 'annual')  || null
+  };
+  return _pwPkgs;
+}
+
+// يشتق "يعادل X شهرياً" من priceString نفسه حتى يبقى رمز العملة وموضعه
+// كما يعرضهم المتجر بالضبط. عدد الخانات العشرية من معيار العملة (Intl)
+// وليس من شكل النص، لأن فاصلة الآلاف (مثل ¥4,500) ليست فاصلة عشرية.
+function perMonthFromAnnual(product){
+  if(!product || typeof product.priceString !== 'string' || typeof product.price !== 'number') return '';
+  const currency = product.currencyCode || 'USD';
+  let fractionDigits = 2;
+  try{
+    fractionDigits = new Intl.NumberFormat('en-US', { style:'currency', currency })
+      .resolvedOptions().minimumFractionDigits;
+  }catch(e){}
+  const scale = Math.pow(10, fractionDigits);
+  const perMonth = Math.floor((product.price / 12) * scale) / scale;
+  const perMonthStr = perMonth.toLocaleString('en-US', {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+    useGrouping: false
+  });
+  const numMatch = product.priceString.match(/[\d.,]*\d/);
+  if(!numMatch) return '';
+  const replaced = product.priceString.slice(0, numMatch.index) + perMonthStr +
+                    product.priceString.slice(numMatch.index + numMatch[0].length);
+  return `يعادل ${replaced} شهرياً فقط`;
+}
+
+function pwCtaSub(plan){
+  if(!_pwPkgs) return '';
+  const pkg = plan === 'annual' ? _pwPkgs.annual : _pwPkgs.monthly;
+  const product = pkg && pkg.product;
+  if(!product || !product.priceString) return '';
+  const unit = plan === 'annual' ? 'سنة' : 'شهر';
+  return `‏${product.priceString} / ${unit} — تُلغى في أي وقت`;
+}
+
+let _pwPlan = 'monthly';
+let _pwPricesLoading = false;
+async function loadPaywallPrices(force){
+  if(_pwPricesLoading) return;
+  const btn         = document.getElementById('paywall-btn');
+  const sub         = document.getElementById('pw-cta-sub');
+  const err         = document.getElementById('pw-price-error');
+  const note        = document.getElementById('web-payment-note');
+  const planAnnual  = document.getElementById('pw-plan-annual');
+  const planMonthly = document.getElementById('pw-plan-monthly');
+
+  // بلا Capacitor (ويب): الاشتراك غير متاح هنا، لا تعرض أي سعر
+  if(!(window.Capacitor && window.Capacitor.isNativePlatform())){
+    if(btn)  btn.style.display = 'none';
+    if(note) note.style.display = 'block';
+    if(err)  err.style.display = 'none';
+    return;
+  }
+
+  _pwPricesLoading = true;
+  if(btn){ btn.style.display=''; btn.disabled = true; }
+  if(sub) sub.textContent = 'جاري جلب الأسعار…';
+  if(err)  err.style.display = 'none';
+  if(note) note.style.display = 'none';
+
+  try{
+    const { monthly, annual } = await fetchPackages(force);
+    const monthlyProduct = monthly && monthly.product;
+    const annualProduct  = annual  && annual.product;
+    if(!monthlyProduct && !annualProduct) throw new Error('لا توجد أسعار متاحة');
+
+    if(planMonthly) planMonthly.style.display = monthlyProduct ? '' : 'none';
+    if(planAnnual)  planAnnual.style.display  = annualProduct  ? '' : 'none';
+
+    // لا تعرض سعر وهمي لخطة غائبة — حوّل الاختيار للخطة المتاحة فعلياً
+    if(_pwPlan === 'monthly' && !monthlyProduct && annualProduct) _pwPlan = 'annual';
+    if(_pwPlan === 'annual'  && !annualProduct  && monthlyProduct) _pwPlan = 'monthly';
+    document.querySelectorAll('.pw-plan').forEach(p=>{
+      p.setAttribute('aria-checked', p.dataset.plan === _pwPlan ? 'true' : 'false');
+    });
+
+    const monthlyPriceEl = document.getElementById('pw-monthly-price');
+    const annualPriceEl  = document.getElementById('pw-annual-price');
+    const annualSubEl    = document.getElementById('pw-annual-sub');
+    const badgeEl         = document.getElementById('pw-annual-badge');
+    const termsMonthlyEl = document.getElementById('terms-monthly-price');
+    const termsAnnualEl  = document.getElementById('terms-annual-price');
+
+    if(monthlyPriceEl) monthlyPriceEl.textContent = monthlyProduct ? monthlyProduct.priceString : '';
+    if(annualPriceEl)  annualPriceEl.textContent  = annualProduct  ? annualProduct.priceString  : '';
+    if(termsMonthlyEl) termsMonthlyEl.textContent = monthlyProduct ? `${monthlyProduct.priceString} شهرياً` : '—';
+    if(termsAnnualEl)  termsAnnualEl.textContent  = annualProduct  ? `${annualProduct.priceString} سنوياً`  : '—';
+    if(annualSubEl)    annualSubEl.textContent    = annualProduct  ? perMonthFromAnnual(annualProduct)     : '';
+
+    if(badgeEl){
+      let showBadge = false;
+      if(monthlyProduct && annualProduct &&
+         typeof monthlyProduct.price==='number' && typeof annualProduct.price==='number'){
+        const pct = Math.round((1 - annualProduct.price/(monthlyProduct.price*12)) * 100);
+        if(pct > 0){
+          badgeEl.textContent = `الأفضل قيمة · وفّر ${pct}%`;
+          showBadge = true;
+        }
+      }
+      badgeEl.hidden = !showBadge;
+      if(!showBadge) badgeEl.textContent = '';
+    }
+
+    if(sub) sub.textContent = pwCtaSub(_pwPlan);
+    if(err) err.style.display = 'none';
+    if(btn) btn.disabled = false;
+  }catch(e){
+    console.error('paywall prices:', e);
+    if(err) err.style.display = 'block';
+    if(sub) sub.textContent = '';
+    if(btn) btn.disabled = true;
+  }finally{
+    _pwPricesLoading = false;
+  }
+}
+
+async function rcPurchase(plan){
+  const RC = getRC();
+  if(!RC) throw new Error('RevenueCat غير متاح');
+  const { monthly, annual } = await fetchPackages();
+  const pkg = plan === 'annual' ? annual : monthly;
   if(!pkg) throw new Error('الباقة غير موجودة — تأكد من إعداد Offerings في RevenueCat');
   const { customerInfo } = await RC.purchasePackage({ aPackage: pkg });
   // إذا اكتمل الشراء بدون exception → ناجح
@@ -2358,17 +2495,15 @@ async function redeemPromo(){
 }
 
 // ────────── Paywall — اختيار الخطة
-let _pwPlan = 'monthly';
 document.addEventListener('DOMContentLoaded', ()=>{
   document.querySelectorAll('.pw-plan').forEach(el=>{
     const handler = ()=>{
+      if(el.style.display === 'none') return; // خطة غير متاحة حالياً
       document.querySelectorAll('.pw-plan').forEach(p=>p.setAttribute('aria-checked','false'));
       el.setAttribute('aria-checked','true');
       _pwPlan = el.dataset.plan;
       const sub = document.getElementById('pw-cta-sub');
-      if(sub) sub.textContent = _pwPlan==='annual'
-        ? '‏$29.99 / سنة — تُلغى في أي وقت'
-        : '‏$3.99 / شهر — تُلغى في أي وقت';
+      if(sub) sub.textContent = pwCtaSub(_pwPlan);
     };
     el.addEventListener('click', handler);
     el.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); handler(); } });
