@@ -39,7 +39,7 @@ def main():
         print('❌ ما قدرت أجيب Stripe key — تأكد أن Stripe integration متصل')
         return
 
-    print(f'✅ Stripe key موجود ({secret_key[:12]}...)')
+    print('✅ Stripe key موجود')
 
     # تحقق إذا المنتج موجود مسبقاً
     existing = stripe_req('GET',
