@@ -150,16 +150,17 @@ def verify_firebase_id_token(id_token: str):
         return None
 
 def uid_matches_token(uid: str, id_token: str) -> bool:
-    """يتحقق أن uid المطلوب هو نفس صاحب idToken المرسَل. يتجاوز التحقق إن كان
-    Firebase غير مُعدّ أصلاً → رفض افتراضي (deny-by-default).
-    إذا كان GOOGLE_API_KEY غير مضبوط (لا يمكن التحقق) يُسمح بالعملية مع تحذير."""
+    """يتحقق أن uid المطلوب هو نفس صاحب idToken المرسَل. رفض افتراضي
+    (deny-by-default) في أي حالة تعذّر فيها التحقق الفعلي — سواء لغياب
+    Firebase أو لغياب GOOGLE_API_KEY. القبول بلا تحقق كان يعني أن أي طلب
+    بـuid عشوائي يمرّ من كل نقطة نهاية "محمية" لو غاب هذا المتغيّر وحده."""
     if not firebase_is_configured():
         print('WARNING: FIREBASE_PROJECT_ID غير مضبوط — رفض التحقق من الهوية (deny-by-default)')
         return False
     api_key = os.environ.get('GOOGLE_API_KEY', '')
     if not api_key:
-        print(f'WARNING: GOOGLE_API_KEY غير مضبوط — قبول uid={uid[:8]}… بدون تحقق من الـ token')
-        return bool(uid)
+        print('WARNING: GOOGLE_API_KEY غير مضبوط — رفض التحقق من الهوية (deny-by-default)')
+        return False
     verified = verify_firebase_id_token(id_token)
     return bool(verified and verified.get('localId') == uid)
 
@@ -665,6 +666,20 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-Type',   'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
+            # طبقة دفاع إضافية ضد XSS (مثل الثغرة التي أُصلحت بمعاينة الأسئلة
+            # المولَّدة بالذكاء الاصطناعي) — تمنع تحميل سكربتات خارجية وتقيّد
+            # الوجهات التي يمكن لأي كود مُدرَج أن يرسل لها بيانات
+            self.send_header('Content-Security-Policy',
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://www.gstatic.com; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "font-src 'self' https://fonts.gstatic.com; "
+                "img-src 'self' data:; "
+                "connect-src 'self' https://ata20.com https://api.revenuecat.com "
+                "https://us-central1-fatinah-game.cloudfunctions.net "
+                "https://identitytoolkit.googleapis.com https://securetoken.googleapis.com "
+                "https://www.googleapis.com https://firestore.googleapis.com; "
+                "object-src 'none'; base-uri 'self'; frame-ancestors 'self'")
             self.end_headers()
             self.wfile.write(body)
 
@@ -815,7 +830,12 @@ class Handler(BaseHTTPRequestHandler):
             if not subscription_is_active(uid):
                 self.send_json(403, {'error': 'اشتراك فعّال مطلوب'}); return
 
-            topic = (data.get('topic') or '').strip()
+            # حد معدل لكل حساب: بلا هذا يقدر مشترك واحد يستنزف تكلفة API
+            # بسكربتة مواضيع فريدة متكررة (يتجاوز كاش question_bank عمداً)
+            if rate_limited(f'generate-uid:{uid}', max_calls=20, window_sec=600):
+                self.send_json(429, {'error': 'طلبات كثيرة جداً — انتظر قليلاً ثم حاول مجدداً'}); return
+
+            topic = (data.get('topic') or '').strip()[:200]
             provider = (data.get('provider') or data.get('agent') or 'claude').strip().lower()
             if provider not in ('claude', 'kimi'): provider = 'claude'
             try:    count = min(max(int(data.get('count', 6)), 1), 30)
