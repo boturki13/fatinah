@@ -1007,6 +1007,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
   </div>
 </div>
 
+<!-- نافذة تأكيد حذف فئة عائلية -->
+<div class="modal-wrap" id="delete-family-modal">
+  <div class="modal">
+    <div class="modal-icon">🗑️</div>
+    <div class="modal-title">حذف الفئة؟</div>
+    <div class="modal-sub" id="delete-family-sub">سيُحذف كل أسئلتها نهائياً ولا يمكن التراجع.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeDeleteFamilyModal()">لا، تراجع</button>
+      <button class="btn btn-danger" onclick="doDeleteFamily()">نعم، احذف</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-wrap" id="bomb-target-modal">
   <div class="modal">
     <div class="modal-icon">💣</div>
@@ -1636,7 +1649,9 @@ async function appleSignIn(){
       const u = res && res.user;
       if(u){
         if(u.email) storeSet('authEmail', u.email);
-        savePermanentProfile(u.uid, u.displayName, u.email, 'apple');
+        // await إلزامي: بيانات Apple الحقيقية (اسم/بريد) تُرسَل مرة واحدة فقط
+        // أبداً — فقدها بسبب تنقّل/إغلاق سريع قبل اكتمال الطلب لا يُسترجع
+        await savePermanentProfile(u.uid, u.displayName, u.email, 'apple');
       }
       afterAuthSuccess((u && u.displayName) || storeGet('playerName','لاعب'), 'apple', u && u.uid, u && u.email);
       return;
@@ -1662,7 +1677,7 @@ async function appleSignIn(){
         result = await wb.signInWithPopup(wb.auth, provider);
       }
       const u = result.user;
-      if(u.email){ storeSet('authEmail', u.email); savePermanentProfile(u.uid, u.displayName, u.email, 'apple'); }
+      if(u.email){ storeSet('authEmail', u.email); await savePermanentProfile(u.uid, u.displayName, u.email, 'apple'); }
       afterAuthSuccess(u.displayName || u.email || storeGet('playerName','لاعب'), 'apple', u.uid, u.email);
       return;
     }catch(e){
@@ -1686,7 +1701,7 @@ async function googleSignIn(){
       const u = res && res.user;
       if(u){
         if(u.email) storeSet('authEmail', u.email);
-        savePermanentProfile(u.uid, u.displayName, u.email, 'google');
+        await savePermanentProfile(u.uid, u.displayName, u.email, 'google');
       }
       afterAuthSuccess((u && u.displayName) || storeGet('playerName','لاعب'), 'google', u && u.uid, u && u.email);
       return;
@@ -1711,7 +1726,7 @@ async function googleSignIn(){
         result = await wb.signInWithPopup(wb.auth, provider);
       }
       const u = result.user;
-      if(u.email){ storeSet('authEmail', u.email); savePermanentProfile(u.uid, u.displayName, u.email, 'google'); }
+      if(u.email){ storeSet('authEmail', u.email); await savePermanentProfile(u.uid, u.displayName, u.email, 'google'); }
       afterAuthSuccess(u.displayName || u.email || storeGet('playerName','لاعب'), 'google', u.uid, u.email);
       return;
     }catch(e){
@@ -1800,7 +1815,7 @@ async function emailAuth(mode){
         clearPendingLinkNative();
       }
       const u = res && res.user;
-      savePermanentProfile(u && u.uid, (u && u.displayName) || storeGet('playerName',''), email, 'password');
+      await savePermanentProfile(u && u.uid, (u && u.displayName) || storeGet('playerName',''), email, 'password');
       if(mode==='signup') await sendEmailVerificationMessage(true);
       afterAuthSuccess(storeGet('playerName','لاعب'), 'password', u && u.uid, email);
       return;
@@ -1822,7 +1837,7 @@ async function emailAuth(mode){
         await resolvePendingLinkWeb(wb, cred.user);
       }
       const u = cred.user;
-      savePermanentProfile(u.uid, u.displayName || storeGet('playerName',''), email, 'password');
+      await savePermanentProfile(u.uid, u.displayName || storeGet('playerName',''), email, 'password');
       if(mode==='signup') await sendEmailVerificationMessage(true);
       afterAuthSuccess(storeGet('playerName','لاعب'), 'password', u.uid, email);
       return;
@@ -3655,8 +3670,26 @@ function renderSavedFamily(){
       </div></div>`;
     }).join('');
 }
+let _pendingDeleteFamilyIdx=-1;
 function deleteFamily(i){
-  sfx('tap'); familyCats.splice(i,1); saveFamily(); renderSavedFamily();
+  sfx('tap');
+  _pendingDeleteFamilyIdx=i;
+  const cat=familyCats[i];
+  document.getElementById('delete-family-sub').textContent=
+    `سيُحذف "${cat.name}" وكل أسئلتها (${cat.questions.length}) نهائياً ولا يمكن التراجع.`;
+  document.getElementById('delete-family-modal').classList.add('show');
+}
+function closeDeleteFamilyModal(){
+  sfx('tap');
+  _pendingDeleteFamilyIdx=-1;
+  document.getElementById('delete-family-modal').classList.remove('show');
+}
+function doDeleteFamily(){
+  if(_pendingDeleteFamilyIdx<0) return;
+  sfx('tap'); vibrate(20);
+  familyCats.splice(_pendingDeleteFamilyIdx,1); saveFamily(); renderSavedFamily();
+  _pendingDeleteFamilyIdx=-1;
+  document.getElementById('delete-family-modal').classList.remove('show');
 }
 
 // جولة سريعة منفصلة بفئة عائلية واحدة
