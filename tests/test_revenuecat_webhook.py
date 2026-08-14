@@ -95,7 +95,8 @@ def get(path):
         return e.code, json.loads(e.read())
 
 def make_event(etype, uid):
-    return {'event': {'type': etype, 'id': f'evt_{etype}', 'app_user_id': uid}}
+    safe_uid = str(uid).replace(':', '_')
+    return {'event': {'type': etype, 'id': f'evt_{etype}_{safe_uid}', 'app_user_id': uid}}
 
 RC_EXPIRE = '11111111-1111-4111-8111-111111111111'
 RC_CANCEL = '22222222-2222-4222-8222-222222222222'
@@ -192,6 +193,25 @@ code, _ = post('/api/revenuecat/webhook', make_event('RENEWAL', RC_BEARER),
 check('يُرجع 200 مع Bearer', code == 200, f'code={code}')
 check("status → 'active'", db_status('uid_bearer') == 'active',
       f"status={db_status('uid_bearer')}")
+
+# 9b. إعادة RevenueCat لنفس event.id لا تعالج الإيصال أو تحدّث الحالة مرتين
+print('\n9b. الحدث المكرر يُهمل بأمان')
+duplicate_event = {'event': {'type': 'EXPIRATION', 'id': 'evt_duplicate_once',
+                             'app_user_id': RC_BEARER}}
+code, _ = post('/api/revenuecat/webhook', duplicate_event)
+insert_sub('uid_bearer', 'active')
+calls_before_duplicate = len(firestore_calls)
+code2, duplicate_response = post('/api/revenuecat/webhook', duplicate_event)
+check('إعادة الحدث تُرجع 200', code == 200 and code2 == 200)
+check('تُعلَّم الاستجابة كمكررة', duplicate_response.get('duplicate') is True)
+check('لا تُعاد معالجة الإيصال', db_status('uid_bearer') == 'active' and
+      len(firestore_calls) == calls_before_duplicate)
+
+# 9c. event.id إلزامي حتى لا تصبح حماية التكرار قابلة للتجاوز
+print('\n9c. event.id المفقود يُرفض')
+missing_id = {'event': {'type': 'RENEWAL', 'app_user_id': RC_BEARER}}
+code, _ = post('/api/revenuecat/webhook', missing_id)
+check('event.id المفقود يُرجع 400', code == 400, f'code={code}')
 
 # 10. UUID غير مربوط بأي حساب → 202 ولا يُنشأ أي سجل (لا وصول)
 print('\n10. app_user_id غير مربوط → 202 بلا أي سجل')

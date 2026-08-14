@@ -110,6 +110,14 @@ def init_db():
             updated_at     DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS revenuecat_events (
+            event_id     TEXT PRIMARY KEY,
+            event_type   TEXT NOT NULL,
+            uid          TEXT NOT NULL,
+            processed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -1202,7 +1210,7 @@ class Handler(BaseHTTPRequestHandler):
 
             edata       = event.get('event') or {}
             etype       = (edata.get('type') or '').strip()
-            event_id    = edata.get('id', 'unknown')
+            event_id    = str(edata.get('id') or '').strip()
             app_user_id = (edata.get('app_user_id') or '').strip().lower()
             aliases     = edata.get('aliases') or []
             if not isinstance(aliases, list):
@@ -1240,6 +1248,8 @@ class Handler(BaseHTTPRequestHandler):
 
             if not app_user_id:
                 self.send_json(400, {'error': 'app_user_id مطلوب'}); return
+            if not event_id:
+                self.send_json(400, {'error': 'event.id مطلوب لمنع تكرار المعاملة'}); return
 
             # RevenueCat يرسل UUIDاً عشوائياً. نحلّه إلى Firebase UID من الربط
             # الموثّق سابقاً؛ لا نثق ببريد أو UID وارد من webhook كمفتاح جديد.
@@ -1265,6 +1275,16 @@ class Handler(BaseHTTPRequestHandler):
             # تحديث SQLite
             conn = db_connect()
             try:
+                inserted = conn.execute(
+                    'INSERT OR IGNORE INTO revenuecat_events (event_id, event_type, uid) VALUES (?,?,?)',
+                    (event_id, etype, resolved_uid)
+                )
+                if inserted.rowcount == 0:
+                    conn.rollback()
+                    self.send_json(200, {
+                        'received': True, 'duplicate': True,
+                        'uid': resolved_uid, 'event_id': event_id
+                    }); return
                 conn.execute('''INSERT INTO subscriptions (uid, status)
                     VALUES (?,?)
                     ON CONFLICT(uid) DO UPDATE SET
