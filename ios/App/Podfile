@@ -1,6 +1,6 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-platform :ios, '15.0'
+platform :ios, '16.0'
 use_frameworks!
 
 install! 'cocoapods', :disable_input_output_paths => true
@@ -10,6 +10,7 @@ def capacitor_pods
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCommunityKeepAwake', :path => '../../node_modules/@capacitor-community/keep-awake'
   pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
+  pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
   pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
   pod 'CapacitorPreferences', :path => '../../node_modules/@capacitor/preferences'
   pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'
@@ -22,10 +23,39 @@ target 'App' do
 end
 
 post_install do |installer|
+  # أبقِ مشروع Pods على إعدادات Xcode الحالية دون تفعيل Module Verifier،
+  # لأنه يكسر FirebaseAppCheckInterop/RecaptchaInterop في CocoaPods 1.16.
+  installer.pods_project.root_object.attributes['LastUpgradeCheck'] = '2660'
+
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
       config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+      # أطر Pods تُضمّن داخل التطبيق ولا ينبغي توقيع كل إطار أثناء بنائه.
+      config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+      config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
+      config.build_settings['CODE_SIGN_IDENTITY'] = ''
+      # إعدادات Xcode الموصى بها للأطر، محفوظة هنا كي لا تضيع
+      # عند إعادة إنشاء Pods.xcodeproj في أي pod install لاحق.
+      config.build_settings['DEAD_CODE_STRIPPING'] = 'YES'
+
+      # الإصدار 8.4.0 هو أحدث إصدار منشور من الإضافة. واجهات التوافق القديمة
+      # داخله تستدعي Firebase APIs معلّمة deprecated حتى تبقى JavaScript API
+      # مستقرة؛ اخفِ تحذيرات هذا الهدف فقط ولا تخفِ تحذيرات التطبيق.
+      dependency_targets_with_upstream_warnings = %w[
+        Capacitor
+        CapacitorFirebaseAuthentication
+        CapacitorFirebaseCrashlytics
+        RevenuecatPurchasesCapacitor
+      ]
+      if dependency_targets_with_upstream_warnings.include?(target.name)
+        config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
+      end
+
+      if target.name == 'Pods-App'
+        config.build_settings.delete('EMBEDDED_CONTENT_CONTAINS_SWIFT')
+        config.build_settings.delete('ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES')
+      end
     end
   end
   assertDeploymentTarget(installer)
