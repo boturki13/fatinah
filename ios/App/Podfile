@@ -21,6 +21,10 @@ end
 
 target 'App' do
   capacitor_pods
+  # Google Sign-In is an optional authentication subspec. Without it the
+  # JavaScript call reaches the native plugin but the provider implementation
+  # is compiled out and the promise never resolves.
+  pod 'CapacitorFirebaseAuthentication/Google', :path => '../../node_modules/@capacitor-firebase/authentication'
 end
 
 post_install do |installer|
