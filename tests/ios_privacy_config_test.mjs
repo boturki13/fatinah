@@ -25,6 +25,7 @@ const nativeWebStyles = await readFile(path.join(root, 'ios/App/App/public/app.c
 const nativeQuestionBank = await readFile(path.join(root, 'ios/App/App/public/question-bank.js'), 'utf8');
 const cloudFunction = await readFile(path.join(root, 'functions/index.js'), 'utf8');
 const capacitorConfig = await readFile(path.join(root, 'capacitor.config.ts'), 'utf8');
+const podfile = await readFile(path.join(root, 'ios/App/Podfile'), 'utf8');
 
 assert.doesNotMatch(
   infoPlist,
@@ -88,6 +89,11 @@ assert.match(
   capacitorConfig,
   /providers:\s*\[[^\]]*'apple\.com'[^\]]*'google\.com'[^\]]*'phone'[^\]]*\]/,
   'يجب تفعيل مزود الهاتف في إضافة Firebase Authentication الأصلية.'
+);
+assert.match(
+  podfile,
+  /pod 'CapacitorFirebaseAuthentication\/Google'/,
+  'إضافة google.com إلى capacitor.config لا تكفي؛ يجب تضمين Google subspec كي لا يعلق الاستدعاء الأصلي بلا نتيجة.'
 );
 assert.match(questionBank, /^window\.__QUESTION_BANK_DATA__ = \{/);
 assert.ok(
