@@ -2,6 +2,8 @@ import UIKit
 import Capacitor
 import FirebaseCore
 import FirebaseAuth
+import FirebaseMessaging
+import UserNotifications
 import WebKit
 
 @UIApplicationMain
@@ -17,6 +19,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
         // تسجيل الإشعارات البعيدة — مطلوب لتفعيل Firebase Phone Auth على iOS
         UIApplication.shared.registerForRemoteNotifications()
+        if pushDiagnosticsEnabled {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                UNUserNotificationCenter.current().getDeliveredNotifications { notifications in
+                    let identifiers = notifications.map(\.request.identifier).joined(separator: ",")
+                    print("✅ APNs delivered notifications: \(notifications.count) [\(identifiers)]")
+                }
+            }
+        }
         return true
     }
 
@@ -25,6 +35,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         print("✅ APNs token received: \(tokenString.prefix(20))...")
         NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+        Messaging.messaging().apnsToken = deviceToken
+        if pushDiagnosticsEnabled {
+            Messaging.messaging().token { token, error in
+                if let error {
+                    print("❌ FCM token fetch failed: \(error.localizedDescription)")
+                    return
+                }
+                if let token {
+                    print("✅ FCM token ready: \(token)")
+                }
+            }
+        }
         #if DEBUG
         Auth.auth().setAPNSToken(deviceToken, type: .sandbox)
         #else
@@ -41,6 +63,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        let messageID = userInfo["gcm.message_id"] as? String ?? "unknown"
+        if pushDiagnosticsEnabled {
+            print("✅ APNs notification received: \(messageID)")
+        }
         if Auth.auth().canHandleNotification(userInfo) {
             completionHandler(.noData)
             return
@@ -80,6 +106,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             .flatMap { $0.windows }
 
         return windows.first(where: { $0.isKeyWindow }) ?? windows.first
+    }
+
+    private var pushDiagnosticsEnabled: Bool {
+        CommandLine.arguments.contains("-FatinahPushDiagnostics")
     }
 
     func applicationWillResignActive(_ application: UIApplication) {}
