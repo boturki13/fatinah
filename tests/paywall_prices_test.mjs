@@ -63,13 +63,28 @@ function offeringsWith({ monthly, annual } = {}) {
 // configureDelayMs: يحاكي زمن RC.configure() الحقيقي على الجهاز (شبكة + Keychain)،
 // وgetOfferings يرمي "There is no singleton instance" (خطأ RevenueCat الحقيقي)
 // طالما configure() لم يخلص بعد — هذا هو سباق التهيئة عند الإقلاع.
-function installCapacitorStub({ authUid, rcApiKey, offeringsResult, shouldThrow, configureDelayMs }) {
+function installCapacitorStub({ authUid, rcApiKey, offeringsResult, shouldThrow, configureDelayMs, purchaseError }) {
   if (authUid) localStorage.setItem('fatinah_authUid', JSON.stringify(authUid));
-  if (rcApiKey) localStorage.setItem('fatinah_rcApiKey', JSON.stringify(rcApiKey));
   let configured = false;
+  window.__rcTest = { purchaseCalls: 0, restoreCalls: 0 };
   window.Capacitor = {
     isNativePlatform: () => true,
     Plugins: {
+      FirebaseAuthentication: {
+        getCurrentUser: () => Promise.resolve({ user: { uid: authUid || 'test-uid', isAnonymous: true } }),
+        getIdToken: () => Promise.resolve({ token: 'test-id-token' }),
+        signInAnonymously: () => Promise.resolve({ user: { uid: authUid || 'test-uid', isAnonymous: true } }),
+      },
+      RevenueCatKeyStore: {
+        get: () => Promise.resolve({ value: rcApiKey || '' }),
+        set: () => Promise.resolve(),
+        clear: () => Promise.resolve(),
+      },
+      FirebaseCrashlytics: {
+        setEnabled: () => Promise.resolve(),
+        recordException: () => Promise.resolve(),
+        setUserId: () => Promise.resolve(),
+      },
       Purchases: {
         configure: () =>
           new Promise((resolve) => {
@@ -84,8 +99,16 @@ function installCapacitorStub({ authUid, rcApiKey, offeringsResult, shouldThrow,
             ? Promise.reject(new Error(shouldThrow))
             : Promise.resolve(offeringsResult);
         },
-        purchasePackage: () => Promise.resolve({ customerInfo: { entitlements: { active: {} } } }),
-        restorePurchases: () => Promise.resolve({}),
+        purchasePackage: () => {
+          window.__rcTest.purchaseCalls++;
+          return purchaseError
+            ? Promise.reject(Object.assign(new Error(purchaseError.message), { code: purchaseError.code }))
+            : Promise.resolve({ customerInfo: { entitlements: { active: {} } } });
+        },
+        restorePurchases: () => {
+          window.__rcTest.restoreCalls++;
+          return Promise.resolve({});
+        },
       },
     },
   };
@@ -121,12 +144,13 @@ async function withPage(fn) {
   }
 }
 
-async function gotoPaywall(page, offeringsResult, shouldThrow) {
+async function gotoPaywall(page, offeringsResult, shouldThrow, options = {}) {
   await page.addInitScript(installCapacitorStub, {
     authUid: 'test-uid-001',
     rcApiKey: 'appl_TESTKEY',
     offeringsResult,
     shouldThrow,
+    purchaseError: options.purchaseError,
     configureDelayMs: 0,
   });
   await page.goto(FILE_URL);
@@ -142,6 +166,11 @@ async function gotoPaywall(page, offeringsResult, shouldThrow) {
 }
 
 async function gotoPaywallNoCapacitor(page) {
+  await page.addInitScript(() => {
+    window.FIREBASE_CONFIGURED = false;
+    localStorage.setItem('fatinah_authProvider', JSON.stringify('local'));
+    localStorage.setItem('fatinah_authUid', JSON.stringify('web-test-user'));
+  });
   await page.goto(FILE_URL);
   await page.evaluate(() => window.go('s-paywall'));
   await page.waitForFunction(
@@ -330,7 +359,7 @@ tests.push(async function boot_race_condition_rc_not_ready_before_paywall() {
     await page.evaluate(() => window.go('s-paywall'));
     // ننتظر أطول من زمن configure() (900ms) حتى نتأكد إن الشاشة تعافت
     // ولم تعلق على حالة الفشل المبكر — لا استقرار مبكر على أول حالة نشوفها
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(4000);
     const r = await readPaywall(page);
     assert.equal(r.btnDisabled, false, `الزر ما زال disabled بعد اكتمال configure() — سباق تهيئة: ${JSON.stringify(r)}`);
     assert.equal(r.monthlyPrice, '$3.99');
@@ -338,6 +367,54 @@ tests.push(async function boot_race_condition_rc_not_ready_before_paywall() {
     assert.equal(r.errDisplay, 'none', 'لا رسالة خطأ بعد نجاح الجلب');
   });
   console.log('  ✓ سباق تهيئة RC عند الإقلاع: الأسعار تظهر والزر يتفعّل بعد اكتمال configure()، لا يعلق على disabled');
+});
+
+tests.push(async function cancelled_purchase_is_idempotent_and_recovers_ui() {
+  await withPage(async (page) => {
+    const offerings = offeringsWith({
+      monthly: product({ priceString: '$3.99', price: 3.99, currencyCode: 'USD' }),
+    });
+    await gotoPaywall(page, offerings, null, {
+      purchaseError: { code: 'PURCHASE_CANCELLED', message: 'user cancelled' },
+    });
+    await page.evaluate(() => { window.startCheckout(); window.startCheckout(); });
+    await page.waitForTimeout(100);
+    const result = await page.evaluate(() => ({
+      calls: window.__rcTest.purchaseCalls,
+      button: getComputedStyle(document.getElementById('paywall-btn')).display,
+      loading: getComputedStyle(document.getElementById('paywall-loading')).display,
+    }));
+    assert.equal(result.calls, 1, 'النقر المتزامن يجب ألا يرسل الإيصال مرتين');
+    assert.notEqual(result.button, 'none', 'زر الشراء يعود بعد الإلغاء');
+    assert.equal(result.loading, 'none', 'مؤشر الدفع يختفي بعد الإلغاء');
+  });
+  console.log('  ✓ إلغاء StoreKit: لا إرسال مكرر وتعود واجهة الشراء فوراً');
+});
+
+tests.push(async function restore_purchases_checks_server_and_routes_home() {
+  await withPage(async (page) => {
+    const offerings = offeringsWith({
+      monthly: product({ priceString: '$3.99', price: 3.99, currencyCode: 'USD' }),
+    });
+    await page.addInitScript(installCapacitorStub, {
+      authUid: 'test-uid-restore',
+      rcApiKey: 'appl_TESTKEY',
+      offeringsResult: offerings,
+      configureDelayMs: 0,
+    });
+    let statusRequests = 0;
+    await page.route(/\/api\/subscription\/status/, route => {
+      statusRequests++;
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '{"active":true}' });
+    });
+    await page.goto(FILE_URL);
+    await page.waitForFunction(() => !!window._currentUid, null, { timeout: 8000 });
+    await page.evaluate(() => window.rcRestore());
+    await page.waitForFunction(() => document.getElementById('s-home').classList.contains('active'), null, { timeout: 8000 });
+    assert.equal(await page.evaluate(() => window.__rcTest.restoreCalls), 1);
+    assert.ok(statusRequests >= 1, 'يجب التحقق من الخادم بعد الاستعادة');
+  });
+  console.log('  ✓ استعادة StoreKit: استدعاء واحد ثم تحقق الخادم وفتح المحتوى');
 });
 
 let failed = 0;
