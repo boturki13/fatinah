@@ -11,6 +11,7 @@ def capacitor_pods
   pod 'CapacitorCommunityKeepAwake', :path => '../../node_modules/@capacitor-community/keep-awake'
   pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
   pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
+  pod 'CapacitorFirebaseMessaging', :path => '../../node_modules/@capacitor-firebase/messaging'
   pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
   pod 'CapacitorPreferences', :path => '../../node_modules/@capacitor/preferences'
   pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'
@@ -46,6 +47,7 @@ post_install do |installer|
         Capacitor
         CapacitorFirebaseAuthentication
         CapacitorFirebaseCrashlytics
+        CapacitorFirebaseMessaging
         RevenuecatPurchasesCapacitor
       ]
       if dependency_targets_with_upstream_warnings.include?(target.name)

@@ -24,6 +24,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         print("✅ APNs token received: \(tokenString.prefix(20))...")
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
         #if DEBUG
         Auth.auth().setAPNSToken(deviceToken, type: .sandbox)
         #else
@@ -33,6 +34,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         print("❌ APNs registration FAILED: \(error.localizedDescription)")
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
     }
 
     // Silent push من Firebase لتحقق الهوية قبل SMS
@@ -43,7 +45,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             completionHandler(.noData)
             return
         }
-        completionHandler(.noData)
+        NotificationCenter.default.post(
+            name: Notification.Name("didReceiveRemoteNotification"),
+            object: completionHandler,
+            userInfo: userInfo
+        )
     }
 
     // reCAPTCHA fallback عبر custom URL scheme
