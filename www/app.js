@@ -715,6 +715,32 @@ function initCrashReporting(){
   window.addEventListener('unhandledrejection', event=>recordNonFatal(event.reason,'unhandledrejection'));
 }
 
+function getFirebaseMessaging(){
+  try{ return window.Capacitor?.Plugins?.FirebaseMessaging || null; }
+  catch(e){ return null; }
+}
+async function initPushMessaging(){
+  const messaging=getFirebaseMessaging();
+  if(!messaging) return false;
+  await messaging.addListener('notificationReceived', event=>{
+    console.log('✅ FCM notification received:', event?.notification?.title || 'notification');
+  });
+  await messaging.addListener('notificationActionPerformed', event=>{
+    console.log('✅ FCM notification opened:', event?.notification?.title || 'notification');
+  });
+  await messaging.addListener('tokenReceived', event=>{
+    console.log(`✅ FCM token received: ${String(event.token || '').slice(0,20)}...`);
+  });
+  const current=await messaging.checkPermissions();
+  const permission=current.receive==='prompt'
+    ? await messaging.requestPermissions()
+    : current;
+  if(permission.receive!=='granted') return false;
+  const {token}=await messaging.getToken();
+  console.log(`✅ FCM token ready: ${String(token || '').slice(0,20)}...`);
+  return true;
+}
+
 function isAuthCancellation(e){
   const detail = String((e && (e.code || e.message)) || '').toLowerCase();
   return detail.includes('cancel') || detail.includes('popup-closed-by-user');
@@ -3105,6 +3131,7 @@ if(!(window.Capacitor && window.Capacitor.isNativePlatform())){
 // ⚠️ SCREENSHOT MODE — يُحذف بعد أخذ اللقطات
 const __SCREENSHOT_SCREEN = null; // home | teams | board | paywall | result
 initCrashReporting();
+void initPushMessaging().catch(error=>recordNonFatal(error,'firebase.messaging'));
 (async function bootAuth(){
   hideSplash();
   if(__SCREENSHOT_SCREEN){

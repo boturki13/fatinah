@@ -9,7 +9,7 @@
     "open:ios": "npx cap open ios",
     "build:ios": "npx cap sync ios && npx cap open ios",
     "test": "npm run test:static && npm run test:web && npm run test:server",
-    "test:static": "node tests/ios_privacy_config_test.mjs && node tests/subscription_routing_test.mjs",
+    "test:static": "node tests/ios_privacy_config_test.mjs && node tests/messaging_config_test.mjs && node tests/subscription_routing_test.mjs",
     "test:web": "node tests/paywall_prices_test.mjs && node tests/auth_flows_test.mjs && node tests/game_flow_test.mjs && node tests/responsive_accessibility_test.mjs",
     "test:server": "python3 tests/test_revenuecat_webhook.py && python3 tests/test_account_delete.py"
   },
@@ -17,6 +17,7 @@
     "@capacitor-community/keep-awake": "^8.0.0",
     "@capacitor-firebase/authentication": "8.4.0",
     "@capacitor-firebase/crashlytics": "^8.4.0",
+    "@capacitor-firebase/messaging": "8.4.0",
     "@capacitor/core": "^8.0.0",
     "@capacitor/haptics": "^8.0.0",
     "@capacitor/ios": "^8.0.0",
