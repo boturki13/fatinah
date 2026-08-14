@@ -10,7 +10,7 @@ function installAuthHarness() {
   localStorage.setItem('fatinah_authProvider', JSON.stringify('firebase'));
   localStorage.setItem('fatinah_authUid', JSON.stringify('auth-user'));
   localStorage.setItem('fatinah_onbDone', JSON.stringify(true));
-  window.__authCalls = { apple: 0, google: 0, phoneStart: 0, phoneConfirm: 0 };
+  window.__authCalls = { apple: 0, google: 0, phoneSignInStart: 0, phoneSignInConfirm: 0, phoneLinkStart: 0, phoneLinkConfirm: 0 };
   const listeners = {};
   const user = { uid: 'auth-user', displayName: 'لاعب اختبار', email: 'test@example.invalid', isAnonymous: false, providerData: [] };
   const ok = () => Promise.resolve({});
@@ -23,13 +23,19 @@ function installAuthHarness() {
         signInWithApple: () => { window.__authCalls.apple++; return Promise.resolve({ user }); },
         signInWithGoogle: () => { window.__authCalls.google++; return Promise.resolve({ user }); },
         addListener: (name, callback) => { listeners[name] = callback; return Promise.resolve({ remove: ok }); },
+        signInWithPhoneNumber: () => {
+          window.__authCalls.phoneSignInStart++;
+          queueMicrotask(() => listeners.phoneCodeSent?.({ verificationId: 'sign-in-verification-test' }));
+          return Promise.resolve();
+        },
         linkWithPhoneNumber: () => {
-          window.__authCalls.phoneStart++;
+          window.__authCalls.phoneLinkStart++;
           queueMicrotask(() => listeners.phoneCodeSent?.({ verificationId: 'verification-test' }));
           return Promise.resolve();
         },
-        confirmVerificationCode: () => {
-          window.__authCalls.phoneConfirm++;
+        confirmVerificationCode: ({ verificationId }) => {
+          if (verificationId === 'sign-in-verification-test') window.__authCalls.phoneSignInConfirm++;
+          else window.__authCalls.phoneLinkConfirm++;
           return Promise.resolve({ user: { ...user, phoneNumber: '+96550000000' } });
         },
       },
@@ -65,6 +71,17 @@ try {
   await page.waitForFunction(() => window.__authCalls.google === 1);
   await page.locator('#s-home.active').waitFor({ state: 'visible', timeout: 8000 });
 
+  await page.evaluate(() => window.go('s-auth'));
+  await page.waitForTimeout(450);
+  await page.getByRole('button', { name: 'متابعة برقم الهاتف' }).click({ force: true });
+  await page.locator('#auth-phone').fill('+96550000000');
+  await page.locator('#auth-phone-send-btn').click();
+  await page.locator('#auth-phone-code-form').waitFor({ state: 'visible' });
+  await page.locator('#auth-phone-code').fill('123456');
+  await page.locator('#auth-phone-confirm-btn').click();
+  await page.waitForFunction(() => window.__authCalls.phoneSignInConfirm === 1);
+  await page.locator('#s-home.active').waitFor({ state: 'visible', timeout: 8000 });
+
   await page.evaluate(() => window.openAccountSettings());
   await page.locator('#s-account.active').waitFor({ state: 'visible' });
   await page.locator('#verification-phone').fill('+96550000000');
@@ -72,12 +89,12 @@ try {
   await page.locator('#phone-code-form').waitFor({ state: 'visible' });
   await page.locator('#verification-phone-code').fill('123456');
   await page.locator('#confirm-phone-code-btn').click();
-  await page.waitForFunction(() => window.__authCalls.phoneConfirm === 1);
+  await page.waitForFunction(() => window.__authCalls.phoneLinkConfirm === 1);
 
   assert.deepEqual(await page.evaluate(() => window.__authCalls), {
-    apple: 1, google: 1, phoneStart: 1, phoneConfirm: 1,
+    apple: 1, google: 1, phoneSignInStart: 1, phoneSignInConfirm: 1, phoneLinkStart: 1, phoneLinkConfirm: 1,
   });
-  console.log('✓ مسارات Apple وGoogle والهاتف تستدعي إضافات iOS وتكمل النجاح مرة واحدة');
+  console.log('✓ مسارات Apple وGoogle وتسجيل الهاتف وربطه تستدعي إضافات iOS وتكمل النجاح مرة واحدة');
 } finally {
   await browser.close();
 }

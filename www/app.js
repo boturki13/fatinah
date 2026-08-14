@@ -551,6 +551,8 @@ function afterAuthSuccess(name, provider, uid, email){
   if(nameEl) nameEl.textContent = storeGet('playerName','لاعب');
   const emailForm=document.getElementById('auth-email-form');
   if(emailForm) emailForm.style.display='none';
+  const phoneForm=document.getElementById('auth-phone-form');
+  if(phoneForm) phoneForm.style.display='none';
   showToast('✅','تم الدخول','تم ربط حسابك بنجاح',false);
   renderAccountLinks();
   const target = window._authReturnScreen || 's-home';
@@ -909,6 +911,124 @@ async function googleSignIn(){
   }
   showToast('🔵','الإعداد ناقص','يحتاج Firebase config',false);
   }finally{ endAuthAction(); }
+}
+
+// ---- دخول برقم الهاتف ----
+let _authPhoneVerificationId='';
+let _authPhoneListenerHandles=[];
+let _authPhoneStartPending=false;
+let _authPhoneConfirmPending=false;
+
+function setAuthMessage(text, error){
+  const msg=document.getElementById('auth-msg');
+  if(!msg) return;
+  msg.style.color=error?'#ff8a8a':'';
+  msg.textContent=text||'';
+}
+
+async function cleanupAuthPhoneListeners(){
+  const handles=_authPhoneListenerHandles.splice(0);
+  await Promise.all(handles.map(handle=>Promise.resolve(handle?.remove?.()).catch(()=>{})));
+}
+
+function togglePhoneSignInForm(){
+  sfx('tap');
+  const phoneForm=document.getElementById('auth-phone-form');
+  const emailForm=document.getElementById('auth-email-form');
+  if(emailForm) emailForm.style.display='none';
+  if(!phoneForm) return;
+  const opening=phoneForm.style.display==='none';
+  phoneForm.style.display=opening?'block':'none';
+  setAuthMessage('');
+  if(opening) document.getElementById('auth-phone')?.focus();
+}
+
+async function finishPhoneSignIn(user){
+  await cleanupAuthPhoneListeners();
+  _authPhoneVerificationId='';
+  const codeForm=document.getElementById('auth-phone-code-form');
+  if(codeForm) codeForm.style.display='none';
+  afterAuthSuccess(
+    (user && (user.displayName || user.phoneNumber)) || 'لاعب',
+    'phone',
+    user && user.uid,
+    user && user.email
+  );
+}
+
+async function startPhoneSignIn(){
+  sfx('tap');
+  const input=document.getElementById('auth-phone');
+  const phone=normalizePhoneNumber(input && input.value);
+  if(!phone){ setAuthMessage('اكتب الرقم بصيغة دولية، مثل +96550001234.', true); return; }
+  if(_authPhoneStartPending) return;
+  const FA=getFirebaseAuth();
+  if(!FA || typeof FA.signInWithPhoneNumber!=='function'){
+    setAuthMessage('تسجيل الهاتف متاح داخل تطبيق iPhone فقط.', true);
+    return;
+  }
+  _authPhoneStartPending=true;
+  const sendButton=document.getElementById('auth-phone-send-btn');
+  if(sendButton) sendButton.disabled=true;
+  setAuthMessage('⏳ جارٍ إرسال رمز التحقق…');
+  try{
+    await cleanupAuthPhoneListeners();
+    _authPhoneVerificationId='';
+    _authPhoneListenerHandles.push(await FA.addListener('phoneCodeSent', event=>{
+      _authPhoneVerificationId=event && event.verificationId || '';
+      const codeForm=document.getElementById('auth-phone-code-form');
+      if(codeForm) codeForm.style.display='block';
+      if(sendButton) sendButton.textContent='إعادة إرسال الرمز';
+      setAuthMessage('تم إرسال الرمز. أدخله لإكمال تسجيل الدخول.');
+      document.getElementById('auth-phone-code')?.focus();
+    }));
+    _authPhoneListenerHandles.push(await FA.addListener('phoneVerificationCompleted', event=>{
+      const completedUser=event && event.result && event.result.user;
+      if(completedUser) finishPhoneSignIn(completedUser);
+    }));
+    _authPhoneListenerHandles.push(await FA.addListener('phoneVerificationFailed', event=>{
+      const eventCode=event && (event.code || event.errorCode || event.message);
+      setAuthMessage(phoneAuthErrorMessage(eventCode,'تعذّر إرسال الرمز — حاول مرة أخرى.'),true);
+      cleanupAuthPhoneListeners();
+    }));
+    await FA.signInWithPhoneNumber({phoneNumber:phone});
+  }catch(e){
+    console.error('phone sign in start:',e);
+    await cleanupAuthPhoneListeners();
+    setAuthMessage(phoneAuthErrorMessage(e && (e.code||e.message),'تعذّر إرسال الرمز — حاول مرة أخرى.'),true);
+  }finally{
+    _authPhoneStartPending=false;
+    if(sendButton) sendButton.disabled=false;
+  }
+}
+
+async function confirmPhoneSignIn(){
+  sfx('tap');
+  const code=(document.getElementById('auth-phone-code')?.value||'').trim();
+  if(!code){ setAuthMessage('أدخل رمز التحقق.',true); return; }
+  if(_authPhoneConfirmPending) return;
+  _authPhoneConfirmPending=true;
+  const button=document.getElementById('auth-phone-confirm-btn');
+  if(button) button.disabled=true;
+  setAuthMessage('⏳ جارٍ تسجيل الدخول…');
+  try{
+    if(!_authPhoneVerificationId) throw new Error('verification-id-missing');
+    const FA=getFirebaseAuth();
+    const result=await FA.confirmVerificationCode({
+      verificationId:_authPhoneVerificationId,
+      verificationCode:code
+    });
+    await finishPhoneSignIn(result && result.user);
+  }catch(e){
+    console.error('phone sign in confirm:',e);
+    const errorCode=String(e && (e.code||e.message)||'').toLowerCase();
+    if(errorCode.includes('invalid-verification-code')) setAuthMessage('رمز التحقق غير صحيح.',true);
+    else if(errorCode.includes('session-expired') || errorCode.includes('verification-id-missing')) setAuthMessage('انتهت صلاحية الرمز — أرسل رمزًا جديدًا.',true);
+    else setAuthMessage(phoneAuthErrorMessage(errorCode,'تعذّر تسجيل الدخول — حاول مرة أخرى.'),true);
+  }finally{
+    _authPhoneConfirmPending=false;
+    if(button) button.disabled=false;
+  }
 }
 
 // ---- دخول بالبريد وكلمة المرور ----
