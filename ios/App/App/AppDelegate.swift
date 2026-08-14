@@ -10,6 +10,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // في هذه النقطة يكون UIApplication.shared.delegate معيّنًا، وهذا مطلوب
+        // لعمل Firebase AppDelegate Swizzler بطريقة صحيحة.
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()
         }
@@ -22,7 +24,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         print("✅ APNs token received: \(tokenString.prefix(20))...")
-        Auth.auth().setAPNSToken(deviceToken, type: .unknown)
+        #if DEBUG
+        Auth.auth().setAPNSToken(deviceToken, type: .sandbox)
+        #else
+        Auth.auth().setAPNSToken(deviceToken, type: .prod)
+        #endif
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
@@ -47,7 +53,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        if let rootVC = window?.rootViewController,
+        if let rootVC = activeWindow?.rootViewController,
            let webView = findWKWebView(in: rootVC.view) {
             webView.scrollView.alwaysBounceHorizontal = false
             webView.scrollView.showsHorizontalScrollIndicator = false
@@ -62,6 +68,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return nil
     }
 
+    private var activeWindow: UIWindow? {
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+
+        return windows.first(where: { $0.isKeyWindow }) ?? windows.first
+    }
+
     func applicationWillResignActive(_ application: UIApplication) {}
     func applicationDidEnterBackground(_ application: UIApplication) {}
     func applicationWillEnterForeground(_ application: UIApplication) {}
@@ -73,3 +87,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 }
 
+// Opt in to the modern UIKit scene lifecycle while retaining the existing
+// storyboard-based Capacitor bridge.
+final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
+}
