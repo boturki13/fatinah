@@ -84,6 +84,11 @@ assert.match(webLogic, /const POINTS=\[0,100,200,300,400,500,600\]/);
 assert.match(webLogic, /const API_ORIGIN = window\.Capacitor\?\.isNativePlatform\?\.\(\) === true/);
 assert.match(webLogic, /function apiUrl\(path\)\{ return `\$\{API_ORIGIN\}\$\{path\}`; \}/);
 assert.match(capacitorConfig, /launchShowDuration:\s*700/);
+assert.match(
+  capacitorConfig,
+  /providers:\s*\[[^\]]*'apple\.com'[^\]]*'google\.com'[^\]]*'phone'[^\]]*\]/,
+  'يجب تفعيل مزود الهاتف في إضافة Firebase Authentication الأصلية.'
+);
 assert.match(questionBank, /^window\.__QUESTION_BANK_DATA__ = \{/);
 assert.ok(
   Buffer.byteLength(questionBank) > 20_000 && Buffer.byteLength(questionBank) < 100_000,
