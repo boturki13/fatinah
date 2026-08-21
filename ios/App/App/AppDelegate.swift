@@ -3,6 +3,7 @@ import Capacitor
 import FirebaseCore
 import FirebaseAuth
 import FirebaseMessaging
+import FirebaseAppCheck
 import UserNotifications
 import WebKit
 
@@ -15,15 +16,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // في هذه النقطة يكون UIApplication.shared.delegate معيّنًا، وهذا مطلوب
         // لعمل Firebase AppDelegate Swizzler بطريقة صحيحة.
         if FirebaseApp.app() == nil {
+            #if DEBUG
+            AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
+            #else
+            AppCheck.setAppCheckProviderFactory(FatinahAppCheckProviderFactory())
+            #endif
             FirebaseApp.configure()
         }
+        FatinahMetricKitService.shared.start()
         // تسجيل الإشعارات البعيدة — مطلوب لتفعيل Firebase Phone Auth على iOS
         UIApplication.shared.registerForRemoteNotifications()
         if pushDiagnosticsEnabled {
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                 UNUserNotificationCenter.current().getDeliveredNotifications { notifications in
-                    let identifiers = notifications.map(\.request.identifier).joined(separator: ",")
-                    print("✅ APNs delivered notifications: \(notifications.count) [\(identifiers)]")
+                    print("✅ APNs delivered notifications: \(notifications.count)")
                 }
             }
         }
@@ -32,8 +38,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     // APNs token → Firebase Auth (لازم لـ Phone Auth)
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-        print("✅ APNs token received: \(tokenString.prefix(20))...")
+        if pushDiagnosticsEnabled {
+            print("✅ APNs token received")
+        }
         NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
         Messaging.messaging().apnsToken = deviceToken
         if pushDiagnosticsEnabled {
@@ -42,8 +49,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     print("❌ FCM token fetch failed: \(error.localizedDescription)")
                     return
                 }
-                if let token {
-                    print("✅ FCM token ready: \(token)")
+                if token != nil {
+                    print("✅ FCM token ready")
                 }
             }
         }
@@ -63,9 +70,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didReceiveRemoteNotification userInfo: [AnyHashable: Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        let messageID = userInfo["gcm.message_id"] as? String ?? "unknown"
         if pushDiagnosticsEnabled {
-            print("✅ APNs notification received: \(messageID)")
+            print("✅ APNs notification received")
         }
         if Auth.auth().canHandleNotification(userInfo) {
             completionHandler(.noData)
@@ -85,6 +91,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        FatinahMetricKitService.shared.drainOutbox()
         if let rootVC = activeWindow?.rootViewController,
            let webView = findWKWebView(in: rootVC.view) {
             webView.scrollView.alwaysBounceHorizontal = false
@@ -115,12 +122,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillResignActive(_ application: UIApplication) {}
     func applicationDidEnterBackground(_ application: UIApplication) {}
     func applicationWillEnterForeground(_ application: UIApplication) {}
-    func applicationWillTerminate(_ application: UIApplication) {}
+    func applicationWillTerminate(_ application: UIApplication) {
+        FatinahMetricKitService.shared.stop()
+    }
 
     func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+}
+
+private final class FatinahAppCheckProviderFactory: NSObject, AppCheckProviderFactory {
+    func createProvider(with app: FirebaseApp) -> AppCheckProvider? {
+        AppAttestProvider(app: app)
+    }
 }
 
 // Opt in to the modern UIKit scene lifecycle while retaining the existing

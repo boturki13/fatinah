@@ -87,6 +87,16 @@ uid = 'uid-delete-test'
 
 def seed_user():
     conn = sqlite3.connect(tmp_db.name)
+    # يحاكي جدولاً متبقياً من إصدارات الأكواد القديمة؛ الخادم الجديد لا ينشئه،
+    # لكن حذف الحساب يجب أن ينظفه إذا وُجد في قاعدة بيانات تمت ترقيتها.
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS promo_redemptions (
+            uid TEXT NOT NULL,
+            code TEXT NOT NULL,
+            expires_at DATETIME NOT NULL,
+            PRIMARY KEY (uid, code)
+        )
+    ''')
     conn.execute(
         "INSERT INTO subscriptions (uid, status) VALUES (?, 'active')", (uid,)
     )
@@ -98,6 +108,14 @@ def seed_user():
         "INSERT INTO revenuecat_identities (uid, rc_app_user_id) "
         "VALUES (?, ?)", (uid, '11111111-1111-4111-8111-111111111111')
     )
+    conn.execute('''
+        INSERT INTO revenuecat_events
+        (event_id, event_type, uid, status, payload, rc_ids)
+        VALUES (?, 'TRANSFER', '', 'processed', '{}', ?)
+    ''', (
+        'account-delete-transfer-event',
+        '["11111111-1111-4111-8111-111111111111"]',
+    ))
     for table, values in (
         ('archived_stats', (uid, 1, 1, 1, 10, 1, '{}')),
         ('family_categories', (uid, 'عائلية', '[]')),
@@ -112,6 +130,10 @@ def seed_user():
         )
     conn.execute(
         "INSERT INTO subscription_outbox (uid, payload) VALUES (?, '{}')", (uid,)
+    )
+    conn.execute(
+        "INSERT INTO question_seen (uid, question_id, category) VALUES (?, ?, ?)",
+        (uid, 'q2-account-delete', 'علوم')
     )
     conn.commit()
     conn.close()
@@ -135,12 +157,21 @@ def user_rows():
     rows = {}
     for table in (
         'subscriptions', 'promo_redemptions', 'revenuecat_identities',
+        'revenuecat_events',
         'archived_stats', 'family_categories', 'player_stats',
         'seen_questions', 'subscription_outbox',
+        'question_seen',
     ):
-        rows[table] = conn.execute(
-            f'SELECT COUNT(*) FROM "{table}" WHERE uid=?', (uid,)
-        ).fetchone()[0]
+        if table == 'revenuecat_events':
+            rows[table] = conn.execute(
+                'SELECT COUNT(*) FROM revenuecat_events '
+                'WHERE uid=? OR rc_ids LIKE ?',
+                (uid, '%"11111111-1111-4111-8111-111111111111"%'),
+            ).fetchone()[0]
+        else:
+            rows[table] = conn.execute(
+                f'SELECT COUNT(*) FROM "{table}" WHERE uid=?', (uid,)
+            ).fetchone()[0]
     conn.close()
     return rows
 

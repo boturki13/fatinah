@@ -17,5 +17,12 @@ assert.match(delegate, /CommandLine\.arguments\.contains\("-FatinahPushDiagnosti
 assert.match(app, /notificationReceived/);
 assert.match(app, /notificationActionPerformed/);
 assert.match(app, /FirebaseMessaging\.getToken|messaging\.getToken/);
+assert.match(app, /async function initPushMessaging\(\)[\s\S]*?if\(current\.receive!=='granted'\) return false;/);
+assert.doesNotMatch(
+  app.match(/async function initPushMessaging\(\)[\s\S]*?\n\}/)?.[0] || '',
+  /requestPermissions\(/,
+  'لا تطلب إذن الإشعارات تلقائياً أثناء الإقلاع.'
+);
+assert.match(app, /async function enablePushNotifications\(\)[\s\S]*?requestPermissions\(\)/);
 
-console.log('✓ Firebase Messaging يربط APNs ويستقبل الإشعارات ويستخرج رمز FCM');
+console.log('✓ Firebase Messaging يربط APNs ويطلب الإذن فقط بعد إجراء واضح من المستخدم');

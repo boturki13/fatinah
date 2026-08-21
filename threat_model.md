@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-فَطِنة (Fatinah) is an Arabic-language multiplayer trivia game for families, deployed publicly at https://ata20.com. The backend is a Python stdlib HTTP server (`server.py`) that serves a single-page HTML app (`index.html`), calls the Anthropic Claude API to generate quiz questions, and manages Stripe and RevenueCat subscriptions via a local SQLite database with Firestore synchronisation. iOS users interact through a Capacitor-wrapped native app. The app is deployed on Replit as an autoscale deployment with public visibility.
+فطنة (Fatinah) is an Arabic-language multiplayer trivia game for families, deployed publicly at https://ata20.com. The backend is a Python stdlib HTTP server (`server.py`) that serves the public web app and manages RevenueCat subscriptions with Firestore synchronisation. Game questions come from a versioned, reviewed local content bank. iOS users interact through a Capacitor-wrapped native app.
 
 ## Assets
 
@@ -11,7 +11,6 @@
 - **Firebase ID tokens and UIDs** — user identifiers used as the primary auth mechanism server-side.
 - **Stripe secret key** — retrieved at runtime from Replit Connectors; if leaked, enables arbitrary billing operations.
 - **Firebase service account JSON** (`FIREBASE_SERVICE_ACCOUNT` env var) — grants Firestore write access.
-- **Anthropic API key** (`ANTHROPIC_API_KEY`) — used to generate quiz questions; abuse leads to cost exhaustion.
 - **User PII** — email addresses and display names stored in SQLite and Firestore.
 
 ## Trust Boundaries
@@ -20,8 +19,7 @@
 - **Server → SQLite**: Direct file access on the same host. No network exposure.
 - **Server → Stripe API**: HTTPS with secret key from Replit Connectors. Webhook authenticity is verified via HMAC-SHA256 with replay-attack protection (5-minute window).
 - **Server → Firebase/Firestore**: Service Account JWT-based auth for Firestore writes; Firebase Identity Toolkit REST for token verification.
-- **Server → Anthropic Claude**: API key auth. No user-supplied data is used as shell input.
-- **Public / Authenticated boundary**: All mutating POST endpoints (`/api/account/delete`, `/api/account/profile`, `/api/generate`, `/api/promo/redeem`, `/api/stripe/create-checkout`) require a valid Firebase ID token. Status GET endpoints (`/api/stripe/status`, `/api/promo/status`) also require a Bearer token.
+- **Public / Authenticated boundary**: Mutating account and purchase endpoints require a valid Firebase ID token. The legacy `/api/generate` endpoint is permanently disabled and returns HTTP 410 without invoking an external service.
 - **Admin boundary**: `/api/promo/admin` and `/api/admin/db-status` are gated by `X-Admin-Secret` (ADMIN_SECRET env var). `/api/auth/check-anonymous` requires the same secret.
 
 ## Scan Anchors
@@ -57,9 +55,7 @@ Error responses from several POST handlers propagate `str(e)` directly to the cl
 
 ### Denial of Service
 
-`/api/generate` requires a valid Firebase ID token and an active subscription (verified server-side from webhook-updated records). Rate limiting exists for promo redemption but not for other endpoints.
-
-**Required guarantee**: `/api/generate` SHOULD also apply per-IP rate limiting to limit cost exhaustion from subscribed users calling it in tight loops.
+Question generation does not run on the server. The app reads a versioned local bank, and the legacy `/api/generate` route returns HTTP 410. Request-body limits remain in place for account and RevenueCat endpoints.
 
 ### Elevation of Privilege
 

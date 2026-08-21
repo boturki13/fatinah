@@ -1,4 +1,4 @@
-# فَطِنة (Fatinah)
+# فطنة (Fatinah)
 
 لعبة مسابقات جماعية عربية بلهجة خليجية، موجّهة للعائلات والمجالس.
 
@@ -12,16 +12,15 @@ python3 server.py
 
 ## البنية
 
-- `index.html` — كل اللعبة في ملف واحد (HTML + CSS + JavaScript)
-- `server.py` — خادم Python stdlib: يخدم index.html + `/api/generate` (AI) + `/firebase-config.js`
-- `functions/index.js` — Firebase Cloud Function (نسخة احتياطية للـ AI في iOS app)
+- `www/index.html` + `www/app.js` + `www/question-bank.js` — واجهة اللعبة وبنك الأسئلة المحلي المراجع
+- `server.py` — خادم Python stdlib: يخدم ملفات `www` وواجهات الحساب وRevenueCat؛ مسار التوليد القديم يعيد HTTP 410 فقط
+- `functions/index.js` — مسار توافق قديم متوقف يعيد HTTP 410 ولا يستدعي أي مزوّد خارجي
 - `capacitor.config.ts` / `package.json` — إعدادات Capacitor لتغليف التطبيق كـ iOS app
 
 ## المتغيّرات البيئية
 
 | المتغيّر | الاستخدام | إلزامي؟ |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | توليد الأسئلة بالذكاء الاصطناعي (Claude) | ✅ للتوليد |
 | `FIREBASE_API_KEY` | Google/Apple sign-in في المتصفح | لـ auth |
 | `FIREBASE_AUTH_DOMAIN` | Google/Apple sign-in في المتصفح | لـ auth |
 | `FIREBASE_PROJECT_ID` | Google/Apple sign-in في المتصفح | لـ auth |

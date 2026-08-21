@@ -52,6 +52,8 @@ FIREBASE_PROJECT_ID = "fatinah-game"
 FIREBASE_STORAGE_BUCKET = "fatinah-game.firebasestorage.app"
 REVENUECAT_IOS_API_KEY = "appl_uqcDNORwLPcxPWRUDjmPPpoMeNM"
 FIRESTORE_DATABASE_ID = "fatinah-native"
+FATINAH_DURABLE_STORAGE = "required"
+FIREBASE_APP_CHECK_ENFORCE = "false"
 
 [nix]
 channel = "stable-25_05"

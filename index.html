@@ -6,10 +6,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://ata20.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none';">
-<title>فَطِنة — لعبة الذكاء الجماعية</title>
+<title>فطنة — لعبة الذكاء الجماعية</title>
 <link rel="icon" href="/favicon.ico">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta property="og:title" content="فَطِنة — لعبة الذكاء الجماعية">
+<meta property="og:title" content="فطنة — لعبة الذكاء الجماعية">
 <meta property="og:description" content="لعبة أسئلة جماعية عربية لأجهزة iOS">
 <meta property="og:image" content="https://ata20.com/og-image.png">
 <meta property="og:url" content="https://ata20.com">
@@ -356,14 +356,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
 .pw-links a{color:#A79FBE;text-decoration:none;padding:6px 4px;}
 .pw-dot{color:rgba(255,255,255,.2);}
 /* ── كود مكافأة ── */
-.pw-promo{width:100%;max-width:380px;margin-top:14px;text-align:center;}
-.pw-promo-toggle{background:none;border:1.5px solid rgba(255,255,255,.15);border-radius:12px;color:#C4B8E0;font-size:14px;font-family:inherit;font-weight:700;padding:10px 20px;cursor:pointer;width:100%;transition:.2s;}
-.pw-promo-toggle:hover{border-color:var(--gold);color:var(--gold);}
-.pw-promo-form{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
-.pw-promo-form input{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:12px;color:#fff;font-family:inherit;font-size:17px;font-weight:800;padding:12px 16px;text-align:center;letter-spacing:3px;outline:none;}
-.pw-promo-form input:focus{border-color:var(--gold);}
-.pw-promo-form input::placeholder{letter-spacing:0;font-size:14px;font-weight:600;color:rgba(255,255,255,.35);}
-.pw-promo-form button{background:linear-gradient(120deg,var(--hot2),var(--hot));border:none;border-radius:12px;color:#fff;font-family:inherit;font-size:16px;font-weight:800;padding:12px;cursor:pointer;}
 @media (prefers-reduced-motion:no-preference){
   .pw-rise{opacity:0;transform:translateY(14px);animation:pwRise .6s cubic-bezier(.2,.7,.2,1) forwards;}
   .pw-d1{animation-delay:.05s}.pw-d2{animation-delay:.14s}.pw-d3{animation-delay:.23s}
@@ -398,7 +390,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
   <!-- تسجيل الدخول -->
   <section class="screen" id="s-auth">
     <div class="auth-hero">
-      <div class="logo-xl brand">فَطِنة</div>
+      <div class="logo-xl brand">فطنة</div>
       <div class="tag">لعبة الذكاء والفطنة الجماعية</div>
     </div>
     <div class="auth-card">
@@ -499,16 +491,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
         <small id="pw-cta-sub">‏$3.99 / شهر — تُلغى في أي وقت</small>
       </button>
       <div id="paywall-loading" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:14px;">جاري تجهيز اشتراك Apple…</div>
-      <div id="web-payment-note" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:13px;line-height:1.7;">الاشتراك متاح حصرياً عبر Apple داخل تطبيق فَطِنة على iPhone وiPad.</div>
-      <!-- كود مكافأة -->
-      <div class="pw-promo pw-rise pw-d6" id="pw-promo-box">
-        <button class="pw-promo-toggle" id="pw-promo-toggle" onclick="togglePromoBox()">🎁 عندك كود مجاني؟</button>
-        <div class="pw-promo-form" id="pw-promo-form" style="display:none;">
-          <input id="pw-promo-input" type="text" placeholder="أدخل الكود هنا..." autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
-          <button onclick="redeemPromo()">تفعيل</button>
-          <div id="pw-promo-msg" style="font-size:12.5px;text-align:center;margin-top:6px;min-height:18px;"></div>
-        </div>
-      </div>
+      <div id="web-payment-note" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:13px;line-height:1.7;">الاشتراك متاح حصرياً عبر Apple داخل تطبيق فطنة على iPhone وiPad.</div>
       <p class="pw-legal pw-rise pw-d6">اشتراك يتجدّد تلقائياً ما لم يُلغَ قبل نهاية الفترة الحالية بـ24 ساعة.</p>
       <nav class="pw-links pw-rise pw-d6">
         <a href="#" onclick="rcRestore();return false;">استعادة المشتريات</a>
@@ -639,7 +622,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <button class="icon-btn" id="sound-btn" onclick="toggleSound()" title="الصوت">🔊</button>
     </div>
     <div style="height:5vh;"></div>
-    <div class="logo-xl brand" style="animation:floaty 4s ease-in-out infinite, glowPulse 3.5s ease-in-out infinite;">فَطِنة</div>
+    <div class="logo-xl brand" style="animation:floaty 4s ease-in-out infinite, glowPulse 3.5s ease-in-out infinite;">فطنة</div>
     <div class="tag">مين الأفطن في المجلس؟</div>
     <div style="height:5vh;"></div>
     <div class="card center">
@@ -705,7 +688,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <div class="board-top">
       <div style="display:flex; align-items:center; gap:10px;">
         <button class="exit-btn" onclick="confirmExit()" title="خروج">✕</button>
-        <div class="brand" style="font-size:26px;">فَطِنة</div>
+        <div class="brand" style="font-size:26px;">فطنة</div>
       </div>
       <div class="turn-pill" id="turn-pill"></div>
     </div>
@@ -771,7 +754,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <h2 class="title">سياسة الخصوصية</h2>
     <div class="card" style="font-size:14px;line-height:1.8;color:var(--ink);">
       <p><b>آخر تحديث: 27 يوليو 2026</b></p>
-      <p>تطبيق <b>فَطِنة</b> يحترم خصوصيتك. نجمع الحد الأدنى اللازم لتشغيل
+      <p>تطبيق <b>فطنة</b> يحترم خصوصيتك. نجمع الحد الأدنى اللازم لتشغيل
       الحساب، مزامنة تقدّمك، وتفعيل الاشتراك.</p>
       <p><b>البيانات التي قد نعالجها:</b><br>
       • معرّف الحساب، الاسم والبريد عند تسجيل الدخول بـ Apple أو Google<br>
@@ -794,7 +777,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
     <h2 class="title">شروط الاستخدام</h2>
     <div class="card" style="font-size:14px;line-height:1.8;color:var(--ink);">
       <p><b>آخر تحديث: يوليو 2025</b></p>
-      <p>باستخدامك تطبيق <b>فَطِنة</b> فأنت توافق على هذه الشروط.</p>
+      <p>باستخدامك تطبيق <b>فطنة</b> فأنت توافق على هذه الشروط.</p>
       <p><b>الاشتراك:</b><br>
       • الاشتراك الشهري: $3.99 شهرياً<br>
       • الاشتراك السنوي: $29.99 سنوياً<br>
@@ -803,7 +786,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:24px; hei
       <p><b>الاستخدام المقبول:</b><br>
       التطبيق للاستخدام الشخصي والترفيهي. يُحظر نسخ المحتوى أو إعادة توزيعه.</p>
       <p><b>الملكية الفكرية:</b><br>
-      جميع محتويات التطبيق محمية بحقوق النشر لصالح مطوّر فَطِنة.</p>
+      جميع محتويات التطبيق محمية بحقوق النشر لصالح مطوّر فطنة.</p>
       <p><b>إخلاء المسؤولية:</b><br>
       التطبيق مقدَّم "كما هو" بدون ضمانات. المطوّر غير مسؤول عن أي أضرار ناجمة عن الاستخدام.</p>
       <p><b>التواصل:</b><br>
@@ -2263,78 +2246,7 @@ async function rcRestore(){
   }catch(e){ showToast('⚠️','تعذّر الاستعادة', e.message||'', false); }
 }
 
-async function promoIsActive(uid){
-  if(!uid) return false;
-  try{
-    const idToken = await getCurrentIdToken();
-    if(!idToken) return false;
-    const r = await fetch(apiUrl(`/api/promo/status?uid=${encodeURIComponent(uid)}`),
-      { headers: idToken ? {'Authorization':'Bearer '+idToken} : {} });
-    if(!r.ok) return false;
-    const d = await r.json();
-    return d.active === true;
-  }catch(e){ return false; }
-}
-
 async function checkSubscriptionAndRoute(uid){
-  // أظهر شاشة التحميل أثناء الفحص
-  go('s-loading');
-  // iOS: RevenueCat أولاً
-  const rcActive = await rcIsActive();
-  if(rcActive === true){
-    // اذهب للصفحة الرئيسية فوراً، ثم تحقق من الخادم في الخلفية (تحقق مزدوج)
-    go('s-home');
-    // تحقق خلفي: إن كان الخادم يعلم بإيقاف الحساب (webhook أوقف الاشتراك)
-    if(uid){
-      try{
-        const idToken = await getCurrentIdToken();
-        const resp = await fetch(apiUrl(`/api/subscription/status?uid=${encodeURIComponent(uid)}`),
-          { headers: idToken ? {'Authorization':'Bearer '+idToken} : {} });
-        if(resp.ok){
-          const data = await resp.json();
-          // فقط إذا أعاد الخادم active:false صراحةً → أرسله للاشتراك
-          if(data.active === false){
-            console.log('checkSubscription: RC=active but server=inactive → paywall');
-            go('s-paywall');
-          }
-        }
-        // أي رد آخر (ok ولكن active:true، أو غير ok) → يبقى في s-home (fail-open)
-      }catch(e){
-        // لا إنترنت أو خطأ خادم → يبقى في s-home (fail-open)
-        console.log('checkSubscription: server check failed (fail-open):', e.message);
-      }
-    }
-    return;
-  }
-  if(rcActive === false){
-    // تحقق من كود مجاني قبل صفحة الاشتراك
-    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
-    go('s-paywall'); return;
-  }
-  // الويب لا يبيع الاشتراكات؛ Apple IAP هو وسيلة الدفع الوحيدة.
-  try{
-    const idToken = await getCurrentIdToken();
-    if(!idToken){
-      go('s-paywall');
-      return false;
-    }
-    const resp = await fetch(apiUrl(`/api/subscription/status?uid=${encodeURIComponent(uid)}`),
-      { headers: idToken ? {'Authorization':'Bearer '+idToken} : {} });
-    if(!resp.ok) throw new Error('status error');
-    const data = await resp.json();
-    if(data.active === true){ go('s-home'); return; }
-    // تحقق من كود مجاني
-    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
-    go('s-paywall');
-  }catch(e){
-    if(uid && await promoIsActive(uid)){ go('s-home'); return; }
-    go('s-paywall');
-  }
-}
-
-// النسخة الأمنية النهائية: لا تعتمد على RevenueCat CustomerInfo أو cache محلي
-// لفتح المحتوى. الصلاحية الوحيدة المقبولة هنا هي نتيجة الخادم بعد webhook موثّق.
-async function checkSubscriptionAndRouteServerOnly(uid){
   go('s-loading');
   try{
     const idToken=await getCurrentIdToken();
@@ -2345,63 +2257,12 @@ async function checkSubscriptionAndRouteServerOnly(uid){
     if(!resp.ok) throw new Error('server subscription check failed');
     const data=await resp.json();
     if(data.active===true){ go('s-home'); return true; }
-    if(uid && await promoIsActive(uid)){ go('s-home'); return true; }
   }catch(e){
     console.warn('server subscription check:', e.message);
   }
+  if(await rcIsActive() === true){ go('s-home'); return true; }
   go('s-paywall');
   return false;
-}
-// استبدال المسار القديم فعلياً؛ تبقى rcIsActive للعرض/التشخيص فقط ولا تمنح صلاحية.
-checkSubscriptionAndRoute = checkSubscriptionAndRouteServerOnly;
-
-// ────────── كود مكافأة مجاني
-function togglePromoBox(){
-  const form = document.getElementById('pw-promo-form');
-  const btn  = document.getElementById('pw-promo-toggle');
-  const open = form.style.display === 'none';
-  form.style.display = open ? 'flex' : 'none';
-  form.style.flexDirection = 'column';
-  btn.textContent = open ? '✖ إخفاء' : '🎁 عندك كود مجاني؟';
-  if(open) document.getElementById('pw-promo-input').focus();
-}
-
-async function redeemPromo(){
-  const code = (document.getElementById('pw-promo-input').value||'').trim().toUpperCase();
-  const msg  = document.getElementById('pw-promo-msg');
-  if(!code){ msg.style.color='#ff8a8a'; msg.textContent='أدخل الكود أولاً'; return; }
-  msg.style.color='#C4B8E0'; msg.textContent='⏳ جاري التحقق...';
-  try{
-    const uid = window._currentUid || '';
-    const idToken = await getCurrentIdToken();
-    if(!uid || !idToken){
-      msg.style.color='#ff8a8a';
-      msg.textContent='⚠️ سجّل الدخول أولاً ثم أعد المحاولة';
-      return;
-    }
-    const r = await fetch(apiUrl('/api/promo/redeem'),{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
-      body: JSON.stringify({code, uid, idToken})
-    });
-    const d = await r.json();
-    if(d.ok){
-      const exp = new Date(d.expires_at);
-      const opts = {year:'numeric',month:'long',day:'numeric'};
-      const expStr = exp.toLocaleDateString('ar-SA', opts);
-      msg.style.color='#7fff9a';
-      msg.textContent = d.already
-        ? `✅ الكود فعّال حتى ${expStr}`
-        : `🎉 تم التفعيل! مجاني حتى ${expStr}`;
-      setTimeout(()=>{ go('s-home'); showToast('🎁','تم تفعيل الكود!',`مجاني حتى ${expStr}`,false); }, 1200);
-    } else {
-      msg.style.color='#ff8a8a';
-      msg.textContent = '❌ ' + (d.error || 'الكود غير صحيح');
-    }
-  }catch(e){
-    msg.style.color='#ff8a8a';
-    msg.textContent='⚠️ تعذّر الاتصال — تأكد من الإنترنت';
-  }
 }
 
 // ────────── Paywall — اختيار الخطة
@@ -2430,10 +2291,11 @@ async function startCheckout(){
   try{
     // iOS: Apple IAP عبر RevenueCat
     if(window.Capacitor && window.Capacitor.isNativePlatform()){
-      await rcPurchase(_pwPlan);
+      const purchaseConfirmed = await rcPurchase(_pwPlan);
+      if(!purchaseConfirmed) throw new Error('اكتمل الدفع لكن لم يظهر الاستحقاق بعد — استخدم استعادة المشتريات');
       const uid=window._currentUid || storeGet('authUid','');
       let serverActive=false;
-      for(let attempt=0; attempt<6 && !serverActive; attempt++){
+      for(let attempt=0; attempt<12 && !serverActive; attempt++){
         if(attempt) await new Promise(resolve=>setTimeout(resolve,1500));
         try{
           const idToken=await getCurrentIdToken();
@@ -2442,9 +2304,9 @@ async function startCheckout(){
           if(check.ok) serverActive=(await check.json()).active===true;
         }catch(e){}
       }
-      if(serverActive){
+      if(serverActive || await rcIsActive() === true){
         go('s-home');
-        showToast('🎉','مرحباً بك!','تم تأكيد اشتراكك من الخادم',false);
+        showToast('🎉','مرحباً بك!','تم تفعيل اشتراك Apple بنجاح',false);
       } else {
         go('s-paywall');
         showToast('⏳','جاري تأكيد الاشتراك','سيظهر المحتوى بعد وصول تأكيد Apple',false);
@@ -2453,7 +2315,7 @@ async function startCheckout(){
     }
     const note = document.getElementById('web-payment-note');
     if(note) note.style.display = 'block';
-    showToast('ℹ️','الاشتراك عبر Apple فقط','افتح تطبيق فَطِنة على iPhone أو iPad لإتمام الاشتراك',false);
+    showToast('ℹ️','الاشتراك عبر Apple فقط','افتح تطبيق فطنة على iPhone أو iPad لإتمام الاشتراك',false);
     btn.style.display = 'block';
     loading.style.display = 'none';
     return;
@@ -2718,7 +2580,7 @@ function renderTeamsBar(){
     chip.style.background=st.bg; chip.style.borderColor=(i===state.turn?st.dot:'transparent');
     const lead=(t.score>0&&t.score===max);
     chip.innerHTML=`<span class="crown" style="display:${lead?'block':'none'}">👑</span>
-      <span class="cn" style="color:${st.color}">${t.name}</span>
+      <span class="cn" style="color:${st.color}">${esc(t.name)}</span>
       <span class="cs" style="color:${st.color}">${t.score}</span>
       <div class="score-adj" style="color:${st.color}">
         <button onclick="adjustScore(${i},-100)">-100</button>
@@ -3157,7 +3019,7 @@ function showResult(sorted,win,tie){
     el.style.background=st.bg; el.style.borderColor=st.dot;
     el.style.height=heights[pos]+'px'; el.style.animationDelay=(k*0.12)+'s';
     el.innerHTML=`<div class="medal">${medals[pos]}</div>
-      <div class="pn" style="color:${st.color}">${t.name}</div>
+      <div class="pn" style="color:${st.color}">${esc(t.name)}</div>
       <div class="ps" style="color:${st.color}">${t.score}</div>`;
     pod.appendChild(el);
   });
@@ -3518,7 +3380,7 @@ function renderSavedFamily(){
   if(!familyCats.length){ box.innerHTML=''; return; }
   box.innerHTML='<div class="field-label" style="margin-top:20px;">فئاتكم العائلية</div>'+
     familyCats.map((c,i)=>`<div class="fsaved-chip">
-      <div><div class="fc-info">👨‍👩‍👧‍👦 ${c.name}</div><div class="fc-sub">${c.questions.length} أسئلة</div></div>
+      <div><div class="fc-info">👨‍👩‍👧‍👦 ${esc(c.name)}</div><div class="fc-sub">${esc(c.questions.length)} أسئلة</div></div>
       <div class="fsaved-actions">
         <button class="mini-btn play" onclick="playFamilyRound(${i})">▶ العب</button>
         <button class="mini-btn danger" onclick="deleteFamily(${i})">حذف</button>

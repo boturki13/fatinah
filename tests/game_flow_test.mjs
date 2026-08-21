@@ -41,12 +41,12 @@ try {
     return route.abort();
   });
   await page.goto(url);
-  await page.getByRole('button', { name: '🎯 ابدأ اللعب' }).waitFor({ state: 'visible' });
-  await page.getByRole('button', { name: '🎯 ابدأ اللعب' }).click();
+  await page.getByRole('button', { name: '🎯 يلا نلعب' }).waitFor({ state: 'visible' });
+  await page.getByRole('button', { name: '🎯 يلا نلعب' }).click();
   await page.locator('#seg-catcount button[data-n="2"]').click();
   await page.locator('#tn-0').fill('الفريق الأول');
   await page.locator('#tn-1').fill('الفريق الثاني');
-  await page.getByRole('button', { name: 'التالي: اختيار الفئات' }).click();
+  await page.getByRole('button', { name: 'الخطوة الياية: اختار الفئات' }).click();
   await page.locator('.cat-pick').first().click();
   await page.locator('.cat-pick').nth(1).click();
   await page.getByRole('button', { name: 'يلا نبدأ!' }).click();
@@ -61,17 +61,23 @@ try {
     }).length
   );
   assert.equal(unnamedBoardControls, 0, 'كل عناصر اللعب الظاهرة لها اسم VoiceOver');
+  const seenQuestions = new Set();
   await page.locator('#board .cell:not(.used)').first().click();
+  seenQuestions.add((await page.locator('#q-text').textContent()).trim());
   await page.getByRole('button', { name: '👁️ اكشف الإجابة' }).click();
   await page.getByRole('button', { name: /✅ الفريق الأول/ }).click();
   assert.equal((await page.locator('.team-chip .cs').first().textContent()).trim(), '100');
 
   for (let remaining = 11; remaining > 0; remaining--) {
     await page.locator('#board .cell:not(.used)').first().click();
+    const questionText = (await page.locator('#q-text').textContent()).trim();
+    assert.ok(!seenQuestions.has(questionText), `تكرر السؤال داخل الجولة: ${questionText}`);
+    seenQuestions.add(questionText);
     await page.getByRole('button', { name: '👁️ اكشف الإجابة' }).click();
-    await page.getByRole('button', { name: '❌ لا أحد أجاب صح' }).click();
+    await page.getByRole('button', { name: '❌ محد جاوب صح' }).click();
   }
   await page.locator('#s-result.active').waitFor({ state: 'visible', timeout: 5000 });
+  assert.equal(seenQuestions.size, 12, 'يجب أن تكون أسئلة الجولة الاثنا عشر فريدة.');
   assert.match(await page.locator('#winner-line').textContent(), /الفريق الأول/);
   console.log('✓ مسار اللعب الكامل: الفرق، الفئات، 12 سؤالاً، النقاط والنتيجة');
 } finally {

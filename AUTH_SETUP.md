@@ -1,4 +1,4 @@
-# إعداد نظام الهوية الموحّد (Auth) — فَطِنة
+# إعداد نظام الهوية الموحّد (Auth) — فطنة
 
 هذا الملف يوثّق كل خطوة إعداد خارجية (Firebase Console / Xcode) لازمة كي يعمل
 نظام الدخول الموحّد بالكامل: جلسة مجهولة أولى + ترقية لـ Apple/Google/بريد +
@@ -146,7 +146,7 @@
 | Webhook URL | `https://ata20.com/api/revenuecat/webhook` |
 | Authorization header value | نفس قيمة السر `REVENUECAT_WEBHOOK_SECRET` المحفوظة في Replit Secrets |
 | Environment | `Production` |
-| App | تطبيق فَطِنة iOS |
+| App | تطبيق فطنة iOS |
 | Event type | All، أو الأحداث الموضحة أدناه |
 
 اترك **Paywall events** معطّلة؛ فهي أحداث واجهة وليست أحداث اشتراك. إذا لم

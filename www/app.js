@@ -14,10 +14,21 @@ function ensureQuestionBank(){
         reject(new Error('تعذر قراءة بنك الأسئلة'));
         return;
       }
-      QUESTION_BANK=bank;
-      ALL_CATS=Object.keys(bank);
+      // لا يدخل هذا البنك إلا من مسار النشر الإداري بعد التحقق والمراجعة.
+      // ملفه مستقل حتى يبقى البنك الأصلي متاحاً بالكامل عند عدم وجود اتصال.
+      const approved=window.__APPROVED_QUESTION_BANK_DATA__||{};
+      const combined={};
+      new Set([...Object.keys(bank),...Object.keys(approved)]).forEach(category=>{
+        combined[category]=[
+          ...(Array.isArray(bank[category])?bank[category]:[]),
+          ...(Array.isArray(approved[category])?approved[category]:[]),
+        ];
+      });
+      QUESTION_BANK=normalizeQuestionBank(combined);
+      ALL_CATS=Object.keys(combined);
       delete window.__QUESTION_BANK_DATA__;
-      resolve(bank);
+      delete window.__APPROVED_QUESTION_BANK_DATA__;
+      resolve(QUESTION_BANK);
     };
     script.onerror=()=>reject(new Error('تعذر تحميل بنك الأسئلة'));
     document.head.appendChild(script);
@@ -33,6 +44,42 @@ const API_ORIGIN = window.Capacitor?.isNativePlatform?.() === true
   ? 'https://ata20.com'
   : '';
 function apiUrl(path){ return `${API_ORIGIN}${path}`; }
+let _appIntegrityReady=null;
+function getFirebaseAppCheck(){
+  try{ return window.Capacitor?.Plugins?.FirebaseAppCheck || null; }
+  catch(_){ return null; }
+}
+async function initAppIntegrity(){
+  if(_appIntegrityReady) return _appIntegrityReady;
+  _appIntegrityReady=(async()=>{
+    const appCheck=getFirebaseAppCheck();
+    if(!appCheck) return false;
+    await appCheck.setTokenAutoRefreshEnabled({enabled:true});
+    return true;
+  })().catch(error=>{
+    recordNonFatal(error,'firebase.app-check.initialize');
+    return false;
+  });
+  return _appIntegrityReady;
+}
+async function apiFetch(path, options={}){
+  const headers=new Headers(options.headers||{});
+  if(await initAppIntegrity()){
+    try{
+      const result=await getFirebaseAppCheck().getToken({forceRefresh:false});
+      if(result?.token) headers.set('X-Firebase-AppCheck',result.token);
+    }catch(error){
+      // الخادم يبدأ بوضع المراقبة، لذا لا نوقف تسجيل الدخول أو اللعب أثناء
+      // طرح App Attest التدريجي؛ يُسجّل الخطأ في Crashlytics للمراجعة.
+      recordNonFatal(error,'firebase.app-check.token');
+    }
+  }
+  return fetch(apiUrl(path),{...options,headers});
+}
+const APP_VERSION = '1.3';
+let _hasActiveSubscription=false;
+let _freeRoundAvailable=false;
+let _subscriptionResolved=false;
 const TEAM_STYLES=[
   {name:"النجوم", color:"var(--t1)", bg:"var(--t1b)", dot:"#B794FF", solid:"#7C3AED"},
   {name:"الصقور", color:"var(--t2)", bg:"var(--t2b)", dot:"#4FE3C4", solid:"#10B9A4"},
@@ -56,10 +103,11 @@ const CAT_ICONS={
   "كأس العالم":"🏆","أعلام الدول":"🚩","خرائط دول":"🧭","إجابة سريعة":"⚡",
   "دوري أبطال أوروبا":"⭐","أنمي":"🦸","كأس الخليج":"🥇","مسلسلات خليجية":"📺",
   "أفلام عربية":"🎬","الألعاب الأولمبية":"🔥","أغاني خليجية":"🎤",
+  "الخلفاء الراشدون":"☪️","الأنبياء والرسل":"🕊️",
 };
 // تصنيف الفئات إلى مجموعات للفلترة
 const CAT_GROUPS={
-  "إسلاميات":["السيرة النبوية","القرآن الكريم","فتوحات المسلمين","الصحابة","دين وسيرة"],
+  "إسلاميات":["السيرة النبوية","القرآن الكريم","فتوحات المسلمين","الصحابة","دين وسيرة","الخلفاء الراشدون","الأنبياء والرسل"],
   "معرفة وعلوم":["معلومات عامة","علوم وتقنية","الفضاء والكون","جسم الإنسان"],
   "تاريخ وجغرافيا":["تاريخ","جغرافيا","حضارات قديمة","أعلام الدول","خرائط دول"],
   "رياضة":["رياضة","كأس العالم","دوري أبطال أوروبا","كأس الخليج","الألعاب الأولمبية"],
@@ -70,6 +118,61 @@ const CAT_GROUPS={
   "طبيعة وحيوانات":["حيوانات وطبيعة"],
 };
 const GROUP_ICONS={"إسلاميات":"🕌","معرفة وعلوم":"🧠","تاريخ وجغرافيا":"🏛️","رياضة":"⚽","محرّكات":"🏎️","ثقافة وتراث":"🐪","ألغاز وذكاء":"🧩","فنون وأدب":"📜","طبيعة وحيوانات":"🦁"};
+
+// هوية العرض الكويتية: تبقى مفاتيح البنك والنصوص المراجَعة كما هي، وتتغير
+// الصياغة عند العرض فقط. هذا يحافظ على معرّفات الأسئلة والمصادر وسجل المراجعة،
+// كما يترك أسئلة العائلة التي كتبها المستخدم من دون أي تعديل.
+function displayCategoryName(name){
+  return name==='وش الرابط؟' ? 'شنو الرابط؟' : String(name||'');
+}
+function toKuwaitiQuestionText(text){
+  let result=String(text||'').trim();
+  const prefixes=[
+    [/^وش\s+/u,'شنو '],
+    [/^مين\s+/u,'منو '],
+    [/^(?:إيش|أيش|ايش)\s+/u,'شنو '],
+    [/^ما هو\s+/u,'شنو '],
+    [/^ما هي\s+/u,'شنو '],
+    [/^ما اسم\s+/u,'شنو اسم '],
+    [/^ما الذي\s+/u,'شنو اللي '],
+    [/^ما التي\s+/u,'شنو اللي '],
+    [/^ماذا\s+/u,'شنو '],
+    [/^ما\s+/u,'شنو '],
+    [/^من هو\s+/u,'منو '],
+    [/^من هي\s+/u,'منو '],
+    [/^من الذي\s+/u,'منو اللي '],
+    [/^من التي\s+/u,'منو اللي '],
+    [/^من\s+/u,'منو '],
+    [/^أين\s+/u,'وين '],
+    [/^كيف\s+/u,'شلون '],
+    [/^لماذا\s+/u,'ليش '],
+    [/^كم\s+/u,'جم '],
+    [/^أكمل\s+/u,'كمّل '],
+    [/^اذكر\s+/u,'قول '],
+  ];
+  for(const [pattern,replacement] of prefixes){
+    if(pattern.test(result)){
+      result=result.replace(pattern,replacement);
+      break;
+    }
+  }
+  const words=[
+    [/(^|\s)وش(?=\s|[؟?!،,.])/gu,'$1شنو'],
+    [/(^|\s)مين(?=\s|[؟?!،,.])/gu,'$1منو'],
+    [/(^|\s)(?:إيش|أيش|ايش)(?=\s|[؟?!،,.])/gu,'$1شنو'],
+    [/(^|\s)أين(?=\s|[؟?!،,.])/gu,'$1وين'],
+    [/(^|\s)كيف(?=\s|[؟?!،,.])/gu,'$1شلون'],
+    [/(^|\s)لماذا(?=\s|[؟?!،,.])/gu,'$1ليش'],
+    [/(^|\s)كم(?=\s|[؟?!،,.])/gu,'$1جم'],
+    [/(^|\s)اختر(?=\s|[؟?!،,.])/gu,'$1اختار'],
+  ];
+  for(const [pattern,replacement] of words) result=result.replace(pattern,replacement);
+  return result;
+}
+function displayQuestionText(question){
+  if(!question) return '';
+  return question.id ? toKuwaitiQuestionText(question.q) : String(question.q||'');
+}
 
 let state={teamCount:2, catCount:6, difficulty:'normal', teams:[], cats:[], turn:0, cells:{}, answered:0, cur:null,
   timer:null, timeLeft:60, paused:false, searchTimer:null, answering:true};
@@ -96,15 +199,500 @@ function storeSet(key, value){
   }catch(e){}
 }
 
-// ────────── الإحصاءات (محفوظة دائماً)
-let stats=loadStats();
-function loadStats(){
-  return storeGet('stats', {games:0, correct:0, totalQ:0, bestScore:0, wins:0, ach:{}});
+async function hydrateNativePreferences(){
+  const P=window.Capacitor?.Plugins?.Preferences;
+  if(!P) return 0;
+  try{
+    const result=await P.keys();
+    const keys=(result?.keys||[]).filter(key=>key.startsWith(STORAGE_PREFIX));
+    let restored=0;
+    for(const key of keys){
+      if(localStorage.getItem(key)!=null) continue;
+      const item=await P.get({key});
+      if(item?.value==null) continue;
+      // تحقق أن القيمة ما زالت JSON صالحاً قبل نسخها إلى مخزن WebView.
+      JSON.parse(item.value);
+      localStorage.setItem(key,item.value);
+      restored++;
+    }
+    return restored;
+  }catch(error){
+    recordNonFatal(error,'preferences.hydrate');
+    return 0;
+  }
 }
-function saveStats(){ storeSet('stats', stats); }
+
+function scopedAccessKey(prefix,uid){
+  const owner=String(uid||window._currentUid||storeGet('authUid','guest')||'guest')
+    .replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,128);
+  return `${prefix}_${owner}`;
+}
+function storageHas(key){
+  try{ return localStorage.getItem(STORAGE_PREFIX+key)!==null; }
+  catch(_){ return false; }
+}
+// الإصدارات السابقة خزّنت الإحصاءات والفئات العائلية بمفاتيح عامة للجهاز.
+// ننسبها للحساب الموجود وقت الترقية مرة واحدة فقط؛ وإلا قد تُنسخ بيانات
+// الحساب الأول إلى كل حساب جديد يستخدم الجهاز نفسه.
+function migrateLegacyAccountData(uid){
+  if(!uid) return;
+  const legacyKeys=['stats','family'];
+  const hasLegacy=legacyKeys.some(storageHas);
+  let owner=storeGet('legacy_account_data_owner','');
+  if(!owner&&hasLegacy){
+    owner=String(uid);
+    storeSet('legacy_account_data_owner',owner);
+  }
+  if(owner!==String(uid)) return;
+  legacyKeys.forEach(key=>{
+    const scopedKey=scopedAccessKey(key,uid);
+    if(storageHas(scopedKey)||!storageHas(key)) return;
+    storeSet(scopedKey,storeGet(key,key==='stats'?emptyStats():[]));
+  });
+}
+function activateLocalAccount(uid){
+  if(!uid){ stats=emptyStats(); familyCats=[]; return; }
+  migrateLegacyAccountData(uid);
+  stats=loadStats(uid);
+  familyCats=loadFamily(uid);
+}
+function localFreeRoundCompleted(uid){
+  return storeGet(scopedAccessKey('free_round_completed',uid),false)===true;
+}
+function updateFreeRoundUi(){
+  const banner=document.getElementById('free-round-banner');
+  if(!banner) return;
+  if(_hasActiveSubscription){ banner.hidden=true; return; }
+  banner.hidden=false;
+  banner.textContent=_freeRoundAvailable
+    ? '🎁 أول جولة عليك بالكامل — شاشة الاشتراك ما تطلع إلا عقب ما تخلّصها'
+    : '✓ خلصت جولتك المجانية — اشترك عشان تفتح جولات بلا حدود';
+}
+async function syncFreeRoundCompletion(uid){
+  if(!uid||!localFreeRoundCompleted(uid)) return false;
+  const idToken=await getCurrentIdToken();
+  if(!idToken) return false;
+  try{
+    const response=await apiFetch('/api/free-round/complete',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+      body:JSON.stringify({uid,idToken}),
+    });
+    if(response.ok){ storeSet(scopedAccessKey('free_round_sync_pending',uid),false); return true; }
+  }catch(_){ /* يبقى العلم محلياً ويُعاد عند الإقلاع القادم */ }
+  return false;
+}
+async function freeRoundIsAvailable(uid){
+  if(localFreeRoundCompleted(uid)){
+    if(storeGet(scopedAccessKey('free_round_sync_pending',uid),false)){
+      void syncFreeRoundCompletion(uid);
+    }
+    return false;
+  }
+  const idToken=await getCurrentIdToken();
+  if(!idToken) return true;
+  try{
+    const response=await apiFetch(`/api/free-round/status?uid=${encodeURIComponent(uid||'')}`,{
+      headers:{'Authorization':'Bearer '+idToken},
+    });
+    if(response.ok){
+      const data=await response.json();
+      if(data.completed===true){
+        storeSet(scopedAccessKey('free_round_completed',uid),true);
+        return false;
+      }
+      return data.eligible===true;
+    }
+  }catch(_){ /* وضع دون اتصال: علم الجهاز يمنع إعادة الجولة */ }
+  return true;
+}
+async function completeFreeRound(){
+  if(_hasActiveSubscription||!state.isFreeRound||state.completedFreeRound) return;
+  const uid=window._currentUid||storeGet('authUid','');
+  state.completedFreeRound=true;
+  _freeRoundAvailable=false;
+  storeSet(scopedAccessKey('free_round_completed',uid),true);
+  storeSet(scopedAccessKey('free_round_sync_pending',uid),true);
+  updateFreeRoundUi();
+  void syncFreeRoundCompletion(uid);
+  void trackMetric('free_round_completed',{questions:state.answered||0});
+}
+function metricEventId(){
+  try{ if(crypto.randomUUID) return crypto.randomUUID(); }catch(_){ }
+  return `evt-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;
+}
+async function trackMetric(event,properties={}){
+  const uid=window._currentUid||storeGet('authUid','');
+  if(!uid) return false;
+  const idToken=await getCurrentIdToken();
+  if(!idToken) return false;
+  try{
+    const response=await apiFetch('/api/metrics/event',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+      body:JSON.stringify({
+        uid,idToken,event,eventId:metricEventId(),appVersion:APP_VERSION,properties,
+      }),
+    });
+    return response.ok;
+  }catch(_){ return false; }
+}
+
+// ────────── هوية الأسئلة ومصادرها وسجل عدم التكرار
+// كل سؤال يملك معرّفاً ثابتاً حتى نستطيع تدوير البنك للمستخدم نفسه من دون
+// الاعتماد على نص السؤال، الذي قد يخضع لاحقاً لتصحيح لغوي بسيط.
+const QUESTION_SOURCE_BY_CATEGORY={
+  'معلومات عامة':{title:'الموسوعة البريطانية',url:'https://www.britannica.com/'},
+  'رياضة':{title:'الاتحاد الدولي لكرة القدم FIFA',url:'https://www.fifa.com/'},
+  'تاريخ':{title:'الموسوعة البريطانية — علم التاريخ',url:'https://www.britannica.com/topic/history'},
+  'جغرافيا':{title:'الموسوعة البريطانية — الجغرافيا',url:'https://www.britannica.com/browse/Geography-Travel'},
+  'أمثال':{title:'المعاني — الأمثال العربية',url:'https://www.almaany.com/ar/dict/ar-ar/'},
+  'ثقافة خليجية':{title:'اليونسكو — التراث الثقافي',url:'https://ich.unesco.org/'},
+  'دين وسيرة':{title:'الموسوعة الحديثية — الدرر السنية',url:'https://dorar.net/hadith'},
+  'علوم وتقنية':{title:'الموسوعة البريطانية — العلوم',url:'https://www.britannica.com/browse/Science'},
+  'محرّكات ومركبات':{title:'الموسوعة البريطانية — السيارة',url:'https://www.britannica.com/technology/automobile'},
+  'السيرة النبوية':{title:'تاريخ الطبري — السيرة النبوية',url:'https://shamela.ws/book/9783'},
+  'القرآن الكريم':{title:'القرآن الكريم — تفسير ابن كثير',url:'https://quran.ksu.edu.sa/tafseer/katheer/'},
+  'فتوحات المسلمين':{title:'تاريخ الرسل والملوك للطبري',url:'https://shamela.ws/book/9783'},
+  'ألغاز وتحدّي ذكاء':{title:'الموسوعة البريطانية — المنطق',url:'https://www.britannica.com/topic/logic'},
+  'الصحابة':{title:'صحيح البخاري — الموسوعة الحديثية',url:'https://dorar.net/hadith'},
+  'الشعر العربي':{title:'الموسوعة البريطانية — الأدب العربي',url:'https://www.britannica.com/art/Arabic-literature'},
+  'الفضاء والكون':{title:'وكالة ناسا',url:'https://science.nasa.gov/'},
+  'حيوانات وطبيعة':{title:'موسوعة سميثسونيان',url:'https://www.si.edu/spotlight/buginfo/encyclopedia'},
+  'حضارات قديمة':{title:'الموسوعة البريطانية — بلاد ما بين النهرين',url:'https://www.britannica.com/place/Mesopotamia-historical-region-Asia'},
+  'جسم الإنسان':{title:'منظمة الصحة العالمية',url:'https://www.who.int/'},
+  'كأس العالم':{title:'الاتحاد الدولي لكرة القدم FIFA',url:'https://www.fifa.com/tournaments/mens/worldcup'},
+  'أعلام الدول':{title:'الأمم المتحدة — الدول الأعضاء',url:'https://www.un.org/en/about-us/member-states'},
+  'خرائط دول':{title:'الأمم المتحدة — الخرائط',url:'https://www.un.org/geospatial/mapsgeo'},
+  'إجابة سريعة':{title:'الموسوعة البريطانية — الحساب',url:'https://www.britannica.com/science/arithmetic'},
+  'دوري أبطال أوروبا':{title:'الاتحاد الأوروبي لكرة القدم UEFA',url:'https://www.uefa.com/uefachampionsleague/history/'},
+  'أنمي':{title:'الموسوعة البريطانية — الرسوم المتحركة',url:'https://www.britannica.com/art/animation'},
+  'كأس الخليج':{title:'اتحاد كأس الخليج العربي لكرة القدم',url:'https://agcff.com/%D8%AF%D9%88%D8%B1%D8%A9-%D9%83%D8%A3%D8%B3-%D8%A7%D9%84%D8%AE%D9%84%D9%8A%D8%AC/'},
+  'مسلسلات خليجية':{title:'جريدة الجريدة الكويتية — درب الزلق',url:'https://www.aljarida.com/articles/1526486221951299700/'},
+  'أفلام عربية':{title:'مهرجان البحر الأحمر السينمائي',url:'https://redseafilmfest.com/'},
+  'الألعاب الأولمبية':{title:'اللجنة الأولمبية الدولية',url:'https://olympics.com/en/olympic-games'},
+  'أغاني خليجية':{title:'مركز الشيخ جابر الأحمد الثقافي',url:'https://www.jacc-kw.com/'},
+  'الخلفاء الراشدون':{title:'صحيح البخاري وتاريخ الطبري',url:'https://shamela.ws/book/9783'},
+  'الأنبياء والرسل':{title:'القرآن الكريم وتفسير ابن كثير',url:'https://quran.ksu.edu.sa/tafseer/katheer/'},
+};
+// تصحيحات المحتوى المراجَع في إصدار البنك 2. المفاتيح هي مستوى الصعوبة.
+// للمحتوى الديني نضع رابط النص أو المرجع الأقرب للسؤال بدلاً من رابط عام.
+const QUESTION_OVERRIDES={
+  'رياضة':{
+    4:{q:'أي منتخب فاز بكأس العالم عام 2010؟',answer:'إسبانيا',source:{title:'FIFA — كأس العالم 2010',url:'https://www.fifa.com/tournaments/mens/worldcup/2010south-africa'}},
+    5:{q:'من سجّل هدف إسبانيا في نهائي كأس العالم 2010؟',answer:'أندريس إنييستا',source:{title:'FIFA — نهائي 2010',url:'https://www.fifa.com/tournaments/mens/worldcup/2010south-africa'}},
+    6:{q:'أي منتخب فاز بكأس العالم خمس مرات حتى نسخة 2022؟',answer:'البرازيل',source:{title:'FIFA — تاريخ كأس العالم',url:'https://www.fifa.com/tournaments/mens/worldcup'}},
+  },
+  'علوم وتقنية':{
+    4:{q:'ما الشبكة التي طوّرها باحثون في الولايات المتحدة وكانت أساساً مبكراً للإنترنت؟',answer:'أربانت (ARPANET)',source:{title:'الموسوعة البريطانية — ARPANET',url:'https://www.britannica.com/topic/ARPANET'}},
+  },
+  'جغرافيا':{
+    4:{q:'ما اسم ناطحة السحاب في دبي التي يبلغ ارتفاعها 828 متراً؟',answer:'برج خليفة',source:{title:'برج خليفة — حقائق وأرقام',url:'https://www.burjkhalifa.ae/en/the-tower/facts-figures/'}},
+  },
+  'محرّكات ومركبات':{
+    5:{q:'ما اسم الطائرة الأسرع من الصوت التي شغّلتها الخطوط البريطانية والفرنسية؟',answer:'كونكورد',source:{title:'الموسوعة البريطانية — كونكورد',url:'https://www.britannica.com/technology/Concorde'}},
+    6:{q:'من حصل على براءة اختراع سيارة بمحرك بنزين عام 1886؟',answer:'كارل بنز',source:{title:'الموسوعة البريطانية — كارل بنز',url:'https://www.britannica.com/biography/Karl-Benz'}},
+  },
+  'الفضاء والكون':{
+    4:{q:'أي كوكب يشتهر بنظام حلقاته الواسع والواضح؟',answer:'زحل',source:{title:'ناسا — زحل',url:'https://science.nasa.gov/saturn/'}},
+    5:{q:'ما أكبر كوكب في المجموعة الشمسية؟',answer:'المشتري',source:{title:'ناسا — المشتري',url:'https://science.nasa.gov/jupiter/'}},
+    6:{q:'أي قمر للمشتري تشير الأدلة إلى وجود محيط مالح تحت سطحه الجليدي؟',answer:'أوروبا',source:{title:'ناسا — أوروبا',url:'https://science.nasa.gov/jupiter/moons/europa/'}},
+  },
+  'حيوانات وطبيعة':{
+    3:{q:'ما أسرع حيوان بري؟',answer:'الفهد',source:{title:'سميثسونيان — الفهد',url:'https://nationalzoo.si.edu/animals/cheetah'}},
+  },
+  'حضارات قديمة':{
+    5:{q:'ما المدينة الرومانية القديمة التي دفنها ثوران جبل فيزوف سنة 79م؟',answer:'بومبي',source:{title:'الموسوعة البريطانية — بومبي',url:'https://www.britannica.com/place/Pompeii'}},
+  },
+  'جسم الإنسان':{
+    1:{q:'كم عدد حجرات القلب البشري؟',answer:'أربع حجرات',source:{title:'المعهد الوطني للقلب — القلب',url:'https://www.nhlbi.nih.gov/health/heart'}},
+    2:{q:'ما العضو الذي يضخ الدم إلى أنحاء الجسم؟',answer:'القلب',source:{title:'المعهد الوطني للقلب',url:'https://www.nhlbi.nih.gov/health/heart'}},
+  },
+  'دوري أبطال أوروبا':{
+    4:{q:'في أي موسم بدأ نظام مرحلة الدوري بمشاركة 36 فريقاً في دوري أبطال أوروبا؟',answer:'موسم 2024-2025',source:{title:'UEFA — شرح النظام الجديد',url:'https://www.uefa.com/uefachampionsleague/news/0290-1bae124dbd1a-4a9fc08cd25c-1000/'}},
+    6:{q:'أي نادٍ فاز بأول خمس نسخ من كأس أوروبا من 1956 إلى 1960؟',answer:'ريال مدريد',source:{title:'UEFA — تاريخ البطولة',url:'https://www.uefa.com/uefachampionsleague/history/'}},
+  },
+  'الألعاب الأولمبية':{
+    4:{q:'أي مدينة استضافت الألعاب الأولمبية الصيفية عام 2012؟',answer:'لندن',source:{title:'الألعاب الأولمبية — لندن 2012',url:'https://olympics.com/en/olympic-games/london-2012'}},
+    5:{q:'أي مدينة استضافت الألعاب الأولمبية الصيفية عام 2016؟',answer:'ريو دي جانيرو',source:{title:'الألعاب الأولمبية — ريو 2016',url:'https://olympics.com/en/olympic-games/rio-2016'}},
+  },
+  'مسلسلات خليجية':{
+    1:{q:'ما اسم المسلسل الكويتي الذي ظهرت فيه شخصيتا حسين وسعد بن عاقول؟',answer:'درب الزلق',source:{title:'جريدة الجريدة الكويتية — درب الزلق',url:'https://www.aljarida.com/articles/1526486221951299700/'}},
+    2:{q:'ما سبب ثراء حسين وسعد في بداية أحداث مسلسل درب الزلق؟',answer:'تثمين الحكومة لمنزلهما',source:{title:'جريدة الأنباء الكويتية — تجارة أبناء العاقول',url:'https://www.alanba.com.kw/1006172/'}},
+    3:{q:'من جسّد شخصية سعد بن عاقول في مسلسل درب الزلق؟',answer:'سعد الفرج',source:{title:'جريدة الجريدة الكويتية — درب الزلق',url:'https://www.aljarida.com/articles/1526486221951299700/'}},
+    4:{q:'في أي دولة بدأ عرض مسلسل «شباب البومب»؟',answer:'السعودية',source:{title:'سعوديبيديا — مسلسل شباب البومب',url:'https://saudipedia.com/%D9%85%D8%B3%D9%84%D8%B3%D9%84-%D8%B4%D8%A8%D8%A7%D8%A8-%D8%A7%D9%84%D8%A8%D9%88%D9%85%D8%A8'}},
+    5:{q:'من جسّد شخصية «قحطة» في مسلسل درب الزلق؟',answer:'علي المفيدي',source:{title:'جريدة الجريدة الكويتية — شخصيات درب الزلق',url:'https://www.aljarida.com/articles/1526486221951299700/'}},
+    6:{q:'من جسّد شخصية «حسين بن عاقول» في مسلسل درب الزلق؟',answer:'عبدالحسين عبدالرضا',source:{title:'جريدة الجريدة الكويتية — شخصيات درب الزلق',url:'https://www.aljarida.com/articles/1526486221951299700/'}},
+  },
+  'أفلام عربية':{
+    1:{q:'في أي دولة تدور أحداث فيلم «وجدة»؟',answer:'السعودية',source:{title:'أكاديمية فنون وعلوم الصور المتحركة — وجدة',url:'https://www.oscars.org/news/76-countries-competition-2013-foreign-language-film-oscarr'}},
+    2:{q:'من أخرجت فيلم «وجدة» عام 2012؟',answer:'هيفاء المنصور',source:{title:'مهرجان كان — هيفاء المنصور',url:'https://www.festival-cannes.com/en/p/haifaa-al-mansour/'}},
+    3:{q:'ما أول فيلم مثّل السعودية في مسابقة الفيلم الأجنبي بالأوسكار؟',answer:'وجدة',source:{title:'أكاديمية فنون وعلوم الصور المتحركة — مشاركات 2013',url:'https://www.oscars.org/news/76-countries-competition-2013-foreign-language-film-oscarr'}},
+    4:{q:'من أدّت دور أم وجدة في فيلم «وجدة»؟',answer:'ريم عبدالله',source:{title:'أكاديمية فنون وعلوم الصور المتحركة — قائمة ممثلي وجدة',url:'https://digitalcollections.oscars.org/digital/api/collection/p15759coll9/id/6867/download'}},
+    5:{q:'من أخرج فيلم «بركة يقابل بركة»؟',answer:'محمود صباغ',source:{title:'سعوديبيديا — بركة يقابل بركة',url:'https://saudipedia.com/en/barakah-meets-barakah-film'}},
+    6:{q:'ما أول فيلم روائي طويل صُوّر بالكامل داخل السعودية؟',answer:'وجدة',source:{title:'أكاديمية فنون وعلوم الصور المتحركة — هيفاء المنصور',url:'https://www.oscars.org/awards/working-above-line-panel-biographies'}},
+  },
+  'أغاني خليجية':{
+    2:{q:'أي مطربة عربية غنّت من كلمات الشاعر الكويتي أحمد مشاري العدواني؟',answer:'أم كلثوم',source:{title:'مركز الشيخ جابر الثقافي — أغنيات أحمد العدواني',url:'https://tickets.jacc-kw.com/event/info/songs-of-the-poet-ahmad-al-adwani/159'}},
+    4:{q:'من الملحّن الكويتي الذي لحّن النشيد الوطني لدولة الكويت؟',answer:'إبراهيم الصولة',source:{title:'ديوان ولي العهد — النشيد الوطني',url:'https://www.cpd.gov.kw/anthem'}},
+    5:{q:'من كتب كلمات النشيد الوطني لدولة الكويت؟',answer:'أحمد مشاري العدواني',source:{title:'ديوان ولي العهد — النشيد الوطني',url:'https://www.cpd.gov.kw/anthem'}},
+    6:{q:'في أي عام بدأ استخدام النشيد الوطني الكويتي الحالي؟',answer:'عام 1978',source:{title:'ديوان ولي العهد — النشيد الوطني',url:'https://www.cpd.gov.kw/anthem'}},
+  },
+  'دين وسيرة':{
+    1:{source:{title:'صحيح البخاري — بُني الإسلام على خمس',url:'https://dorar.net/hadith/sharh/75059'}},
+    2:{source:{title:'صحيح البخاري — فرض الصلاة',url:'https://dorar.net/hadith/search?q=%D9%81%D8%B1%D8%B6%D8%AA+%D8%A7%D9%84%D8%B5%D9%84%D8%A7%D8%A9+%D8%B1%D9%83%D8%B9%D8%AA%D9%8A%D9%86'}},
+    3:{source:{title:'صحيح البخاري — مواقيت الصلاة',url:'https://dorar.net/hadith/search?q=%D8%A7%D9%84%D8%B5%D9%84%D9%88%D8%A7%D8%AA+%D8%A7%D9%84%D8%AE%D9%85%D8%B3'}},
+    4:{q:'إلى أي بيت يتجه المسلمون في صلاتهم؟',answer:'الكعبة المشرفة',source:{title:'القرآن الكريم — البقرة 144',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya144.html'}},
+    5:{source:{title:'حديث «الحج عرفة»',url:'https://dorar.net/hadith/sharh/85664'}},
+    6:{source:{title:'حديث أيام منى ثلاثة',url:'https://dorar.net/hadith/sharh/85664'}},
+  },
+  'السيرة النبوية':{
+    1:{source:{title:'تاريخ الطبري — ذكر مولد رسول الله ﷺ',url:'https://shamela.ws/book/9783'}},
+    2:{source:{title:'تاريخ الطبري — زواج النبي ﷺ بخديجة',url:'https://shamela.ws/book/9783'}},
+    3:{source:{title:'تاريخ الطبري — وقعة بدر الكبرى',url:'https://shamela.ws/book/9783'}},
+    4:{source:{title:'تاريخ الطبري — فتح مكة',url:'https://shamela.ws/book/9783'}},
+    5:{source:{title:'البداية والنهاية لابن كثير — غزوة بدر',url:'https://shamela.ws/book/4445'}},
+    6:{source:{title:'تاريخ الطبري — السيرة النبوية',url:'https://shamela.ws/book/9783'}},
+  },
+  'القرآن الكريم':{
+    1:{source:{title:'تفسير ابن كثير — سورة الفاتحة',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura1.html'}},
+    2:{source:{title:'القرآن الكريم — فهرس السور',url:'https://quran.ksu.edu.sa/'}},
+    3:{q:'ما السورة التي عدد آياتها ثلاث وتبدأ بقوله تعالى «إنا أعطيناك الكوثر»؟',answer:'سورة الكوثر',source:{title:'تفسير ابن كثير — سورة الكوثر',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura108.html'}},
+    4:{q:'ما أطول سورة في القرآن الكريم؟',answer:'سورة البقرة',source:{title:'تفسير ابن كثير — سورة البقرة',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2.html'}},
+    5:{source:{title:'صحيح البخاري — بدء الوحي',url:'https://dorar.net/hadith/sharh/6299'}},
+    6:{q:'في أي سورة ورد قوله تعالى «محمد رسول الله»؟',answer:'سورة الفتح',source:{title:'تفسير ابن كثير — الفتح 29',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura48-aya29.html'}},
+  },
+  'فتوحات المسلمين':{
+    1:{source:{title:'صحيح البخاري — خالد بن الوليد سيف من سيوف الله',url:'https://dorar.net/hadith/search?q=%D8%B3%D9%8A%D9%81+%D9%85%D9%86+%D8%B3%D9%8A%D9%88%D9%81+%D8%A7%D9%84%D9%84%D9%87+%D8%AE%D8%A7%D9%84%D8%AF'}},
+    2:{source:{title:'تاريخ الطبري — القادسية',url:'https://shamela.ws/book/9783'}},
+    3:{q:'في عهد أي خليفة فُتحت دمشق؟',answer:'عمر بن الخطاب',source:{title:'تاريخ الطبري — فتوح الشام',url:'https://shamela.ws/book/9783'}},
+    4:{source:{title:'تاريخ الطبري — فتوح الشام',url:'https://shamela.ws/book/9783'}},
+    5:{q:'ما المعركة التي عُرفت في المصادر الإسلامية بفتح الفتوح في بلاد فارس؟',answer:'معركة نهاوند',source:{title:'تاريخ الطبري — نهاوند',url:'https://shamela.ws/book/9783'}},
+    6:{source:{title:'تاريخ الطبري — يزدجرد الثالث',url:'https://shamela.ws/book/9783'}},
+  },
+  'الصحابة':{
+    1:{source:{title:'تاريخ الطبري — خلافة أبي بكر',url:'https://shamela.ws/book/9783'}},
+    2:{source:{title:'صحيح البخاري — فضائل عائشة',url:'https://dorar.net/hadith/search?q=%D9%81%D8%B6%D9%84+%D8%B9%D8%A7%D8%A6%D8%B4%D8%A9'}},
+    3:{source:{title:'صحيح البخاري — حواري الرسول ﷺ',url:'https://dorar.net/hadith/sharh/7399'}},
+    4:{source:{title:'تاريخ الطبري — وفاة أبي بكر',url:'https://shamela.ws/book/9783'}},
+    5:{q:'من الصحابي المقصود بصاحب النبي ﷺ في الغار في قوله تعالى «إذ يقول لصاحبه لا تحزن»؟',answer:'أبو بكر الصديق',source:{title:'تفسير ابن كثير — التوبة 40',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura9-aya40.html'}},
+    6:{source:{title:'القرآن الكريم — التوبة 40',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura9-aya40.html'}},
+  },
+  'الخلفاء الراشدون':{
+    1:{source:{title:'حديث الخلافة بعدي ثلاثون سنة',url:'https://dorar.net/hadith/search?q=%D8%A7%D9%84%D8%AE%D9%84%D8%A7%D9%81%D8%A9+%D8%A8%D8%B9%D8%AF%D9%8A+%D8%AB%D9%84%D8%A7%D8%AB%D9%88%D9%86'}},
+    2:{source:{title:'تاريخ الطبري — وفاة أبي بكر',url:'https://shamela.ws/book/9783'}},
+    3:{source:{title:'تاريخ الطبري — وضع التاريخ الهجري',url:'https://shamela.ws/book/9783'}},
+    4:{source:{title:'صحيح البخاري — جمع القرآن',url:'https://dorar.net/hadith/sharh/3840'}},
+    5:{source:{title:'تاريخ الطبري — نسب أبي بكر',url:'https://shamela.ws/book/9783'}},
+    6:{q:'في عهد أي خليفة وقعت معركة ذات الصواري البحرية؟',answer:'عثمان بن عفان',source:{title:'البداية والنهاية لابن كثير — خلافة عثمان',url:'https://shamela.ws/book/4445'}},
+  },
+  'الأنبياء والرسل':{
+    1:{source:{title:'تفسير ابن كثير — قصة آدم',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya30.html'}},
+    2:{source:{title:'تفسير ابن كثير — مريم وعيسى',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura19.html'}},
+    3:{q:'من النبي الذي قال الله تعالى إنه كلّمه تكليماً؟',answer:'موسى عليه السلام',source:{title:'تفسير ابن كثير — النساء 164',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura4-aya164.html'}},
+    4:{source:{title:'تفسير ابن كثير — أولو العزم من الرسل',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura46-aya35.html'}},
+    5:{q:'أي نبي أُلقي في النار فجعلها الله عليه برداً وسلاماً؟',answer:'إبراهيم عليه السلام',source:{title:'تفسير ابن كثير — الأنبياء 69',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura21-aya69.html'}},
+    6:{source:{title:'تفسير ابن كثير — الأنبياء 87',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura21-aya87.html'}},
+  },
+};
+// دفعة المحتوى الديني المراجع: سؤال ثانٍ لكل مستوى حتى لا تعيد الجولة التالية
+// الأسئلة نفسها مباشرة. لا تُقبل هنا رواية بلا نص قرآني أو حديث صحيح أو
+// مرجع تاريخي معروف، وتبقى المسائل الخلافية خارج اللعبة.
+const QUESTION_ADDITIONS={
+  'دين وسيرة':[
+    {d:1,q:'كم عدد أركان الإيمان المذكورة في حديث جبريل؟',answer:'ستة أركان',source:{title:'حديث جبريل — أصول الإيمان والإحسان',url:'https://dorar.net/hadith/sharh/141932'}},
+    {d:2,q:'ما الشهر الذي فرض الله صيامه على المسلمين؟',answer:'شهر رمضان',source:{title:'تفسير ابن كثير — البقرة 185',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya185.html'}},
+    {d:3,q:'كم صنفاً ذكر القرآن لمصارف الزكاة في آية الصدقات؟',answer:'ثمانية أصناف',source:{title:'تفسير ابن كثير — التوبة 60',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura9-aya60.html'}},
+    {d:4,q:'ما القبلة الأولى التي صلى إليها المسلمون قبل الكعبة؟',answer:'بيت المقدس',source:{title:'صحيح البخاري — تحويل القبلة',url:'https://dorar.net/hadith/search?q=%D8%A7%D9%84%D9%82%D8%A8%D9%84%D8%A9+%D8%A8%D9%8A%D8%AA+%D8%A7%D9%84%D9%85%D9%82%D8%AF%D8%B3'}},
+    {d:5,q:'ما الليلة التي وصفها القرآن بأنها خير من ألف شهر؟',answer:'ليلة القدر',source:{title:'تفسير ابن كثير — سورة القدر',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura97.html'}},
+    {d:6,q:'أكمل معنى الإحسان في حديث جبريل: أن تعبد الله كأنك...؟',answer:'تراه، فإن لم تكن تراه فإنه يراك',source:{title:'حديث جبريل — معنى الإحسان',url:'https://dorar.net/hadith/sharh/141932'}},
+  ],
+  'السيرة النبوية':[
+    {d:1,q:'ما اسم جد النبي محمد ﷺ الذي كفله بعد وفاة أمه؟',answer:'عبد المطلب',source:{title:'البداية والنهاية لابن كثير — السيرة النبوية',url:'https://shamela.ws/book/4445'}},
+    {d:2,q:'كم كان عمر النبي ﷺ عندما نزل عليه الوحي أول مرة؟',answer:'أربعون سنة',source:{title:'البداية والنهاية لابن كثير — مبعث الرسول ﷺ',url:'https://shamela.ws/book/4445'}},
+    {d:3,q:'من كان مع النبي ﷺ في الغار أثناء الهجرة؟',answer:'أبو بكر الصديق',source:{title:'تفسير ابن كثير — التوبة 40',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura9-aya40.html'}},
+    {d:4,q:'ما اسم الصلح الذي عقده النبي ﷺ مع قريش في السنة السادسة للهجرة؟',answer:'صلح الحديبية',source:{title:'تاريخ الطبري — السنة السادسة للهجرة',url:'https://shamela.ws/book/9783'}},
+    {d:5,q:'ما أول مسجد بناه النبي ﷺ عند وصوله إلى أطراف المدينة؟',answer:'مسجد قباء',source:{title:'تفسير ابن كثير — التوبة 108',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura9-aya108.html'}},
+    {d:6,q:'من كتب وثيقة صلح الحديبية بأمر النبي ﷺ؟',answer:'علي بن أبي طالب',source:{title:'صحيح البخاري — صلح الحديبية',url:'https://dorar.net/hadith/search?q=%D9%83%D8%AA%D8%A8+%D8%B9%D9%84%D9%8A+%D8%B5%D9%84%D8%AD+%D8%A7%D9%84%D8%AD%D8%AF%D9%8A%D8%A8%D9%8A%D8%A9'}},
+  ],
+  'القرآن الكريم':[
+    {d:1,q:'ما آخر سورة في ترتيب المصحف؟',answer:'سورة الناس',source:{title:'تفسير ابن كثير — سورة الناس',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura114.html'}},
+    {d:2,q:'ما السورة التي لا تبدأ بالبسملة في المصحف؟',answer:'سورة التوبة',source:{title:'تفسير ابن كثير — سورة التوبة',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura9.html'}},
+    {d:3,q:'في أي سورة توجد آية الكرسي؟',answer:'سورة البقرة',source:{title:'تفسير ابن كثير — البقرة 255',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya255.html'}},
+    {d:4,q:'ما السورة التي تحمل اسم أم عيسى عليه السلام؟',answer:'سورة مريم',source:{title:'تفسير ابن كثير — سورة مريم',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura19.html'}},
+    {d:5,q:'ما السورة التي وردت فيها البسملة مرتين؟',answer:'سورة النمل',source:{title:'تفسير ابن كثير — النمل 30',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura27-aya30.html'}},
+    {d:6,q:'في أي سورة توجد أطول آية في القرآن، وهي آية الدَّين؟',answer:'سورة البقرة',source:{title:'تفسير ابن كثير — البقرة 282',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya282.html'}},
+  ],
+  'فتوحات المسلمين':[
+    {d:1,q:'في عهد أي خليفة بدأت حروب الردة؟',answer:'أبو بكر الصديق',source:{title:'تاريخ الطبري — حوادث السنة الحادية عشرة',url:'https://shamela.ws/book/9783'}},
+    {d:2,q:'ما المعركة الكبرى التي وقعت بين المسلمين والروم في بلاد الشام سنة 15 هـ؟',answer:'معركة اليرموك',source:{title:'تاريخ الطبري — اليرموك',url:'https://shamela.ws/book/9783'}},
+    {d:3,q:'في أي بلد وقعت معركة القادسية؟',answer:'العراق',source:{title:'تاريخ الطبري — القادسية',url:'https://shamela.ws/book/9783'}},
+    {d:4,q:'من القائد الذي ارتبط بفتح مصر في عهد عمر بن الخطاب؟',answer:'عمرو بن العاص',source:{title:'البداية والنهاية لابن كثير — فتح مصر',url:'https://shamela.ws/book/4445'}},
+    {d:5,q:'في عهد أي خليفة وقعت معركة نهاوند؟',answer:'عمر بن الخطاب',source:{title:'تاريخ الطبري — نهاوند',url:'https://shamela.ws/book/9783'}},
+    {d:6,q:'ما اسم المعركة البحرية الكبرى التي وقعت في عهد عثمان بن عفان؟',answer:'معركة ذات الصواري',source:{title:'البداية والنهاية لابن كثير — خلافة عثمان',url:'https://shamela.ws/book/4445'}},
+  ],
+  'الصحابة':[
+    {d:1,q:'من مؤذن النبي ﷺ المشهور؟',answer:'بلال بن رباح',source:{title:'صحيح البخاري — أذان بلال',url:'https://dorar.net/hadith/sharh/130394'}},
+    {d:2,q:'من الصحابي الملقب بذي النورين؟',answer:'عثمان بن عفان',source:{title:'الموسوعة التاريخية — عثمان بن عفان',url:'https://dorar.net/history'}},
+    {d:3,q:'من الصحابي الذي دعا له النبي ﷺ أن يفقهه الله في الدين ويعلمه التأويل؟',answer:'عبدالله بن عباس',source:{title:'حديث دعاء النبي ﷺ لابن عباس',url:'https://dorar.net/hadith/sharh/63103'}},
+    {d:4,q:'من الصحابي الذي كُلّف بجمع القرآن في خلافة أبي بكر؟',answer:'زيد بن ثابت',source:{title:'صحيح البخاري — جمع القرآن',url:'https://dorar.net/hadith/sharh/3840'}},
+    {d:5,q:'من الصحابي الذي أخبر النبي ﷺ أن عرش الرحمن اهتز لموته؟',answer:'سعد بن معاذ',source:{title:'صحيح البخاري — سعد بن معاذ',url:'https://dorar.net/h/1uVuOqBw?osoul=1'}},
+    {d:6,q:'من الصحابي الذي جعل النبي ﷺ شهادته بشهادة رجلين؟',answer:'خزيمة بن ثابت',source:{title:'صحيح البخاري — شهادة خزيمة',url:'https://dorar.net/hadith/sharh/25746'}},
+  ],
+  'الخلفاء الراشدون':[
+    {d:1,q:'من ثاني الخلفاء الراشدين؟',answer:'عمر بن الخطاب',source:{title:'تاريخ الطبري — خلافة عمر',url:'https://shamela.ws/book/9783'}},
+    {d:2,q:'من ثالث الخلفاء الراشدين؟',answer:'عثمان بن عفان',source:{title:'تاريخ الطبري — خلافة عثمان',url:'https://shamela.ws/book/9783'}},
+    {d:3,q:'من رابع الخلفاء الراشدين؟',answer:'علي بن أبي طالب',source:{title:'تاريخ الطبري — خلافة علي',url:'https://shamela.ws/book/9783'}},
+    {d:4,q:'من أول من اشتهر بلقب أمير المؤمنين من الخلفاء الراشدين؟',answer:'عمر بن الخطاب',source:{title:'البداية والنهاية لابن كثير — خلافة عمر',url:'https://shamela.ws/book/4445'}},
+    {d:5,q:'من الخليفة الذي نُسخت في عهده المصاحف وأُرسلت إلى الأمصار؟',answer:'عثمان بن عفان',source:{title:'صحيح البخاري — نسخ المصاحف',url:'https://dorar.net/hadith/sharh/8135'}},
+    {d:6,q:'إلى أي مدينة نقل علي بن أبي طالب مركز الخلافة؟',answer:'الكوفة',source:{title:'تاريخ الطبري — خلافة علي',url:'https://shamela.ws/book/9783'}},
+  ],
+  'الأنبياء والرسل':[
+    {d:1,q:'من النبي الذي صنع السفينة بأمر الله؟',answer:'نوح عليه السلام',source:{title:'تفسير ابن كثير — هود 37',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura11-aya37.html'}},
+    {d:2,q:'من النبي الذي التقمه الحوت؟',answer:'يونس عليه السلام',source:{title:'تفسير ابن كثير — الصافات 142',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura37-aya142.html'}},
+    {d:3,q:'من النبي الذي تكلم في المهد؟',answer:'عيسى عليه السلام',source:{title:'تفسير ابن كثير — مريم 29-30',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura19-aya30.html'}},
+    {d:4,q:'من النبي الذي آتاه الله الزبور؟',answer:'داود عليه السلام',source:{title:'تفسير ابن كثير — النساء 163',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura4-aya163.html'}},
+    {d:5,q:'من والد يوسف عليه السلام؟',answer:'يعقوب عليه السلام',source:{title:'تفسير ابن كثير — سورة يوسف',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura12.html'}},
+    {d:6,q:'من النبي الملك الذي علّمه الله منطق الطير؟',answer:'سليمان عليه السلام',source:{title:'تفسير ابن كثير — النمل 16',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura27-aya16.html'}},
+  ],
+};
+function hashQuestion(value){
+  let hash=2166136261;
+  for(let i=0;i<value.length;i++){
+    hash^=value.charCodeAt(i);
+    hash=Math.imul(hash,16777619);
+  }
+  return (hash>>>0).toString(36);
+}
+function normalizeQuestionBank(bank){
+  const normalized={};
+  Object.entries(bank).forEach(([cat,questions])=>{
+    const originals=Array.isArray(questions)?questions:[];
+    const merged=[...originals,...(QUESTION_ADDITIONS[cat]||[])];
+    normalized[cat]=merged.map((question,index)=>{
+      // التصحيح يخص السؤال القديم فقط. سؤال الإضافة في المستوى نفسه مستقل
+      // ولا يجوز أن يرث نص التصحيح، وإلا ظهر سؤالان متطابقان في البنك.
+      const override=index<originals.length&&QUESTION_OVERRIDES[cat]&&QUESTION_OVERRIDES[cat][question.d];
+      const q={...question,...(override||{})};
+      // بعض الأسئلة القديمة كانت اختياراً من متعدد. عند استبدال نص السؤال
+      // وإجابته نحذف خياراته القديمة حتى لا تصبح بياناتها مخالفة للإجابة الجديدة.
+      if(override&&override.q){ delete q.o; delete q.a; }
+      q.id=String(q.id||`q2-${hashQuestion(`${cat}|${q.d}|${q.q}|${index}`)}`);
+      q.source=q.source||QUESTION_SOURCE_BY_CATEGORY[cat]||null;
+      q.review=q.review&&q.review.status==='approved'
+        ? {...q.review}
+        : {status:'approved',bankVersion:2,reviewedAt:'2026-08-20'};
+      return q;
+    });
+  });
+  return normalized;
+}
+function questionHistoryOwner(){
+  return String(window._currentUid||storeGet('authUid','guest')||'guest').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,128);
+}
+function questionHistoryKey(){ return `question_history_${questionHistoryOwner()}`; }
+function loadQuestionHistory(){ return storeGet(questionHistoryKey(),{}); }
+function saveQuestionHistory(history){ storeSet(questionHistoryKey(),history); }
+function questionWasSeen(history,cat,id){ return Boolean(history[cat]&&history[cat].includes(id)); }
+function questionSeenOutboxKey(){ return `question_seen_outbox_${questionHistoryOwner()}`; }
+function questionSeenSeededKey(){ return `question_seen_seeded_${questionHistoryOwner()}`; }
+let questionSeenFlushTimer=null;
+function enqueueQuestionSeen(category,questionId){
+  if(!questionId||!category) return;
+  const outbox=storeGet(questionSeenOutboxKey(),[]);
+  if(!outbox.some(item=>item.id===questionId)){
+    outbox.push({id:questionId,category});
+    storeSet(questionSeenOutboxKey(),outbox.slice(-10000));
+  }
+}
+function scheduleQuestionSeenFlush(){
+  clearTimeout(questionSeenFlushTimer);
+  questionSeenFlushTimer=setTimeout(()=>{ void flushQuestionSeen(); },1200);
+}
+async function flushQuestionSeen(){
+  const uid=window._currentUid||storeGet('authUid','');
+  if(!uid) return false;
+  const idToken=await getCurrentIdToken();
+  if(!idToken) return false;
+  let sentAny=false;
+  for(let batchNumber=0;batchNumber<100;batchNumber++){
+    const current=storeGet(questionSeenOutboxKey(),[]);
+    const batch=current.slice(0,100);
+    if(!batch.length) break;
+    let response;
+    try{
+      response=await apiFetch('/api/questions/seen',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+        body:JSON.stringify({uid,idToken,items:batch}),
+      });
+    }catch(_){ return sentAny; }
+    if(!response.ok) return sentAny;
+    sentAny=true;
+    const sentIds=new Set(batch.map(item=>item.id));
+    const latest=storeGet(questionSeenOutboxKey(),[]);
+    storeSet(questionSeenOutboxKey(),latest.filter(item=>!sentIds.has(item.id)));
+  }
+  return sentAny;
+}
+async function syncQuestionHistory(){
+  const uid=window._currentUid||storeGet('authUid','');
+  if(!uid) return;
+  const idToken=await getCurrentIdToken();
+  if(!idToken) return;
+  try{
+    const response=await apiFetch(`/api/questions/seen?uid=${encodeURIComponent(uid)}`,{
+      headers:{'Authorization':'Bearer '+idToken},
+    });
+    if(response.ok){
+      const payload=await response.json();
+      const history=loadQuestionHistory();
+      (payload.items||[]).forEach(item=>{
+        if(!item||!item.id||!item.category) return;
+        const ids=history[item.category]||[];
+        if(!ids.includes(item.id)) ids.push(item.id);
+        history[item.category]=ids.slice(-2000);
+      });
+      saveQuestionHistory(history);
+    }
+  }catch(_){ /* عدم الاتصال لا يمنع اللعب من البنك المحلي */ }
+
+  // ترحيل سجل الجهاز الموجود قبل إضافة المزامنة مرة واحدة فقط.
+  if(!storeGet(questionSeenSeededKey(),false)){
+    const history=loadQuestionHistory();
+    Object.entries(history).forEach(([category,ids])=>{
+      (ids||[]).forEach(id=>enqueueQuestionSeen(category,id));
+    });
+  }
+  await flushQuestionSeen();
+  if(!storeGet(questionSeenOutboxKey(),[]).length){
+    storeSet(questionSeenSeededKey(),true);
+  }
+}
+function rememberQuestion(cat,question){
+  if(!question||!question.id||state.familyRound) return;
+  const history=loadQuestionHistory();
+  const ids=history[cat]||[];
+  if(!ids.includes(question.id)) ids.push(question.id);
+  history[cat]=ids.slice(-2000);
+  saveQuestionHistory(history);
+  enqueueQuestionSeen(cat,question.id);
+  scheduleQuestionSeenFlush();
+}
+
+// ────────── الإحصاءات (محفوظة دائماً ومعزولة حسب الحساب)
+function emptyStats(){ return {games:0, correct:0, totalQ:0, bestScore:0, wins:0, ach:{}}; }
+let stats=emptyStats();
+function loadStats(uid=window._currentUid||storeGet('authUid','')){
+  return uid ? storeGet(scopedAccessKey('stats',uid),emptyStats()) : emptyStats();
+}
+function saveStats(){
+  const uid=window._currentUid||storeGet('authUid','');
+  if(uid) storeSet(scopedAccessKey('stats',uid),stats);
+}
 
 const ACHIEVEMENTS=[
-  {id:'first', icon:'🎮', t:'أول جولة', d:'أكملت أول جولة', chk:s=>s.games>=1},
+  {id:'first', icon:'🎮', t:'أول جولة', d:'خلّصت أول جولة', chk:s=>s.games>=1},
   {id:'sharp', icon:'🎯', t:'فطنة حادة', d:'جاوبت ١٠ أسئلة صح', chk:s=>s.correct>=10},
   {id:'genius', icon:'🧠', t:'عبقري', d:'جاوبت ٥٠ سؤال صح', chk:s=>s.correct>=50},
   {id:'champ', icon:'🏆', t:'بطل', d:'فزت ٣ جولات', chk:s=>s.wins>=3},
@@ -177,12 +765,16 @@ function go(id){
   // لا تبدأ أسعار RevenueCat قبل وجود جلسة Firebase وهوية RevenueCat؛
   // هذا يسمح بعرض شاشة الاشتراك فوراً عند الإقلاع من دون طلبات فاشلة.
   if(id==='s-paywall' && typeof loadPaywallPrices==='function'){
+    void trackMetric('paywall_viewed',{freeRoundCompleted:localFreeRoundCompleted()});
     // على الويب لا توجد تهيئة RevenueCat أصلاً؛ استدعِ الدالة فوراً كي تعرض
     // ملاحظة أن الدفع متاح داخل iOS بدلاً من ترك الشاشة على «جاري الجلب».
-    if(!getRC() || _rcReady){
-      loadPaywallPrices().catch(e=>console.error('paywall prices:', (e && e.message) || e));
-    }
+    loadPaywallPrices().catch(e=>console.error('paywall prices:', (e && e.message) || e));
   }
+}
+function closePaywall(){
+  const uid=window._currentUid||storeGet('authUid','');
+  if(uid){ updateFreeRoundUi(); go('s-home'); }
+  else go('s-auth');
 }
 
 // ────────── الخروج من الجولة
@@ -229,7 +821,7 @@ async function reauthThen(provider, fn){
       }
     } else if(provider==='password'){
       const email = storeGet('authEmail','');
-      const password = prompt('لتأكيد الحذف، أدخل كلمة مرور حساب ' + email + ':');
+      const password = prompt('عشان نأكد الحذف، اكتب كلمة مرور حساب ' + email + ':');
       if(!password) throw new Error('cancelled');
       await FA.signInWithEmailAndPassword({email, password});
     } else {
@@ -244,7 +836,7 @@ async function reauthThen(provider, fn){
       await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
     if(provider==='password'){
       const email = storeGet('authEmail','');
-      const password = prompt('لتأكيد الحذف، أدخل كلمة مرور حساب ' + email + ':');
+      const password = prompt('عشان نأكد الحذف، اكتب كلمة مرور حساب ' + email + ':');
       if(!password) throw new Error('cancelled');
       await reauthenticateWithCredential(wb.auth.currentUser, EmailAuthProvider.credential(email, password));
     } else if(provider==='google' || provider==='apple'){
@@ -285,7 +877,7 @@ async function deleteFirebaseUser(){
           const isCancelled = !e2 || JSON.stringify(e2)==='{}' ||
             (e2?.code||'').includes('CANCEL') || (e2?.message||'').toLowerCase().includes('cancel') ||
             e2?.code==='1001'; // ASAuthorizationError.canceled
-          if(isCancelled) showToast('❌','إلغاء التحقق','لإتمام حذف الحساب، أكمل التحقق عبر Apple',false);
+          if(isCancelled) showToast('❌','لغيت التحقق','عشان تحذف الحساب، كمّل التحقق عن طريق Apple',false);
           return false;
         }
       }
@@ -334,9 +926,9 @@ function endAccountAction(){
 }
 
 async function signOut(){
-  const ok=confirm('هل تريد تسجيل الخروج؟ ستبقى بياناتك المحلية محفوظة على هذا الجهاز.');
+  const ok=confirm('تبي تسجّل خروج؟ بياناتك المحلية راح تظل محفوظة على هالجهاز.');
   if(!ok) return;
-  if(!beginAccountAction('جارٍ تسجيل الخروج…')) return;
+  if(!beginAccountAction('ثواني ونسجّل خروجك…')) return;
   let completed=false;
   try{
   await resetVerificationSession();
@@ -345,6 +937,8 @@ async function signOut(){
     const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
     if(FA) await FA.signOut();
   }catch(e){ console.warn('signOut FA:', e); }
+  // افصل RevenueCat أيضاً حتى لا يرث الحساب التالي اشتراك المستخدم السابق.
+  await resetRevenueCatIdentity();
   // امسح مفاتيح الهوية فقط من التخزين المحلي (ابقِ الإحصاءات والإنجازات)
   ['authUid','authProvider','authEmail','playerName','rcAppUserId','deviceId'].forEach(k=>{
     localStorage.removeItem(STORAGE_PREFIX+k);
@@ -355,45 +949,55 @@ async function signOut(){
   });
   window._currentUid = '';
   clearIdTokenCache();
-  stats={games:0,correct:0,totalQ:0,bestScore:0,wins:0,ach:{}};
-  showToast('✅','تم تسجيل الخروج','يمكنك الدخول بحساب آخر',false);
+  stats=emptyStats();
+  familyCats=[];
+  showToast('✅','تم تسجيل الخروج','تقدر تدخل بحساب ثاني',false);
   completed=true;
   setTimeout(()=>{ endAccountAction(); go('s-auth'); },1200);
   }finally{ if(!completed) endAccountAction(); }
 }
 
 async function confirmDeleteAccount(){
-  const ok=confirm('سيتم حذف حسابك نهائياً من النظام مع جميع بياناتك (نقاط، إنجازات، إعدادات، اشتراك). لا يمكن التراجع. هل أنت متأكد؟');
+  const ok=confirm('راح نحذف حسابك نهائياً من فطنة مع النقاط والإنجازات والفئات العائلية. حذف الحساب لا يلغي اشتراك App Store المتجدد؛ ألغِه من «إدارة اشتراك Apple» إذا ما تبي تستمر الفوترة. ما تقدر تتراجع. تبي تكمّل؟');
   if(!ok) return;
-  if(!beginAccountAction('جارٍ حذف الحساب والبيانات…')) return;
+  if(!beginAccountAction('ثواني ونحذف الحساب والبيانات…')) return;
   let completed=false;
   try{
   const uid = storeGet('authUid','');
-  // 1) احذف بيانات الخادم — best-effort، لا يوقف الحذف المحلي عند الفشل
+  // 1) احذف بيانات الخادم أولاً. لا يجوز حذف هوية Firebase ثم
+  // ترك البيانات الخادمية دون طريقة للمستخدم لإعادة المحاولة.
   if(uid){
     try{
       const idToken = await getCurrentIdToken(true);
-      const resp = await fetch(apiUrl('/api/account/delete'),{
+      const resp = await apiFetch('/api/account/delete',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({uid, idToken})
       });
-      if(!resp.ok) console.warn('server delete returned', resp.status);
+      if(!resp.ok){
+        let detail='';
+        try{ detail=(await resp.json())?.error||''; }catch(e){}
+        throw new Error(detail || `server delete returned ${resp.status}`);
+      }
     }catch(e){
-      console.warn('server delete failed (continuing locally):', e);
+      console.warn('server delete failed:', e);
+      showToast('⚠️','ما قدرنا نحذف الحساب','بياناتك ما انحذفت. تأكد من النت وجرّب مرة ثانية',false);
+      return;
     }
   }
-  // 2) امسح RevenueCat
+  // 2) احذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login)
+  const deleted = await deleteFirebaseUser();
+  if(!deleted){
+    showToast('⚠️','ما اكتمل حذف الحساب','سجّل دخولك من جديد وجرّب مرة ثانية',false);
+    return;
+  }
+  // 3) افصل RevenueCat بعد نجاح حذف هوية Firebase. إبقاء SDK على هوية
+  // المستخدم المحذوف كان يعيد حالة اشتراكه عند فتح التطبيق أو دخول حساب آخر.
+  await resetRevenueCatIdentity();
   const rcIds=storeGet('rcAppUserIds',{}) || {};
   delete rcIds[uid];
   storeSet('rcAppUserIds',rcIds);
   storeSet('rcAppUserId','');
-  // 3) احذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login)
-  const deleted = await deleteFirebaseUser();
-  if(!deleted){
-    showToast('⚠️','تعذّر حذف الحساب بالكامل','لم يتم إكمال الحذف. أعد تسجيل الدخول وحاول من جديد',false);
-    return;
-  }
   await resetVerificationSession();
   // 4) امسح Keychain عبر signOut صريح
   try{
@@ -413,8 +1017,8 @@ async function confirmDeleteAccount(){
   window._currentUid = '';
   clearIdTokenCache();
   familyCats = [];
-  stats={games:0,correct:0,totalQ:0,bestScore:0,wins:0,ach:{}};
-  showToast('✅','تم حذف حسابك','حُذف الحساب وجميع البيانات نهائياً',false);
+  stats=emptyStats();
+  showToast('✅','حذفنا حسابك','انحذف حساب فطنة وبياناته. اشتراك Apple يظل منفصل',false);
   completed=true;
   setTimeout(()=>{ endAccountAction(); go('s-auth'); },1500);
   }finally{ if(!completed) endAccountAction(); }
@@ -450,7 +1054,7 @@ function skipAuth(){
 function openAuth(fromScreen){
   window._authReturnScreen = fromScreen || currentScreenId();
   document.getElementById('auth-title').textContent = 'اربط حسابك';
-  document.getElementById('auth-sub').textContent = 'سجّل بأي طريقة تحفظ نقاطك وإنجازاتك حتى لو غيّرت جهازك';
+  document.getElementById('auth-sub').textContent = 'سجّل بالطريقة اللي تناسبك عشان تحفظ نقاطك وإنجازاتك حتى لو بدّلت جهازك';
   document.getElementById('auth-msg').textContent = '';
   go('s-auth');
 }
@@ -547,18 +1151,20 @@ function afterAuthSuccess(name, provider, uid, email){
   if(uid) storeSet('authUid', uid);
   if(email) storeSet('authEmail', email);
   window._currentUid = uid || storeGet('authUid','');
+  activateLocalAccount(window._currentUid);
   const nameEl=document.getElementById('user-name');
   if(nameEl) nameEl.textContent = storeGet('playerName','لاعب');
   const emailForm=document.getElementById('auth-email-form');
   if(emailForm) emailForm.style.display='none';
   const phoneForm=document.getElementById('auth-phone-form');
   if(phoneForm) phoneForm.style.display='none';
-  showToast('✅','تم الدخول','تم ربط حسابك بنجاح',false);
+  showToast('✅','دخلت بنجاح','ربطنا حسابك',false);
   renderAccountLinks();
   const target = window._authReturnScreen || 's-home';
   if(target==='s-stats'){ go('s-stats'); }
   else if(!storeGet('onbDone', false)){ _onbStep=0; _onbSetStep(0); go('s-onb'); }
   else { checkSubscriptionAndRoute(window._currentUid); }
+  void syncQuestionHistory();
 }
 
 // نشارك طلب الرمز القصير بين العمليات المتزامنة عند الإقلاع. كانت تهيئة
@@ -614,7 +1220,7 @@ async function savePermanentProfile(uid, name, email, provider){
   if(!uid) return;
   try{
     const idToken = await getCurrentIdToken();
-    await fetch(apiUrl('/api/account/profile'), {
+    await apiFetch('/api/account/profile', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({uid, name: name||'', email: email||'', provider: provider||'', idToken})
     });
@@ -652,22 +1258,22 @@ async function handleAuthConflict(e, attemptedProvider, wb){
   const originalLabel = original.includes('google') ? 'Google'
     : original.includes('apple') ? 'Apple'
     : original.includes('password') ? 'البريد وكلمة المرور'
-    : 'طريقتك الأصلية';
+    : 'طريقتك الأساسية';
 
   window._pendingLinkCred    = pendingCred;
   window._pendingLinkEmail   = email || '';
   window._pendingLinkOriginal= original;
 
   openAuth(window._authReturnScreen || currentScreenId());
-  document.getElementById('auth-title').textContent = 'لديك حساب بالفعل';
+  document.getElementById('auth-title').textContent = 'عندك حساب من قبل';
   document.getElementById('auth-sub').textContent = email
-    ? `البريد (${email}) مسجَّل مسبقاً عبر ${originalLabel}. سجّل دخولك بهذه الطريقة أولاً وسنربط حسابك تلقائياً.`
-    : 'لديك حساب بالفعل بطريقة دخول مختلفة. سجّل دخولك بطريقتك الأصلية أولاً ثم يمكنك ربط الطريقة الجديدة من إعدادات الحساب.';
+    ? `البريد (${email}) مسجَّل من قبل عن طريق ${originalLabel}. سجّل دخولك بهالطريقة أول وبنربط حسابك تلقائياً.`
+    : 'عندك حساب بطريقة دخول ثانية. سجّل دخولك بطريقتك الأساسية أول، وبعدها تقدر تربط الطريقة الجديدة من إعدادات الحساب.';
   if(original.includes('password') && email){
     document.getElementById('auth-email-form').style.display='block';
     document.getElementById('auth-email').value = email;
   }
-  showToast('🔗','لديك حساب بالفعل', originalLabel ? `سجّل عبر ${originalLabel} للمتابعة` : 'سجّل بطريقتك الأصلية', false);
+  showToast('🔗','عندك حساب من قبل', originalLabel ? `سجّل عن طريق ${originalLabel} عشان تكمّل` : 'سجّل بطريقتك الأساسية', false);
   return true;
 }
 
@@ -677,7 +1283,7 @@ async function resolvePendingLinkWeb(wb, userAfterSignIn){
   try{
     const { linkWithCredential } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
     await linkWithCredential(userAfterSignIn, window._pendingLinkCred);
-    showToast('🔗','تم الربط بنجاح','أصبح بإمكانك الدخول من الطريقتين الآن',false);
+    showToast('🔗','تم الربط بنجاح','الحين تقدر تدخل بالطريقتين',false);
     return true;
   }catch(e){ console.error('resolve pending link:', e); return false; }
   finally{
@@ -721,26 +1327,73 @@ function getFirebaseMessaging(){
   try{ return window.Capacitor?.Plugins?.FirebaseMessaging || null; }
   catch(e){ return null; }
 }
+let _pushListenersReady=false;
+function renderPushPermission(status){
+  const label=document.getElementById('notification-permission-status');
+  const button=document.getElementById('enable-notifications-btn');
+  if(label){
+    label.textContent=status==='granted'
+      ? '✓ الإشعارات شغّالة على هالجهاز'
+      : status==='denied'
+        ? 'الإشعارات موقوفة من إعدادات الجهاز'
+        : 'فعّلها عشان توصلك التنبيهات المهمة اللي تختارها';
+  }
+  if(button){
+    button.disabled=status==='granted';
+    button.textContent=status==='granted'?'✓ الإشعارات شغّالة':'🔔 فعّل الإشعارات';
+  }
+}
 async function initPushMessaging(){
   const messaging=getFirebaseMessaging();
   if(!messaging) return false;
-  await messaging.addListener('notificationReceived', event=>{
-    console.log('✅ FCM notification received:', event?.notification?.title || 'notification');
-  });
-  await messaging.addListener('notificationActionPerformed', event=>{
-    console.log('✅ FCM notification opened:', event?.notification?.title || 'notification');
-  });
-  await messaging.addListener('tokenReceived', event=>{
-    console.log(`✅ FCM token received: ${String(event.token || '').slice(0,20)}...`);
-  });
+  if(!_pushListenersReady){
+    _pushListenersReady=true;
+    await messaging.addListener('notificationReceived', event=>{
+      console.log('✅ FCM notification received:', event?.notification?.title || 'notification');
+    });
+    await messaging.addListener('notificationActionPerformed', event=>{
+      console.log('✅ FCM notification opened:', event?.notification?.title || 'notification');
+    });
+    await messaging.addListener('tokenReceived', event=>{
+      if(event && event.token) console.log('✅ FCM token received');
+    });
+  }
   const current=await messaging.checkPermissions();
-  const permission=current.receive==='prompt'
-    ? await messaging.requestPermissions()
-    : current;
-  if(permission.receive!=='granted') return false;
+  renderPushPermission(current.receive);
+  // لا نعرض نافذة النظام عند الإقلاع. يطلبها المستخدم من شاشة الحساب بعد
+  // شرح الفائدة، وهو توقيت أكثر وضوحاً واحتراماً لقراره.
+  if(current.receive!=='granted') return false;
   const {token}=await messaging.getToken();
-  console.log(`✅ FCM token ready: ${String(token || '').slice(0,20)}...`);
+  if(token) console.log('✅ FCM token ready');
   return true;
+}
+async function enablePushNotifications(){
+  const messaging=getFirebaseMessaging();
+  if(!messaging){
+    showToast('ℹ️','الإشعارات مو متوفرة هني','هالميزة موجودة داخل تطبيق iPhone',false);
+    return false;
+  }
+  const button=document.getElementById('enable-notifications-btn');
+  if(button) button.disabled=true;
+  try{
+    const permission=await messaging.requestPermissions();
+    renderPushPermission(permission.receive);
+    if(permission.receive!=='granted'){
+      showToast('🔕','ما فعّلت الإشعارات','تقدر تغيّر اختيارك من إعدادات iPhone',false);
+      return false;
+    }
+    const {token}=await messaging.getToken();
+    if(!token) throw new Error('تعذّر إنشاء رمز الإشعارات');
+    showToast('🔔','شغّلنا الإشعارات','راح نرسل التنبيهات المهمة بس',false);
+    return true;
+  }catch(error){
+    recordNonFatal(error,'firebase.messaging.permission');
+    showToast('⚠️','ما قدرنا نشغّل الإشعارات','جرّب من إعدادات iPhone',false);
+    return false;
+  }finally{
+    const current=await messaging.checkPermissions().catch(()=>({receive:'prompt'}));
+    renderPushPermission(current.receive);
+  }
 }
 
 function isAuthCancellation(e){
@@ -754,12 +1407,12 @@ function isAuthNetworkError(e){
     || detail.includes('not connected') || detail.includes('offline');
 }
 function showAuthNetworkError(){
-  showToast('📡','لا يوجد اتصال','تحقق من الإنترنت ثم حاول مرة أخرى',false);
+  showToast('📡','ماكو اتصال','تأكد من النت وجرّب مرة ثانية',false);
 }
 
 let _authActionPending = false;
 let _authPendingMessage = '';
-function beginAuthAction(message='جارٍ إكمال العملية…'){
+function beginAuthAction(message='ثواني ونكمّل العملية…'){
   if(_authActionPending) return false;
   _authActionPending = true;
   _authPendingMessage = `⏳ ${message}`;
@@ -799,7 +1452,7 @@ async function getFirebaseWebAuth(){
 }
 
 async function appleSignIn(){
-  if(!beginAuthAction('جارٍ فتح تسجيل الدخول عبر Apple…')) return;
+  if(!beginAuthAction('ثواني ونفتح تسجيل الدخول عن طريق Apple…')) return;
   try{
   sfx('tap'); vibrate(15);
   const isAnon = storeGet('authProvider','')==='anonymous';
@@ -849,7 +1502,7 @@ async function appleSignIn(){
       if(await handleAuthConflict(e, 'apple', wb)) return;
       console.error('Web Apple:', e);
       if(isAuthNetworkError(e)) showAuthNetworkError();
-      else showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية',false);
+      else showToast('⚠️','ما قدرنا ندخّلك','جرّب مرة ثانية',false);
       return;
     }
   }
@@ -858,7 +1511,7 @@ async function appleSignIn(){
 }
 
 async function googleSignIn(){
-  if(!beginAuthAction('جارٍ فتح تسجيل الدخول عبر Google…')) return;
+  if(!beginAuthAction('ثواني ونفتح تسجيل الدخول عن طريق Google…')) return;
   try{
   sfx('tap'); vibrate(15);
   const isAnon = storeGet('authProvider','')==='anonymous';
@@ -905,7 +1558,7 @@ async function googleSignIn(){
       if(await handleAuthConflict(e, 'google', wb)) return;
       console.error('Web Google:', e);
       if(isAuthNetworkError(e)) showAuthNetworkError();
-      else showToast('⚠️','تعذّر الدخول','جرّب مرة ثانية',false);
+      else showToast('⚠️','ما قدرنا ندخّلك','جرّب مرة ثانية',false);
       return;
     }
   }
@@ -960,17 +1613,17 @@ async function startPhoneSignIn(){
   sfx('tap');
   const input=document.getElementById('auth-phone');
   const phone=normalizePhoneNumber(input && input.value);
-  if(!phone){ setAuthMessage('اكتب الرقم بصيغة دولية، مثل +96550001234.', true); return; }
+  if(!phone){ setAuthMessage('اكتب الرقم بالصيغة الدولية، مثل +96550001234.', true); return; }
   if(_authPhoneStartPending) return;
   const FA=getFirebaseAuth();
   if(!FA || typeof FA.signInWithPhoneNumber!=='function'){
-    setAuthMessage('تسجيل الهاتف متاح داخل تطبيق iPhone فقط.', true);
+    setAuthMessage('الدخول بالهاتف متوفر داخل تطبيق iPhone بس.', true);
     return;
   }
   _authPhoneStartPending=true;
   const sendButton=document.getElementById('auth-phone-send-btn');
   if(sendButton) sendButton.disabled=true;
-  setAuthMessage('⏳ جارٍ إرسال رمز التحقق…');
+  setAuthMessage('⏳ ثواني ونرسل رمز التحقق…');
   try{
     await cleanupAuthPhoneListeners();
     _authPhoneVerificationId='';
@@ -979,7 +1632,7 @@ async function startPhoneSignIn(){
       const codeForm=document.getElementById('auth-phone-code-form');
       if(codeForm) codeForm.style.display='block';
       if(sendButton) sendButton.textContent='إعادة إرسال الرمز';
-      setAuthMessage('تم إرسال الرمز. أدخله لإكمال تسجيل الدخول.');
+      setAuthMessage('رسلنا الرمز. اكتبه عشان تكمّل تسجيل الدخول.');
       document.getElementById('auth-phone-code')?.focus();
     }));
     _authPhoneListenerHandles.push(await FA.addListener('phoneVerificationCompleted', event=>{
@@ -988,14 +1641,14 @@ async function startPhoneSignIn(){
     }));
     _authPhoneListenerHandles.push(await FA.addListener('phoneVerificationFailed', event=>{
       const eventCode=event && (event.code || event.errorCode || event.message);
-      setAuthMessage(phoneAuthErrorMessage(eventCode,'تعذّر إرسال الرمز — حاول مرة أخرى.'),true);
+      setAuthMessage(phoneAuthErrorMessage(eventCode,'ما قدرنا نرسل الرمز — جرّب مرة ثانية.'),true);
       cleanupAuthPhoneListeners();
     }));
     await FA.signInWithPhoneNumber({phoneNumber:phone});
   }catch(e){
     console.error('phone sign in start:',e);
     await cleanupAuthPhoneListeners();
-    setAuthMessage(phoneAuthErrorMessage(e && (e.code||e.message),'تعذّر إرسال الرمز — حاول مرة أخرى.'),true);
+    setAuthMessage(phoneAuthErrorMessage(e && (e.code||e.message),'ما قدرنا نرسل الرمز — جرّب مرة ثانية.'),true);
   }finally{
     _authPhoneStartPending=false;
     if(sendButton) sendButton.disabled=false;
@@ -1005,12 +1658,12 @@ async function startPhoneSignIn(){
 async function confirmPhoneSignIn(){
   sfx('tap');
   const code=(document.getElementById('auth-phone-code')?.value||'').trim();
-  if(!code){ setAuthMessage('أدخل رمز التحقق.',true); return; }
+  if(!code){ setAuthMessage('اكتب رمز التحقق.',true); return; }
   if(_authPhoneConfirmPending) return;
   _authPhoneConfirmPending=true;
   const button=document.getElementById('auth-phone-confirm-btn');
   if(button) button.disabled=true;
-  setAuthMessage('⏳ جارٍ تسجيل الدخول…');
+  setAuthMessage('⏳ ثواني ونسجّل دخولك…');
   try{
     if(!_authPhoneVerificationId) throw new Error('verification-id-missing');
     const FA=getFirebaseAuth();
@@ -1022,9 +1675,9 @@ async function confirmPhoneSignIn(){
   }catch(e){
     console.error('phone sign in confirm:',e);
     const errorCode=String(e && (e.code||e.message)||'').toLowerCase();
-    if(errorCode.includes('invalid-verification-code')) setAuthMessage('رمز التحقق غير صحيح.',true);
-    else if(errorCode.includes('session-expired') || errorCode.includes('verification-id-missing')) setAuthMessage('انتهت صلاحية الرمز — أرسل رمزًا جديدًا.',true);
-    else setAuthMessage(phoneAuthErrorMessage(errorCode,'تعذّر تسجيل الدخول — حاول مرة أخرى.'),true);
+    if(errorCode.includes('invalid-verification-code')) setAuthMessage('رمز التحقق مو صحيح.',true);
+    else if(errorCode.includes('session-expired') || errorCode.includes('verification-id-missing')) setAuthMessage('انتهت صلاحية الرمز — أرسل رمز جديد.',true);
+    else setAuthMessage(phoneAuthErrorMessage(errorCode,'ما قدرنا نسجّل دخولك — جرّب مرة ثانية.'),true);
   }finally{
     _authPhoneConfirmPending=false;
     if(button) button.disabled=false;
@@ -1040,12 +1693,12 @@ async function forgotPassword(){
   if(!email || !email.includes('@')){
     if(emailInput) emailInput.focus();
     msg.style.color='#f5c542';
-    msg.textContent='اكتب بريدك الإلكتروني أولاً لإرسال رابط إعادة كلمة المرور';
+    msg.textContent='اكتب بريدك الإلكتروني أول عشان نرسل رابط تغيير كلمة المرور';
     return;
   }
-  if(!beginAuthAction('جارٍ إرسال رابط إعادة كلمة المرور…')) return;
+  if(!beginAuthAction('ثواني ونرسل رابط تغيير كلمة المرور…')) return;
   msg.style.color='';
-  msg.textContent='جارٍ إرسال رابط إعادة كلمة المرور…';
+  msg.textContent='ثواني ونرسل رابط تغيير كلمة المرور…';
   try{
     const FA=getFirebaseAuth();
     if(FA){
@@ -1057,17 +1710,17 @@ async function forgotPassword(){
       await sendPasswordResetEmail(wb.auth,email);
     }
     msg.style.color='#8ee6b0';
-    msg.textContent='تم إرسال رابط إعادة كلمة المرور إلى بريدك. افحص البريد والرسائل غير المرغوب فيها.';
+    msg.textContent='رسلنا رابط تغيير كلمة المرور لبريدك. شيّك على الوارد والرسائل غير المرغوب فيها.';
   }catch(e){
     console.error('password reset:',e);
     const code=String((e && e.code)||'');
     msg.style.color='#ff8a8a';
-    if(code.includes('invalid-email')) msg.textContent='صيغة البريد الإلكتروني غير صحيحة';
-    else if(code.includes('user-not-found')) msg.textContent='لا يوجد حساب مرتبط بهذا البريد';
-    else if(code.includes('too-many-requests')) msg.textContent='تمت محاولات كثيرة. حاول لاحقاً.';
-    else if(isAuthNetworkError(e)) msg.textContent='لا يوجد اتصال بالإنترنت — تحقق من الشبكة ثم حاول مرة أخرى';
+    if(code.includes('invalid-email')) msg.textContent='صيغة البريد الإلكتروني مو صحيحة';
+    else if(code.includes('user-not-found')) msg.textContent='ماكو حساب مربوط بهالبريد';
+    else if(code.includes('too-many-requests')) msg.textContent='صارت محاولات وايد. جرّب بعدين.';
+    else if(isAuthNetworkError(e)) msg.textContent='ماكو اتصال بالإنترنت — تأكد من الشبكة وجرّب مرة ثانية';
     else if(code.includes('firebase-not-configured')) msg.textContent='الإعداد ناقص — Firebase غير مهيأ';
-    else msg.textContent='تعذّر إرسال الرابط — تأكد من البريد وحاول مرة أخرى';
+    else msg.textContent='ما قدرنا نرسل الرابط — تأكد من البريد وجرّب مرة ثانية';
   }finally{ endAuthAction(); }
 }
 
@@ -1083,8 +1736,8 @@ async function forgotEmail(){
   const email=currentEmail||savedEmail;
   msg.style.color=email?'#8ee6b0':'#f5c542';
   msg.textContent=email
-    ? `البريد المرتبط بهذا الجهاز هو: ${email}`
-    : 'لا يوجد بريد محفوظ على هذا الجهاز. جرّب Apple أو Google أو رقم الهاتف للدخول إلى حسابك.';
+    ? `البريد المربوط بهالجهاز: ${email}`
+    : 'ماكو بريد محفوظ على هالجهاز. جرّب Apple أو Google أو رقم الهاتف عشان تدخل حسابك.';
 }
 
 async function emailAuth(mode){
@@ -1093,9 +1746,9 @@ async function emailAuth(mode){
   const password = document.getElementById('auth-password').value||'';
   const msg = document.getElementById('auth-msg');
   msg.style.color=''; msg.textContent='';
-  if(!email || !email.includes('@')){ msg.style.color='#ff8a8a'; msg.textContent='أدخل بريداً إلكترونياً صحيحاً'; return; }
+  if(!email || !email.includes('@')){ msg.style.color='#ff8a8a'; msg.textContent='اكتب بريد إلكتروني صحيح'; return; }
   if(password.length < 6){ msg.style.color='#ff8a8a'; msg.textContent='كلمة المرور ٦ أحرف على الأقل'; return; }
-  if(!beginAuthAction(mode==='signup' ? 'جارٍ إنشاء الحساب…' : 'جارٍ تسجيل الدخول…')) return;
+  if(!beginAuthAction(mode==='signup' ? 'ثواني وننشئ حسابك…' : 'ثواني ونسجّل دخولك…')) return;
   const isAnon = storeGet('authProvider','')==='anonymous';
 
   try{
@@ -1143,15 +1796,15 @@ async function emailAuth(mode){
     const code = String((e && e.code) || '');
     if(code.includes('email-already-in-use') || code.includes('credential-already-in-use')){
       msg.style.color='#f5c542';
-      msg.textContent='لديك حساب بهذا البريد بالفعل — اضغط "تسجيل الدخول" بدل إنشاء حساب';
+      msg.textContent='عندك حساب بهالبريد من قبل — اضغط «تسجيل الدخول» بدل إنشاء حساب';
     } else if(code.includes('wrong-password') || code.includes('invalid-credential') || code.includes('user-not-found')){
-      msg.style.color='#ff8a8a'; msg.textContent='البريد أو كلمة المرور غير صحيحة';
+      msg.style.color='#ff8a8a'; msg.textContent='البريد أو كلمة المرور مو صحيحة';
     } else if(code.includes('weak-password')){
-      msg.style.color='#ff8a8a'; msg.textContent='كلمة المرور ضعيفة — اختر كلمة أقوى';
+      msg.style.color='#ff8a8a'; msg.textContent='كلمة المرور ضعيفة — اختار كلمة أقوى';
     } else if(isAuthNetworkError(e)){
-      msg.style.color='#ff8a8a'; msg.textContent='لا يوجد اتصال بالإنترنت — تحقق من الشبكة ثم حاول مرة أخرى';
+      msg.style.color='#ff8a8a'; msg.textContent='ماكو اتصال بالإنترنت — تأكد من الشبكة وجرّب مرة ثانية';
     } else {
-      msg.style.color='#ff8a8a'; msg.textContent='تعذّر إكمال العملية — حاول مرة أخرى';
+      msg.style.color='#ff8a8a'; msg.textContent='ما قدرنا نكمّل العملية — جرّب مرة ثانية';
     }
   }finally{ endAuthAction(); }
 }
@@ -1202,17 +1855,17 @@ async function refreshVerificationStatus(throwOnError=false){
   if(!status) return;
   const user=await getCurrentFirebaseUserData(true, throwOnError);
   if(!user){
-    status.textContent='سجّل الدخول بحساب Firebase لتفعيل التحقق.';
+    status.textContent='سجّل دخولك بحساب Firebase عشان تفعّل التحقق.';
     if(emailBtn) emailBtn.style.display='none';
     return;
   }
   if(emailBtn) emailBtn.style.display=user.email?'block':'none';
   const emailLine=user.email
-    ? `البريد: ${esc(user.email)} — ${user.emailVerified ? '✅ تم التحقق' : '⚠️ لم يتم التحقق بعد'}`
-    : 'لا يوجد بريد إلكتروني مرتبط بهذا الحساب.';
+    ? `البريد: ${esc(user.email)} — ${user.emailVerified ? '✅ تم التحقق' : '⚠️ للحين ما تحققنا منه'}`
+    : 'ماكو بريد إلكتروني مربوط بهالحساب.';
   const phoneLine=user.phoneNumber
     ? `الهاتف: ${esc(user.phoneNumber)} — ✅ تم التحقق`
-    : 'الهاتف: لم يتم التحقق منه بعد';
+    : 'الهاتف: للحين ما تحققنا منه';
   status.innerHTML=`<div>${emailLine}</div><div style="margin-top:5px;">${phoneLine}</div>`;
 }
 
@@ -1222,15 +1875,15 @@ async function sendEmailVerificationMessage(silent=false){
   _emailVerificationPending=true;
   const button=document.getElementById('send-email-verification-btn');
   if(button) button.disabled=true;
-  if(!silent) setVerificationMessage('⏳ جارٍ إرسال رسالة التحقق…');
+  if(!silent) setVerificationMessage('⏳ ثواني ونرسل رسالة التحقق…');
   try{
     const user=await getCurrentFirebaseUserData();
     if(!user || !user.email){
-      setVerificationMessage('أضف وسيلة دخول بالبريد أولاً حتى نرسل رسالة التحقق.', true);
+      setVerificationMessage('ضيف دخول بالبريد أول عشان نرسل رسالة التحقق.', true);
       return false;
     }
     if(user.emailVerified){
-      setVerificationMessage('هذا البريد تم التحقق منه مسبقاً.');
+      setVerificationMessage('تحققنا من هالبريد من قبل.');
       return true;
     }
     const FA=getFirebaseAuth();
@@ -1243,15 +1896,15 @@ async function sendEmailVerificationMessage(silent=false){
         await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
       await sendEmailVerification(wb.auth.currentUser);
     }
-    setVerificationMessage('تم إرسال رسالة التحقق. افتحها ثم حدّث الحالة.');
-    if(!silent) showToast('✉️','تم إرسال رسالة التحقق','تحقق من بريدك الإلكتروني',false);
+    setVerificationMessage('رسلنا رسالة التحقق. افتحها وبعدها حدّث الحالة.');
+    if(!silent) showToast('✉️','رسلنا رسالة التحقق','شيّك على بريدك الإلكتروني',false);
     return true;
   }catch(e){
     console.error('email verification:',e);
     const code=String((e && (e.code||e.message))||'').toLowerCase();
-    if(isAuthNetworkError(e)) setVerificationMessage('لا يوجد اتصال بالإنترنت — تحقق من الشبكة ثم حاول مرة أخرى.', true);
-    else if(code.includes('too-many-requests')) setVerificationMessage('تم إرسال طلبات كثيرة — انتظر قليلاً ثم حاول مرة أخرى.', true);
-    else setVerificationMessage('تعذّر إرسال رسالة التحقق — حاول مرة أخرى.', true);
+    if(isAuthNetworkError(e)) setVerificationMessage('ماكو اتصال بالإنترنت — تأكد من الشبكة وجرّب مرة ثانية.', true);
+    else if(code.includes('too-many-requests')) setVerificationMessage('انرسلت طلبات وايد — نطر شوي وجرّب مرة ثانية.', true);
+    else setVerificationMessage('ما قدرنا نرسل رسالة التحقق — جرّب مرة ثانية.', true);
     return false;
   }finally{
     _emailVerificationPending=false;
@@ -1265,14 +1918,14 @@ async function refreshEmailVerificationStatus(){
   _verificationRefreshPending=true;
   const button=document.getElementById('refresh-verification-btn');
   if(button) button.disabled=true;
-  setVerificationMessage('⏳ جارٍ تحديث حالة التحقق…');
+  setVerificationMessage('⏳ ثواني ونحدّث حالة التحقق…');
   try{
     await refreshVerificationStatus(true);
-    setVerificationMessage('تم تحديث حالة التحقق.');
+    setVerificationMessage('حدّثنا حالة التحقق.');
   }catch(e){
     console.error('refresh verification:',e);
-    if(isAuthNetworkError(e)) setVerificationMessage('لا يوجد اتصال بالإنترنت — تعذّر تحديث الحالة.', true);
-    else setVerificationMessage('تعذّر تحديث حالة التحقق — حاول مرة أخرى.', true);
+    if(isAuthNetworkError(e)) setVerificationMessage('ماكو اتصال بالإنترنت — ما قدرنا نحدّث الحالة.', true);
+    else setVerificationMessage('ما قدرنا نحدّث حالة التحقق — جرّب مرة ثانية.', true);
   }finally{
     _verificationRefreshPending=false;
     if(button) button.disabled=false;
@@ -1327,12 +1980,12 @@ function normalizePhoneNumber(value){
 
 function phoneAuthErrorMessage(code, fallback){
   const errorCode=String(code||'').toLowerCase();
-  if(errorCode.includes('network-request-failed') || errorCode.includes('network error') || errorCode.includes('offline')) return 'لا يوجد اتصال بالإنترنت — تحقق من الشبكة ثم حاول مرة أخرى.';
-  if(errorCode.includes('provider-disabled')) return 'تسجيل الدخول برقم الهاتف غير مفعّل في Firebase.';
-  if(errorCode.includes('invalid-phone-number')) return 'رقم الكويت غير صحيح. أدخل ٨ أرقام بدون صفر بالبداية.';
-  if(errorCode.includes('too-many-requests')) return 'تمت محاولات كثيرة لإرسال SMS. انتظر قليلاً ثم حاول مرة أخرى.';
-  if(errorCode.includes('credential-already-in-use')) return 'رقم الهاتف مرتبط بحساب آخر.';
-  if(errorCode.includes('captcha-check-failed')) return 'تعذر التحقق الأمني. أعد المحاولة من اتصال موثوق.';
+  if(errorCode.includes('network-request-failed') || errorCode.includes('network error') || errorCode.includes('offline')) return 'ماكو اتصال بالإنترنت — تأكد من الشبكة وجرّب مرة ثانية.';
+  if(errorCode.includes('provider-disabled')) return 'الدخول برقم الهاتف مو مفعّل في Firebase.';
+  if(errorCode.includes('invalid-phone-number')) return 'رقم الكويت مو صحيح. اكتب ٨ أرقام من غير صفر بالبداية.';
+  if(errorCode.includes('too-many-requests')) return 'صارت محاولات وايد لإرسال SMS. نطر شوي وجرّب مرة ثانية.';
+  if(errorCode.includes('credential-already-in-use')) return 'رقم الهاتف مربوط بحساب ثاني.';
+  if(errorCode.includes('captcha-check-failed')) return 'ما قدرنا نكمّل التحقق الأمني. جرّب من اتصال موثوق.';
   return fallback;
 }
 
@@ -1350,10 +2003,10 @@ async function finishPhoneVerification(user){
     const input=document.getElementById('verification-phone');
     if(input) input.value=user.phoneNumber;
   }
-  setVerificationMessage('تم التحقق من رقم الهاتف وربطه بحسابك.');
+  setVerificationMessage('تحققنا من رقم الهاتف وربطناه بحسابك.');
   await refreshVerificationStatus();
   renderAccountLinks();
-  showToast('📱','تم توثيق رقم الهاتف','تم ربط الرقم بحسابك بنجاح',false);
+  showToast('📱','وثّقنا رقم الهاتف','ربطنا الرقم بحسابك بنجاح',false);
 }
 
 let _phoneStartPending=false;
@@ -1363,22 +2016,22 @@ async function startPhoneVerification(){
   const input=document.getElementById('verification-phone');
   const phone=normalizePhoneNumber(input && input.value);
   if(!phone){
-    setVerificationMessage('اكتب الرقم بصيغة دولية، مثل +96550001234.', true);
+    setVerificationMessage('اكتب الرقم بالصيغة الدولية، مثل +96550001234.', true);
     return;
   }
   if(_phoneStartPending) return;
   _phoneStartPending=true;
   const startButton=document.getElementById('send-phone-code-btn');
   if(startButton) startButton.disabled=true;
-  setVerificationMessage('⏳ جارٍ إرسال رمز SMS…');
+  setVerificationMessage('⏳ ثواني ونرسل رمز SMS…');
   try{
   const user=await getCurrentFirebaseUserData(false);
   if(!user){
-    setVerificationMessage('سجّل الدخول بحساب Firebase أولاً.', true);
+    setVerificationMessage('سجّل دخولك بحساب Firebase أول.', true);
     return;
   }
   if(user.phoneNumber){
-    setVerificationMessage('رقم الهاتف تم التحقق منه مسبقاً.');
+    setVerificationMessage('تحققنا من رقم الهاتف من قبل.');
     return;
   }
   await cleanupPhoneListeners();
@@ -1391,7 +2044,7 @@ async function startPhoneVerification(){
         const form=document.getElementById('phone-code-form');
         if(form) form.style.display='block';
         if(startButton) startButton.textContent='إعادة إرسال رمز SMS';
-        setVerificationMessage('تم إرسال رمز SMS. أدخله هنا لإكمال التحقق.');
+        setVerificationMessage('رسلنا رمز SMS. اكتبه هني عشان نكمّل التحقق.');
         document.getElementById('verification-phone-code')?.focus();
       }));
       _phoneListenerHandles.push(await FA.addListener('phoneVerificationCompleted', event=>{
@@ -1400,12 +2053,12 @@ async function startPhoneVerification(){
       }));
       _phoneListenerHandles.push(await FA.addListener('phoneVerificationFailed', event=>{
         const eventCode=event && (event.code || event.errorCode || event.message);
-        setVerificationMessage(phoneAuthErrorMessage(eventCode, 'تعذّر إرسال رمز SMS — حاول مرة أخرى.'), true);
+        setVerificationMessage(phoneAuthErrorMessage(eventCode, 'ما قدرنا نرسل رمز SMS — جرّب مرة ثانية.'), true);
         if(startButton) startButton.textContent='إرسال رمز SMS';
         cleanupPhoneListeners();
       }));
       await FA.linkWithPhoneNumber({phoneNumber:phone});
-      setVerificationMessage('جارٍ إرسال رمز SMS…');
+      setVerificationMessage('ثواني ونرسل رمز SMS…');
       return;
     }
     const wb=await getFirebaseWebAuth();
@@ -1421,13 +2074,13 @@ async function startPhoneVerification(){
     const form=document.getElementById('phone-code-form');
     if(form) form.style.display='block';
     if(startButton) startButton.textContent='إعادة إرسال رمز SMS';
-    setVerificationMessage('تم إرسال رمز SMS. أدخله هنا لإكمال التحقق.');
+    setVerificationMessage('رسلنا رمز SMS. اكتبه هني عشان نكمّل التحقق.');
     document.getElementById('verification-phone-code')?.focus();
   }catch(e){
     console.error('phone verification start:',e);
     await cleanupPhoneListeners();
     const code=String(e && (e.code||e.message) || '');
-    setVerificationMessage(phoneAuthErrorMessage(code, 'تعذّر إرسال رمز SMS — حاول مرة أخرى.'), true);
+    setVerificationMessage(phoneAuthErrorMessage(code, 'ما قدرنا نرسل رمز SMS — جرّب مرة ثانية.'), true);
     if(startButton) startButton.textContent='إرسال رمز SMS';
   }finally{
     _phoneStartPending=false;
@@ -1440,14 +2093,14 @@ async function confirmPhoneVerification(){
   sfx('tap');
   const code=(document.getElementById('verification-phone-code')?.value||'').trim();
   if(!code){
-    setVerificationMessage('أدخل رمز التحقق المرسل برسالة SMS.', true);
+    setVerificationMessage('اكتب رمز التحقق اللي وصلك برسالة SMS.', true);
     return;
   }
   if(_phoneConfirmPending) return;
   _phoneConfirmPending=true;
   const confirmButton=document.getElementById('confirm-phone-code-btn');
   if(confirmButton) confirmButton.disabled=true;
-  setVerificationMessage('⏳ جارٍ تأكيد رمز التحقق…');
+  setVerificationMessage('⏳ ثواني ونتأكد من رمز التحقق…');
   try{
     let result=null;
     const FA=getFirebaseAuth();
@@ -1466,7 +2119,7 @@ async function confirmPhoneVerification(){
   }catch(e){
     console.error('phone verification confirm:',e);
     const errorCode=String(e && (e.code||e.message) || '').toLowerCase();
-    if(errorCode.includes('invalid-verification-code')) setVerificationMessage('رمز التحقق غير صحيح.', true);
+    if(errorCode.includes('invalid-verification-code')) setVerificationMessage('رمز التحقق مو صحيح.', true);
     else if(errorCode.includes('session-expired') || errorCode.includes('verification-session-missing') || errorCode.includes('verification-id-missing')){
       await cleanupPhoneListeners();
       _phoneVerificationId='';
@@ -1479,8 +2132,8 @@ async function confirmPhoneVerification(){
       if(sendButton) sendButton.textContent='إرسال رمز جديد';
       setVerificationMessage('انتهت صلاحية الرمز — اضغط «إرسال رمز جديد».', true);
     }
-    else if(isAuthNetworkError(e)) setVerificationMessage('لا يوجد اتصال بالإنترنت — تعذّر تأكيد الرمز.', true);
-    else setVerificationMessage('تعذّر تأكيد الرقم — تحقق من الرمز وحاول مرة أخرى.', true);
+    else if(isAuthNetworkError(e)) setVerificationMessage('ماكو اتصال بالإنترنت — ما قدرنا نتأكد من الرمز.', true);
+    else setVerificationMessage('ما قدرنا نتأكد من الرقم — شيّك على الرمز وجرّب مرة ثانية.', true);
   }finally{
     _phoneConfirmPending=false;
     if(confirmButton) confirmButton.disabled=false;
@@ -1492,7 +2145,7 @@ let _onbStep = 0;
 const _ONB_TOTAL = 3;
 function _onbSetStep(step){
   // تحديث الأزرار
-  document.getElementById('onb-next-btn').textContent = (step === _ONB_TOTAL - 1) ? 'ابدأ اللعب 🎯' : 'التالي';
+  document.getElementById('onb-next-btn').textContent = (step === _ONB_TOTAL - 1) ? 'يلا نلعب 🎯' : 'كمّل';
   // تحديث النقاط
   document.querySelectorAll('.onb-dot').forEach((d,i)=>{
     d.classList.toggle('active', i===step);
@@ -1596,6 +2249,19 @@ function getRC(){
 }
 
 let _rcReady = null;
+let RC_SDK_CONFIGURED = false;
+let RC_CURRENT_APP_USER_ID = '';
+
+async function resetRevenueCatIdentity(){
+  const RC=getRC();
+  if(RC && RC_SDK_CONFIGURED && typeof RC.logOut==='function'){
+    try{ await RC.logOut(); }
+    catch(e){ console.warn('RevenueCat logout:', (e && (e.message||e.code)) || e); }
+  }
+  RC_CURRENT_APP_USER_ID='';
+  _rcReady=null;
+}
+
 function rcReady(){
   if(!_rcReady) _rcReady = initRevenueCat();
   return _rcReady;
@@ -1611,7 +2277,7 @@ async function initRevenueCat(){
     const rcAppUserId=getRcAppUserId();
     if(!uid) throw new Error('لا يمكن تهيئة RevenueCat بلا حساب Firebase');
     let idToken=await getCurrentIdToken();
-    const identityRequest=token=>fetch(apiUrl('/api/revenuecat/identity'),{
+    const identityRequest=token=>apiFetch('/api/revenuecat/identity',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({uid, rcAppUserId, idToken:token})
@@ -1630,7 +2296,13 @@ async function initRevenueCat(){
       }catch(e){}
       throw new Error(`ربط هوية RevenueCat فشل (HTTP ${identityResp.status})${detail}`);
     }
-    await RC.configure({ apiKey: RC_API_KEY, appUserID: rcAppUserId });
+    if(!RC_SDK_CONFIGURED){
+      await RC.configure({ apiKey: RC_API_KEY, appUserID: rcAppUserId });
+      RC_SDK_CONFIGURED=true;
+    }else if(RC_CURRENT_APP_USER_ID!==rcAppUserId && typeof RC.logIn==='function'){
+      await RC.logIn({ appUserID: rcAppUserId });
+    }
+    RC_CURRENT_APP_USER_ID=rcAppUserId;
     // لا نرسل البريد أو Firebase UID كـ subscriber attribute.
     // Secure Attributes غير متاحة في هذا SDK؛ الصلاحيات تُحسم بالـwebhook.
     return true;
@@ -1686,14 +2358,14 @@ let _pwPkgs = null; // {monthly, annual} — كاش لنتيجة getOfferings
 async function fetchPackages(force){
   if(_pwPkgs && !force) return _pwPkgs;
   const RC = getRC();
-  if(!RC) throw new Error('RevenueCat غير متاح');
+  if(!RC) throw new Error('RevenueCat مو متوفر');
   await loadRcKey();
-  if(!RC_CONFIGURED) throw new Error('RevenueCat غير مهيَّأ — تعذّر جلب المفتاح من الخادم');
-  if(!(await rcReady())) throw new Error('تعذّرت تهيئة RevenueCat — راجع سجلّ Xcode');
+  if(!RC_CONFIGURED) throw new Error('RevenueCat مو مجهّأ — ما قدرنا نجيب المفتاح من الخادم');
+  if(!(await rcReady())) throw new Error('ما قدرنا نجهّز RevenueCat — راجع سجلّ Xcode');
   const res = await RC.getOfferings();
   const offerings = (res && res.offerings) ? res.offerings : res; // تسامح مع الشكلين
   const current = offerings && offerings.current;
-  if(!current) throw new Error('لا توجد عروض متاحة — تأكد من تعليم Offering كـ Current بلوحة RevenueCat');
+  if(!current) throw new Error('ماكو عروض متوفرة — تأكد إن Offering محدد كـ Current بلوحة RevenueCat');
   _pwPkgs = {
     monthly: pickPackage(current, 'monthly') || null,
     annual:  pickPackage(current, 'annual')  || null
@@ -1756,7 +2428,7 @@ async function loadPaywallPrices(force){
 
   _pwPricesLoading = true;
   if(btn){ btn.style.display=''; btn.disabled = true; }
-  if(sub) sub.textContent = 'جاري جلب الأسعار…';
+  if(sub) sub.textContent = 'ثواني ونجيب الأسعار…';
   if(err)  err.style.display = 'none';
   if(note) note.style.display = 'none';
 
@@ -1764,7 +2436,7 @@ async function loadPaywallPrices(force){
     const { monthly, annual } = await fetchPackages(force);
     const monthlyProduct = monthly && monthly.product;
     const annualProduct  = annual  && annual.product;
-    if(!monthlyProduct && !annualProduct) throw new Error('لا توجد أسعار متاحة');
+    if(!monthlyProduct && !annualProduct) throw new Error('ماكو أسعار متوفرة');
 
     if(planMonthly) planMonthly.style.display = monthlyProduct ? '' : 'none';
     if(planAnnual)  planAnnual.style.display  = annualProduct  ? '' : 'none';
@@ -1818,10 +2490,10 @@ async function loadPaywallPrices(force){
 
 async function rcPurchase(plan){
   const RC = getRC();
-  if(!RC) throw new Error('RevenueCat غير متاح');
+  if(!RC) throw new Error('RevenueCat مو متوفر');
   const { monthly, annual } = await fetchPackages();
   const pkg = plan === 'annual' ? annual : monthly;
-  if(!pkg) throw new Error('الباقة غير موجودة — تأكد من إعداد Offerings في RevenueCat');
+  if(!pkg) throw new Error('الباقة مو موجودة — تأكد من إعداد Offerings في RevenueCat');
   const { customerInfo } = await RC.purchasePackage({ aPackage: pkg });
   // إذا اكتمل الشراء بدون exception → ناجح
   // (RevenueCat قد يأخر تفعيل الـ entitlement بثوانٍ في المحاكي)
@@ -1833,32 +2505,20 @@ async function rcPurchase(plan){
 
 async function rcRestore(){
   const RC = getRC();
-  if(!RC){ showToast('ℹ️','متاح على iOS فقط','',false); return; }
+  if(!RC){ showToast('ℹ️','متوفر على iOS بس','',false); return; }
   try{
-    if(!(await rcReady())) throw new Error('تعذّرت تهيئة RevenueCat — راجع سجلّ Xcode');
+    void trackMetric('restore_started');
+    if(!(await rcReady())) throw new Error('ما قدرنا نجهّز RevenueCat — راجع سجلّ Xcode');
     await RC.restorePurchases();
     await checkSubscriptionAndRoute(window._currentUid || storeGet('authUid',''));
-    showToast('ℹ️','جاري التحقق من الاستعادة','سيُفتح المحتوى بعد تأكيد الخادم',false);
-  }catch(e){ showToast('⚠️','تعذّر الاستعادة', e.message||'', false); }
-}
-
-async function promoIsActive(uid){
-  if(!uid) return false;
-  try{
-    const idToken = await getCurrentIdToken();
-    if(!idToken) return false;
-    const r = await fetch(apiUrl(`/api/promo/status?uid=${encodeURIComponent(uid)}`),
-      {headers:{'Authorization':'Bearer '+idToken}});
-    if(!r.ok) return false;
-    const d = await r.json();
-    return d.active === true;
-  }catch(e){ return false; }
+    showToast('ℹ️','ثواني ونتأكد من الاستعادة','المحتوى يفتح عقب تأكيد الخادم',false);
+  }catch(e){ showToast('⚠️','ما قدرنا نستعيد المشتريات', e.message||'', false); }
 }
 
 async function checkSubscriptionAndRoute(uid, {showLoading=true} = {}){
   if(showLoading) go('s-loading');
-  // جميع المنصات: الخادم هو مصدر الصلاحية. لا نفتح المحتوى بناءً على
-  // CustomerInfo أو cache محلي؛ webhook هو الذي يحدّث حالة الاشتراك.
+  // الخادم هو المصدر الأول. إن تأخر webhook بعد شراء صحيح، نستخدم
+  // CustomerInfo الموقّع من RevenueCat حتى لا يبقى العميل عالقاً في paywall.
   try{
     const idToken=await getCurrentIdToken();
     if(!idToken) throw new Error('لا توجد جلسة Firebase موثّقة');
@@ -1866,74 +2526,60 @@ async function checkSubscriptionAndRoute(uid, {showLoading=true} = {}){
     const timer = setTimeout(()=>ctrl.abort(), 8000); // 8 ثوانٍ حد أقصى
     let resp;
     try{
-      resp = await fetch(apiUrl(`/api/subscription/status?uid=${encodeURIComponent(uid||'')}`),{
+      resp = await apiFetch(`/api/subscription/status?uid=${encodeURIComponent(uid||'')}`,{
         headers:{'Authorization':'Bearer '+idToken},
         signal: ctrl.signal
       });
     }finally{ clearTimeout(timer); }
     if(!resp.ok) throw new Error('status error');
     const data = await resp.json();
-    if(data.active === true){ hideSplash(); go('s-home'); return; }
-    // تحقق من كود مجاني
-    if(uid && await promoIsActive(uid)){ hideSplash(); go('s-home'); return; }
-    hideSplash(); go('s-paywall');
+    if(data.active === true || await rcIsActive() === true){
+      _hasActiveSubscription=true; _freeRoundAvailable=false; _subscriptionResolved=true;
+      updateFreeRoundUi(); hideSplash(); go('s-home'); return;
+    }
+    _hasActiveSubscription=false;
+    _freeRoundAvailable=await freeRoundIsAvailable(uid);
+    _subscriptionResolved=true;
+    updateFreeRoundUi(); hideSplash(); go(_freeRoundAvailable?'s-home':'s-paywall');
   }catch(e){
-    // فشل التحقق من الخادم (شبكة بطيئة أو خطأ) — اعرض الـ Paywall مباشرة
-    hideSplash(); go('s-paywall');
+    if(await rcIsActive() === true){
+      _hasActiveSubscription=true; _freeRoundAvailable=false; _subscriptionResolved=true;
+      updateFreeRoundUi(); hideSplash(); go('s-home'); return;
+    }
+    _hasActiveSubscription=false;
+    _freeRoundAvailable=!localFreeRoundCompleted(uid);
+    _subscriptionResolved=true;
+    updateFreeRoundUi(); hideSplash(); go(_freeRoundAvailable?'s-home':'s-paywall');
+  }
+}
+
+async function redeemAppleOfferCode(){
+  sfx('tap');
+  const RC=getRC();
+  if(!window.Capacitor?.isNativePlatform?.() || !RC || typeof RC.presentCodeRedemptionSheet!=='function'){
+    showToast('ℹ️','أكواد Apple داخل التطبيق بس','افتح فطنة على iPhone أو iPad عشان تستخدم كود العرض',false);
+    return;
+  }
+  try{
+    if(!(await rcReady())) throw new Error('ما قدرنا نجهّز اشتراكات Apple');
+    void trackMetric('offer_code_opened');
+    await RC.presentCodeRedemptionSheet();
+    if(typeof RC.syncPurchases==='function') await RC.syncPurchases();
+    await new Promise(resolve=>setTimeout(resolve,1200));
+    await checkSubscriptionAndRoute(window._currentUid||storeGet('authUid',''),{showLoading:false});
+    if(_hasActiveSubscription){
+      showToast('🎉','فعّلنا العرض','اشتراك فطنة برو صار شغّال',false);
+    }else{
+      showToast('ℹ️','سكّرت نافذة Apple','إذا استخدمت الكود، الاشتراك يطلع عقب تأكيد Apple',false);
+    }
+  }catch(e){
+    recordNonFatal(e,'apple.offer-code');
+    showToast('⚠️','ما قدرنا نفتح كود العرض',e.message||'جرّب مرة ثانية',false);
   }
 }
 
 function hideSplash(){
   try{ window.Capacitor?.Plugins?.SplashScreen?.hide(); }catch(e){}
-}
-
-// ────────── كود مكافأة مجاني
-function togglePromoBox(){
-  const form = document.getElementById('pw-promo-form');
-  const btn  = document.getElementById('pw-promo-toggle');
-  const open = form.style.display === 'none';
-  form.style.display = open ? 'flex' : 'none';
-  form.style.flexDirection = 'column';
-  btn.textContent = open ? '✖ إخفاء' : '🎁 عندك كود مجاني؟';
-  if(open) document.getElementById('pw-promo-input').focus();
-}
-
-async function redeemPromo(){
-  const code = (document.getElementById('pw-promo-input').value||'').trim().toUpperCase();
-  const msg  = document.getElementById('pw-promo-msg');
-  if(!code){ msg.style.color='#ff8a8a'; msg.textContent='أدخل الكود أولاً'; return; }
-  msg.style.color='#C4B8E0'; msg.textContent='⏳ جاري التحقق...';
-  try{
-    const uid = window._currentUid || '';
-    const idToken = await getCurrentIdToken();
-    if(!uid || !idToken){
-      msg.style.color='#ff8a8a';
-      msg.textContent='⚠️ سجّل الدخول أولاً ثم أعد المحاولة';
-      return;
-    }
-    const r = await fetch(apiUrl('/api/promo/redeem'),{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
-      body: JSON.stringify({code, uid, idToken})
-    });
-    const d = await r.json();
-    if(d.ok){
-      const exp = new Date(d.expires_at);
-      const opts = {year:'numeric',month:'long',day:'numeric'};
-      const expStr = exp.toLocaleDateString('ar-SA', opts);
-      msg.style.color='#7fff9a';
-      msg.textContent = d.already
-        ? `✅ الكود فعّال حتى ${expStr}`
-        : `🎉 تم التفعيل! مجاني حتى ${expStr}`;
-      setTimeout(()=>{ go('s-home'); showToast('🎁','تم تفعيل الكود!',`مجاني حتى ${expStr}`,false); }, 1200);
-    } else {
-      msg.style.color='#ff8a8a';
-      msg.textContent = '❌ ' + (d.error || 'الكود غير صحيح');
-    }
-  }catch(e){
-    msg.style.color='#ff8a8a';
-    msg.textContent='⚠️ تعذّر الاتصال — تأكد من الإنترنت';
-  }
 }
 
 // ────────── Paywall — اختيار الخطة
@@ -1961,32 +2607,36 @@ async function startCheckout(){
   btn.style.display     = 'none';
   loading.style.display = 'block';
   try{
+    void trackMetric('purchase_started',{plan:_pwPlan});
     // iOS: Apple IAP عبر RevenueCat
     if(window.Capacitor && window.Capacitor.isNativePlatform()){
-      await rcPurchase(_pwPlan);
+      const purchaseConfirmed = await rcPurchase(_pwPlan);
+      if(!purchaseConfirmed) throw new Error('اكتمل الدفع بس الاشتراك ما ظهر للحين — استخدم استعادة المشتريات');
       const uid=window._currentUid || storeGet('authUid','');
       let serverActive=false;
-      for(let attempt=0; attempt<6 && !serverActive; attempt++){
+      for(let attempt=0; attempt<12 && !serverActive; attempt++){
         if(attempt) await new Promise(resolve=>setTimeout(resolve,1500));
         try{
           const idToken=await getCurrentIdToken();
-          const check=await fetch(apiUrl(`/api/subscription/status?uid=${encodeURIComponent(uid)}`),
+          const check=await apiFetch(`/api/subscription/status?uid=${encodeURIComponent(uid)}`,
             {headers:idToken ? {'Authorization':'Bearer '+idToken} : {}});
           if(check.ok) serverActive=(await check.json()).active===true;
         }catch(e){}
       }
-      if(serverActive){
+      if(serverActive || await rcIsActive() === true){
+        _hasActiveSubscription=true; _freeRoundAvailable=false; _subscriptionResolved=true;
+        void trackMetric('purchase_completed',{plan:_pwPlan});
         go('s-home');
-        showToast('🎉','مرحباً بك!','تم تأكيد اشتراكك من الخادم',false);
+        showToast('🎉','هلا فيك!','فعّلنا اشتراك Apple بنجاح',false);
       } else {
         go('s-paywall');
-        showToast('⏳','جاري تأكيد الاشتراك','سيظهر المحتوى بعد وصول تأكيد Apple',false);
+        showToast('⏳','ثواني ونتأكد من الاشتراك','المحتوى يطلع عقب ما يوصل تأكيد Apple',false);
       }
       return;
     }
     const note = document.getElementById('web-payment-note');
     if(note) note.style.display = 'block';
-    showToast('ℹ️','الاشتراك عبر Apple فقط','افتح تطبيق فَطِنة على iPhone أو iPad لإتمام الاشتراك',false);
+    showToast('ℹ️','الاشتراك عبر Apple فقط','افتح تطبيق فطنة على iPhone أو iPad لإتمام الاشتراك',false);
     btn.style.display = 'block';
     loading.style.display = 'none';
     return;
@@ -1994,7 +2644,7 @@ async function startCheckout(){
     // تجاهل إلغاء المستخدم بصمت
     if((e.code||'').toString().includes('CANCELLED') ||
        (e.message||'').toLowerCase().includes('cancel')){ /* صامت */ }
-    else{ showToast('⚠️','تعذّر الدفع', e.message || 'جرّب مرة ثانية', false); }
+    else{ showToast('⚠️','ما قدرنا نكمّل الدفع', e.message || 'جرّب مرة ثانية', false); }
     btn.style.display     = 'block';
     loading.style.display = 'none';
   }finally{
@@ -2069,14 +2719,14 @@ async function toCats(){
   state.pickedByTeam=state.teams.map(()=>0); // كم اختار كل فريق
   go('s-cats');
   const grid=document.getElementById('cat-grid');
-  grid.innerHTML='<div class="empty-state">جاري تجهيز الفئات…</div>';
+  grid.innerHTML='<div class="empty-state">ثواني ونجهّز الفئات…</div>';
   try{
     await ensureQuestionBank();
     renderCats();
   }catch(error){
     console.error('Question bank loading failed',error);
     go('s-teams');
-    toast('تعذر تحميل الأسئلة، حاول مرة أخرى');
+    toast('ما قدرنا نحمّل الأسئلة، جرّب مرة ثانية');
   }
 }
 
@@ -2097,16 +2747,16 @@ function updatePickTurn(){
   const done=state.cats.length>=total;
   if(done){
     pill.style.background='var(--okb)'; pill.style.color='var(--ok)'; pill.style.borderColor='var(--ok)';
-    pill.textContent='✅ تم اختيار كل الفئات — يلا نبدأ!';
+    pill.textContent='✅ اختاروا كل الفئات — يلا نبدأ!';
   } else {
     const ti=state.pickTurn;
     const st=TEAM_STYLES[state.teams[ti].idx];
     const need=state.pickSplit[ti]-state.pickedByTeam[ti];
     pill.style.background=st.bg; pill.style.color=st.color; pill.style.borderColor=st.dot;
-    pill.textContent=`دور فريق ${state.teams[ti].name} — اختر ${need} ${need===1?'فئة':'فئات'}`;
+    pill.textContent=`دور فريق ${state.teams[ti].name} — اختار ${need} ${need===1?'فئة':'فئات'}`;
   }
   const line=document.getElementById('pick-count-line');
-  line.innerHTML=`اختُيرت <b>${state.cats.length}</b> من ${total}`;
+  line.innerHTML=`اختاروا <b>${state.cats.length}</b> من ${total}`;
   document.getElementById('start-btn').disabled = !done;
   document.getElementById('start-btn').style.display = done?'flex':'none';
 }
@@ -2164,8 +2814,8 @@ function renderCatGrid(){
   const search=(document.getElementById('cat-search').value||'').trim();
   grid.innerHTML='';
   let list=catsForFilter();
-  if(search) list=[...ALL_CATS,...familyNames()].filter(c=>c.includes(search));
-  if(!list.length){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:20px;font-size:14px;">لا توجد فئات مطابقة</div>'; return; }
+  if(search) list=[...ALL_CATS,...familyNames()].filter(c=>displayCategoryName(c).includes(search));
+  if(!list.length){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:20px;font-size:14px;">ماكو فئات مطابقة</div>'; return; }
   list.forEach(cat=>{
     // زر حقيقي لا <div> — خطوة إلزامية بكل لعبة، وكانت بلا أي دلالة وصول
     // فلا يقدر مستخدم VoiceOver يكتشفها أو يستخدمها إطلاقاً
@@ -2175,6 +2825,7 @@ function renderCatGrid(){
     el.className='cat-pick'+(picked?' on':'');
     el.setAttribute('aria-pressed', picked?'true':'false');
     const icon = isFamilyCat(cat)?'👨‍👩‍👧‍👦':(CAT_ICONS[cat]||'❓');
+    const shownCategory=isFamilyCat(cat)?cat:displayCategoryName(cat);
     // إن اختارها فريق، أظهر لون الفريق
     let ownerBadge='', ownerLabel='';
     if(picked && state.catOwner[cat]!=null){
@@ -2184,8 +2835,8 @@ function renderCatGrid(){
       ownerBadge=`<span style="position:absolute;bottom:6px;left:8px;font-size:10px;font-weight:800;color:${ost.color}">${esc(ownerName)}</span>`;
       ownerLabel=` — اختارتها ${ownerName}`;
     }
-    el.innerHTML=`<span class="ci" aria-hidden="true">${icon}</span>${esc(cat)}${ownerBadge}`;
-    el.setAttribute('aria-label', cat+(picked?' — مُختارة'+ownerLabel:''));
+    el.innerHTML=`<span class="ci" aria-hidden="true">${icon}</span>${esc(shownCategory)}${ownerBadge}`;
+    el.setAttribute('aria-label', shownCategory+(picked?' — مختارة'+ownerLabel:''));
     el.onclick=()=>toggleCat(cat,el);
     grid.appendChild(el);
   });
@@ -2231,38 +2882,36 @@ function advancePickTurn(){
 // ────────── بدء
 let roundQuestionBank=Object.create(null);
 let roundQuestionToken=0;
-const AI_ROUND_BLOCKED_CATEGORIES=new Set([
-  'دين وسيرة','السيرة النبوية','القرآن الكريم','فتوحات المسلمين','الصحابة'
-]);
-function startGame(){
-  state.familyRound=null; state.usedQ=new Set();
-  roundQuestionBank=Object.create(null);
-  const token=++roundQuestionToken;
-  vibrate(30); state.turn=0; state.answered=0; state.cells={};
-  buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
-  // لا نؤخّر بدء اللعب: تُجلب دفعة الجولة في الخلفية، ويبقى البنك المحلي
-  // الصغير جاهزاً إن كانت الشبكة بطيئة أو تعذّر التحقق من المصدر.
-  void prepareTrustedRoundQuestions(state.cats,token);
+function canStartRound(){
+  if(_hasActiveSubscription) return true;
+  if(_freeRoundAvailable) return true;
+  if(!_subscriptionResolved){
+    showToast('⏳','ثواني ونتأكد','نطر شوي وجرّب مرة ثانية',false);
+    return false;
+  }
+  go('s-paywall');
+  return false;
 }
-async function prepareTrustedRoundQuestions(categories,token){
-  if(!navigator.onLine) return;
-  const eligible=[...new Set(categories)].filter(cat=>!AI_ROUND_BLOCKED_CATEGORIES.has(cat));
-  await Promise.all(eligible.map(async cat=>{
-    try{
-      const questions=await aiGenerate(cat,6,{trustedRound:true});
-      if(token!==roundQuestionToken || !questions.length) return;
-      roundQuestionBank[cat]=questions.map((q,index)=>({...q,d:index+1}));
-    }catch(error){
-      // لا نعرض خطأ للمستخدم؛ البنك المحلي هو المسار الاحتياطي المتعمد.
-      console.warn('Trusted round questions unavailable for',cat,error);
-    }
-  }));
+function startGame(){
+  if(!canStartRound()) return;
+  state.familyRound=null; state.usedQ=new Set(); state.usedQuestionIds=new Set();
+  roundQuestionBank=Object.create(null);
+  roundQuestionToken++;
+  vibrate(30); state.turn=0; state.answered=0; state.cells={};
+  state.startedAt=Date.now(); state.roundCorrect=0; state.roundIncorrect=0;
+  state.isFreeRound=!_hasActiveSubscription&&_freeRoundAvailable;
+  state.completedFreeRound=false;
+  buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
+  void trackMetric('game_started',{
+    difficulty:state.difficulty,teams:state.teams.length,
+    categoryCount:state.cats.length,freeRound:state.isFreeRound,
+  });
 }
 function buildBoard(){
   const n=state.cats.length;
   const head=document.getElementById('cats-head'); head.innerHTML='';
   head.style.gridTemplateColumns=`repeat(${n},1fr)`;
-  state.cats.forEach(c=>{ const h=document.createElement('div'); h.className='cat-h'; h.textContent=c; head.appendChild(h); });
+  state.cats.forEach(c=>{ const h=document.createElement('div'); h.className='cat-h'; h.textContent=isFamilyCat(c)?c:displayCategoryName(c); head.appendChild(h); });
   const board=document.getElementById('board'); board.innerHTML='';
   board.style.gridTemplateColumns=`repeat(${n},1fr)`;
   // خطّ حجم على أساس عدد الفئات (كثرة الأعمدة = خط أصغر)
@@ -2271,7 +2920,7 @@ function buildBoard(){
     const key=col+'-'+r; state.cells[key]={used:false};
     const cell=document.createElement('button'); cell.className='cell';
     cell.style.background=FIRE[r].bg; cell.style.color=FIRE[r].tx; cell.textContent=POINTS[r];
-    cell.setAttribute('aria-label',`سؤال ${state.cats[col]} بقيمة ${POINTS[r]} نقطة`);
+    cell.setAttribute('aria-label',`سؤال ${isFamilyCat(state.cats[col])?state.cats[col]:displayCategoryName(state.cats[col])} بقيمة ${POINTS[r]} نقطة`);
     cell.style.fontSize=fontSize;
     cell.onclick=()=>openQuestion(col,r,key,cell); board.appendChild(cell);
   }
@@ -2285,9 +2934,11 @@ function renderTeamsBar(){
     const st=TEAM_STYLES[t.idx];
     const chip=document.createElement('div'); chip.className='team-chip'+(i===state.turn?' active':'');
     chip.style.background=st.bg; chip.style.borderColor=(i===state.turn?st.dot:'transparent');
+    chip.setAttribute('aria-label',`${t.name}، ${t.score} نقطة${i===state.turn?'، عليه الدور':''}`);
+    if(i===state.turn) chip.setAttribute('aria-current','true');
     const lead=(t.score>0&&t.score===max);
     chip.innerHTML=`<span class="crown" style="display:${lead?'block':'none'}">👑</span>
-      <span class="cn" style="color:${st.color}">${t.name}</span>
+      <span class="cn" style="color:${st.color}">${esc(t.name)}</span>
       <span class="cs" style="color:${st.color}">${t.score}</span>
       <div class="score-adj" style="color:${st.color}">
         <button aria-label="خصم 100 نقطة من ${esc(t.name)}" onclick="adjustScore(${i},-100)">-100</button>
@@ -2357,9 +3008,9 @@ function fireBomb(targetIdx){
   const q=pickQuestion(cat,r);
   state.cur={col,r,key,cell,cat,d:r,q,points:1200,isBomb:true,bombThrower:state.turn,bombTarget:targetIdx,phase:'bomb',resolved:false};
   const badge=document.getElementById('q-badge');
-  badge.textContent='💣 '+cat; badge.style.background='#8b1a3d'; badge.style.color='#fff';
+  badge.textContent='💣 '+(isFamilyCat(cat)?cat:displayCategoryName(cat)); badge.style.background='#8b1a3d'; badge.style.color='#fff';
   document.getElementById('q-points').textContent='±1200 نقطة';
-  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('q-text').textContent=displayQuestionText(q);
   setQuestionAnswer(q);
   document.getElementById('answer-box').classList.remove('show');
   document.getElementById('search-timer').classList.remove('show');
@@ -2380,9 +3031,9 @@ function awardBomb(correct){
   state.teams[c.bombThrower].bombUsed=true;
   if(correct){
     sfx('correct'); vibrate([15,10,15]);
-    state.teams[c.bombTarget].score+=1200; stats.correct++;
+    state.teams[c.bombTarget].score+=1200; stats.correct++; state.roundCorrect=(state.roundCorrect||0)+1;
   } else {
-    sfx('wrong'); vibrate([40,30,40]);
+    sfx('wrong'); vibrate([40,30,40]); state.roundIncorrect=(state.roundIncorrect||0)+1;
     state.teams[c.bombTarget].score-=1200;
   }
   c.cell.classList.add('used'); state.cells[c.key].used=true;
@@ -2400,13 +3051,73 @@ function setQuestionAnswer(q){
     source.href=q.source.url;
     source.textContent='المصدر: '+(q.source.title||'مرجع موثوق');
   }
+  const reportButton=document.getElementById('q-report-btn');
+  if(reportButton) reportButton.style.display=q&&q.id&&!state.familyRound?'inline-flex':'none';
+}
+function openQuestionReport(){
+  const q=state.cur&&state.cur.q;
+  if(!q||!q.id){
+    showToast('ℹ️','ما نقدر نرسل هالبلاغ','البلاغات متوفرة لأسئلة بنك فطنة الرسمي بس',false);
+    return;
+  }
+  sfx('tap');
+  const details=document.getElementById('question-report-details');
+  const reason=document.getElementById('question-report-reason');
+  if(details) details.value='';
+  if(reason) reason.value='incorrect_answer';
+  document.getElementById('question-report-modal')?.classList.add('show');
+}
+function closeQuestionReport(){
+  sfx('tap');
+  document.getElementById('question-report-modal')?.classList.remove('show');
+}
+let _questionReportPending=false;
+async function submitQuestionReport(){
+  if(_questionReportPending) return;
+  const current=state.cur;
+  const q=current&&current.q;
+  const uid=window._currentUid||storeGet('authUid','');
+  if(!q||!q.id||!uid) return;
+  const idToken=await getCurrentIdToken();
+  if(!idToken){
+    showToast('⚠️','ما قدرنا نرسل البلاغ','تأكد من تسجيل الدخول واتصال الإنترنت',false);
+    return;
+  }
+  _questionReportPending=true;
+  const button=document.getElementById('question-report-submit');
+  if(button){ button.disabled=true; button.textContent='ثواني ونرسل…'; }
+  try{
+    const response=await apiFetch('/api/questions/report',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+      body:JSON.stringify({
+        uid,idToken,questionId:q.id,category:current.cat||'',question:q.q||'',
+        answer:q.answer||(q.o&&typeof q.a==='number'?q.o[q.a]:''),
+        reason:document.getElementById('question-report-reason')?.value||'other',
+        details:(document.getElementById('question-report-details')?.value||'').trim(),
+        appVersion:APP_VERSION,
+      }),
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(data.error||'ما قدرنا نحفظ البلاغ');
+    closeQuestionReport();
+    void trackMetric('question_reported',{reason:document.getElementById('question-report-reason')?.value||'other'});
+    const delivered=data.emailStatus==='sent';
+    showToast('✅','وصلنا البلاغ',delivered?'رسلناه لبريد فريق فطنة':'حفظناه بأمان وبنرسله للبريد تلقائياً',false);
+  }catch(e){
+    recordNonFatal(e,'question.report');
+    showToast('⚠️','ما قدرنا نرسل البلاغ',e.message||'جرّب مرة ثانية',false);
+  }finally{
+    _questionReportPending=false;
+    if(button){ button.disabled=false; button.textContent='إرسال البلاغ'; }
+  }
 }
 function pickQuestion(cat,d){
   // جولة عائلية: اسحب من أسئلة الفئة العائلية بغضّ النظر عن المستوى، مع منع التكرار
   if(state.familyRound){
     const all=state.familyRound.questions;
     let pool=all.filter(q=>!state.usedQ.has(q.q));
-    if(!pool.length) pool=all; // استُهلكت كل الأسئلة — اسمح بالتكرار كخيار أخير فقط
+    if(!pool.length) return {q:'ماكو أسئلة يديدة بهالجولة',answer:'ضيف أسئلة ثانية للفئة'};
     const q=pool[Math.floor(Math.random()*pool.length)];
     state.usedQ.add(q.q);
     return q;
@@ -2415,27 +3126,35 @@ function pickQuestion(cat,d){
   const fam=familyCats && familyCats.find(c=>c.name===cat);
   if(fam){
     let pool=fam.questions.filter(q=>!state.usedQ.has(q.q));
-    if(!pool.length) pool=fam.questions;
+    if(!pool.length) return {q:'ماكو أسئلة يديدة بهالجولة',answer:'ضيف أسئلة ثانية للفئة'};
     const q=pool[Math.floor(Math.random()*pool.length)];
     state.usedQ.add(q.q);
     return q;
   }
-  const generated=roundQuestionBank[cat]||[];
-  let generatedPool=generated.filter(q=>q.d===d && !state.usedQ.has(q.q));
-  if(!generatedPool.length) generatedPool=generated.filter(q=>!state.usedQ.has(q.q));
-  if(generatedPool.length){
-    const q=generatedPool[Math.floor(Math.random()*generatedPool.length)];
-    state.usedQ.add(q.q);
-    return q;
-  }
-  // الفئات الأساسية: استبعد ما استُخدم في هذه الجولة، مع سقوط منطقي عند النفاد
+  // الفئات الأساسية: اختر سؤالاً من المستوى المطلوب لم يره الحساب في دورة
+  // البنك الحالية. عند استهلاك كل أسئلة المستوى نبدأ دورة جديدة، لكن لا نسمح
+  // أبداً بتكرار سؤال داخل الجولة المفتوحة نفسها.
   const local=QUESTION_BANK[cat]||[];
-  let pool=local.filter(q=>q.d===d && !state.usedQ.has(q.q));
-  if(!pool.length) pool=local.filter(q=>!state.usedQ.has(q.q)); // جرّب أي مستوى آخر بنفس الفئة
-  if(!pool.length) pool=local; // الفئة استُهلكت كاملة — اسمح بالتكرار كخيار أخير فقط
-  if(!pool.length) return {q:'تعذر تجهيز سؤال لهذه الفئة',answer:'اختر خانة أخرى'};
+  const sessionIds=state.usedQuestionIds||(state.usedQuestionIds=new Set());
+  const history=loadQuestionHistory();
+  const exact=local.filter(q=>q.d===d&&!sessionIds.has(q.id)&&!state.usedQ.has(q.q));
+  let pool=exact.filter(q=>!questionWasSeen(history,cat,q.id));
+  if(!pool.length&&exact.length){
+    const exactIds=new Set(exact.map(q=>q.id));
+    history[cat]=(history[cat]||[]).filter(id=>!exactIds.has(id));
+    saveQuestionHistory(history);
+    pool=exact;
+  }
+  if(!pool.length){
+    const remaining=local.filter(q=>!sessionIds.has(q.id)&&!state.usedQ.has(q.q));
+    pool=remaining.filter(q=>!questionWasSeen(history,cat,q.id));
+    if(!pool.length) pool=remaining;
+  }
+  if(!pool.length) return {q:'ما قدرنا نجهّز سؤال لهالفئة',answer:'اختار خانة ثانية'};
   const q=pool[Math.floor(Math.random()*pool.length)];
   state.usedQ.add(q.q);
+  sessionIds.add(q.id);
+  rememberQuestion(cat,q);
   return q;
 }
 function openQuestion(col,r,key,cell){
@@ -2447,13 +3166,14 @@ function openQuestion(col,r,key,cell){
   const owner=state.turn;
   const stealQueue=[];
   for(let i=1;i<state.teams.length;i++) stealQueue.push((state.turn+i)%state.teams.length);
-  state.cur={col,r,key,cell,cat,d:r,q,points:POINTS[r],doubled:false,searched:false,
-    owner, stealQueue, stealPos:-1, askedTeams:new Set(), passedToOpp:false, revealed:false,
+  state.cur={col,r,key,cell,cat,d:r,q,points:POINTS[r],
+    doubledForTeam:null, searchedForTeam:null,
+    owner, stealQueue, stealPos:-1, eligibleTeams:new Set([owner]), passedToOpp:false, revealed:false,
     resolved:false, token:0};
   const badge=document.getElementById('q-badge');
-  badge.textContent=cat; badge.style.background=FIRE[r].bg; badge.style.color=FIRE[r].tx;
+  badge.textContent=isFamilyCat(cat)?cat:displayCategoryName(cat); badge.style.background=FIRE[r].bg; badge.style.color=FIRE[r].tx;
   document.getElementById('q-points').textContent='+'+POINTS[r]+' نقطة';
-  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('q-text').textContent=displayQuestionText(q);
   setQuestionAnswer(q);
   document.getElementById('answer-box').classList.remove('show');
   document.getElementById('search-timer').classList.remove('show');
@@ -2478,12 +3198,14 @@ function startPhase(phase){
       setPhasePill(c.bombTarget, '💣 قنبلة! دور فريق '+state.teams[c.bombTarget].name+' — يجاوب شفهياً');
       showTimer(dt.bomb);
       renderFlow();
+      renderLifelines();
     } else if(phase==='reveal'){
       clearInterval(state.timer);
       document.getElementById('answer-box').classList.add('show');
       sfx('correct');
-      setPhasePill(-1, 'وش النتيجة؟');
+      setPhasePill(-1, 'شنو النتيجة؟');
       renderFlow();
+      renderLifelines();
     }
     return;
   }
@@ -2491,22 +3213,38 @@ function startPhase(phase){
   if(phase==='owner'){
     const t=isSpeed?dt.speed:dt.normal;
     setPhasePill(c.owner, 'دور فريق '+state.teams[c.owner].name+' — يجاوب شفهياً'+(isSpeed?' (سريع!)':''));
+    updateQuestionPoints(c.owner);
     showTimer(t);
     renderFlow();
+    renderLifelines();
   } else if(phase==='steal'){
     const ti=c.stealQueue[c.stealPos];
-    c.askedTeams.add(ti);
+    c.eligibleTeams.add(ti);
     const t=isSpeed?Math.round(dt.speed*0.5):dt.steal;
     setPhasePill(ti, 'سرقة! دور فريق '+state.teams[ti].name+' — '+t+' ثانية');
+    updateQuestionPoints(ti);
     showTimer(t);
     renderFlow();
+    renderLifelines();
   } else if(phase==='reveal'){
     clearInterval(state.timer);
     document.getElementById('answer-box').classList.add('show');
     sfx('correct');
-    setPhasePill(-1, 'مين جاوب صح؟ اختر الفريق');
+    setPhasePill(-1, 'منو جاوب صح؟ اختار الفريق');
     renderFlow();
+    renderLifelines();
   }
+}
+function updateQuestionPoints(teamIdx){
+  const c=state.cur;
+  if(!c || c.isBomb || teamIdx<0) return;
+  let points=c.points;
+  const effects=[];
+  if(c.doubledForTeam===teamIdx){ points*=2; effects.push('مضاعف'); }
+  if(c.searchedForTeam===teamIdx){ points=Math.round(points/2); effects.push('بعد البحث'); }
+  const teamName=state.teams[teamIdx].name;
+  document.getElementById('q-points').textContent=
+    `+${points} نقطة${effects.length?' ('+effects.join(' · ')+' لفريق '+teamName+')':''}`;
 }
 // ينتقل للفريق التالي في طابور السرقة، أو يكشف الإجابة إن انتهى الطابور
 // token: قيمة state.cur.token الملتقَطة وقت إنشاء المشغّل (زر أو مؤقّت). دونها
@@ -2570,22 +3308,20 @@ function renderVerdict(box){
   if(c.isBomb){
     const label=document.createElement('div');
     label.style.cssText='font-size:13px;color:var(--muted);text-align:center;margin-bottom:2px;font-weight:700;';
-    label.textContent='وش صار مع فريق '+state.teams[c.bombTarget].name+'؟';
+    label.textContent='شنو صار مع فريق '+state.teams[c.bombTarget].name+'؟';
     box.appendChild(label);
-    box.appendChild(btn('primary','✅ أجاب صح (+1200)', ()=>awardBomb(true)));
-    box.appendChild(btn('ghost','❌ أخطأ (-1200)', ()=>awardBomb(false)));
+    box.appendChild(btn('primary','✅ جاوب صح (+1200)', ()=>awardBomb(true)));
+    box.appendChild(btn('ghost','❌ جاوب غلط (-1200)', ()=>awardBomb(false)));
     return;
   }
   const label=document.createElement('div');
   label.style.cssText='font-size:13px;color:var(--muted);text-align:center;margin-bottom:2px;font-weight:700;';
-  label.textContent='مين جاوب صح؟';
+  label.textContent='منو جاوب صح؟';
   box.appendChild(label);
   // أزرار الفرق المؤهّلة للحكم:
   // - المالك مؤهّل ما لم يمرّر السؤال بالوسيلة (التمرير = تنازل عن الحق)
   // - أي فريق طُرح عليه السؤال أثناء طابور السرقة مؤهّل أيضاً (يدعم أكثر من فريق سارق)
-  const eligible=[];
-  if(!c.passedToOpp) eligible.push(c.owner);
-  c.askedTeams.forEach(ti=>{ if(!eligible.includes(ti)) eligible.push(ti); });
+  const eligible=[...(c.eligibleTeams||[])];
   const row=document.createElement('div'); row.className='verdict-row';
   eligible.forEach(ti=>{
     const st=TEAM_STYLES[state.teams[ti].idx];
@@ -2595,7 +3331,7 @@ function renderVerdict(box){
   });
   box.appendChild(row);
   const none=document.createElement('button'); none.className='vb vb-none';
-  none.textContent='❌ لا أحد أجاب صح'; none.onclick=()=>awardTo(-1);
+  none.textContent='❌ محد جاوب صح'; none.onclick=()=>awardTo(-1);
   box.appendChild(none);
 }
 function awardTo(teamIdx){
@@ -2606,10 +3342,10 @@ function awardTo(teamIdx){
   if(teamIdx>=0){
     sfx('correct'); vibrate([15,10,15]);
     let pts=c.points;
-    if(c.doubled) pts*=2;
-    if(c.searched) pts=Math.round(pts/2);
-    state.teams[teamIdx].score+=pts; stats.correct++;
-  } else { sfx('wrong'); vibrate([40,30,40]); }
+    if(c.doubledForTeam===teamIdx) pts*=2;
+    if(c.searchedForTeam===teamIdx) pts=Math.round(pts/2);
+    state.teams[teamIdx].score+=pts; stats.correct++; state.roundCorrect=(state.roundCorrect||0)+1;
+  } else { sfx('wrong'); vibrate([40,30,40]); state.roundIncorrect=(state.roundIncorrect||0)+1; }
   c.cell.classList.add('used'); state.cells[c.key].used=true;
   state.answered++; renderTeamsBar();
   closeQuestion();
@@ -2619,7 +3355,10 @@ function awardTo(teamIdx){
 function showTimer(sec){
   clearInterval(state.timer); state.timeLeft=sec; state.maxTime=sec; state.paused=false;
   const myToken = state.cur ? state.cur.token : 0;
-  document.getElementById('pause-btn').textContent='⏸'; updateTimerUI();
+  const pauseButton=document.getElementById('pause-btn');
+  pauseButton.textContent='⏸'; pauseButton.setAttribute('aria-label','وقّف العداد مؤقتًا');
+  document.getElementById('countdown-timer').classList.remove('paused');
+  updateTimerUI();
   state.timer=setInterval(()=>{
     if(state.paused) return;
     state.timeLeft--; updateTimerUI();
@@ -2628,17 +3367,20 @@ function showTimer(sec){
   },1000);
 }
 function updateTimerUI(){
-  const pct=(state.timeLeft/(state.maxTime||60))*100; const fill=document.getElementById('timer-fill');
-  fill.style.width=pct+'%';
-  fill.style.background=state.timeLeft>state.maxTime*0.33?'var(--ok)':(state.timeLeft>state.maxTime*0.17?'var(--fire2)':'var(--no)');
   const num=document.getElementById('timer-num'); num.textContent=state.timeLeft;
   num.classList.toggle('warn',state.timeLeft<=Math.ceil(state.maxTime*0.17));
+  const elapsed=Math.max(0,(state.maxTime||state.timeLeft)-state.timeLeft);
+  document.getElementById('timer-hourglass').classList.toggle('is-flipped',Math.floor(elapsed/2)%2===1);
+  document.getElementById('countdown-timer').setAttribute('aria-label',`باقي ${state.timeLeft} ثانية`);
 }
 function togglePause(){
   if(state.cur&&state.cur.searching) return;
   if(state.cur&&state.cur.phase==='reveal') return;
   sfx('tap'); state.paused=!state.paused;
-  document.getElementById('pause-btn').textContent=state.paused?'▶':'⏸';
+  const pauseButton=document.getElementById('pause-btn');
+  pauseButton.textContent=state.paused?'▶':'⏸';
+  pauseButton.setAttribute('aria-label',state.paused?'كمّل العداد':'وقّف العداد مؤقتًا');
+  document.getElementById('countdown-timer').classList.toggle('paused',state.paused);
   setQuestionHidden(state.paused);
 }
 function setQuestionHidden(hide){
@@ -2681,7 +3423,7 @@ const LIFELINES=[
   {id:'search', label:'بحث بالجوال', icon:'🔍'},
   {id:'pass', label:'مرّرها للخصم', icon:'🔀'},
   {id:'skip', label:'تغيير السؤال', icon:'🔄'},
-  {id:'double', label:'مضاعفة', icon:'✖️2'},
+  {id:'double', label:'مضاعفة السؤال', icon:'✖️2'},
 ];
 function renderLifelines(){
   const box=document.getElementById('lifelines'); box.innerHTML='';
@@ -2696,7 +3438,7 @@ function renderLifelines(){
     if(ll.id==='pass' && (c.phase!=='owner' || c.passedToOpp || state.teams.length<2)){
       return;
     }
-    const b=document.createElement('button'); b.className='ll'+(team.used.has(ll.id)?' done':'');
+    const b=document.createElement('button'); b.className='ll ll-'+ll.id+(team.used.has(ll.id)?' done':'');
     b.innerHTML=`<span class="lli">${ll.icon}</span>${ll.label}`;
     b.setAttribute('aria-label',`${ll.label} — فريق ${team.name}`);
     const noBudget=team.ll<=0&&!team.used.has(ll.id);
@@ -2704,7 +3446,7 @@ function renderLifelines(){
     b.onclick=()=>useLifeline(ll.id,activeTeamIdx); box.appendChild(b);
   });
   const note=document.createElement('div'); note.className='ll-note';
-  note.textContent=`متبقّي لفريق ${team.name}: ${team.ll} وسائل`;
+  note.textContent=`باقي لفريق ${team.name}: ${team.ll} وسائل`;
   box.appendChild(note);
 }
 function useLifeline(id, teamIdx){
@@ -2714,27 +3456,37 @@ function useLifeline(id, teamIdx){
   if(id==='pass'){
     // مرّر السؤال لأول فريق في طابور السرقة — المالك يخسر حق السرقة، وبقية الطابور يستمر بعده
     c.passedToOpp=true;
+    c.eligibleTeams.delete(teamIdx);
     advanceSteal(c.token);
     return;
   } else if(id==='skip'){
     const nq=pickQuestion(c.cat,c.d); c.q=nq;
-    document.getElementById('q-text').textContent=nq.q;
+    // السؤال البديل لم يُطرح على الفرق التي أجابت النسخة السابقة. يبدأ حق
+    // الحكم من الفريق الذي استهلك وسيلة التغيير، ثم تُضاف الفرق اللاحقة فقط.
+    c.eligibleTeams=new Set([teamIdx]);
+    document.getElementById('q-text').textContent=displayQuestionText(nq);
     setQuestionAnswer(nq);
     const dt2=DIFF_TIMES[state.difficulty]||DIFF_TIMES.normal;
     const isSpd=c.cat==='إجابة سريعة';
     showTimer(c.phase==='steal'?(isSpd?Math.round(dt2.speed*0.5):dt2.steal):(isSpd?dt2.speed:dt2.normal));
   } else if(id==='double'){
-    c.doubled=true;
-    document.getElementById('q-points').textContent='+'+(c.points*2)+' نقطة (مضاعف!)';
+    c.doubledForTeam=teamIdx;
+    updateQuestionPoints(teamIdx);
   } else if(id==='search'){
-    c.searched=true; c.searching=true; state.paused=true;
+    c.searchedForTeam=teamIdx; c.searching=true; state.paused=true;
+    updateQuestionPoints(teamIdx);
     document.getElementById('pause-btn').disabled=true;
     document.getElementById('pause-btn').style.opacity='.4';
+    document.querySelectorAll('#q-flow button').forEach(button=>{ button.disabled=true; });
     let s=60; const el=document.getElementById('search-timer'); el.classList.add('show');
-    el.textContent='🔍 وقت البحث: '+s;
+    el.textContent='🔍 باقي للبحث: '+s;
     clearInterval(state.searchTimer);
-    state.searchTimer=setInterval(()=>{ s--; el.textContent='🔍 وقت البحث: '+s;
-      if(s<=0){ clearInterval(state.searchTimer); el.classList.remove('show'); state.paused=false; c.searching=false; const pb=document.getElementById('pause-btn'); pb.disabled=false; pb.style.opacity='1'; pb.textContent='⏸'; }
+    state.searchTimer=setInterval(()=>{ s--; el.textContent='🔍 باقي للبحث: '+s;
+      if(s<=0){
+        clearInterval(state.searchTimer); el.classList.remove('show'); state.paused=false; c.searching=false;
+        const pb=document.getElementById('pause-btn'); pb.disabled=false; pb.style.opacity='1'; pb.textContent='⏸';
+        renderFlow(); renderLifelines();
+      }
     },1000);
   }
   renderLifelines();
@@ -2751,12 +3503,20 @@ function endGame(){
   if(bestThisGame>stats.bestScore) stats.bestScore=bestThisGame;
   if(!tie) stats.wins++;
   saveStats();
+  const durationSeconds=Math.max(0,Math.round((Date.now()-(state.startedAt||Date.now()))/1000));
+  void trackMetric('game_completed',{
+    difficulty:state.difficulty,teams:state.teams.length,
+    categoryCount:state.cats.length,questions:state.answered,
+    correct:state.roundCorrect||0,incorrect:state.roundIncorrect||0,
+    durationSeconds,topScore:bestThisGame,tie,freeRound:Boolean(state.isFreeRound),
+  });
+  void completeFreeRound();
   showResult(sorted,win,tie);
   checkAchievements();
 }
 function showResult(sorted,win,tie){
   const wl=document.getElementById('winner-line');
-  wl.innerHTML=tie?'تعادل! 🤝':('🏆 الفائز: <span class="brand">'+esc(win.name)+'</span>');
+  wl.innerHTML=tie?'تعادل! 🤝':('🏆 الفايز: <span class="brand">'+esc(win.name)+'</span>');
   const pod=document.getElementById('podium'); pod.innerHTML='';
   const medals=['🥇','🥈','🥉']; const heights={0:156,1:122,2:98};
   const order=[1,0,2].filter(i=>i<sorted.length);
@@ -2766,16 +3526,28 @@ function showResult(sorted,win,tie){
     el.style.background=st.bg; el.style.borderColor=st.dot;
     el.style.height=heights[pos]+'px'; el.style.animationDelay=(k*0.12)+'s';
     el.innerHTML=`<div class="medal">${medals[pos]}</div>
-      <div class="pn" style="color:${st.color}">${t.name}</div>
+      <div class="pn" style="color:${st.color}">${esc(t.name)}</div>
       <div class="ps" style="color:${st.color}">${t.score}</div>`;
     pod.appendChild(el);
   });
   go('s-result');
+  const primary=document.getElementById('result-primary-btn');
+  if(primary) primary.textContent=state.isFreeRound&&!_hasActiveSubscription
+    ? '👑 اكتشف فطنة برو'
+    : '🔄 جولة جديدة';
   if(!tie){ sfx('win'); vibrate([60,40,60,40,120]); fireConfetti(); }
 }
 function restart(){
-  state.teams.forEach(t=>{ t.score=0; t.ll=3; t.used=new Set(); });
+  state.teams.forEach(t=>{ t.score=0; t.ll=3; t.used=new Set(); t.bombUsed=false; });
   startGame();
+}
+function afterResultPrimary(){
+  if(state.completedFreeRound&&!_hasActiveSubscription){ go('s-paywall'); return; }
+  restart();
+}
+function afterResultHome(){
+  if(state.completedFreeRound&&!_hasActiveSubscription){ go('s-paywall'); return; }
+  go('s-home');
 }
 function fireConfetti(){
   const box=document.getElementById('confetti'); box.innerHTML='';
@@ -2795,6 +3567,7 @@ function fireConfetti(){
 function openStats(){ renderStats(); go('s-stats'); }
 function openAccountSettings(){
   renderAccountLinks(); refreshVerificationStatus();
+  void initPushMessaging().catch(error=>recordNonFatal(error,'firebase.messaging.account'));
   const inp = document.getElementById('account-name-input');
   if(inp) inp.value = storeGet('playerName','');
   const msg = document.getElementById('account-name-msg');
@@ -2805,12 +3578,12 @@ function openAccountSettings(){
 function savePlayerName(){
   const inp = document.getElementById('account-name-input');
   const name = (inp && inp.value.trim()) || '';
-  if(!name){ showToast('⚠️','الاسم فارغ','أدخل اسمك أولاً',false); return; }
+  if(!name){ showToast('⚠️','الاسم فاضي','اكتب اسمك أول',false); return; }
   storeSet('playerName', name);
   const nameEl = document.getElementById('user-name');
   if(nameEl) nameEl.textContent = name;
   const msg = document.getElementById('account-name-msg');
-  if(msg){ msg.textContent = '✓ تم حفظ الاسم'; setTimeout(()=>{ if(msg) msg.textContent=''; }, 2000); }
+  if(msg){ msg.textContent = '✓ حفظنا الاسم'; setTimeout(()=>{ if(msg) msg.textContent=''; }, 2000); }
   sfx('correct');
 }
 
@@ -2840,8 +3613,8 @@ async function renderAccountLinks(){
     const info=PROVIDER_INFO[pid];
     const isLinked=linkedIds.has(pid);
     const status = isLinked
-      ? '<span style="color:#7CFC7C;font-size:12px;">✓ مرتبط</span>'
-      : '<span style="color:var(--muted);font-size:12px;">غير مرتبط</span>';
+      ? '<span style="color:#7CFC7C;font-size:12px;">✓ مربوط</span>'
+      : '<span style="color:var(--muted);font-size:12px;">مو مربوط</span>';
     const action = isLinked
       ? `<button class="btn btn-ghost" style="padding:6px 14px;font-size:13px;width:auto;" onclick="unlinkProvider('${pid}')">فك الربط</button>`
       : `<button class="btn btn-primary" style="padding:6px 14px;font-size:13px;width:auto;" onclick="linkProvider('${pid}')">ربط</button>`;
@@ -2863,19 +3636,19 @@ function linkProvider(pid){
     return;
   }
   openAuth('s-stats');
-  document.getElementById('auth-title').textContent='أضف طريقة دخول جديدة';
-  document.getElementById('auth-sub').textContent='أضف البريد وكلمة المرور كوسيلة دخول إضافية لحسابك الحالي';
+  document.getElementById('auth-title').textContent='ضيف طريقة دخول يديدة';
+  document.getElementById('auth-sub').textContent='ضيف البريد وكلمة المرور كطريقة دخول إضافية لحسابك الحالي';
   document.getElementById('auth-email-form').style.display='block';
 }
 async function unlinkProvider(pid){
   sfx('tap');
   const linked = await getCurrentProviderData();
   if(linked.length<=1){
-    showToast('⚠️','لا يمكن فك الربط','هذه آخر وسيلة دخول لحسابك — أضف وسيلة أخرى أولاً قبل فك هذه',false);
+    showToast('⚠️','ما نقدر نفك الربط','هذي آخر طريقة دخول لحسابك — ضيف طريقة ثانية قبل لا تفك هذي',false);
     return;
   }
   const label = (PROVIDER_INFO[pid]||{}).label || pid;
-  const ok=confirm(`هل تريد فك ربط الدخول عبر ${label}؟ ستحتاج وسيلة أخرى لتسجيل الدخول لاحقاً.`);
+  const ok=confirm(`تبي تفك ربط الدخول عن طريق ${label}؟ راح تحتاج طريقة ثانية عشان تسجّل دخولك بعدين.`);
   if(!ok) return;
   try{
     const FA=getFirebaseAuth();
@@ -2898,9 +3671,9 @@ async function unlinkProvider(pid){
         storeSet('authProvider', np);
       }
     }
-    showToast('✅','تم فك الربط','',false);
+    showToast('✅','فكّينا الربط','',false);
     renderAccountLinks();
-  }catch(e){ console.error('unlink:', e); showToast('⚠️','تعذّر فك الربط','',false); }
+  }catch(e){ console.error('unlink:', e); showToast('⚠️','ما قدرنا نفك الربط','',false); }
 }
 function renderStats(){
   const acc=stats.totalQ?Math.round((stats.correct/stats.totalQ)*100):0;
@@ -2924,7 +3697,7 @@ function checkAchievements(){
   ACHIEVEMENTS.forEach(a=>{
     if(!stats.ach[a.id]&&a.chk(stats)){
       stats.ach[a.id]=true; saveStats();
-      setTimeout(()=>showToast(a.icon,'إنجاز جديد!',a.t),700);
+      setTimeout(()=>showToast(a.icon,'إنجاز يديد!',a.t),700);
     }
   });
 }
@@ -2939,118 +3712,54 @@ function showToast(icon,title,desc,playAchSound){
 }
 
 // ────────── الأسئلة العائلية
-let familyCats = loadFamily();        // [{name, questions:[{q,o,a}]}]
-let familyMode = 'ai';
+let familyCats = [];                  // [{name, questions:[{q,o,a}]}]
+let familyMode = 'manual';
 let manualDraft = { name:'', questions:[], correct:0 };
 let previewData = null;                // {name, questions}
 
-function loadFamily(){ return storeGet('family', []); }
-function saveFamily(){ storeSet('family', familyCats); }
+function loadFamily(uid=window._currentUid||storeGet('authUid','')){
+  return uid ? storeGet(scopedAccessKey('family',uid),[]) : [];
+}
+function saveFamily(){
+  const uid=window._currentUid||storeGet('authUid','');
+  if(uid) storeSet(scopedAccessKey('family',uid),familyCats);
+}
 
 function openFamily(){
-  setFamilyMode('ai');
+  setFamilyMode('manual');
   renderManualOpts();
   renderSavedFamily();
   go('s-family');
 }
 function setFamilyMode(m){
-  familyMode=m; sfx('tap');
-  document.getElementById('fmode-ai').classList.toggle('on',m==='ai');
-  document.getElementById('fmode-manual').classList.toggle('on',m==='manual');
-  document.getElementById('family-ai').style.display = m==='ai'?'block':'none';
-  document.getElementById('family-manual').style.display = m==='manual'?'block':'none';
-}
-
-// ---- وضع التوليد بالذكاء ----
-async function generateFamily(){
-  const name=(document.getElementById('fai-name').value||'').trim();
-  const topic=(document.getElementById('fai-topic').value||'').trim();
-  const count=+document.getElementById('fai-count').value;
-  if(!name){ shakeField('fai-name'); return; }
-  if(!topic){ shakeField('fai-topic'); return; }
-  sfx('start'); vibrate(20);
-  const btn=document.getElementById('fai-btn');
-  btn.disabled=true; btn.innerHTML='<span class="spin" style="display:inline-block">⏳</span> يولّد الأسئلة...';
-  let questions=null; let failed=false;
-  try{ questions = await aiGenerate(topic,count); }
-  catch(e){ failed=true; }
-  btn.disabled=false; btn.innerHTML='✨ ولّد الأسئلة';
-  if(failed || !questions || !questions.length){
-    // رسالة صادقة بدل أسئلة قوالب وهمية بلا معنى
-    showToast('⚠️','تعذّر التوليد','تأكّد من الإنترنت وحاول مرة ثانية، أو استخدم الإدخال اليدوي',false);
-    return;
-  }
-  previewData={name, questions};
-  renderPreview(); go('s-family-preview');
-}
-
-// توليد الأسئلة عبر الخادم المحلي (يستخدم Claude / Anthropic بأمان من جهة الخادم)
-// في بيئة iOS الأصلية نعود للـ Firebase Cloud Function كاحتياط
-const AI_BACKEND_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1') && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
-  ? 'https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions'
-  : '/api/generate';
-// تتبّع الأسئلة المُشاهدة لكل موضوع — يضمن أسئلة جديدة دائماً ويوفّر التوكن
-// نفس تطبيع الخادم (normalize_topic) حتى تتطابق المفاتيح
-function seenKey(topic){
-  let t=topic.trim().toLowerCase();
-  t=t.replace(/[\u064B-\u0652\u0670]/g,'');
-  t=t.replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي');
-  return t.replace(/\s+/g,' ');
-}
-function getSeen(topic){ const m=storeGet('seenQ',{}); return m[seenKey(topic)]||[]; }
-function addSeen(topic, ids){
-  if(!ids.length) return;
-  const m=storeGet('seenQ',{}); const k=seenKey(topic);
-  m[k]=[...new Set([...(m[k]||[]), ...ids])].slice(-5000);
-  // حد أقصى 40 موضوعاً — احذف الأقدم عند التجاوز (حماية سعة localStorage)
-  const keys=Object.keys(m);
-  if(keys.length>40){ keys.slice(0,keys.length-40).forEach(x=>delete m[x]); }
-  storeSet('seenQ', m);
-}
-async function aiGenerate(topic,count,{trustedRound=false}={}){
-  const uid=window._currentUid || storeGet('authUid','');
-  const idToken=await getCurrentIdToken();
-  const res=await fetch(AI_BACKEND_URL,{
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ topic, count, seen:getSeen(topic), uid, idToken, trustedRound })
-  });
-  if(!res.ok) throw new Error('فشل الاتصال بالخادم');
-  const data=await res.json();
-  const arr=(data.questions||[]).filter(x=>{
-    if(!x || !x.q || !x.answer) return false;
-    // لا تقبل الجولة أسئلة من خادم قديم أو استجابة غير موثقة.
-    return !trustedRound || Boolean(x.source && /^https:\/\//.test(x.source.url||''));
-  }).slice(0,count);
-  addSeen(topic, arr.map(x=>x.id).filter(Boolean));
-  return arr;
+  familyMode='manual'; sfx('tap');
+  const manual=document.getElementById('family-manual');
+  if(manual) manual.style.display='block';
 }
 
 // مولّد نموذجي ذكي (يعمل دون إنترنت — لعرض التجربة كاملة)
 function templateGenerate(topic,count){
   const templates=[
-    {q:`ما أبرز ما يميّز ${topic}؟`, o:['التنوّع','التاريخ العريق','الموقع','كل ما سبق'], a:3},
-    {q:`أي مما يلي مرتبط بـ ${topic}؟`, o:['خيار أول','خيار ثانٍ','خيار ثالث','خيار رابع'], a:0},
-    {q:`من المشهور في مجال ${topic}؟`, o:['شخصية أولى','شخصية ثانية','شخصية ثالثة','لا أحد'], a:1},
+    {q:`شنو أبرز شي يميّز ${topic}؟`, o:['التنوّع','التاريخ العريق','الموقع','كل ما سبق'], a:3},
+    {q:`أي واحد من هذي مرتبط بـ ${topic}؟`, o:['خيار أول','خيار ثانٍ','خيار ثالث','خيار رابع'], a:0},
+    {q:`منو المشهور في مجال ${topic}؟`, o:['شخصية أولى','شخصية ثانية','شخصية ثالثة','محد'], a:1},
     {q:`متى ازدهر ${topic}؟`, o:['قديماً','حديثاً','مستمر','متقطّع'], a:2},
-    {q:`أين يبرز ${topic} أكثر؟`, o:['المدن','الأرياف','الساحل','كل المناطق'], a:3},
-    {q:`ما التحدّي الأكبر أمام ${topic}؟`, o:['الوقت','الموارد','المنافسة','التطوير'], a:0},
-    {q:`كيف يُقاس نجاح ${topic}؟`, o:['بالكم','بالكيف','بالأثر','بالجميع'], a:2},
-    {q:`ما مستقبل ${topic}؟`, o:['واعد','مستقر','متغيّر','غامض'], a:0},
-    {q:`أي فئة تهتم بـ ${topic} أكثر؟`, o:['الشباب','الكبار','الجميع','المختصون'], a:2},
-    {q:`ما أصل ${topic}؟`, o:['محلي','عربي','عالمي','مشترك'], a:3},
-    {q:`ما القيمة الأساسية في ${topic}؟`, o:['الأصالة','الحداثة','التوازن','التميّز'], a:2},
-    {q:`ما الكلمة الأقرب لوصف ${topic}؟`, o:['مميّز','عريق','متطوّر','شامل'], a:0},
+    {q:`وين يبرز ${topic} أكثر؟`, o:['المدن','الأرياف','الساحل','كل المناطق'], a:3},
+    {q:`شنو أكبر تحدّي جدام ${topic}؟`, o:['الوقت','الموارد','المنافسة','التطوير'], a:0},
+    {q:`شلون ينقاس نجاح ${topic}؟`, o:['بالكم','بالكيف','بالأثر','بالجميع'], a:2},
+    {q:`شنو مستقبل ${topic}؟`, o:['واعد','مستقر','متغيّر','غامض'], a:0},
+    {q:`أي فئة تهتم بـ ${topic} أكثر شي؟`, o:['الشباب','الكبار','الجميع','المختصون'], a:2},
+    {q:`شنو أصل ${topic}؟`, o:['محلي','عربي','عالمي','مشترك'], a:3},
+    {q:`شنو القيمة الأساسية في ${topic}؟`, o:['الأصالة','الحداثة','التوازن','التميّز'], a:2},
+    {q:`شنو أقرب كلمة توصف ${topic}؟`, o:['مميّز','عريق','متطوّر','شامل'], a:0},
   ];
   return templates.slice(0,count).map(t=>({...t}));
 }
 
 function renderPreview(){
-  document.getElementById('fp-info').textContent=`فئة "${previewData.name}" · ${previewData.questions.length} أسئلة · راجعها ثم احفظ`;
+  document.getElementById('fp-info').textContent=`فئة "${previewData.name}" · ${previewData.questions.length} أسئلة · شيّك عليها وبعدين احفظ`;
   const list=document.getElementById('fp-list');
-  // esc() إلزامية هنا — نص الأسئلة قد يكون مولَّداً بالذكاء الاصطناعي ومخزَّناً
-  // بمخزن مشترك بين المستخدمين (question_bank بالخادم)؛ إدراجه خاماً بـinnerHTML
-  // يفتح ثغرة XSS مخزَّنة حقيقية (خلافاً لشاشة اللعب الفعلية التي تستخدم
-  // .textContent بشكل صحيح لنفس البيانات)
+  // esc() إلزامية لأن نص الأسئلة العائلية أدخله المستخدم ويُخزّن محلياً.
   list.innerHTML=previewData.questions.map((q,i)=>{
     // النظام الخفيف الجديد: سؤال + إجابة نصية فقط (بلا خيارات)
     if(q.answer && !q.o){
@@ -3069,7 +3778,7 @@ function saveFamilyCategory(){
   if(existing){ existing.questions.push(...previewData.questions); }
   else{ familyCats.push({name:previewData.name, questions:previewData.questions.slice()}); }
   saveFamily();
-  showToast('👨‍👩‍👧‍👦','تم الحفظ!',`فئة "${previewData.name}" جاهزة`);
+  showToast('👨‍👩‍👧‍👦','حفظناها!',`فئة "${previewData.name}" جاهزة`);
   previewData=null;
   openFamily();
 }
@@ -3081,7 +3790,7 @@ function renderManualOpts(){
   box.innerHTML='';
   for(let i=0;i<4;i++){
     const row=document.createElement('div'); row.className='fm-opt-row';
-    row.innerHTML=`<div class="fm-radio ${i===manualDraft.correct?'on':''}" role="radio" tabindex="0" aria-checked="${i===manualDraft.correct}" aria-label="تعيين الخيار ${i+1} كإجابة صحيحة" onclick="setManualCorrect(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setManualCorrect(${i})}"></div>
+    row.innerHTML=`<div class="fm-radio ${i===manualDraft.correct?'on':''}" role="radio" tabindex="0" aria-checked="${i===manualDraft.correct}" aria-label="خل الخيار ${i+1} هو الإجابة الصح" onclick="setManualCorrect(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setManualCorrect(${i})}"></div>
       <input class="team-input" id="fm-o-${i}" placeholder="خيار ${i+1}" maxlength="60" style="flex:1;">`;
     box.appendChild(row);
   }
@@ -3107,7 +3816,7 @@ function addManualQuestion(){
   document.getElementById('fm-q').value='';
   [0,1,2,3].forEach(i=>document.getElementById('fm-o-'+i).value='');
   manualDraft.correct=0; renderManualOpts();
-  document.getElementById('fm-added').textContent=`✅ أُضيف · لديك ${manualDraft.questions.length} أسئلة في "${name}" — أضف المزيد أو احفظ`;
+  document.getElementById('fm-added').textContent=`✅ ضفناه · عندك ${manualDraft.questions.length} أسئلة في "${name}" — زيد أسئلة أو احفظ`;
   // زر حفظ يظهر بعد أول سؤال
   if(manualDraft.questions.length===1){
     const b=document.createElement('button'); b.className='btn btn-primary'; b.style.marginTop='12px';
@@ -3122,11 +3831,11 @@ function saveManualCategory(){
   if(existing){ existing.questions.push(...manualDraft.questions); }
   else{ familyCats.push({name:manualDraft.name, questions:manualDraft.questions.slice()}); }
   saveFamily();
-  showToast('👨‍👩‍👧‍👦','تم الحفظ!',`فئة "${manualDraft.name}" جاهزة`);
+  showToast('👨‍👩‍👧‍👦','حفظناها!',`فئة "${manualDraft.name}" جاهزة`);
   manualDraft={name:'', questions:[], correct:0};
   const sb=document.getElementById('fm-save-btn'); if(sb) sb.remove();
   document.getElementById('fm-name').value='';
-  document.getElementById('fm-added').textContent='لم تُضف أسئلة بعد';
+  document.getElementById('fm-added').textContent='ما ضفت أسئلة للحين';
   renderManualOpts(); renderSavedFamily();
 }
 
@@ -3137,9 +3846,9 @@ function renderSavedFamily(){
   box.innerHTML='<div class="field-label" style="margin-top:20px;">فئاتكم العائلية</div>'+
     familyCats.map((c,i)=>{
       const ready=c.questions.length>=FAMILY_MIN_QUESTIONS;
-      const sub=ready ? `${c.questions.length} أسئلة` : `${c.questions.length}/${FAMILY_MIN_QUESTIONS} أسئلة — أضف المزيد لتلعب`;
+      const sub=ready ? `${c.questions.length} أسئلة` : `${c.questions.length}/${FAMILY_MIN_QUESTIONS} أسئلة — زيد أسئلة عشان تلعب`;
       return `<div class="fsaved-chip">
-      <div><div class="fc-info">👨‍👩‍👧‍👦 ${c.name}</div><div class="fc-sub">${sub}</div></div>
+      <div><div class="fc-info">👨‍👩‍👧‍👦 ${esc(c.name)}</div><div class="fc-sub">${esc(sub)}</div></div>
       <div class="fsaved-actions">
         <button class="mini-btn play" onclick="playFamilyRound(${i})" style="${ready?'':'opacity:.5;'}">▶ العب</button>
         <button class="mini-btn danger" onclick="deleteFamily(${i})">حذف</button>
@@ -3152,7 +3861,7 @@ function deleteFamily(i){
   _pendingDeleteFamilyIdx=i;
   const cat=familyCats[i];
   document.getElementById('delete-family-sub').textContent=
-    `سيُحذف "${cat.name}" وكل أسئلتها (${cat.questions.length}) نهائياً ولا يمكن التراجع.`;
+    `راح تنحذف "${cat.name}" وكل أسئلتها (${cat.questions.length}) نهائياً، وما تقدر تتراجع.`;
   document.getElementById('delete-family-modal').classList.add('show');
 }
 function closeDeleteFamilyModal(){
@@ -3173,11 +3882,12 @@ function doDeleteFamily(){
 // السؤال حرفياً على أكثر من خلية، فامنع اللعب واطلب إكمال العدد أولاً
 const FAMILY_MIN_QUESTIONS = 6;
 function playFamilyRound(i){
+  if(!canStartRound()) return;
   const cat=familyCats[i];
   if(cat.questions.length<FAMILY_MIN_QUESTIONS){
     sfx('tap');
-    showToast('✋','تحتاج المزيد من الأسئلة',
-      `أضف ${FAMILY_MIN_QUESTIONS-cat.questions.length} سؤالاً آخر على الأقل بفئة "${cat.name}" حتى لا تتكرر الأسئلة باللوحة`, false);
+    showToast('✋','تحتاج أسئلة أكثر',
+      `زيد ${FAMILY_MIN_QUESTIONS-cat.questions.length} سؤال على الأقل بفئة "${cat.name}" عشان ما تتكرر الأسئلة باللوحة`, false);
     return;
   }
   sfx('start'); vibrate(30);
@@ -3187,12 +3897,20 @@ function playFamilyRound(i){
     {name:TEAM_STYLES[1].name, score:0, ll:3, used:new Set(), idx:1, bombUsed:false},
   ];
   state.teamCount=2;
-  // فئة واحدة مكرّرة عبر الأعمدة الستة، أو استخدم الأسئلة المتاحة
-  state.cats=[cat.name,cat.name,cat.name,cat.name,cat.name,cat.name];
+  // فئة واحدة وست خلايا فقط؛ تكرار الفئة في ستة أعمدة كان يصنع 36 خلية
+  // من ستة أسئلة ويجبر اللعبة على التكرار.
+  state.cats=[cat.name];
   state.familyRound=cat; // علامة لسحب الأسئلة من الفئة العائلية
-  state.usedQ=new Set();
+  state.usedQ=new Set(); state.usedQuestionIds=new Set();
   state.turn=0; state.answered=0; state.cells={};
+  state.startedAt=Date.now(); state.roundCorrect=0; state.roundIncorrect=0;
+  state.isFreeRound=!_hasActiveSubscription&&_freeRoundAvailable;
+  state.completedFreeRound=false;
   buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
+  void trackMetric('game_started',{
+    difficulty:state.difficulty,teams:state.teams.length,
+    categoryCount:1,freeRound:state.isFreeRound,familyRound:true,
+  });
 }
 
 function shakeField(id){
@@ -3227,6 +3945,13 @@ function shakeField(id){
 })();
 
 // ---- تهيئة ----
+(async function startApplication(){
+const restoredPreferences=await hydrateNativePreferences();
+if(restoredPreferences>0 && sessionStorage.getItem('fatinah_preferences_hydrated')!=='1'){
+  sessionStorage.setItem('fatinah_preferences_hydrated','1');
+  window.location.reload();
+  return;
+}
 renderTeamNames();
 (function initSoundIcon(){
   const b=document.getElementById('sound-btn');
@@ -3251,6 +3976,7 @@ if(!(window.Capacitor && window.Capacitor.isNativePlatform())){
 // ⚠️ SCREENSHOT MODE — يُحذف بعد أخذ اللقطات
 const __SCREENSHOT_SCREEN = null; // home | teams | board | paywall | result
 initCrashReporting();
+await initAppIntegrity();
 void initPushMessaging().catch(error=>recordNonFatal(error,'firebase.messaging'));
 (async function bootAuth(){
   hideSplash();
@@ -3274,13 +4000,14 @@ void initPushMessaging().catch(error=>recordNonFatal(error,'firebase.messaging')
     state.teams=[{name:'الفريق 🔥',score:2600},{name:'الفريق 💎',score:1200}];
     renderResult(); go('s-result'); return;
   }
-  // اعرض واجهة مفيدة فوراً بدلاً من إبقاء اللاعب في شاشة تحميل أثناء انتظار
-  // Firebase والخادم. لا يُفتح المحتوى المدفوع هنا؛ المشترك فقط يُنقل للرئيسية
-  // بعد تحقق الخادم في الخلفية.
-  go('s-paywall');
+  // لا نعرض شاشة الاشتراك قبل أن نعرف هل للمستخدم جولة مجانية أو اشتراك.
+  // شاشة تحميل قصيرة تمنع وميض paywall المخالف لتجربة الجولة التعريفية.
+  go('s-loading');
   void (async ()=>{
     const { uid } = await ensureAnonymousSession();
     window._currentUid = uid;
+    activateLocalAccount(uid);
+    void syncQuestionHistory();
     const crashlytics=getCrashlytics();
     if(crashlytics && uid) crashlytics.setUserId({userId:uid}).catch(()=>{});
     // أعطِ WebKit إطارين للرسم قبل بدء اتصال الخادم، ثم أجّل StoreKit/RevenueCat
@@ -3301,6 +4028,11 @@ void initPushMessaging().catch(error=>recordNonFatal(error,'firebase.messaging')
     }, 1800);
   })();
 })();
+})().catch(error=>{
+  recordNonFatal(error,'application.start');
+  hideSplash();
+  go('s-home');
+});
 
 // لا نعتمد على معاملات عودة دفع قديمة أو على cache محلي لمنح الصلاحية
 // نستخدم uid المحفوظ مسبقاً في localStorage فقط (لا uid من URL)

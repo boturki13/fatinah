@@ -1,6 +1,6 @@
 ---
 name: iOS release validation
-description: قيد بيئة التحقق النهائي لتطبيق فَطِنة على App Store
+description: قيد بيئة التحقق النهائي لتطبيق فطنة على App Store
 ---
 
 التحقق من أرشيف iOS و`Podfile.lock` النهائي لا يمكن إتمامه داخل بيئة Linux الحالية؛ يلزم جهاز macOS أو CI يحتوي Xcode 26 أو أحدث وiOS 26 SDK وCocoaPods.
