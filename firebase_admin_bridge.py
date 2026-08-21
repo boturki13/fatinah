@@ -39,7 +39,9 @@ def _firebase_app():
 
 def verify_id_token(token: str):
     from firebase_admin import auth
-    return auth.verify_id_token(token, app=_firebase_app(), check_revoked=False)
+    # التحقق الشبكي من الإلغاء/تعطيل المستخدم مقصود هنا. بدونه يظل token
+    # الصادر قبل حذف الحساب قادراً على إعادة إنشاء بياناته حتى انتهاء ساعته.
+    return auth.verify_id_token(token, app=_firebase_app(), check_revoked=True)
 
 
 def verify_app_check_token(token: str):

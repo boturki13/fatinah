@@ -1,25 +1,37 @@
 /**
  * اختبارات مسار الاشتراك الخادمي.
  *
- * المشترك يدخل مباشرة، وغير المشترك يحصل على جولة واحدة فقط قبل paywall.
+ * كل مستخدم يدخل الرئيسية أولاً. غير المشترك يحصل على جولة واحدة فقط، ثم
+ * تظهر شاشة الاشتراك عند طلب جولة جديدة بدلاً من عرضها تلقائياً عند الإقلاع.
  *
  * تشغيل: node tests/subscription_routing_test.mjs
  */
 
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const appSource = fs.readFileSync(new URL('../www/app.js', import.meta.url), 'utf8');
+assert.doesNotMatch(
+  appSource,
+  /go\(_freeRoundAvailable\?'s-home':'s-paywall'\)/,
+  'شاشة الاشتراك لا تُفتح تلقائياً عند الإقلاع بعد استهلاك الجولة المجانية.',
+);
+assert.match(appSource, /function canStartRound\(\)[\s\S]*?go\('s-paywall'\)/);
 
 async function checkSubscriptionAndRoute(uid, { go, fetchFn, rcIsActive, freeRoundIsAvailable }) {
   go('s-loading');
   try {
-    const resp = await fetchFn(`/api/subscription/status?uid=${encodeURIComponent(uid || '')}`);
+    const resp = await fetchFn(`/api/v2/subscription/status?uid=${encodeURIComponent(uid || '')}`);
     if (!resp.ok) throw new Error('status error');
     const data = await resp.json();
     if (data.active === true) { go('s-home'); return; }
     if (await rcIsActive() === true) { go('s-home'); return; }
-    go(await freeRoundIsAvailable(uid) ? 's-home' : 's-paywall');
+    await freeRoundIsAvailable(uid);
+    go('s-home');
   } catch {
     if (await rcIsActive() === true) { go('s-home'); return; }
-    go(await freeRoundIsAvailable(uid) ? 's-home' : 's-paywall');
+    await freeRoundIsAvailable(uid);
+    go('s-home');
   }
 }
 
@@ -61,13 +73,13 @@ tests.push(async function server_inactive_with_free_round_opens_home() {
   console.log('  ✓ active:false + جولة مجانية → s-home');
 });
 
-tests.push(async function server_inactive_after_free_round_goes_paywall() {
+tests.push(async function server_inactive_after_free_round_opens_home() {
   const tracker = makeGoTracker();
   await checkSubscriptionAndRoute('uid-123', {
     go: tracker.go, fetchFn: makeFetch(200, { active: false }), rcIsActive: inactiveRc, freeRoundIsAvailable: usedFreeRound,
   });
-  assert.equal(tracker.last(), 's-paywall');
-  console.log('  ✓ active:false + جولة مستخدمة → s-paywall');
+  assert.equal(tracker.last(), 's-home');
+  console.log('  ✓ active:false + جولة مستخدمة → s-home عند الإقلاع');
 });
 
 tests.push(async function network_error_respects_local_free_round_state() {
@@ -75,8 +87,8 @@ tests.push(async function network_error_respects_local_free_round_state() {
   await checkSubscriptionAndRoute('uid-123', {
     go: tracker.go, fetchFn: networkError, rcIsActive: inactiveRc, freeRoundIsAvailable: usedFreeRound,
   });
-  assert.equal(tracker.last(), 's-paywall');
-  console.log('  ✓ network error + جولة مستخدمة → s-paywall');
+  assert.equal(tracker.last(), 's-home');
+  console.log('  ✓ network error + جولة مستخدمة → s-home عند الإقلاع');
 });
 
 tests.push(async function revenuecat_active_opens_home_while_webhook_delayed() {

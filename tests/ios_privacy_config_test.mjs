@@ -24,7 +24,11 @@ const nativeWebLogic = await readFile(path.join(root, 'ios/App/App/public/app.js
 const nativeWebStyles = await readFile(path.join(root, 'ios/App/App/public/app.css'), 'utf8');
 const nativeQuestionBank = await readFile(path.join(root, 'ios/App/App/public/question-bank.js'), 'utf8');
 const cloudFunction = await readFile(path.join(root, 'functions/index.js'), 'utf8');
+const appDelegate = await readFile(path.join(root, 'ios/App/App/AppDelegate.swift'), 'utf8');
 const capacitorConfig = await readFile(path.join(root, 'capacitor.config.ts'), 'utf8');
+const capacitorJsonConfig = JSON.parse(
+  await readFile(path.join(root, 'capacitor.config.json'), 'utf8')
+);
 const podfile = await readFile(path.join(root, 'ios/App/Podfile'), 'utf8');
 const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
 const metricKitService = await readFile(path.join(root, 'ios/App/App/FatinahMetricKitService.swift'), 'utf8');
@@ -45,10 +49,37 @@ assert.match(metricKitService, /MetricKitOutbox/);
 assert.match(metricKitService, /pastPayloads/);
 assert.match(metricKitService, /maximumPendingReports/);
 assert.match(metricKitService, /scheduleRetry\(\)/);
+assert.match(metricKitService, /https:\/\/ata20\.com\/api\/v2\/ios-diagnostics/);
+assert.doesNotMatch(
+  webLogic,
+  /setUserId\s*\(\s*\{\s*userId\s*:\s*uid\s*\}/,
+  'لا يجوز ربط Crashlytics بحساب Firebase؛ تقارير الأعطال قد تُسلّم بعد تبديل الحساب.',
+);
+assert.match(webLogic, /setUserId\(\{userId:''\}\)/);
 assert.match(
-  await readFile(path.join(root, 'ios/App/App/AppDelegate.swift'), 'utf8'),
+  metricKitService,
+  /request\.setValue\("2", forHTTPHeaderField: "X-Fatinah-API-Version"\)/,
+  'تقارير MetricKit في 1.3 يجب أن تمر بعقد v2 وإنفاذ App Check نفسه.',
+);
+assert.match(
+  appDelegate,
   /AppCheck\.setAppCheckProviderFactory[\s\S]*?FirebaseApp\.configure\(\)/,
   'يجب تعيين App Attest قبل تهيئة Firebase.'
+);
+assert.doesNotMatch(
+  appDelegate,
+  /localizedDescription/,
+  'لا تطبع رسالة خطأ iOS الخام؛ قد تتضمن رمزاً أو URL أو بيانات مستخدم.',
+);
+assert.doesNotMatch(
+  metricKitService,
+  /localizedDescription/,
+  'لا تطبع رسالة رفع MetricKit الخام؛ اكتفِ بنوع الخطأ وحالة HTTP.',
+);
+assert.doesNotMatch(
+  cloudFunction,
+  /error\.(?:code|name|message)|String\(error\)/,
+  'سجلات Cloud Functions لا يجوز أن تستقبل رسالة الاستثناء أو حقوله القادمة من مزود خارجي.',
 );
 assert.match(project, /AppTests\.xctest/);
 assert.match(project, /AppUITests\.xctest/);
@@ -100,8 +131,8 @@ assert.match(
 );
 assert.match(
   webLogic,
-  /async function resetRevenueCatIdentity\(\)[\s\S]*?await RC\.logOut\(\)[\s\S]*?_rcReady=null;/,
-  'يجب تسجيل الخروج من RevenueCat وتصفير تهيئته قبل دخول مستخدم جديد.'
+  /async function resetRevenueCatIdentity\(\)[\s\S]*?clearRevenueCatAccessState\(\);[\s\S]*?RC_CURRENT_APP_USER_ID='';[\s\S]*?_rcReady=null;[\s\S]*?await RC\.logOut\(\)/,
+  'يجب سحب صلاحية RevenueCat وتصفير الهوية محلياً قبل انتظار تسجيل الخروج الشبكي.'
 );
 assert.match(webApp, /href="https:\/\/apps\.apple\.com\/account\/subscriptions"/);
 assert.match(webApp, /حذف حساب فطنة لا يلغي الاشتراك المتجدد/);
@@ -141,12 +172,50 @@ assert.match(webLogic, /const TEAM_STYLES=\[/);
 assert.match(webLogic, /const FIRE=\[null,/);
 assert.match(webLogic, /const POINTS=\[0,100,200,300,400,500,600\]/);
 assert.match(webLogic, /const API_ORIGIN = window\.Capacitor\?\.isNativePlatform\?\.\(\) === true/);
-assert.match(webLogic, /function apiUrl\(path\)\{ return `\$\{API_ORIGIN\}\$\{path\}`; \}/);
+assert.match(webLogic, /const API_CONTRACT_VERSION='2';/);
+assert.match(webLogic, /function versionedApiPath\(path\)/);
+assert.match(webLogic, /`\/api\/v\$\{API_CONTRACT_VERSION\}\$\{value\.slice\(4\)\}`/);
+assert.match(webLogic, /function apiUrl\(path\)\{ return `\$\{API_ORIGIN\}\$\{versionedApiPath\(path\)\}`; \}/);
+assert.match(webLogic, /headers\.set\('X-Fatinah-API-Version',API_CONTRACT_VERSION\)/);
 assert.match(capacitorConfig, /launchShowDuration:\s*700/);
+const contentSecurityPolicy = webApp.match(
+  /<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]+)"/i
+)?.[1] || '';
+assert.match(contentSecurityPolicy, /default-src 'none'/);
+assert.match(contentSecurityPolicy, /base-uri 'none'/);
+assert.match(contentSecurityPolicy, /form-action 'self'/);
+assert.match(contentSecurityPolicy, /script-src-attr 'unsafe-inline'/);
+assert.doesNotMatch(
+  contentSecurityPolicy.match(/(?:^|;\s*)script-src\s+([^;]+)/)?.[1] || '',
+  /'unsafe-inline'/,
+  'السماح بخصائص onclick لا يجوز أن يتيح أي كتلة JavaScript مضمّنة.',
+);
+const appBoundDomainsSetting = capacitorConfig.match(
+  /limitsNavigationsToAppBoundDomains:\s*(true|false)/
+);
+assert.ok(appBoundDomainsSetting, 'يجب تعريف إعداد App-Bound Domains صراحةً في مصدر TypeScript.');
+const appBoundDomainsEnabled = appBoundDomainsSetting[1] === 'true';
+assert.equal(
+  capacitorJsonConfig.ios?.limitsNavigationsToAppBoundDomains,
+  appBoundDomainsEnabled,
+  'capacitor.config.json مرآة توافق فقط ويجب أن يطابق مصدر TypeScript.'
+);
+if (!/<key>WKAppBoundDomains<\/key>/.test(infoPlist)) {
+  assert.equal(
+    appBoundDomainsEnabled,
+    false,
+    'لا تفعّل limitsNavigationsToAppBoundDomains من دون WKAppBoundDomains في Info.plist.'
+  );
+}
 assert.match(
   capacitorConfig,
   /providers:\s*\[[^\]]*'apple\.com'[^\]]*'google\.com'[^\]]*'phone'[^\]]*\]/,
   'يجب تفعيل مزود الهاتف في إضافة Firebase Authentication الأصلية.'
+);
+assert.deepEqual(
+  capacitorJsonConfig.plugins?.FirebaseAuthentication?.providers,
+  ['apple.com', 'google.com', 'phone'],
+  'يجب أن تعكس نسخة JSON مزودي المصادقة المحددين في مصدر TypeScript.'
 );
 assert.match(
   podfile,
@@ -167,8 +236,16 @@ assert.match(webLogic, /function rememberQuestion\(cat,question\)/);
 assert.match(webLogic, /state\.usedQuestionIds=new Set\(\)/);
 assert.doesNotMatch(webLogic, /api\.anthropic\.com|AI_BACKEND_URL|aiGenerate\(/);
 assert.match(webApp, /id="q-source"/);
-assert.match(cloudFunction, /status\(410\)/);
-assert.doesNotMatch(cloudFunction, /ANTHROPIC|api\.anthropic\.com|defineSecret/);
+assert.match(
+  cloudFunction,
+  /generateQuestionsV1Handler[\s\S]*?FATINAH_V1_AI_GENERATION_ENABLED[\s\S]*?api\.anthropic\.com/,
+  'التوافق المؤقت مع 1.2 يجب أن يبقى خلف علم v1 صريح ولا يعمل افتراضياً.',
+);
+assert.match(
+  cloudFunction,
+  /generateQuestionsV2Handler[\s\S]*?status\(410\)[\s\S]*?ai_generation_retired/,
+  'عقد 1.3 يجب ألا يصل إلى مزود توليد حي؛ يستخدم بنكاً مراجعاً مسبقاً.',
+);
 
 console.log('✓ لا يوجد طلب تتبع في iOS أو في Privacy Manifest');
 console.log('✓ إفصاحات الخصوصية المعلنة في المشروع موجودة');
@@ -176,5 +253,6 @@ console.log('✓ Privacy Manifest مضمن في target وGame Center غير مف
 console.log('✓ حذف الحساب لا يعلن نجاحاً قبل التحقق من Firebase');
 console.log('✓ الهويات المحلية القديمة تُرقّى إلى Firebase عند توفرها');
 console.log('✓ واجهة الإقلاع لا تنتظر الشبكة قبل الظهور');
+console.log('✓ إعدادا Capacitor متطابقان وApp-Bound Domains غير مفعّل بلا قائمة نطاقات');
 console.log('✓ بنك الأسئلة المراجع مؤجل التحميل ومصادره ظاهرة داخل التطبيق');
-console.log('✓ التوليد الآلي الخارجي متوقف وسجل عدم التكرار مربوط بالحساب');
+console.log('✓ تطبيق 1.3 لا يستدعي توليداً حياً، وعقد 1.2 معزول خلف علم توافق');

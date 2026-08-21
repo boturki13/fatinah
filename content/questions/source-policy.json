@@ -1,5 +1,7 @@
 {
+  "targetQuestionsPerLevel": 4,
   "generalTrustedHosts": [
+    "agcff.com",
     "arabicacademy.gov.eg",
     "atari.com",
     "bafta.org",
@@ -11,6 +13,8 @@
     "fifa.com",
     "folger.edu",
     "gutenberg.org",
+    "jacc-kw.com",
+    "ksu.edu.sa",
     "ksaa.gov.sa",
     "loc.gov",
     "nasa.gov",
@@ -20,9 +24,12 @@
     "nobelprize.org",
     "nintendo.com",
     "olympics.com",
+    "oscars.org",
     "playstation.com",
+    "redseafilmfest.com",
     "si.edu",
     "thegameawards.com",
+    "uefa.com",
     "unesco.org",
     "un.org",
     "uspto.gov",
@@ -31,6 +38,181 @@
     "worldbank.org",
     "xbox.com"
   ],
+  "categoryTrustedHosts": {
+    "معلومات عامة": [
+      "britannica.com",
+      "loc.gov",
+      "si.edu",
+      "un.org",
+      "unesco.org",
+      "worldbank.org"
+    ],
+    "رياضة": [
+      "fifa.com",
+      "olympics.com",
+      "uefa.com"
+    ],
+    "تاريخ": [
+      "bl.uk",
+      "britannica.com",
+      "loc.gov",
+      "unesco.org"
+    ],
+    "جغرافيا": [
+      "britannica.com",
+      "nationalgeographic.com",
+      "un.org",
+      "unesco.org",
+      "usgs.gov",
+      "worldbank.org"
+    ],
+    "أمثال": [
+      "arabicacademy.gov.eg",
+      "ksaa.gov.sa"
+    ],
+    "ثقافة خليجية": [
+      "jacc-kw.com",
+      "unesco.org"
+    ],
+    "علوم وتقنية": [
+      "britannica.com",
+      "nasa.gov",
+      "nih.gov",
+      "noaa.gov",
+      "nobelprize.org",
+      "si.edu",
+      "usgs.gov",
+      "who.int"
+    ],
+    "محرّكات ومركبات": [
+      "britannica.com",
+      "computerhistory.org",
+      "epo.org",
+      "uspto.gov"
+    ],
+    "ألغاز وتحدّي ذكاء": [
+      "arabicacademy.gov.eg",
+      "britannica.com",
+      "ksaa.gov.sa"
+    ],
+    "الشعر العربي": [
+      "arabicacademy.gov.eg",
+      "bl.uk",
+      "folger.edu",
+      "ksaa.gov.sa",
+      "loc.gov"
+    ],
+    "الفضاء والكون": [
+      "nasa.gov",
+      "si.edu"
+    ],
+    "حيوانات وطبيعة": [
+      "britannica.com",
+      "nationalgeographic.com",
+      "noaa.gov",
+      "si.edu"
+    ],
+    "حضارات قديمة": [
+      "bl.uk",
+      "britannica.com",
+      "loc.gov",
+      "unesco.org"
+    ],
+    "جسم الإنسان": [
+      "britannica.com",
+      "nih.gov",
+      "who.int"
+    ],
+    "كأس العالم": [
+      "fifa.com"
+    ],
+    "أعلام الدول": [
+      "un.org"
+    ],
+    "خرائط دول": [
+      "un.org",
+      "usgs.gov"
+    ],
+    "إجابة سريعة": [
+      "britannica.com"
+    ],
+    "دوري أبطال أوروبا": [
+      "uefa.com"
+    ],
+    "أنمي": [
+      "bafta.org",
+      "britannica.com"
+    ],
+    "كأس الخليج": [
+      "agcff.com",
+      "fifa.com"
+    ],
+    "مسلسلات خليجية": [
+      "jacc-kw.com",
+      "redseafilmfest.com"
+    ],
+    "أفلام عربية": [
+      "bafta.org",
+      "oscars.org",
+      "redseafilmfest.com"
+    ],
+    "الألعاب الأولمبية": [
+      "olympics.com"
+    ],
+    "أغاني خليجية": [
+      "jacc-kw.com",
+      "loc.gov",
+      "unesco.org"
+    ],
+    "ألعاب الفيديو": [
+      "atari.com",
+      "bafta.org",
+      "computerhistory.org",
+      "nintendo.com",
+      "playstation.com",
+      "thegameawards.com",
+      "xbox.com"
+    ],
+    "اللغة العربية": [
+      "arabicacademy.gov.eg",
+      "ksu.edu.sa",
+      "ksaa.gov.sa"
+    ],
+    "كتب وروايات": [
+      "arabicacademy.gov.eg",
+      "bl.uk",
+      "folger.edu",
+      "gutenberg.org",
+      "loc.gov",
+      "nobelprize.org"
+    ],
+    "اختراعات واكتشافات": [
+      "computerhistory.org",
+      "epo.org",
+      "loc.gov",
+      "nasa.gov",
+      "nobelprize.org",
+      "si.edu",
+      "uspto.gov"
+    ],
+    "مطابخ العالم": [
+      "britannica.com",
+      "fao.org",
+      "nationalgeographic.com",
+      "unesco.org"
+    ],
+    "وش الرابط؟": [
+      "atari.com",
+      "computerhistory.org",
+      "folger.edu",
+      "nasa.gov",
+      "nintendo.com",
+      "nobelprize.org",
+      "playstation.com",
+      "si.edu",
+      "unesco.org"
+    ]
+  },
   "religiousTrustedHosts": [
     "dorar.net",
     "quran.ksu.edu.sa",

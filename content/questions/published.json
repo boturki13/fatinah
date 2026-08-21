@@ -2890,10 +2890,10 @@
     "explanation": "تُستخدم «ما» للاستفهام عن غير العاقل.",
     "religious": false,
     "source": {
-      "title": "مجمع اللغة العربية بالقاهرة | معنى ما",
-      "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D9%85%D8%B9%D8%AC%D9%85/dic-19/%D9%85%D8%A7-%D9%87%D9%88-%D9%85%D9%81%D8%B1%D8%AF-%D8%A7%D9%84%D9%85%D8%A7%D8%B9%D8%B2",
-      "publisher": "مجمع اللغة العربية بالقاهرة",
-      "evidence": "يذكر المرجع أن «ما» تأتي للاستفهام عمّا لا يعقل."
+      "title": "جامعة الملك سعود — أسلوب الاستفهام وأدواته",
+      "url": "https://faculty.ksu.edu.sa/sites/default/files/slwb_lstfhm_.pdf",
+      "publisher": "جامعة الملك سعود",
+      "evidence": "يعرض المرجع «ما» بوصفها اسم استفهام يُستعمل لغير العاقل."
     },
     "status": "approved",
     "generation": {
@@ -2912,13 +2912,13 @@
         "answerExact": true,
         "sourceSupportsClaim": true,
         "clearArabic": true,
-        "reason": "الصفحة تذكر أن «ما» تكون للاستفهام ويُسأل بها عمّا لا يعقل. ([arabicacademy.gov.eg](https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D9%85%D8%B9%D8%AC%D9%85/dic-19/%D9%85%D8%A7-%D9%87%D9%88-%D9%85%D9%81%D8%B1%D8%AF-%D8%A7%D9%84%D9%85%D8%A7%D8%B9%D8%B2))"
+        "reason": "صُحح المصدر يدوياً إلى مادة تعليمية منشورة من جامعة الملك سعود تذكر أن «ما» اسم استفهام يُستعمل لغير العاقل."
       }
     },
     "review": {
       "reviewer": "Codex-assisted source review",
       "decision": "approve",
-      "notes": "اجتاز التحقق المستقل واختير ضمن دفعة 1.3 المتوازنة مع مراجعة التنوع والمصدر.",
+      "notes": "صُحح رابط المصدر يدوياً بعد اكتشاف أن الرابط السابق لا يثبت السؤال؛ المرجع الجامعي الجديد يذكر القاعدة صراحةً.",
       "religiousSourceAndIsnadConfirmed": false,
       "reviewedAt": "2026-08-20T11:07:14.538Z"
     }
@@ -3578,10 +3578,10 @@
     "explanation": "يوضح المرجع أن ابن المقفع ترجم «كليلة ودمنة» عن الفارسية.",
     "religious": false,
     "source": {
-      "title": "مجمع اللغة العربية بالقاهرة | الرواية الفلسفية",
-      "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D9%85%D8%B9%D8%AC%D9%85/dic-349/f%5Dghw-lk-hl-f%5Dghw-uk",
-      "publisher": "مجمع اللغة العربية بالقاهرة",
-      "evidence": "ينص المرجع على أن ترجمة ابن المقفع لحكايات كليلة ودمنة كانت عن الفارسية."
+      "title": "مكتبة الكونغرس — كليلة ودمنة",
+      "url": "https://www.loc.gov/item/2021667224/",
+      "publisher": "مكتبة الكونغرس",
+      "evidence": "تذكر صفحة المخطوط أن ابن المقفع ترجم الحكايات إلى العربية في القرن الثامن."
     },
     "status": "approved",
     "generation": {
@@ -3600,13 +3600,13 @@
         "answerExact": true,
         "sourceSupportsClaim": true,
         "clearArabic": true,
-        "reason": "ينص المرجع مباشرة على أن ابن المقفع ترجم حكايات «كليلة ودمنة» عن الفارسية."
+        "reason": "صُحح المصدر يدوياً إلى سجل مكتبة الكونغرس الذي ينسب الترجمة العربية في القرن الثامن إلى ابن المقفع."
       }
     },
     "review": {
       "reviewer": "Codex-assisted source review",
       "decision": "approve",
-      "notes": "اجتاز التحقق المستقل واختير ضمن دفعة 1.3 المتوازنة مع مراجعة التنوع والمصدر.",
+      "notes": "صُحح رابط المصدر يدوياً بعد اكتشاف أن الرابط السابق مشوّه؛ سجل مكتبة الكونغرس يثبت نسبة الترجمة العربية إلى ابن المقفع.",
       "religiousSourceAndIsnadConfirmed": false,
       "reviewedAt": "2026-08-20T11:07:14.538Z"
     }
@@ -5243,6 +5243,406 @@
       "notes": "اجتاز التحقق المستقل واختير ضمن دفعة 1.3 المتوازنة مع مراجعة التنوع والمصدر.",
       "religiousSourceAndIsnadConfirmed": false,
       "reviewedAt": "2026-08-20T11:07:14.538Z"
+    }
+  },
+  {
+    "id": "gq-6cdbafa1b07cca088788",
+    "category": "معلومات عامة",
+    "difficulty": "easy",
+    "difficultyLevel": 2,
+    "question": "أيّ الأخوين رايت كان يقود طائرة «فلاير 1903» في أول رحلة ناجحة لها؟",
+    "answer": "أورفيل رايت",
+    "explanation": "كان أورفيل رايت هو قائد الطائرة في الرحلة الأولى الناجحة.",
+    "religious": false,
+    "source": {
+      "title": "1903 Wright Flyer",
+      "url": "https://airandspace.si.edu/collection-objects/wright-1903-flyer/nasm_A19610048000",
+      "publisher": "المتحف الوطني للطيران والفضاء، مؤسسة سميثسونيان",
+      "evidence": "يوضح المرجع أن طائرة فلاير 1903 حلّقت أول مرة في كيتي هوك وكان أورفيل عند أدوات التحكم."
+    },
+    "status": "approved",
+    "generation": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_0f80b7c25939c6d0016a8856d09c0487d2840e0720c38c37b3",
+      "generatedAt": "2026-08-21T13:48:05.987Z",
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-21",
+        "inputTokens": 30516,
+        "outputTokens": 2699,
+        "webSearchCalls": 4,
+        "inputCostUsd": 0.061032,
+        "outputCostUsd": 0.032388,
+        "webSearchCostUsd": 0.04,
+        "estimatedUsd": 0.13342,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 33215,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 1874
+      }
+    },
+    "verification": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_08f570202f40f8b7016a88570aa12c87d2a3ec4163c7515bfe",
+      "checkedAt": "2026-08-21T13:48:05.987Z",
+      "result": {
+        "index": 0,
+        "verdict": "pass",
+        "factCorrect": true,
+        "answerExact": true,
+        "sourceSupportsClaim": true,
+        "clearArabic": true,
+        "reason": "الإجابة صحيحة ومحددة: كان أورفيل رايت عند أدوات التحكم في أول رحلة لطائرة فلاير 1903. ويدعم المرجع الرسمي للمتحف هذا الادعاء مباشرة."
+      },
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-21",
+        "inputTokens": 21216,
+        "outputTokens": 791,
+        "webSearchCalls": 2,
+        "inputCostUsd": 0.042432,
+        "outputCostUsd": 0.009492,
+        "webSearchCostUsd": 0.02,
+        "estimatedUsd": 0.071924,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 22007,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 406
+      }
+    },
+    "cost": {
+      "pricingAsOf": "2026-08-21",
+      "budgetUsd": 0.6,
+      "runEstimatedUsd": 0.20534400000000003
+    },
+    "review": {
+      "reviewer": "Codex source review 2026-08-21",
+      "decision": "approve",
+      "notes": "تحقق يدوي من صفحة Smithsonian الرسمية؛ صُحح الرابط إلى المسار الحالي.",
+      "religiousSourceAndIsnadConfirmed": false,
+      "reviewedAt": "2026-08-21T13:49:13.093Z"
+    }
+  },
+  {
+    "id": "gq-03fb2f17c37a4da7079e",
+    "category": "معلومات عامة",
+    "difficulty": "normal",
+    "difficultyLevel": 3,
+    "question": "أي حضارة كانت البتراء عاصمتها المنحوتة في الصخر؟",
+    "answer": "الأنباط",
+    "explanation": "كانت البتراء العاصمة الصخرية للأنباط.",
+    "religious": false,
+    "source": {
+      "title": "Petra",
+      "url": "https://whc.unesco.org/en/list/326/",
+      "publisher": "مركز التراث العالمي، اليونسكو",
+      "evidence": "يصف المرجع البتراء بأنها العاصمة المنحوتة في الصخر للأنباط."
+    },
+    "status": "approved",
+    "generation": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_0f80b7c25939c6d0016a8856d09c0487d2840e0720c38c37b3",
+      "generatedAt": "2026-08-21T13:48:05.987Z",
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-21",
+        "inputTokens": 30516,
+        "outputTokens": 2699,
+        "webSearchCalls": 4,
+        "inputCostUsd": 0.061032,
+        "outputCostUsd": 0.032388,
+        "webSearchCostUsd": 0.04,
+        "estimatedUsd": 0.13342,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 33215,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 1874
+      }
+    },
+    "verification": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_08f570202f40f8b7016a88570aa12c87d2a3ec4163c7515bfe",
+      "checkedAt": "2026-08-21T13:48:05.987Z",
+      "result": {
+        "index": 1,
+        "verdict": "pass",
+        "factCorrect": true,
+        "answerExact": true,
+        "sourceSupportsClaim": true,
+        "clearArabic": true,
+        "reason": "الإجابة صحيحة: البتراء كانت العاصمة المنحوتة في الصخر للأنباط. يذكر مرجع اليونسكو ذلك بصورة مباشرة."
+      },
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-21",
+        "inputTokens": 21216,
+        "outputTokens": 791,
+        "webSearchCalls": 2,
+        "inputCostUsd": 0.042432,
+        "outputCostUsd": 0.009492,
+        "webSearchCostUsd": 0.02,
+        "estimatedUsd": 0.071924,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 22007,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 406
+      }
+    },
+    "cost": {
+      "pricingAsOf": "2026-08-21",
+      "budgetUsd": 0.6,
+      "runEstimatedUsd": 0.20534400000000003
+    },
+    "review": {
+      "reviewer": "Codex source review 2026-08-21",
+      "decision": "approve",
+      "notes": "تحقق يدوي من صفحة البتراء في UNESCO.",
+      "religiousSourceAndIsnadConfirmed": false,
+      "reviewedAt": "2026-08-21T13:49:13.140Z"
+    }
+  },
+  {
+    "id": "gq-4983f93c84a68562b03b",
+    "category": "معلومات عامة",
+    "difficulty": "normal",
+    "difficultyLevel": 4,
+    "question": "في أي بلد تقع خطوط نازكا وبالبا الشهيرة؟",
+    "answer": "بيرو",
+    "explanation": "تقع هذه الخطوط الأثرية في السهل الساحلي الجاف في بيرو.",
+    "religious": false,
+    "source": {
+      "title": "Lines and Geoglyphs of Nasca and Palpa",
+      "url": "https://whc.unesco.org/en/list/700/",
+      "publisher": "مركز التراث العالمي، اليونسكو",
+      "evidence": "يحدد المرجع موقع خطوط نازكا وبالبا في السهل الساحلي البيروفي."
+    },
+    "status": "approved",
+    "generation": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_0f80b7c25939c6d0016a8856d09c0487d2840e0720c38c37b3",
+      "generatedAt": "2026-08-21T13:48:05.987Z",
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-21",
+        "inputTokens": 30516,
+        "outputTokens": 2699,
+        "webSearchCalls": 4,
+        "inputCostUsd": 0.061032,
+        "outputCostUsd": 0.032388,
+        "webSearchCostUsd": 0.04,
+        "estimatedUsd": 0.13342,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 33215,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 1874
+      }
+    },
+    "verification": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_08f570202f40f8b7016a88570aa12c87d2a3ec4163c7515bfe",
+      "checkedAt": "2026-08-21T13:48:05.987Z",
+      "result": {
+        "index": 2,
+        "verdict": "pass",
+        "factCorrect": true,
+        "answerExact": true,
+        "sourceSupportsClaim": true,
+        "clearArabic": true,
+        "reason": "الإجابة صحيحة وغير ملتبسة: تقع خطوط نازكا وبالبا في بيرو. ويؤكد مرجع اليونسكو أنها في السهل الساحلي البيروفي الجاف."
+      },
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-21",
+        "inputTokens": 21216,
+        "outputTokens": 791,
+        "webSearchCalls": 2,
+        "inputCostUsd": 0.042432,
+        "outputCostUsd": 0.009492,
+        "webSearchCostUsd": 0.02,
+        "estimatedUsd": 0.071924,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 22007,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 406
+      }
+    },
+    "cost": {
+      "pricingAsOf": "2026-08-21",
+      "budgetUsd": 0.6,
+      "runEstimatedUsd": 0.20534400000000003
+    },
+    "review": {
+      "reviewer": "Codex source review 2026-08-21",
+      "decision": "approve",
+      "notes": "تحقق يدوي من صفحة خطوط نازكا وبالبا في UNESCO.",
+      "religiousSourceAndIsnadConfirmed": false,
+      "reviewedAt": "2026-08-21T13:49:13.189Z"
+    }
+  },
+  {
+    "id": "gq-e1373f0b846bbbf80f57",
+    "category": "معلومات عامة",
+    "difficulty": "hard",
+    "difficultyLevel": 5,
+    "question": "ما اسم المملكة التي كانت مدينة تشان تشان عاصمتها؟",
+    "answer": "مملكة تشيمو",
+    "explanation": "كانت تشان تشان عاصمة مملكة تشيمو قبل سقوطها بيد الإنكا.",
+    "religious": false,
+    "source": {
+      "title": "Chan Chan Archaeological Zone",
+      "url": "https://whc.unesco.org/en/list/366",
+      "publisher": "مركز التراث العالمي، اليونسكو",
+      "evidence": "ينص المرجع على أن مملكة تشيمو اتخذت من تشان تشان عاصمةً لها."
+    },
+    "status": "approved",
+    "generation": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_0f80b7c25939c6d0016a8856d09c0487d2840e0720c38c37b3",
+      "generatedAt": "2026-08-21T13:48:05.987Z",
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-21",
+        "inputTokens": 30516,
+        "outputTokens": 2699,
+        "webSearchCalls": 4,
+        "inputCostUsd": 0.061032,
+        "outputCostUsd": 0.032388,
+        "webSearchCostUsd": 0.04,
+        "estimatedUsd": 0.13342,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 33215,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 1874
+      }
+    },
+    "verification": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_08f570202f40f8b7016a88570aa12c87d2a3ec4163c7515bfe",
+      "checkedAt": "2026-08-21T13:48:05.987Z",
+      "result": {
+        "index": 3,
+        "verdict": "pass",
+        "factCorrect": true,
+        "answerExact": true,
+        "sourceSupportsClaim": true,
+        "clearArabic": true,
+        "reason": "الإجابة صحيحة: كانت تشان تشان عاصمة مملكة تشيمو. وينص مرجع اليونسكو مباشرة على أن مملكة تشيمو اتخذت تشان تشان عاصمةً لها."
+      },
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-21",
+        "inputTokens": 21216,
+        "outputTokens": 791,
+        "webSearchCalls": 2,
+        "inputCostUsd": 0.042432,
+        "outputCostUsd": 0.009492,
+        "webSearchCostUsd": 0.02,
+        "estimatedUsd": 0.071924,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 22007,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 406
+      }
+    },
+    "cost": {
+      "pricingAsOf": "2026-08-21",
+      "budgetUsd": 0.6,
+      "runEstimatedUsd": 0.20534400000000003
+    },
+    "review": {
+      "reviewer": "Codex source review 2026-08-21",
+      "decision": "approve",
+      "notes": "تحقق يدوي من صفحة تشان تشان في UNESCO.",
+      "religiousSourceAndIsnadConfirmed": false,
+      "reviewedAt": "2026-08-21T13:49:13.236Z"
+    }
+  },
+  {
+    "id": "gq-2c18b9d72bf948fc7a94",
+    "category": "معلومات عامة",
+    "difficulty": "hard",
+    "difficultyLevel": 6,
+    "question": "إلى أي شعب تنسب اليونسكو حضارة البانتو التي تشهد عليها أطلال زيمبابوي الكبرى؟",
+    "answer": "شعب الشونا",
+    "explanation": "تعد أطلال زيمبابوي الكبرى شاهداً على حضارة البانتو الخاصة بشعب الشونا.",
+    "religious": false,
+    "source": {
+      "title": "Great Zimbabwe National Monument",
+      "url": "https://whc.unesco.org/en/list/364/",
+      "publisher": "مركز التراث العالمي، اليونسكو",
+      "evidence": "يصف المرجع الأطلال بأنها شهادة فريدة على حضارة البانتو لشعب الشونا."
+    },
+    "status": "approved",
+    "generation": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_0f80b7c25939c6d0016a8856d09c0487d2840e0720c38c37b3",
+      "generatedAt": "2026-08-21T13:48:05.987Z",
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-21",
+        "inputTokens": 30516,
+        "outputTokens": 2699,
+        "webSearchCalls": 4,
+        "inputCostUsd": 0.061032,
+        "outputCostUsd": 0.032388,
+        "webSearchCostUsd": 0.04,
+        "estimatedUsd": 0.13342,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 33215,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 1874
+      }
+    },
+    "verification": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_08f570202f40f8b7016a88570aa12c87d2a3ec4163c7515bfe",
+      "checkedAt": "2026-08-21T13:48:05.987Z",
+      "result": {
+        "index": 4,
+        "verdict": "pass",
+        "factCorrect": true,
+        "answerExact": true,
+        "sourceSupportsClaim": true,
+        "clearArabic": true,
+        "reason": "الإجابة صحيحة: تصف اليونسكو أطلال زيمبابوي الكبرى بأنها شهادة على حضارة البانتو لشعب الشونا. صياغة السؤال والإجابة واضحتان."
+      },
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-21",
+        "inputTokens": 21216,
+        "outputTokens": 791,
+        "webSearchCalls": 2,
+        "inputCostUsd": 0.042432,
+        "outputCostUsd": 0.009492,
+        "webSearchCostUsd": 0.02,
+        "estimatedUsd": 0.071924,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 22007,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 406
+      }
+    },
+    "cost": {
+      "pricingAsOf": "2026-08-21",
+      "budgetUsd": 0.6,
+      "runEstimatedUsd": 0.20534400000000003
+    },
+    "review": {
+      "reviewer": "Codex source review 2026-08-21",
+      "decision": "approve",
+      "notes": "تحقق يدوي من صفحة زيمبابوي الكبرى في UNESCO.",
+      "religiousSourceAndIsnadConfirmed": false,
+      "reviewedAt": "2026-08-21T13:49:13.284Z"
     }
   },
   {

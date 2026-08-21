@@ -43,7 +43,42 @@ function ensureQuestionBank(){
 const API_ORIGIN = window.Capacitor?.isNativePlatform?.() === true
   ? 'https://ata20.com'
   : '';
-function apiUrl(path){ return `${API_ORIGIN}${path}`; }
+// الإصدار 1.3 لا يستعمل عقد 1.2 الضمني. نضع النسخة في المسار والرأس حتى
+// لا يعيد وسيط شبكة أو CDN الطلب بالخطأ إلى v1 عند إسقاط أحدهما.
+const API_CONTRACT_VERSION='2';
+// سجلات WebView قد تظهر في Web Inspector أو سجلات الجهاز. لا نمرر إليها
+// كائنات أخطاء Firebase/RevenueCat أو رسائل أو بريد أو هاتف أو token؛ نطبع
+// حدثاً ثابتاً من قائمة داخلية فقط.
+const CLIENT_LOG_EVENT_ALLOWLIST=new Set([
+  'paywall.prices','auth.reauth.start','auth.reauth.apple',
+  'auth.delete.reauthentication','auth.delete.capacitor',
+  'auth.delete.web-reauthentication','auth.delete.web','auth.signout',
+  'account.server-delete','auth.anonymous.disabled',
+  'auth.anonymous.capacitor','auth.anonymous.web','profile.save',
+  'auth.pending-link','messaging.received','messaging.opened',
+  'messaging.token-received','messaging.token-ready','firebase.web-sdk',
+  'auth.apple.capacitor','auth.apple.web','auth.google.capacitor',
+  'auth.google.web','auth.phone.start','auth.phone.confirm',
+  'auth.password-reset','auth.forgot-email','auth.email',
+  'auth.native-user','auth.web-user','auth.email-verification',
+  'auth.verification-refresh','revenuecat.keychain-read',
+  'revenuecat.configure','revenuecat.logout','revenuecat.initialize',
+  'revenuecat.status','revenuecat.offline-cache','question-bank.load',
+  'account.unlink','revenuecat.deferred-startup',
+]);
+function logClientEvent(level,event){
+  const safeEvent=CLIENT_LOG_EVENT_ALLOWLIST.has(event)?event:'application.event';
+  const logger=level==='error'?console.error:level==='warn'?console.warn:console.info;
+  try{ logger.call(console,`[Fatinah] ${safeEvent}`); }catch(_){ }
+}
+function versionedApiPath(path){
+  const value=String(path||'');
+  if(/^\/api\/v[12](?:\/|$)/.test(value)) return value;
+  if(value==='/api') return `/api/v${API_CONTRACT_VERSION}`;
+  if(value.startsWith('/api/')) return `/api/v${API_CONTRACT_VERSION}${value.slice(4)}`;
+  return value;
+}
+function apiUrl(path){ return `${API_ORIGIN}${versionedApiPath(path)}`; }
 let _appIntegrityReady=null;
 function getFirebaseAppCheck(){
   try{ return window.Capacitor?.Plugins?.FirebaseAppCheck || null; }
@@ -64,6 +99,7 @@ async function initAppIntegrity(){
 }
 async function apiFetch(path, options={}){
   const headers=new Headers(options.headers||{});
+  headers.set('X-Fatinah-API-Version',API_CONTRACT_VERSION);
   if(await initAppIntegrity()){
     try{
       const result=await getFirebaseAppCheck().getToken({forceRefresh:false});
@@ -79,6 +115,7 @@ async function apiFetch(path, options={}){
 const APP_VERSION = '1.3';
 let _hasActiveSubscription=false;
 let _freeRoundAvailable=false;
+let _freeRoundVerificationState='unknown'; // unknown | eligible | used
 let _subscriptionResolved=false;
 const TEAM_STYLES=[
   {name:"النجوم", color:"var(--t1)", bg:"var(--t1b)", dot:"#B794FF", solid:"#7C3AED"},
@@ -104,17 +141,19 @@ const CAT_ICONS={
   "دوري أبطال أوروبا":"⭐","أنمي":"🦸","كأس الخليج":"🥇","مسلسلات خليجية":"📺",
   "أفلام عربية":"🎬","الألعاب الأولمبية":"🔥","أغاني خليجية":"🎤",
   "الخلفاء الراشدون":"☪️","الأنبياء والرسل":"🕊️",
+  "اختراعات واكتشافات":"💡","ألعاب الفيديو":"🎮","اللغة العربية":"🔤",
+  "كتب وروايات":"📚","مطابخ العالم":"🍽️","وش الرابط؟":"🔗",
 };
 // تصنيف الفئات إلى مجموعات للفلترة
 const CAT_GROUPS={
   "إسلاميات":["السيرة النبوية","القرآن الكريم","فتوحات المسلمين","الصحابة","دين وسيرة","الخلفاء الراشدون","الأنبياء والرسل"],
-  "معرفة وعلوم":["معلومات عامة","علوم وتقنية","الفضاء والكون","جسم الإنسان"],
+  "معرفة وعلوم":["معلومات عامة","علوم وتقنية","الفضاء والكون","جسم الإنسان","اختراعات واكتشافات"],
   "تاريخ وجغرافيا":["تاريخ","جغرافيا","حضارات قديمة","أعلام الدول","خرائط دول"],
   "رياضة":["رياضة","كأس العالم","دوري أبطال أوروبا","كأس الخليج","الألعاب الأولمبية"],
   "محرّكات":["محرّكات ومركبات"],
-  "ثقافة وتراث":["ثقافة خليجية","أمثال","مسلسلات خليجية","أغاني خليجية"],
-  "ألغاز وذكاء":["ألغاز وتحدّي ذكاء","إجابة سريعة"],
-  "فنون وأدب":["الشعر العربي","أنمي","أفلام عربية"],
+  "ثقافة وتراث":["ثقافة خليجية","أمثال","مسلسلات خليجية","أغاني خليجية","مطابخ العالم"],
+  "ألغاز وذكاء":["ألغاز وتحدّي ذكاء","إجابة سريعة","وش الرابط؟"],
+  "فنون وأدب":["الشعر العربي","أنمي","أفلام عربية","ألعاب الفيديو","اللغة العربية","كتب وروايات"],
   "طبيعة وحيوانات":["حيوانات وطبيعة"],
 };
 const GROUP_ICONS={"إسلاميات":"🕌","معرفة وعلوم":"🧠","تاريخ وجغرافيا":"🏛️","رياضة":"⚽","محرّكات":"🏎️","ثقافة وتراث":"🐪","ألغاز وذكاء":"🧩","فنون وأدب":"📜","طبيعة وحيوانات":"🦁"};
@@ -259,26 +298,212 @@ function activateLocalAccount(uid){
 function localFreeRoundCompleted(uid){
   return storeGet(scopedAccessKey('free_round_completed',uid),false)===true;
 }
+async function generateDeviceCheckToken(){
+  const plugin=window.Capacitor?.Plugins?.FatinahDeviceIntegrity;
+  if(!window.Capacitor?.isNativePlatform?.() || !plugin?.generateDeviceCheckToken){
+    return '';
+  }
+  try{
+    const result=await plugin.generateDeviceCheckToken();
+    return String(result?.token||'');
+  }catch(error){
+    recordNonFatal(error,'device-check.token');
+    return '';
+  }
+}
+let _appAttestKeyId='';
+let _appAttestEnrollment=null;
+function getDeviceIntegrityPlugin(){
+  try{ return window.Capacitor?.Plugins?.FatinahDeviceIntegrity||null; }
+  catch(_){ return null; }
+}
+function appAttestErrorCode(error){
+  return String(error?.code||'').trim();
+}
+function appAttestKeyNeedsReset(error){
+  const code=appAttestErrorCode(error);
+  return code==='APP_ATTEST_INVALID_KEY'||code==='APP_ATTEST_KEY_NOT_GENERATED';
+}
+async function resetAppAttestKeyForRecovery(plugin,error,recovery){
+  if(!appAttestKeyNeedsReset(error)||recovery.resetAttempted||!plugin?.resetKey){
+    return false;
+  }
+  recovery.resetAttempted=true;
+  try{
+    const result=await plugin.resetKey();
+    if(result?.reset!==true) throw new Error('تعذّرت إعادة تعيين App Attest');
+    _appAttestKeyId='';
+    return true;
+  }catch(resetError){
+    recordNonFatal(resetError,'app-attest.reset');
+    return false;
+  }
+}
+function decodeBase64Bytes(value){
+  const binary=atob(String(value||''));
+  return Uint8Array.from(binary,char=>char.charCodeAt(0));
+}
+function encodeBase64Bytes(bytes){
+  let binary='';
+  const view=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+  for(let offset=0;offset<view.length;offset+=0x8000){
+    binary+=String.fromCharCode(...view.subarray(offset,offset+0x8000));
+  }
+  return btoa(binary);
+}
+async function sha256Bytes(bytes){
+  if(!globalThis.crypto?.subtle) throw new Error('SHA-256 غير متاح');
+  return new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
+}
+async function sha256Base64OfBase64(value){
+  return encodeBase64Bytes(await sha256Bytes(decodeBase64Bytes(value)));
+}
+async function sha256HexText(value){
+  const digest=await sha256Bytes(new TextEncoder().encode(String(value||'')));
+  return [...digest].map(byte=>byte.toString(16).padStart(2,'0')).join('');
+}
+async function freeRoundRequestHash(uid,deviceCheckToken,deviceCheckUpdateToken=''){
+  const canonical=JSON.stringify({
+    deviceCheckTokenHash:await sha256HexText(deviceCheckToken),
+    deviceCheckUpdateTokenHash:deviceCheckUpdateToken
+      ?await sha256HexText(deviceCheckUpdateToken):'',
+    uid:String(uid||''),
+  });
+  return sha256HexText(canonical);
+}
+async function requestAppAttestChallenge(uid,keyId,purpose,requestHash=''){
+  const idToken=await getCurrentIdToken();
+  if(!idToken) return null;
+  const response=await apiFetch('/api/app-attest/challenge',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+    body:JSON.stringify({uid,idToken,keyId,purpose,requestHash}),
+  });
+  if(!response.ok) return null;
+  const data=await response.json();
+  if(!data?.challengeId||!data?.clientData) return null;
+  return data;
+}
+async function performAppAttestEnrollment(uid,plugin,recovery){
+  const support=await plugin.isSupported?.();
+  if(support?.isSupported!==true) return null;
+  const generated=await plugin.generateKey();
+  const keyId=String(generated?.keyId||'');
+  if(!keyId) return null;
+  const idToken=await getCurrentIdToken();
+  if(!idToken) return null;
+  const statusResponse=await apiFetch('/api/app-attest/status',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+    body:JSON.stringify({uid,idToken,keyId}),
+  });
+  if(statusResponse.ok){
+    const status=await statusResponse.json();
+    if(status?.attested===true){ _appAttestKeyId=keyId; return keyId; }
+  }
+  const challenge=await requestAppAttestChallenge(uid,keyId,'attest');
+  if(!challenge) return null;
+  const clientDataHash=await sha256Base64OfBase64(challenge.clientData);
+  let artifact;
+  try{
+    artifact=await plugin.attestKey({keyId,clientDataHash});
+  }catch(error){
+    if(await resetAppAttestKeyForRecovery(plugin,error,recovery)){
+      return performAppAttestEnrollment(uid,plugin,recovery);
+    }
+    throw error;
+  }
+  const attestationObject=String(artifact?.attestationObject||'');
+  if(!attestationObject) return null;
+  const response=await apiFetch('/api/app-attest/attest',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+    body:JSON.stringify({
+      uid,idToken,keyId,challengeId:challenge.challengeId,attestationObject,
+    }),
+  });
+  if(!response.ok) return null;
+  _appAttestKeyId=keyId;
+  return keyId;
+}
+async function ensureAppAttestEnrollment(uid,recovery={resetAttempted:false}){
+  const plugin=getDeviceIntegrityPlugin();
+  if(!window.Capacitor?.isNativePlatform?.()||!plugin?.generateKey||!plugin?.attestKey){
+    return null;
+  }
+  if(_appAttestKeyId) return _appAttestKeyId;
+  if(_appAttestEnrollment) return _appAttestEnrollment;
+  _appAttestEnrollment=performAppAttestEnrollment(uid,plugin,recovery).catch(error=>{
+    recordNonFatal(error,'app-attest.enroll');
+    return null;
+  }).finally(()=>{ _appAttestEnrollment=null; });
+  return _appAttestEnrollment;
+}
+async function createAppAttestAssertion(
+  uid,purpose,requestHash='',recovery={resetAttempted:false}){
+  const plugin=getDeviceIntegrityPlugin();
+  const keyId=await ensureAppAttestEnrollment(uid,recovery);
+  if(!keyId||!plugin?.generateAssertion) return null;
+  try{
+    const challenge=await requestAppAttestChallenge(
+      uid,keyId,purpose,requestHash);
+    if(!challenge) return null;
+    const clientDataHash=await sha256Base64OfBase64(challenge.clientData);
+    const artifact=await plugin.generateAssertion({keyId,clientDataHash});
+    const assertion=String(artifact?.assertion||'');
+    if(!assertion) return null;
+    return {keyId,challengeId:challenge.challengeId,assertion,requestHash};
+  }catch(error){
+    if(await resetAppAttestKeyForRecovery(plugin,error,recovery)){
+      return createAppAttestAssertion(uid,purpose,requestHash,recovery);
+    }
+    recordNonFatal(error,`app-attest.assertion.${purpose}`);
+    return null;
+  }
+}
+function setFreeRoundAvailability(value){
+  _freeRoundAvailable=value===true;
+  _freeRoundVerificationState=value===true?'eligible':(value===false?'used':'unknown');
+  updateFreeRoundUi();
+}
 function updateFreeRoundUi(){
   const banner=document.getElementById('free-round-banner');
   if(!banner) return;
   if(_hasActiveSubscription){ banner.hidden=true; return; }
   banner.hidden=false;
-  banner.textContent=_freeRoundAvailable
+  banner.textContent=_freeRoundVerificationState==='eligible'
     ? '🎁 أول جولة عليك بالكامل — شاشة الاشتراك ما تطلع إلا عقب ما تخلّصها'
-    : '✓ خلصت جولتك المجانية — اشترك عشان تفتح جولات بلا حدود';
+    : (_freeRoundVerificationState==='used'
+      ? '✓ خلصت جولتك المجانية — اشترك عشان تفتح جولات بلا حدود'
+      : '⏳ نحتاج اتصال بالإنترنت عشان نتحقق من جولتك المجانية');
 }
 async function syncFreeRoundCompletion(uid){
   if(!uid||!localFreeRoundCompleted(uid)) return false;
-  const idToken=await getCurrentIdToken();
-  if(!idToken) return false;
+  const [idToken,deviceCheckToken,deviceCheckUpdateToken]=await Promise.all([
+    getCurrentIdToken(),generateDeviceCheckToken(),generateDeviceCheckToken(),
+  ]);
+  if(!idToken||!deviceCheckToken||!deviceCheckUpdateToken) return false;
+  const requestHash=await freeRoundRequestHash(
+    uid,deviceCheckToken,deviceCheckUpdateToken);
+  const appAttest=await createAppAttestAssertion(
+    uid,'free_round_complete',requestHash);
+  if(window.Capacitor?.isNativePlatform?.()&&!appAttest) return false;
   try{
     const response=await apiFetch('/api/free-round/complete',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
-      body:JSON.stringify({uid,idToken}),
+      body:JSON.stringify({
+        uid,idToken,deviceCheckToken,deviceCheckUpdateToken,
+        appAttestKeyId:appAttest?.keyId||'',
+        appAttestChallengeId:appAttest?.challengeId||'',
+        appAttestAssertion:appAttest?.assertion||'',
+        appAttestRequestHash:requestHash,
+      }),
     });
-    if(response.ok){ storeSet(scopedAccessKey('free_round_sync_pending',uid),false); return true; }
+    if(response.ok||response.status===409){
+      storeSet(scopedAccessKey('free_round_sync_pending',uid),false);
+      return response.ok;
+    }
   }catch(_){ /* يبقى العلم محلياً ويُعاد عند الإقلاع القادم */ }
   return false;
 }
@@ -289,11 +514,24 @@ async function freeRoundIsAvailable(uid){
     }
     return false;
   }
-  const idToken=await getCurrentIdToken();
-  if(!idToken) return true;
+  const [idToken,deviceCheckToken]=await Promise.all([
+    getCurrentIdToken(),generateDeviceCheckToken(),
+  ]);
+  if(!idToken||!deviceCheckToken) return null;
+  const requestHash=await freeRoundRequestHash(uid,deviceCheckToken);
+  const appAttest=await createAppAttestAssertion(
+    uid,'free_round_status',requestHash);
+  if(window.Capacitor?.isNativePlatform?.()&&!appAttest) return null;
   try{
     const response=await apiFetch(`/api/free-round/status?uid=${encodeURIComponent(uid||'')}`,{
-      headers:{'Authorization':'Bearer '+idToken},
+      headers:{
+        'Authorization':'Bearer '+idToken,
+        'X-DeviceCheck-Token':deviceCheckToken,
+        'X-App-Attest-Key-Id':appAttest?.keyId||'',
+        'X-App-Attest-Challenge-Id':appAttest?.challengeId||'',
+        'X-App-Attest-Assertion':appAttest?.assertion||'',
+        'X-App-Attest-Request-Hash':requestHash,
+      },
     });
     if(response.ok){
       const data=await response.json();
@@ -304,38 +542,109 @@ async function freeRoundIsAvailable(uid){
       return data.eligible===true;
     }
   }catch(_){ /* وضع دون اتصال: علم الجهاز يمنع إعادة الجولة */ }
-  return true;
+  return null;
+}
+async function claimFreeRound(uid){
+  if(_hasActiveSubscription) return false;
+  if(!_freeRoundAvailable||_freeRoundVerificationState!=='eligible') return false;
+  const [idToken,deviceCheckToken,deviceCheckUpdateToken]=await Promise.all([
+    getCurrentIdToken(),generateDeviceCheckToken(),generateDeviceCheckToken(),
+  ]);
+  if(!idToken||!deviceCheckToken||!deviceCheckUpdateToken) return null;
+  const requestHash=await freeRoundRequestHash(
+    uid,deviceCheckToken,deviceCheckUpdateToken);
+  const appAttest=await createAppAttestAssertion(
+    uid,'free_round_complete',requestHash);
+  if(window.Capacitor?.isNativePlatform?.()&&!appAttest) return null;
+  try{
+    const response=await apiFetch('/api/free-round/complete',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+      body:JSON.stringify({
+        uid,idToken,deviceCheckToken,deviceCheckUpdateToken,
+        appAttestKeyId:appAttest?.keyId||'',
+        appAttestChallengeId:appAttest?.challengeId||'',
+        appAttestAssertion:appAttest?.assertion||'',
+        appAttestRequestHash:requestHash,
+      }),
+    });
+    if(response.ok){
+      storeSet(scopedAccessKey('free_round_completed',uid),true);
+      storeSet(scopedAccessKey('free_round_sync_pending',uid),false);
+      setFreeRoundAvailability(false);
+      return true;
+    }
+    if(response.status===409){
+      storeSet(scopedAccessKey('free_round_completed',uid),true);
+      storeSet(scopedAccessKey('free_round_sync_pending',uid),false);
+      setFreeRoundAvailability(false);
+      return false;
+    }
+  }catch(error){
+    recordNonFatal(error,'free-round.claim');
+  }
+  return null;
 }
 async function completeFreeRound(){
   if(_hasActiveSubscription||!state.isFreeRound||state.completedFreeRound) return;
-  const uid=window._currentUid||storeGet('authUid','');
   state.completedFreeRound=true;
-  _freeRoundAvailable=false;
-  storeSet(scopedAccessKey('free_round_completed',uid),true);
-  storeSet(scopedAccessKey('free_round_sync_pending',uid),true);
+  setFreeRoundAvailability(false);
   updateFreeRoundUi();
-  void syncFreeRoundCompletion(uid);
   void trackMetric('free_round_completed',{questions:state.answered||0});
 }
 function metricEventId(){
   try{ if(crypto.randomUUID) return crypto.randomUUID(); }catch(_){ }
   return `evt-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;
 }
+function metricOutboxKey(uid=window._currentUid||storeGet('authUid','')){
+  return scopedAccessKey('metric_outbox',uid);
+}
+function enqueueMetricEvent(payload){
+  const outbox=storeGet(metricOutboxKey(payload.uid),[]);
+  if(!outbox.some(item=>item.eventId===payload.eventId)) outbox.push(payload);
+  // حد محلي يمنع نمو التخزين بلا نهاية عند جهاز ظل بلا اتصال فترة طويلة.
+  storeSet(metricOutboxKey(payload.uid),outbox.slice(-500));
+}
+let metricFlushInFlight=null;
+async function flushMetricEvents(){
+  const uid=window._currentUid||storeGet('authUid','');
+  if(!uid) return false;
+  if(metricFlushInFlight?.uid===uid) return metricFlushInFlight.promise;
+  const promise=(async()=>{
+    const idToken=await getCurrentIdToken();
+    if(!idToken) return false;
+    let delivered=false;
+    for(let attempt=0;attempt<100;attempt++){
+      const current=storeGet(metricOutboxKey(uid),[]);
+      const item=current[0];
+      if(!item) return delivered||true;
+      let response;
+      try{
+        response=await apiFetch('/api/metrics/event',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+          body:JSON.stringify({...item,idToken}),
+        });
+      }catch(_){ return delivered; }
+      // أخطاء البيانات الدائمة لا يجوز أن تسمّم الصف وتمنع الأحداث التالية.
+      if(!response.ok && ![400,413,422].includes(response.status)) return delivered;
+      const latest=storeGet(metricOutboxKey(uid),[]);
+      storeSet(metricOutboxKey(uid),latest.filter(event=>event.eventId!==item.eventId));
+      delivered=delivered||response.ok;
+    }
+    return delivered;
+  })();
+  metricFlushInFlight={uid,promise};
+  try{ return await promise; }
+  finally{
+    if(metricFlushInFlight?.promise===promise) metricFlushInFlight=null;
+  }
+}
 async function trackMetric(event,properties={}){
   const uid=window._currentUid||storeGet('authUid','');
   if(!uid) return false;
-  const idToken=await getCurrentIdToken();
-  if(!idToken) return false;
-  try{
-    const response=await apiFetch('/api/metrics/event',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
-      body:JSON.stringify({
-        uid,idToken,event,eventId:metricEventId(),appVersion:APP_VERSION,properties,
-      }),
-    });
-    return response.ok;
-  }catch(_){ return false; }
+  enqueueMetricEvent({uid,event,eventId:metricEventId(),appVersion:APP_VERSION,properties});
+  return flushMetricEvents();
 }
 
 // ────────── هوية الأسئلة ومصادرها وسجل عدم التكرار
@@ -378,18 +687,30 @@ const QUESTION_SOURCE_BY_CATEGORY={
 // تصحيحات المحتوى المراجَع في إصدار البنك 2. المفاتيح هي مستوى الصعوبة.
 // للمحتوى الديني نضع رابط النص أو المرجع الأقرب للسؤال بدلاً من رابط عام.
 const QUESTION_OVERRIDES={
+  'تاريخ':{
+    1:{q:'أي حضارة بنت أهرامات الجيزة في مصر القديمة؟',answer:'الحضارة المصرية القديمة',source:{title:'اليونسكو — ممفيس ومنطقة الأهرامات',url:'https://whc.unesco.org/en/list/86/'}},
+  },
   'رياضة':{
+    2:{source:{title:'اللجنة الأولمبية الدولية — دورة الألعاب كل أربع سنوات',url:'https://library.olympics.com/default/digitalCollection/DigitalCollectionAttachmentDownloadHandler.ashx?documentId=172362&parentDocumentId=172359&skipCopyright=true&skipWatermark=true'}},
     4:{q:'أي منتخب فاز بكأس العالم عام 2010؟',answer:'إسبانيا',source:{title:'FIFA — كأس العالم 2010',url:'https://www.fifa.com/tournaments/mens/worldcup/2010south-africa'}},
     5:{q:'من سجّل هدف إسبانيا في نهائي كأس العالم 2010؟',answer:'أندريس إنييستا',source:{title:'FIFA — نهائي 2010',url:'https://www.fifa.com/tournaments/mens/worldcup/2010south-africa'}},
     6:{q:'أي منتخب فاز بكأس العالم خمس مرات حتى نسخة 2022؟',answer:'البرازيل',source:{title:'FIFA — تاريخ كأس العالم',url:'https://www.fifa.com/tournaments/mens/worldcup'}},
   },
   'علوم وتقنية':{
+    2:{q:'من نال براءة الاختراع الأمريكية للهاتف عام 1876؟',answer:'ألكسندر غراهام بيل',source:{title:'مكتب براءات الاختراع الأمريكي — براءة هاتف بيل',url:'https://www.uspto.gov/about-us/events/alexander-graham-bells-telephone-patent-150-years-world-connection'}},
     4:{q:'ما الشبكة التي طوّرها باحثون في الولايات المتحدة وكانت أساساً مبكراً للإنترنت؟',answer:'أربانت (ARPANET)',source:{title:'الموسوعة البريطانية — ARPANET',url:'https://www.britannica.com/topic/ARPANET'}},
   },
   'جغرافيا':{
+    1:{q:'وفق نموذج القارات السبع، كم عدد قارات العالم؟',answer:'سبع قارات',source:{title:'ناشيونال جيوغرافيك — القارة',url:'https://education.nationalgeographic.org/resource/Continent/'}},
     4:{q:'ما اسم ناطحة السحاب في دبي التي يبلغ ارتفاعها 828 متراً؟',answer:'برج خليفة',source:{title:'برج خليفة — حقائق وأرقام',url:'https://www.burjkhalifa.ae/en/the-tower/facts-figures/'}},
+    5:{q:'ما المدينة البوليفية التي تضم مقر الحكومة وتقع على ارتفاع شاهق؟',answer:'لاباز',source:{title:'الموسوعة البريطانية — لاباز',url:'https://www.britannica.com/place/La-Paz-Bolivia'}},
+  },
+  'ثقافة خليجية':{
+    1:{q:'ما اسم طبق الأرز باللحم أو الدجاج المعروف في السعودية ودول الخليج باسم الكبسة أو المكبوس؟',answer:'الكبسة',source:{title:'سعوديبيديا — الكبسة السعودية',url:'https://saudipedia.com/الكبسة-السعودية'}},
+    3:{q:'كم إمارة تضم دولة الإمارات العربية المتحدة اليوم؟',answer:'سبع إمارات',source:{title:'المنصة الرسمية لحكومة الإمارات — الإمارات السبع',url:'https://u.ae/ar/about-the-uae/the-seven-emirates'}},
   },
   'محرّكات ومركبات':{
+    2:{q:'ما الوقود السائل الشائع في السيارات التقليدية ذات محركات الاحتراق الشراري؟',answer:'البنزين',source:{title:'الموسوعة البريطانية — محرك البنزين',url:'https://www.britannica.com/technology/gasoline-engine'}},
     5:{q:'ما اسم الطائرة الأسرع من الصوت التي شغّلتها الخطوط البريطانية والفرنسية؟',answer:'كونكورد',source:{title:'الموسوعة البريطانية — كونكورد',url:'https://www.britannica.com/technology/Concorde'}},
     6:{q:'من حصل على براءة اختراع سيارة بمحرك بنزين عام 1886؟',answer:'كارل بنز',source:{title:'الموسوعة البريطانية — كارل بنز',url:'https://www.britannica.com/biography/Karl-Benz'}},
   },
@@ -399,22 +720,48 @@ const QUESTION_OVERRIDES={
     6:{q:'أي قمر للمشتري تشير الأدلة إلى وجود محيط مالح تحت سطحه الجليدي؟',answer:'أوروبا',source:{title:'ناسا — أوروبا',url:'https://science.nasa.gov/jupiter/moons/europa/'}},
   },
   'حيوانات وطبيعة':{
+    1:{q:'ما أكبر حيوان بري حي من حيث الكتلة؟',answer:'الفيل',source:{title:'الموسوعة البريطانية — الفيل',url:'https://www.britannica.com/animal/elephant-mammal'}},
+    2:{q:'ما أطول حيوان بري حي؟',answer:'الزرافة',source:{title:'الموسوعة البريطانية — الزرافة',url:'https://www.britannica.com/animal/giraffe'}},
     3:{q:'ما أسرع حيوان بري؟',answer:'الفهد',source:{title:'سميثسونيان — الفهد',url:'https://nationalzoo.si.edu/animals/cheetah'}},
+    4:{q:'ما الحيوان الأسترالي الذي تحمل الأنثى صغيرها في جراب؟',answer:'الكنغر',source:{title:'الموسوعة البريطانية — الكنغر',url:'https://www.britannica.com/animal/kangaroo'}},
+    5:{q:'ما أكبر السنوريات البرية الحية من حيث الحجم؟',answer:'الببر (ويُسمّى النمر في بعض الاستعمالات)',source:{title:'الموسوعة البريطانية — الببر',url:'https://www.britannica.com/animal/tiger'}},
+    6:{q:'ما الحيوان البحري اللافقاري الذي يملك ثلاثة قلوب ودماً أزرق؟',answer:'الأخطبوط',source:{title:'سميثسونيان للمحيطات — الأخطبوط',url:'https://ocean.si.edu/ocean-life/invertebrates/octopus'}},
   },
   'حضارات قديمة':{
+    1:{q:'أي حضارة بنت مدرج الكولوسيوم في روما؟',answer:'الحضارة الرومانية',source:{title:'اليونسكو — المركز التاريخي لروما',url:'https://whc.unesco.org/en/list/91/'}},
+    2:{q:'ما اسم نظام الكتابة المصوّرة الذي استخدمه قدماء المصريين؟',answer:'الكتابة الهيروغليفية',source:{title:'متحف المتروبوليتان — الكتابة المصرية القديمة',url:'https://www.metmuseum.org/essays/ancient-egyptian-writing'}},
+    3:{q:'أي حضارة حكمت وسط المكسيك واتخذت تينوتشتيتلان عاصمةً لها؟',answer:'حضارة الأزتك',source:{title:'الموسوعة البريطانية — الأزتك',url:'https://www.britannica.com/topic/Aztec'}},
+    4:{q:'ما اسم الوادي المصري الذي يضم مقابر كثير من ملوك الدولة الحديثة؟',answer:'وادي الملوك',source:{title:'اليونسكو — طيبة القديمة ومقابرها',url:'https://whc.unesco.org/en/list/87/'}},
     5:{q:'ما المدينة الرومانية القديمة التي دفنها ثوران جبل فيزوف سنة 79م؟',answer:'بومبي',source:{title:'الموسوعة البريطانية — بومبي',url:'https://www.britannica.com/place/Pompeii'}},
+    6:{q:'ما اسم النظام الذي استخدمته حضارة المايا لتنظيم دورات الزمن والأيام؟',answer:'تقويم المايا',source:{title:'الموسوعة البريطانية — تقويم المايا',url:'https://www.britannica.com/topic/Mayan-calendar'}},
   },
   'جسم الإنسان':{
     1:{q:'كم عدد حجرات القلب البشري؟',answer:'أربع حجرات',source:{title:'المعهد الوطني للقلب — القلب',url:'https://www.nhlbi.nih.gov/health/heart'}},
     2:{q:'ما العضو الذي يضخ الدم إلى أنحاء الجسم؟',answer:'القلب',source:{title:'المعهد الوطني للقلب',url:'https://www.nhlbi.nih.gov/health/heart'}},
+    4:{q:'ما اسم خلايا الجهاز العصبي المتخصصة في إرسال الإشارات واستقبالها؟',answer:'الخلايا العصبية (العصبونات)',source:{title:'المعهد الوطني للاضطرابات العصبية — الخلايا العصبية',url:'https://www.ninds.nih.gov/es/node/8172'}},
+  },
+  'الشعر العربي':{
+    5:{q:'من الشاعر العباسي صاحب البيت «واحر قلباه ممن قلبه شبم»؟',answer:'المتنبي',source:{title:'مؤسسة هنداوي — ديوان المتنبي',url:'https://www.hindawi.org/books/85919750/'}},
+  },
+  'خرائط دول':{
+    5:{q:'أي دولة آسيوية جنوب شرقية تتكوّن من أكثر من سبعة آلاف جزيرة؟',answer:'الفلبين',source:{title:'الموسوعة البريطانية — الفلبين',url:'https://www.britannica.com/place/Philippines'}},
+  },
+  'كأس العالم':{
+    5:{q:'حتى نهاية كأس العالم 2022، من صاحب أسرع هدف في تاريخ البطولة بعد نحو 11 ثانية؟',answer:'هاكان شوكور (تركيا)',source:{title:'FIFA — أسرع أهداف كأس العالم',url:'https://www.fifa.com/tournaments/mens/worldcup'}},
+    6:{q:'حتى نهاية كأس العالم 2022، أي منتخبين يملكان أربعة ألقاب لكل منهما؟',answer:'ألمانيا وإيطاليا',source:{title:'FIFA — سجل أبطال كأس العالم',url:'https://www.fifa.com/tournaments/mens/worldcup'}},
   },
   'دوري أبطال أوروبا':{
+    2:{q:'حتى نهاية موسم 2024-2025، من صاحب ثاني أكبر عدد من الأهداف في تاريخ دوري أبطال أوروبا؟',answer:'ليونيل ميسي',source:{title:'UEFA — هدافو دوري أبطال أوروبا عبر التاريخ',url:'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals/'}},
     4:{q:'في أي موسم بدأ نظام مرحلة الدوري بمشاركة 36 فريقاً في دوري أبطال أوروبا؟',answer:'موسم 2024-2025',source:{title:'UEFA — شرح النظام الجديد',url:'https://www.uefa.com/uefachampionsleague/news/0290-1bae124dbd1a-4a9fc08cd25c-1000/'}},
     6:{q:'أي نادٍ فاز بأول خمس نسخ من كأس أوروبا من 1956 إلى 1960؟',answer:'ريال مدريد',source:{title:'UEFA — تاريخ البطولة',url:'https://www.uefa.com/uefachampionsleague/history/'}},
   },
   'الألعاب الأولمبية':{
+    3:{q:'من السباح الأمريكي الذي فاز بـ23 ميدالية ذهبية أولمبية خلال مسيرته؟',answer:'مايكل فيلبس',source:{title:'الاتحاد الدولي للألعاب المائية — ميداليات مايكل فيلبس',url:'https://www.worldaquatics.com/athletes/1001621/michael-phelps/medals'}},
     4:{q:'أي مدينة استضافت الألعاب الأولمبية الصيفية عام 2012؟',answer:'لندن',source:{title:'الألعاب الأولمبية — لندن 2012',url:'https://olympics.com/en/olympic-games/london-2012'}},
     5:{q:'أي مدينة استضافت الألعاب الأولمبية الصيفية عام 2016؟',answer:'ريو دي جانيرو',source:{title:'الألعاب الأولمبية — ريو 2016',url:'https://olympics.com/en/olympic-games/rio-2016'}},
+  },
+  'أنمي':{
+    6:{q:'ما الاسم الذي كانت فاكهة لوفي في «ون بيس» تُعرف به قبل كشف اسمها الحقيقي؟',answer:'غومو غومو نو مي (فاكهة المطاط)',source:{title:'الموقع الرسمي لـONE PIECE — لوفي',url:'https://one-piece.com/character/luffy/index.html'}},
   },
   'مسلسلات خليجية':{
     1:{q:'ما اسم المسلسل الكويتي الذي ظهرت فيه شخصيتا حسين وسعد بن عاقول؟',answer:'درب الزلق',source:{title:'جريدة الجريدة الكويتية — درب الزلق',url:'https://www.aljarida.com/articles/1526486221951299700/'}},
@@ -441,10 +788,10 @@ const QUESTION_OVERRIDES={
   'دين وسيرة':{
     1:{source:{title:'صحيح البخاري — بُني الإسلام على خمس',url:'https://dorar.net/hadith/sharh/75059'}},
     2:{source:{title:'صحيح البخاري — فرض الصلاة',url:'https://dorar.net/hadith/search?q=%D9%81%D8%B1%D8%B6%D8%AA+%D8%A7%D9%84%D8%B5%D9%84%D8%A7%D8%A9+%D8%B1%D9%83%D8%B9%D8%AA%D9%8A%D9%86'}},
-    3:{source:{title:'صحيح البخاري — مواقيت الصلاة',url:'https://dorar.net/hadith/search?q=%D8%A7%D9%84%D8%B5%D9%84%D9%88%D8%A7%D8%AA+%D8%A7%D9%84%D8%AE%D9%85%D8%B3'}},
+    3:{q:'في اليوم المعتاد من غير صلاة الجمعة، كم مجموع ركعات الصلوات الخمس المفروضة؟',answer:'17 ركعة',source:{title:'الموسوعة الحديثية — الصلوات الخمس المفروضة',url:'https://dorar.net/hadith/search?q=%D8%A7%D9%84%D8%B5%D9%84%D9%88%D8%A7%D8%AA+%D8%A7%D9%84%D8%AE%D9%85%D8%B3'}},
     4:{q:'إلى أي بيت يتجه المسلمون في صلاتهم؟',answer:'الكعبة المشرفة',source:{title:'القرآن الكريم — البقرة 144',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya144.html'}},
     5:{source:{title:'حديث «الحج عرفة»',url:'https://dorar.net/hadith/sharh/85664'}},
-    6:{source:{title:'حديث أيام منى ثلاثة',url:'https://dorar.net/hadith/sharh/85664'}},
+    6:{q:'كم عدد أيام التشريق: الحادي عشر والثاني عشر والثالث عشر من ذي الحجة؟',answer:'ثلاثة أيام',source:{title:'تفسير ابن كثير — البقرة 203',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya203.html'}},
   },
   'السيرة النبوية':{
     1:{source:{title:'تاريخ الطبري — ذكر مولد رسول الله ﷺ',url:'https://shamela.ws/book/9783'}},
@@ -455,7 +802,7 @@ const QUESTION_OVERRIDES={
     6:{source:{title:'تاريخ الطبري — السيرة النبوية',url:'https://shamela.ws/book/9783'}},
   },
   'القرآن الكريم':{
-    1:{source:{title:'تفسير ابن كثير — سورة الفاتحة',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura1.html'}},
+    1:{q:'ما أول سورة في ترتيب المصحف؟',answer:'سورة الفاتحة',source:{title:'تفسير ابن كثير — سورة الفاتحة',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura1.html'}},
     2:{source:{title:'القرآن الكريم — فهرس السور',url:'https://quran.ksu.edu.sa/'}},
     3:{q:'ما السورة التي عدد آياتها ثلاث وتبدأ بقوله تعالى «إنا أعطيناك الكوثر»؟',answer:'سورة الكوثر',source:{title:'تفسير ابن كثير — سورة الكوثر',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura108.html'}},
     4:{q:'ما أطول سورة في القرآن الكريم؟',answer:'سورة البقرة',source:{title:'تفسير ابن كثير — سورة البقرة',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2.html'}},
@@ -463,10 +810,10 @@ const QUESTION_OVERRIDES={
     6:{q:'في أي سورة ورد قوله تعالى «محمد رسول الله»؟',answer:'سورة الفتح',source:{title:'تفسير ابن كثير — الفتح 29',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura48-aya29.html'}},
   },
   'فتوحات المسلمين':{
-    1:{source:{title:'صحيح البخاري — خالد بن الوليد سيف من سيوف الله',url:'https://dorar.net/hadith/search?q=%D8%B3%D9%8A%D9%81+%D9%85%D9%86+%D8%B3%D9%8A%D9%88%D9%81+%D8%A7%D9%84%D9%84%D9%87+%D8%AE%D8%A7%D9%84%D8%AF'}},
+    1:{q:'من القائد الذي قال عنه النبي ﷺ إنه سيف من سيوف الله؟',answer:'خالد بن الوليد',source:{title:'الموسوعة الحديثية — خالد بن الوليد سيف من سيوف الله',url:'https://dorar.net/hadith/search?q=%D8%B3%D9%8A%D9%81+%D9%85%D9%86+%D8%B3%D9%8A%D9%88%D9%81+%D8%A7%D9%84%D9%84%D9%87+%D8%AE%D8%A7%D9%84%D8%AF'}},
     2:{source:{title:'تاريخ الطبري — القادسية',url:'https://shamela.ws/book/9783'}},
     3:{q:'في عهد أي خليفة فُتحت دمشق؟',answer:'عمر بن الخطاب',source:{title:'تاريخ الطبري — فتوح الشام',url:'https://shamela.ws/book/9783'}},
-    4:{source:{title:'تاريخ الطبري — فتوح الشام',url:'https://shamela.ws/book/9783'}},
+    4:{q:'ما المدينة التي تسلّم الخليفة عمر بن الخطاب مفاتيحها خلال فتوح الشام؟',answer:'بيت المقدس',source:{title:'تاريخ الطبري — فتح بيت المقدس',url:'https://shamela.ws/book/9783'}},
     5:{q:'ما المعركة التي عُرفت في المصادر الإسلامية بفتح الفتوح في بلاد فارس؟',answer:'معركة نهاوند',source:{title:'تاريخ الطبري — نهاوند',url:'https://shamela.ws/book/9783'}},
     6:{source:{title:'تاريخ الطبري — يزدجرد الثالث',url:'https://shamela.ws/book/9783'}},
   },
@@ -479,7 +826,7 @@ const QUESTION_OVERRIDES={
     6:{source:{title:'القرآن الكريم — التوبة 40',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura9-aya40.html'}},
   },
   'الخلفاء الراشدون':{
-    1:{source:{title:'حديث الخلافة بعدي ثلاثون سنة',url:'https://dorar.net/hadith/search?q=%D8%A7%D9%84%D8%AE%D9%84%D8%A7%D9%81%D8%A9+%D8%A8%D8%B9%D8%AF%D9%8A+%D8%AB%D9%84%D8%A7%D8%AB%D9%88%D9%86'}},
+    1:{q:'من الخليفة الراشد الذي أمر زيد بن ثابت بجمع القرآن بعد وقعة اليمامة؟',answer:'أبو بكر الصديق',source:{title:'صحيح البخاري — جمع القرآن في عهد أبي بكر',url:'https://dorar.net/hadith/sharh/3840'}},
     2:{source:{title:'تاريخ الطبري — وفاة أبي بكر',url:'https://shamela.ws/book/9783'}},
     3:{source:{title:'تاريخ الطبري — وضع التاريخ الهجري',url:'https://shamela.ws/book/9783'}},
     4:{source:{title:'صحيح البخاري — جمع القرآن',url:'https://dorar.net/hadith/sharh/3840'}},
@@ -487,7 +834,7 @@ const QUESTION_OVERRIDES={
     6:{q:'في عهد أي خليفة وقعت معركة ذات الصواري البحرية؟',answer:'عثمان بن عفان',source:{title:'البداية والنهاية لابن كثير — خلافة عثمان',url:'https://shamela.ws/book/4445'}},
   },
   'الأنبياء والرسل':{
-    1:{source:{title:'تفسير ابن كثير — قصة آدم',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya30.html'}},
+    1:{q:'من أبو البشر الذي خلقه الله من تراب؟',answer:'آدم عليه السلام',source:{title:'تفسير ابن كثير — آل عمران 59',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura3-aya59.html'}},
     2:{source:{title:'تفسير ابن كثير — مريم وعيسى',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura19.html'}},
     3:{q:'من النبي الذي قال الله تعالى إنه كلّمه تكليماً؟',answer:'موسى عليه السلام',source:{title:'تفسير ابن كثير — النساء 164',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura4-aya164.html'}},
     4:{source:{title:'تفسير ابن كثير — أولو العزم من الرسل',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura46-aya35.html'}},
@@ -512,7 +859,7 @@ const QUESTION_ADDITIONS={
     {d:2,q:'كم كان عمر النبي ﷺ عندما نزل عليه الوحي أول مرة؟',answer:'أربعون سنة',source:{title:'البداية والنهاية لابن كثير — مبعث الرسول ﷺ',url:'https://shamela.ws/book/4445'}},
     {d:3,q:'من كان مع النبي ﷺ في الغار أثناء الهجرة؟',answer:'أبو بكر الصديق',source:{title:'تفسير ابن كثير — التوبة 40',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura9-aya40.html'}},
     {d:4,q:'ما اسم الصلح الذي عقده النبي ﷺ مع قريش في السنة السادسة للهجرة؟',answer:'صلح الحديبية',source:{title:'تاريخ الطبري — السنة السادسة للهجرة',url:'https://shamela.ws/book/9783'}},
-    {d:5,q:'ما أول مسجد بناه النبي ﷺ عند وصوله إلى أطراف المدينة؟',answer:'مسجد قباء',source:{title:'تفسير ابن كثير — التوبة 108',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura9-aya108.html'}},
+    {d:5,q:'أي مسجد كان النبي ﷺ يأتيه كل سبت ماشياً وراكباً؟',answer:'مسجد قباء',source:{title:'صحيح البخاري ومسلم — إتيان مسجد قباء',url:'https://dorar.net/hadith/sharh/142339'}},
     {d:6,q:'من كتب وثيقة صلح الحديبية بأمر النبي ﷺ؟',answer:'علي بن أبي طالب',source:{title:'صحيح البخاري — صلح الحديبية',url:'https://dorar.net/hadith/search?q=%D9%83%D8%AA%D8%A8+%D8%B9%D9%84%D9%8A+%D8%B5%D9%84%D8%AD+%D8%A7%D9%84%D8%AD%D8%AF%D9%8A%D8%A8%D9%8A%D8%A9'}},
   ],
   'القرآن الكريم':[
@@ -532,12 +879,12 @@ const QUESTION_ADDITIONS={
     {d:6,q:'ما اسم المعركة البحرية الكبرى التي وقعت في عهد عثمان بن عفان؟',answer:'معركة ذات الصواري',source:{title:'البداية والنهاية لابن كثير — خلافة عثمان',url:'https://shamela.ws/book/4445'}},
   ],
   'الصحابة':[
-    {d:1,q:'من مؤذن النبي ﷺ المشهور؟',answer:'بلال بن رباح',source:{title:'صحيح البخاري — أذان بلال',url:'https://dorar.net/hadith/sharh/130394'}},
+    {d:1,q:'من الصحابي الذي رآه أبو جحيفة يؤذّن ويدور بوجهه أثناء الأذان؟',answer:'بلال بن رباح',source:{title:'صحيح البخاري — أذان بلال',url:'https://dorar.net/hadith/sharh/130394'}},
     {d:2,q:'من الصحابي الملقب بذي النورين؟',answer:'عثمان بن عفان',source:{title:'الموسوعة التاريخية — عثمان بن عفان',url:'https://dorar.net/history'}},
     {d:3,q:'من الصحابي الذي دعا له النبي ﷺ أن يفقهه الله في الدين ويعلمه التأويل؟',answer:'عبدالله بن عباس',source:{title:'حديث دعاء النبي ﷺ لابن عباس',url:'https://dorar.net/hadith/sharh/63103'}},
     {d:4,q:'من الصحابي الذي كُلّف بجمع القرآن في خلافة أبي بكر؟',answer:'زيد بن ثابت',source:{title:'صحيح البخاري — جمع القرآن',url:'https://dorar.net/hadith/sharh/3840'}},
     {d:5,q:'من الصحابي الذي أخبر النبي ﷺ أن عرش الرحمن اهتز لموته؟',answer:'سعد بن معاذ',source:{title:'صحيح البخاري — سعد بن معاذ',url:'https://dorar.net/h/1uVuOqBw?osoul=1'}},
-    {d:6,q:'من الصحابي الذي جعل النبي ﷺ شهادته بشهادة رجلين؟',answer:'خزيمة بن ثابت',source:{title:'صحيح البخاري — شهادة خزيمة',url:'https://dorar.net/hadith/sharh/25746'}},
+    {d:6,q:'من الصحابي الوحيد الذي ورد اسمه صريحاً في القرآن الكريم؟',answer:'زيد بن حارثة',source:{title:'تفسير ابن كثير — الأحزاب 37',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura33-aya37.html'}},
   ],
   'الخلفاء الراشدون':[
     {d:1,q:'من ثاني الخلفاء الراشدين؟',answer:'عمر بن الخطاب',source:{title:'تاريخ الطبري — خلافة عمر',url:'https://shamela.ws/book/9783'}},
@@ -572,16 +919,36 @@ function normalizeQuestionBank(bank){
     normalized[cat]=merged.map((question,index)=>{
       // التصحيح يخص السؤال القديم فقط. سؤال الإضافة في المستوى نفسه مستقل
       // ولا يجوز أن يرث نص التصحيح، وإلا ظهر سؤالان متطابقان في البنك.
-      const override=index<originals.length&&QUESTION_OVERRIDES[cat]&&QUESTION_OVERRIDES[cat][question.d];
+      const isPublishedQuestion=question.review?.status==='approved';
+      const override=index<originals.length&&!isPublishedQuestion&&QUESTION_OVERRIDES[cat]&&QUESTION_OVERRIDES[cat][question.d];
       const q={...question,...(override||{})};
       // بعض الأسئلة القديمة كانت اختياراً من متعدد. عند استبدال نص السؤال
       // وإجابته نحذف خياراته القديمة حتى لا تصبح بياناتها مخالفة للإجابة الجديدة.
       if(override&&override.q){ delete q.o; delete q.a; }
-      q.id=String(q.id||`q2-${hashQuestion(`${cat}|${q.d}|${q.q}|${index}`)}`);
-      q.source=q.source||QUESTION_SOURCE_BY_CATEGORY[cat]||null;
-      q.review=q.review&&q.review.status==='approved'
+      // المعرّف الدائم يعتمد على موضع السجل داخل مصدره، لا على نص السؤال.
+      // بذلك لا يحوّل التصحيح اللغوي السؤال نفسه إلى سؤال «جديد» للمستخدم.
+      // نحتفظ بمعرّف 1.2 النصي كاسم سابق حتى تُحترم السجلات الموجودة فعلاً.
+      const legacyId=String(q.id||`q2-${hashQuestion(`${cat}|${q.d}|${q.q}|${index}`)}`);
+      const sourceKind=index<originals.length?'bank':'addition';
+      const sourceIndex=index<originals.length?index:index-originals.length;
+      q.id=String(q.id||`q3-${hashQuestion(`${cat}|${sourceKind}|${sourceIndex}|${q.d}`)}`);
+      q.previousIds=q.id===legacyId?[]:[legacyId];
+      const fallbackSource=QUESTION_SOURCE_BY_CATEGORY[cat]||null;
+      q.source=q.source||(fallbackSource?{...fallbackSource,scope:'category_fallback'}:null);
+      const religious=['دين وسيرة','السيرة النبوية','القرآن الكريم','فتوحات المسلمين','الصحابة','الخلفاء الراشدون','الأنبياء والرسل'].includes(cat);
+      const hasExplicitApproval=q.review?.status==='approved'
+        &&typeof q.review.reviewer==='string'&&q.review.reviewer.trim()
+        &&typeof q.review.reviewedAt==='string'&&q.review.reviewedAt.trim()
+        &&(!religious||q.review.religiousSourceAndIsnadConfirmed===true);
+      q.review=hasExplicitApproval
         ? {...q.review}
-        : {status:'approved',bankVersion:2,reviewedAt:'2026-08-20'};
+        : {
+            status:religious?'pending_religious_review':'pending_review',
+            bankVersion:3,
+            reviewer:null,
+            reviewedAt:null,
+            religiousSourceAndIsnadConfirmed:false,
+          };
       return q;
     });
   });
@@ -593,10 +960,16 @@ function questionHistoryOwner(){
 function questionHistoryKey(){ return `question_history_${questionHistoryOwner()}`; }
 function loadQuestionHistory(){ return storeGet(questionHistoryKey(),{}); }
 function saveQuestionHistory(history){ storeSet(questionHistoryKey(),history); }
-function questionWasSeen(history,cat,id){ return Boolean(history[cat]&&history[cat].includes(id)); }
+function questionWasSeen(history,cat,question){
+  const seen=history[cat]||[];
+  if(!question) return false;
+  return [question.id,...(question.previousIds||[])].some(id=>id&&seen.includes(id));
+}
 function questionSeenOutboxKey(){ return `question_seen_outbox_${questionHistoryOwner()}`; }
 function questionSeenSeededKey(){ return `question_seen_seeded_${questionHistoryOwner()}`; }
 let questionSeenFlushTimer=null;
+let questionHistorySyncedOwner='';
+let questionHistorySyncInFlight=null;
 function enqueueQuestionSeen(category,questionId){
   if(!questionId||!category) return;
   const outbox=storeGet(questionSeenOutboxKey(),[]);
@@ -637,14 +1010,25 @@ async function flushQuestionSeen(){
 }
 async function syncQuestionHistory(){
   const uid=window._currentUid||storeGet('authUid','');
-  if(!uid) return;
-  const idToken=await getCurrentIdToken();
-  if(!idToken) return;
-  try{
-    const response=await apiFetch(`/api/questions/seen?uid=${encodeURIComponent(uid)}`,{
-      headers:{'Authorization':'Bearer '+idToken},
-    });
-    if(response.ok){
+  if(!uid) return false;
+  if(questionHistorySyncedOwner===uid){
+    void flushQuestionSeen();
+    return true;
+  }
+  if(questionHistorySyncInFlight?.uid===uid) return questionHistorySyncInFlight.promise;
+  const promise=(async()=>{
+    const idToken=await getCurrentIdToken();
+    if(!idToken) return false;
+    try{
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),8000);
+      let response;
+      try{
+        response=await apiFetch(`/api/questions/seen?uid=${encodeURIComponent(uid)}`,{
+          headers:{'Authorization':'Bearer '+idToken},signal:controller.signal,
+        });
+      }finally{ clearTimeout(timer); }
+      if(!response.ok) return false;
       const payload=await response.json();
       const history=loadQuestionHistory();
       (payload.items||[]).forEach(item=>{
@@ -654,19 +1038,26 @@ async function syncQuestionHistory(){
         history[item.category]=ids.slice(-2000);
       });
       saveQuestionHistory(history);
-    }
-  }catch(_){ /* عدم الاتصال لا يمنع اللعب من البنك المحلي */ }
+    }catch(_){ return false; }
 
-  // ترحيل سجل الجهاز الموجود قبل إضافة المزامنة مرة واحدة فقط.
-  if(!storeGet(questionSeenSeededKey(),false)){
-    const history=loadQuestionHistory();
-    Object.entries(history).forEach(([category,ids])=>{
-      (ids||[]).forEach(id=>enqueueQuestionSeen(category,id));
-    });
-  }
-  await flushQuestionSeen();
-  if(!storeGet(questionSeenOutboxKey(),[]).length){
-    storeSet(questionSeenSeededKey(),true);
+    // ترحيل سجل الجهاز الموجود قبل إضافة المزامنة مرة واحدة فقط.
+    if(!storeGet(questionSeenSeededKey(),false)){
+      const history=loadQuestionHistory();
+      Object.entries(history).forEach(([category,ids])=>{
+        (ids||[]).forEach(id=>enqueueQuestionSeen(category,id));
+      });
+    }
+    await flushQuestionSeen();
+    if(!storeGet(questionSeenOutboxKey(),[]).length){
+      storeSet(questionSeenSeededKey(),true);
+    }
+    questionHistorySyncedOwner=uid;
+    return true;
+  })();
+  questionHistorySyncInFlight={uid,promise};
+  try{ return await promise; }
+  finally{
+    if(questionHistorySyncInFlight?.promise===promise) questionHistorySyncInFlight=null;
   }
 }
 function rememberQuestion(cat,question){
@@ -768,7 +1159,7 @@ function go(id){
     void trackMetric('paywall_viewed',{freeRoundCompleted:localFreeRoundCompleted()});
     // على الويب لا توجد تهيئة RevenueCat أصلاً؛ استدعِ الدالة فوراً كي تعرض
     // ملاحظة أن الدفع متاح داخل iOS بدلاً من ترك الشاشة على «جاري الجلب».
-    loadPaywallPrices().catch(e=>console.error('paywall prices:', (e && e.message) || e));
+    loadPaywallPrices().catch(()=>logClientEvent('error','paywall.prices'));
   }
 }
 function closePaywall(){
@@ -802,7 +1193,7 @@ async function reauthThen(provider, fn){
   // Normalize Firebase providerId format (stored as 'apple.com'/'google.com' in old sessions)
   if(provider==='apple.com') provider='apple';
   if(provider==='google.com') provider='google';
-  console.log('[reauthThen] normalized provider:', provider);
+  logClientEvent('info','auth.reauth.start');
   const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
   if(FA){
     if(provider==='google'){
@@ -810,13 +1201,11 @@ async function reauthThen(provider, fn){
       else await FA.signInWithGoogle();
     } else if(provider==='apple'){
       const hasReauth = typeof FA.reauthenticateWithApple==='function';
-      console.log('[reauth] apple hasReauth:', hasReauth);
       try{
         if(hasReauth) await FA.reauthenticateWithApple();
         else await FA.signInWithApple();
       }catch(appleErr){
-        console.error('[reauth] apple error — json:', JSON.stringify(appleErr),
-          'msg:', appleErr?.message, 'code:', appleErr?.code, 'type:', typeof appleErr);
+        logClientEvent('error','auth.reauth.apple');
         throw appleErr;
       }
     } else if(provider==='password'){
@@ -853,7 +1242,6 @@ async function reauthThen(provider, fn){
 // حذف مستخدم Firebase فعلياً (شرط Apple 5.1.1) — وليس تسجيل خروج فقط
 async function deleteFirebaseUser(){
   const provider = storeGet('authProvider','');
-  console.log('[deleteFirebaseUser] stored provider:', JSON.stringify(provider));
   // الطبقة الأولى: مكوّن Capacitor الأصلي (iOS)
   const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
   if(FA){
@@ -873,15 +1261,17 @@ async function deleteFirebaseUser(){
       if(msg.includes('requires-recent-login')){
         try{ await reauthThen(provider, ()=>FA.deleteUser()); return true; }
         catch(e2){
-          console.error('reauth+delete:', e2, 'json:', JSON.stringify(e2));
-          const isCancelled = !e2 || JSON.stringify(e2)==='{}' ||
+          logClientEvent('error','auth.delete.reauthentication');
+          const isEmptyObject=typeof e2==='object' && e2!==null
+            && Object.keys(e2).length===0;
+          const isCancelled = !e2 || isEmptyObject ||
             (e2?.code||'').includes('CANCEL') || (e2?.message||'').toLowerCase().includes('cancel') ||
             e2?.code==='1001'; // ASAuthorizationError.canceled
           if(isCancelled) showToast('❌','لغيت التحقق','عشان تحذف الحساب، كمّل التحقق عن طريق Apple',false);
           return false;
         }
       }
-      console.error('Capacitor deleteUser:', e);
+      logClientEvent('error','auth.delete.capacitor');
       return false;
     }
   }
@@ -900,9 +1290,9 @@ async function deleteFirebaseUser(){
           const { deleteUser } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
           await reauthThen(provider, ()=>deleteUser(wb.auth.currentUser));
           return true;
-        }catch(e2){ console.error('web reauth+delete:', e2); return false; }
+        }catch(e2){ logClientEvent('error','auth.delete.web-reauthentication'); return false; }
       }
-      console.error('web deleteUser:', e);
+      logClientEvent('error','auth.delete.web');
       return false;
     }
   }
@@ -936,7 +1326,7 @@ async function signOut(){
   try{
     const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
     if(FA) await FA.signOut();
-  }catch(e){ console.warn('signOut FA:', e); }
+  }catch(e){ logClientEvent('warn','auth.signout'); }
   // افصل RevenueCat أيضاً حتى لا يرث الحساب التالي اشتراك المستخدم السابق.
   await resetRevenueCatIdentity();
   // امسح مفاتيح الهوية فقط من التخزين المحلي (ابقِ الإحصاءات والإنجازات)
@@ -980,7 +1370,7 @@ async function confirmDeleteAccount(){
         throw new Error(detail || `server delete returned ${resp.status}`);
       }
     }catch(e){
-      console.warn('server delete failed:', e);
+      logClientEvent('warn','account.server-delete');
       showToast('⚠️','ما قدرنا نحذف الحساب','بياناتك ما انحذفت. تأكد من النت وجرّب مرة ثانية',false);
       return;
     }
@@ -1093,9 +1483,9 @@ async function ensureAnonymousSession(){
     }catch(e){
       const code=String(e && (e.code||e.message) || '');
       if(code.includes('admin-restricted-operation') || code.includes('restricted to administrators')){
-        console.warn('Firebase Anonymous sign-in is disabled; using the local fallback until it is enabled in Firebase Console.');
+        logClientEvent('warn','auth.anonymous.disabled');
       } else {
-        console.error('anon Capacitor:', e);
+        logClientEvent('error','auth.anonymous.capacitor');
       }
     }
   }
@@ -1116,14 +1506,9 @@ async function ensureAnonymousSession(){
         uid = result.user.uid;
       }catch(e){
         if(e && e.code === 'auth/admin-restricted-operation'){
-          console.warn(
-            '%c⚠️ تسجيل الدخول المجهول (Anonymous) غير مفعّل في Firebase Console\n' +
-            'لتفعيله: Firebase Console → Authentication → Sign-in method → Anonymous → Enable\n' +
-            'حتى يُفعَّل، يعمل التطبيق بمعرّف جهاز محلي (بلا مزامنة تقدّم عبر الأجهزة).',
-            'color:#FFD24B; font-weight:bold;'
-          );
+          logClientEvent('warn','auth.anonymous.disabled');
         } else {
-          console.error('anon Web:', e);
+          logClientEvent('error','auth.anonymous.web');
         }
       }
     }
@@ -1146,6 +1531,14 @@ async function ensureAnonymousSession(){
 // نجاح الدخول/الربط بأي وسيلة — يوحّد كل مسارات ما بعد المصادقة
 function afterAuthSuccess(name, provider, uid, email){
   sfx('start'); vibrate(20);
+  const previousUid=String(window._currentUid||storeGet('authUid','')||'');
+  const nextUid=String(uid||storeGet('authUid','')||'');
+  // قد يعيد تسجيل الدخول حساب Firebase مختلفاً عن الحساب الذي كان RevenueCat
+  // مهيأً له. صفّر الصلاحية والكاش فوراً، ثم لا تبدأ فحص الحساب الجديد قبل
+  // أن ينتهي فصل هوية SDK القديمة.
+  const revenueCatIdentityReset=previousUid && nextUid && previousUid!==nextUid
+    ? resetRevenueCatIdentity()
+    : Promise.resolve();
   if(name) storeSet('playerName', name);
   storeSet('authProvider', provider);
   if(uid) storeSet('authUid', uid);
@@ -1163,8 +1556,11 @@ function afterAuthSuccess(name, provider, uid, email){
   const target = window._authReturnScreen || 's-home';
   if(target==='s-stats'){ go('s-stats'); }
   else if(!storeGet('onbDone', false)){ _onbStep=0; _onbSetStep(0); go('s-onb'); }
-  else { checkSubscriptionAndRoute(window._currentUid); }
+  else {
+    void revenueCatIdentityReset.then(()=>checkSubscriptionAndRoute(window._currentUid));
+  }
   void syncQuestionHistory();
+  void flushMetricEvents();
 }
 
 // نشارك طلب الرمز القصير بين العمليات المتزامنة عند الإقلاع. كانت تهيئة
@@ -1224,7 +1620,7 @@ async function savePermanentProfile(uid, name, email, provider){
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({uid, name: name||'', email: email||'', provider: provider||'', idToken})
     });
-  }catch(e){ console.error('save profile:', e); }
+  }catch(e){ logClientEvent('error','profile.save'); }
 }
 
 // ─── الربط التفاعلي: يعالج auth/account-exists-with-different-credential ───
@@ -1285,7 +1681,7 @@ async function resolvePendingLinkWeb(wb, userAfterSignIn){
     await linkWithCredential(userAfterSignIn, window._pendingLinkCred);
     showToast('🔗','تم الربط بنجاح','الحين تقدر تدخل بالطريقتين',false);
     return true;
-  }catch(e){ console.error('resolve pending link:', e); return false; }
+  }catch(e){ logClientEvent('error','auth.pending-link'); return false; }
   finally{
     window._pendingLinkCred=null; window._pendingLinkEmail=null; window._pendingLinkOriginal=null;
   }
@@ -1309,16 +1705,54 @@ function getCrashlytics(){
   try{ return window.Capacitor?.Plugins?.FirebaseCrashlytics || null; }
   catch(e){ return null; }
 }
+// لا نرسل رسالة الخطأ الخام إلى Crashlytics؛ فقد تحتوي على بريد أو هاتف أو
+// token أو URL أو استجابة خادم. التشخيص الخارجي يقتصر على موقع معروف داخل
+// التطبيق وكود أصلي ثابت راجعناه مسبقاً.
+const CRASH_SOURCE_ALLOWLIST=new Set([
+  'firebase.app-check.initialize','firebase.app-check.token',
+  'preferences.hydrate','device-check.token','app-attest.reset',
+  'app-attest.enroll','app-attest.assertion.free_round_status',
+  'app-attest.assertion.free_round_complete','free-round.claim',
+  'firebase.messaging.permission','firebase.messaging.account',
+  'firebase.messaging','apple.offer-code','question.report',
+  'window.error','unhandledrejection','application.start',
+]);
+const CRASH_CODE_ALLOWLIST=new Set([
+  'DEVICE_CHECK_UNSUPPORTED','DEVICE_CHECK_FAILED',
+  'APP_ATTEST_INVALID_KEY_ID','APP_ATTEST_UNSUPPORTED',
+  'APP_ATTEST_KEY_NOT_GENERATED','APP_ATTEST_INVALID_CLIENT_DATA_HASH',
+  'APP_ATTEST_KEYCHAIN_LOCKED','APP_ATTEST_KEYCHAIN_FAILED',
+  'APP_ATTEST_SERVER_UNAVAILABLE','APP_ATTEST_INVALID_KEY',
+  'APP_ATTEST_INVALID_INPUT','APP_ATTEST_FAILED','APP_ATTEST_KEY_RESET',
+]);
+function safeCrashSource(source){
+  return typeof source==='string'&&CRASH_SOURCE_ALLOWLIST.has(source)
+    ?source:'application.nonfatal';
+}
+function safeCrashCode(error){
+  try{
+    const code=typeof error?.code==='string'?error.code:'';
+    return CRASH_CODE_ALLOWLIST.has(code)?code:'unspecified';
+  }catch(_){
+    return 'unspecified';
+  }
+}
 function recordNonFatal(error, source){
   const crashlytics=getCrashlytics();
   if(!crashlytics) return;
-  const message=String((error && (error.message||error.reason)) || error || 'Unknown error').slice(0,1000);
-  crashlytics.recordException({message:`${source}: ${message}`}).catch(()=>{});
+  const message=`nonfatal:${safeCrashSource(source)}:${safeCrashCode(error)}`;
+  try{
+    const pending=crashlytics.recordException({message});
+    if(pending?.catch) pending.catch(()=>{});
+  }catch(_){ /* لا نسمح لتعطل أداة التشخيص بتعطيل التطبيق */ }
 }
 function initCrashReporting(){
   const crashlytics=getCrashlytics();
   if(!crashlytics) return;
   crashlytics.setEnabled({enabled:true}).catch(()=>{});
+  // تقارير الأعطال تشخيصية على مستوى التطبيق وليست ملفاً للمستخدم؛ إبقاء
+  // الهوية فارغة يمنع نسبة crash مؤجل إلى حساب دخل لاحقاً على الجهاز نفسه.
+  crashlytics.setUserId({userId:''}).catch(()=>{});
   window.addEventListener('error', event=>recordNonFatal(event.error||event.message,'window.error'));
   window.addEventListener('unhandledrejection', event=>recordNonFatal(event.reason,'unhandledrejection'));
 }
@@ -1349,13 +1783,13 @@ async function initPushMessaging(){
   if(!_pushListenersReady){
     _pushListenersReady=true;
     await messaging.addListener('notificationReceived', event=>{
-      console.log('✅ FCM notification received:', event?.notification?.title || 'notification');
+      logClientEvent('info','messaging.received');
     });
     await messaging.addListener('notificationActionPerformed', event=>{
-      console.log('✅ FCM notification opened:', event?.notification?.title || 'notification');
+      logClientEvent('info','messaging.opened');
     });
     await messaging.addListener('tokenReceived', event=>{
-      if(event && event.token) console.log('✅ FCM token received');
+      if(event && event.token) logClientEvent('info','messaging.token-received');
     });
   }
   const current=await messaging.checkPermissions();
@@ -1364,7 +1798,7 @@ async function initPushMessaging(){
   // شرح الفائدة، وهو توقيت أكثر وضوحاً واحتراماً لقراره.
   if(current.receive!=='granted') return false;
   const {token}=await messaging.getToken();
-  if(token) console.log('✅ FCM token ready');
+  if(token) logClientEvent('info','messaging.token-ready');
   return true;
 }
 async function enablePushNotifications(){
@@ -1448,7 +1882,7 @@ async function getFirebaseWebAuth(){
     const app = getApps().length ? getApps()[0] : initializeApp(window.FIREBASE_CONFIG);
     _fbWebSDK = { auth: getAuth(app), signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, OAuthProvider };
     return _fbWebSDK;
-  }catch(e){ console.error('Firebase Web SDK:', e); return null; }
+  }catch(e){ logClientEvent('error','firebase.web-sdk'); return null; }
 }
 
 async function appleSignIn(){
@@ -1477,7 +1911,7 @@ async function appleSignIn(){
         await handleAuthConflict(e, 'apple', null); return;
       }
       if(isAuthNetworkError(e)){ showAuthNetworkError(); return; }
-      console.error('Capacitor Apple:', e);
+      logClientEvent('error','auth.apple.capacitor');
     }
   }
   // محاولة 2: Firebase Web SDK (متصفح) — SDK محمّل مسبقاً فلا يُمنع الـ popup
@@ -1500,7 +1934,7 @@ async function appleSignIn(){
     }catch(e){
       if(isAuthCancellation(e)) return;
       if(await handleAuthConflict(e, 'apple', wb)) return;
-      console.error('Web Apple:', e);
+      logClientEvent('error','auth.apple.web');
       if(isAuthNetworkError(e)) showAuthNetworkError();
       else showToast('⚠️','ما قدرنا ندخّلك','جرّب مرة ثانية',false);
       return;
@@ -1534,7 +1968,7 @@ async function googleSignIn(){
         await handleAuthConflict(e, 'google', null); return;
       }
       if(isAuthNetworkError(e)){ showAuthNetworkError(); return; }
-      console.error('Capacitor Google:', e);
+      logClientEvent('error','auth.google.capacitor');
     }
   }
   // محاولة 2: Firebase Web SDK (متصفح)
@@ -1556,7 +1990,7 @@ async function googleSignIn(){
     }catch(e){
       if(isAuthCancellation(e)) return;
       if(await handleAuthConflict(e, 'google', wb)) return;
-      console.error('Web Google:', e);
+      logClientEvent('error','auth.google.web');
       if(isAuthNetworkError(e)) showAuthNetworkError();
       else showToast('⚠️','ما قدرنا ندخّلك','جرّب مرة ثانية',false);
       return;
@@ -1646,7 +2080,7 @@ async function startPhoneSignIn(){
     }));
     await FA.signInWithPhoneNumber({phoneNumber:phone});
   }catch(e){
-    console.error('phone sign in start:',e);
+    logClientEvent('error','auth.phone.start');
     await cleanupAuthPhoneListeners();
     setAuthMessage(phoneAuthErrorMessage(e && (e.code||e.message),'ما قدرنا نرسل الرمز — جرّب مرة ثانية.'),true);
   }finally{
@@ -1673,7 +2107,7 @@ async function confirmPhoneSignIn(){
     });
     await finishPhoneSignIn(result && result.user);
   }catch(e){
-    console.error('phone sign in confirm:',e);
+    logClientEvent('error','auth.phone.confirm');
     const errorCode=String(e && (e.code||e.message)||'').toLowerCase();
     if(errorCode.includes('invalid-verification-code')) setAuthMessage('رمز التحقق مو صحيح.',true);
     else if(errorCode.includes('session-expired') || errorCode.includes('verification-id-missing')) setAuthMessage('انتهت صلاحية الرمز — أرسل رمز جديد.',true);
@@ -1712,7 +2146,7 @@ async function forgotPassword(){
     msg.style.color='#8ee6b0';
     msg.textContent='رسلنا رابط تغيير كلمة المرور لبريدك. شيّك على الوارد والرسائل غير المرغوب فيها.';
   }catch(e){
-    console.error('password reset:',e);
+    logClientEvent('error','auth.password-reset');
     const code=String((e && e.code)||'');
     msg.style.color='#ff8a8a';
     if(code.includes('invalid-email')) msg.textContent='صيغة البريد الإلكتروني مو صحيحة';
@@ -1732,7 +2166,7 @@ async function forgotEmail(){
   try{
     const user=await getCurrentFirebaseUserData(false);
     currentEmail=String((user && user.email)||'').trim();
-  }catch(e){ console.warn('forgot email lookup:',e); }
+  }catch(e){ logClientEvent('warn','auth.forgot-email'); }
   const email=currentEmail||savedEmail;
   msg.style.color=email?'#8ee6b0':'#f5c542';
   msg.textContent=email
@@ -1792,7 +2226,7 @@ async function emailAuth(mode){
     }
     msg.style.color='#ff8a8a'; msg.textContent='الإعداد ناقص — Firebase غير مهيأ';
   }catch(e){
-    console.error('email auth:', e);
+    logClientEvent('error','auth.email');
     const code = String((e && e.code) || '');
     if(code.includes('email-already-in-use') || code.includes('credential-already-in-use')){
       msg.style.color='#f5c542';
@@ -1831,7 +2265,7 @@ async function getCurrentFirebaseUserData(reload=true, throwOnError=false){
       const result=await FA.getCurrentUser();
       return (result && result.user) || null;
     }catch(e){
-      console.warn('native auth user:',e);
+      logClientEvent('warn','auth.native-user');
       if(throwOnError) throw e;
       return null;
     }
@@ -1841,7 +2275,7 @@ async function getCurrentFirebaseUserData(reload=true, throwOnError=false){
     try{
       if(reload) await wb.auth.currentUser.reload();
     }catch(e){
-      console.warn('web auth user:',e);
+      logClientEvent('warn','auth.web-user');
       if(throwOnError) throw e;
     }
     return wb.auth.currentUser;
@@ -1900,7 +2334,7 @@ async function sendEmailVerificationMessage(silent=false){
     if(!silent) showToast('✉️','رسلنا رسالة التحقق','شيّك على بريدك الإلكتروني',false);
     return true;
   }catch(e){
-    console.error('email verification:',e);
+    logClientEvent('error','auth.email-verification');
     const code=String((e && (e.code||e.message))||'').toLowerCase();
     if(isAuthNetworkError(e)) setVerificationMessage('ماكو اتصال بالإنترنت — تأكد من الشبكة وجرّب مرة ثانية.', true);
     else if(code.includes('too-many-requests')) setVerificationMessage('انرسلت طلبات وايد — نطر شوي وجرّب مرة ثانية.', true);
@@ -1923,7 +2357,7 @@ async function refreshEmailVerificationStatus(){
     await refreshVerificationStatus(true);
     setVerificationMessage('حدّثنا حالة التحقق.');
   }catch(e){
-    console.error('refresh verification:',e);
+    logClientEvent('error','auth.verification-refresh');
     if(isAuthNetworkError(e)) setVerificationMessage('ماكو اتصال بالإنترنت — ما قدرنا نحدّث الحالة.', true);
     else setVerificationMessage('ما قدرنا نحدّث حالة التحقق — جرّب مرة ثانية.', true);
   }finally{
@@ -2077,7 +2511,7 @@ async function startPhoneVerification(){
     setVerificationMessage('رسلنا رمز SMS. اكتبه هني عشان نكمّل التحقق.');
     document.getElementById('verification-phone-code')?.focus();
   }catch(e){
-    console.error('phone verification start:',e);
+    logClientEvent('error','auth.phone.start');
     await cleanupPhoneListeners();
     const code=String(e && (e.code||e.message) || '');
     setVerificationMessage(phoneAuthErrorMessage(code, 'ما قدرنا نرسل رمز SMS — جرّب مرة ثانية.'), true);
@@ -2117,7 +2551,7 @@ async function confirmPhoneVerification(){
     const user=result && result.user;
     await finishPhoneVerification(user || await getCurrentFirebaseUserData());
   }catch(e){
-    console.error('phone verification confirm:',e);
+    logClientEvent('error','auth.phone.confirm');
     const errorCode=String(e && (e.code||e.message) || '').toLowerCase();
     if(errorCode.includes('invalid-verification-code')) setVerificationMessage('رمز التحقق مو صحيح.', true);
     else if(errorCode.includes('session-expired') || errorCode.includes('verification-session-missing') || errorCode.includes('verification-id-missing')){
@@ -2189,7 +2623,7 @@ async function loadRcKey(){
         RC_CONFIGURED=true;
         return RC_API_KEY;
       }
-    }catch(e){ console.warn('RC Keychain read:',e); }
+    }catch(e){ logClientEvent('warn','revenuecat.keychain-read'); }
   }
   try{
     const r = await fetch(apiUrl('/api/rc-config'));
@@ -2201,7 +2635,7 @@ async function loadRcKey(){
         if(keyStore) await keyStore.set({value:d.apiKey});
       }
     }
-  }catch(e){ console.error('RC config:', e); }
+  }catch(e){ logClientEvent('error','revenuecat.configure'); }
   return RC_API_KEY;
 }
 // امسح أي نسخة تركتها الإصدارات القديمة في تخزين JavaScript.
@@ -2210,6 +2644,8 @@ window.Capacitor?.Plugins?.Preferences?.remove({key:STORAGE_PREFIX+'rcApiKey'}).
 const RC_ENTITLEMENT = 'premium';
 const RC_APP_USER_ID_KEY = 'rcAppUserId';
 const RC_APP_USER_IDS_KEY = 'rcAppUserIds';
+const RC_SUBSCRIPTION_CACHE_KEY = 'rcSubCache';
+const RC_SUBSCRIPTION_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const RC_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function createRcUuid(){
@@ -2252,14 +2688,53 @@ let _rcReady = null;
 let RC_SDK_CONFIGURED = false;
 let RC_CURRENT_APP_USER_ID = '';
 
+function clearRevenueCatSubscriptionCache(){
+  localStorage.removeItem(STORAGE_PREFIX+RC_SUBSCRIPTION_CACHE_KEY);
+  try{
+    const P=window.Capacitor?.Plugins?.Preferences;
+    if(P) Promise.resolve(P.remove({key:STORAGE_PREFIX+RC_SUBSCRIPTION_CACHE_KEY})).catch(()=>{});
+  }catch(e){}
+}
+
+function clearRevenueCatAccessState(){
+  clearRevenueCatSubscriptionCache();
+  _hasActiveSubscription=false;
+  _freeRoundAvailable=false;
+  _freeRoundVerificationState='unknown';
+  _subscriptionResolved=false;
+}
+
+// لا يكفي وجود UID في localStorage لقبول اشتراك مخزّن. لا تُعد الهوية مؤكدة
+// إلا عندما تتطابق جلسة التطبيق الحالية، وخريطة UID↔App User ID، وهوية SDK
+// التي تم ربطها بالخادم بعد التحقق من Firebase ID token.
+function confirmedRevenueCatCacheIdentity(){
+  const currentUid=String(window._currentUid||'');
+  const storedUid=String(storeGet('authUid','')||'');
+  if(!currentUid || !storedUid || currentUid!==storedUid) return null;
+  const ids=storeGet(RC_APP_USER_IDS_KEY,{}) || {};
+  const expectedAppUserId=String(ids[storedUid]||'').toLowerCase();
+  const sdkAppUserId=String(RC_CURRENT_APP_USER_ID||'').toLowerCase();
+  if(!RC_UUID_RE.test(expectedAppUserId) || sdkAppUserId!==expectedAppUserId) return null;
+  return {uid:storedUid, rcAppUserId:expectedAppUserId};
+}
+
+function sameRevenueCatIdentity(left,right){
+  return !!left && !!right
+    && left.uid===right.uid
+    && left.rcAppUserId===right.rcAppUserId;
+}
+
 async function resetRevenueCatIdentity(){
   const RC=getRC();
-  if(RC && RC_SDK_CONFIGURED && typeof RC.logOut==='function'){
-    try{ await RC.logOut(); }
-    catch(e){ console.warn('RevenueCat logout:', (e && (e.message||e.code)) || e); }
-  }
+  // يجب سحب الصلاحية من الذاكرة قبل أي await حتى لا يستفيد الحساب التالي من
+  // نافذة زمنية قصيرة بينما RevenueCat ينفذ logOut في الخلفية.
+  clearRevenueCatAccessState();
   RC_CURRENT_APP_USER_ID='';
   _rcReady=null;
+  if(RC && RC_SDK_CONFIGURED && typeof RC.logOut==='function'){
+    try{ await RC.logOut(); }
+    catch(e){ logClientEvent('warn','revenuecat.logout'); }
+  }
 }
 
 function rcReady(){
@@ -2276,6 +2751,12 @@ async function initRevenueCat(){
     const uid = storeGet('authUid','');
     const rcAppUserId=getRcAppUserId();
     if(!uid) throw new Error('لا يمكن تهيئة RevenueCat بلا حساب Firebase');
+    if(RC_CURRENT_APP_USER_ID && RC_CURRENT_APP_USER_ID!==rcAppUserId){
+      // تبديل مباشر للحساب من دون المرور بزر الخروج: لا تبقِ كاش أو صلاحية
+      // الحساب السابق أثناء ربط هوية RevenueCat الجديدة.
+      clearRevenueCatAccessState();
+      RC_CURRENT_APP_USER_ID='';
+    }
     let idToken=await getCurrentIdToken();
     const identityRequest=token=>apiFetch('/api/revenuecat/identity',{
       method:'POST',
@@ -2307,8 +2788,7 @@ async function initRevenueCat(){
     // Secure Attributes غير متاحة في هذا SDK؛ الصلاحيات تُحسم بالـwebhook.
     return true;
   }catch(e){
-    const detail=String(e && (e.message||e.code) || e || 'خطأ غير معروف');
-    console.error('RC init:', detail);
+    logClientEvent('error','revenuecat.initialize');
     return false;
   }
 }
@@ -2316,22 +2796,40 @@ async function initRevenueCat(){
 async function rcIsActive(){
   const RC = getRC();
   if(!RC) return null; // null = غير متاح (ويب)
-  await loadRcKey();
-  if(!RC_CONFIGURED) return null; // المفتاح غير متوفر
+  // initRevenueCat يثبت Firebase UID لدى الخادم ثم يضبط App User ID داخل SDK.
+  // بلا هذه الخطوة لا توجد هوية موثوقة يجوز ربط كاش الاشتراك بها.
+  if(!(await rcReady())) return null;
+  const identity=confirmedRevenueCatCacheIdentity();
+  if(!identity) return null;
   try{
     const { customerInfo } = await RC.getCustomerInfo();
     const active = !!(customerInfo.entitlements.active &&
                       customerInfo.entitlements.active[RC_ENTITLEMENT]);
-    // احفظ آخر حالة معروفة (للاستخدام عند انعدام الإنترنت)
-    storeSet('rcSubCache', { active, ts: Date.now() });
+    const latestIdentity=confirmedRevenueCatCacheIdentity();
+    if(!sameRevenueCatIdentity(identity,latestIdentity)) return null;
+    // احفظ آخر حالة معروفة لهوية Firebase + RevenueCat المؤكدتين فقط.
+    storeSet(RC_SUBSCRIPTION_CACHE_KEY, {
+      uid:identity.uid,
+      rcAppUserId:identity.rcAppUserId,
+      active,
+      ts:Date.now(),
+    });
     return active;
   }catch(e){
-    console.error('RC status:', e);
+    logClientEvent('error','revenuecat.status');
     // إذا كنا بلا إنترنت على iOS، أعد الحالة المحفوظة (صالحة 7 أيام)
     if(!navigator.onLine){
-      const cache = storeGet('rcSubCache', null);
-      if(cache && (Date.now() - cache.ts) < 7 * 24 * 60 * 60 * 1000){
-        console.log('RC offline — using cached state:', cache.active);
+      const latestIdentity=confirmedRevenueCatCacheIdentity();
+      const cache = storeGet(RC_SUBSCRIPTION_CACHE_KEY, null);
+      if(sameRevenueCatIdentity(identity,latestIdentity)
+        && cache
+        && cache.uid===identity.uid
+        && cache.rcAppUserId===identity.rcAppUserId
+        && Number.isFinite(cache.ts)
+        && (Date.now() - cache.ts) >= 0
+        && (Date.now() - cache.ts) < RC_SUBSCRIPTION_CACHE_TTL_MS
+        && typeof cache.active==='boolean'){
+        logClientEvent('info','revenuecat.offline-cache');
         return cache.active;
       }
     }
@@ -2479,7 +2977,7 @@ async function loadPaywallPrices(force){
     if(err) err.style.display = 'none';
     if(btn) btn.disabled = false;
   }catch(e){
-    console.error('paywall prices:', (e && e.message) || e);
+    logClientEvent('error','paywall.prices');
     if(err) err.style.display = 'block';
     if(sub) sub.textContent = '';
     if(btn) btn.disabled = true;
@@ -2534,22 +3032,24 @@ async function checkSubscriptionAndRoute(uid, {showLoading=true} = {}){
     if(!resp.ok) throw new Error('status error');
     const data = await resp.json();
     if(data.active === true || await rcIsActive() === true){
-      _hasActiveSubscription=true; _freeRoundAvailable=false; _subscriptionResolved=true;
+      _hasActiveSubscription=true; setFreeRoundAvailability(false); _subscriptionResolved=true;
       updateFreeRoundUi(); hideSplash(); go('s-home'); return;
     }
     _hasActiveSubscription=false;
-    _freeRoundAvailable=await freeRoundIsAvailable(uid);
+    setFreeRoundAvailability(await freeRoundIsAvailable(uid));
     _subscriptionResolved=true;
-    updateFreeRoundUi(); hideSplash(); go(_freeRoundAvailable?'s-home':'s-paywall');
+    // لا نفاجئ المستخدم بشاشة الاشتراك عند كل تشغيل. بعد استهلاك الجولة
+    // المجانية يبقى في الرئيسية، وتظهر شاشة الاشتراك عندما يطلب جولة جديدة.
+    updateFreeRoundUi(); hideSplash(); go('s-home');
   }catch(e){
     if(await rcIsActive() === true){
-      _hasActiveSubscription=true; _freeRoundAvailable=false; _subscriptionResolved=true;
+      _hasActiveSubscription=true; setFreeRoundAvailability(false); _subscriptionResolved=true;
       updateFreeRoundUi(); hideSplash(); go('s-home'); return;
     }
     _hasActiveSubscription=false;
-    _freeRoundAvailable=!localFreeRoundCompleted(uid);
+    setFreeRoundAvailability(localFreeRoundCompleted(uid)?false:null);
     _subscriptionResolved=true;
-    updateFreeRoundUi(); hideSplash(); go(_freeRoundAvailable?'s-home':'s-paywall');
+    updateFreeRoundUi(); hideSplash(); go('s-home');
   }
 }
 
@@ -2724,7 +3224,7 @@ async function toCats(){
     await ensureQuestionBank();
     renderCats();
   }catch(error){
-    console.error('Question bank loading failed',error);
+    logClientEvent('error','question-bank.load');
     go('s-teams');
     toast('ما قدرنا نحمّل الأسئلة، جرّب مرة ثانية');
   }
@@ -2885,27 +3385,53 @@ let roundQuestionToken=0;
 function canStartRound(){
   if(_hasActiveSubscription) return true;
   if(_freeRoundAvailable) return true;
-  if(!_subscriptionResolved){
+  if(!_subscriptionResolved||_freeRoundVerificationState==='unknown'){
     showToast('⏳','ثواني ونتأكد','نطر شوي وجرّب مرة ثانية',false);
     return false;
   }
   go('s-paywall');
   return false;
 }
-function startGame(){
+let _startGamePending=false;
+async function startGame(){
+  if(_startGamePending) return false;
   if(!canStartRound()) return;
+  _startGamePending=true;
+  try{
+    const uid=window._currentUid||storeGet('authUid','');
+    const startsAsFreeRound=!_hasActiveSubscription;
+    // على جهاز جديد يجب تنزيل سجل الحساب قبل اختيار أي سؤال؛ وإلا قد تبدأ
+    // الجولة أثناء طلب GET وتعرض سؤالاً شاهده المستخدم على جهاز آخر.
+    // الحساب المحلي البحت لا يملك خادماً آخر للمزامنة وسجله على الجهاز كافٍ.
+    const provider=storeGet('authProvider','local');
+    if(provider!=='local' && !(await syncQuestionHistory())){
+      showToast('⚠️','ما قدرنا نزامن أسئلتك','تأكد من الإنترنت وجرّب مرة ثانية حتى ما نكرر عليك سؤالاً',false);
+      return false;
+    }
+    // لا نستهلك bit العرض في DeviceCheck إلا بعد اكتمال كل فحوص بدء
+    // الجولة؛ حتى لا يفقد اللاعب عرضه بسبب فشل مزامنة سجل الأسئلة.
+    if(startsAsFreeRound){
+      const claimed=await claimFreeRound(uid);
+      if(claimed!==true){
+        if(claimed===false) go('s-paywall');
+        else showToast('⚠️','ما قدرنا نثبت الجولة','تأكد من الإنترنت وجرّب مرة ثانية',false);
+        return false;
+      }
+    }
   state.familyRound=null; state.usedQ=new Set(); state.usedQuestionIds=new Set();
   roundQuestionBank=Object.create(null);
   roundQuestionToken++;
   vibrate(30); state.turn=0; state.answered=0; state.cells={};
   state.startedAt=Date.now(); state.roundCorrect=0; state.roundIncorrect=0;
-  state.isFreeRound=!_hasActiveSubscription&&_freeRoundAvailable;
+  state.isFreeRound=startsAsFreeRound;
   state.completedFreeRound=false;
   buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
   void trackMetric('game_started',{
     difficulty:state.difficulty,teams:state.teams.length,
     categoryCount:state.cats.length,freeRound:state.isFreeRound,
   });
+    return true;
+  }finally{ _startGamePending=false; }
 }
 function buildBoard(){
   const n=state.cats.length;
@@ -3006,6 +3532,7 @@ function fireBomb(targetIdx){
   const cell=cellEls[(r-1)*n+col];
   const cat=state.cats[col];
   const q=pickQuestion(cat,r);
+  if(showQuestionExhausted(q)) return q;
   state.cur={col,r,key,cell,cat,d:r,q,points:1200,isBomb:true,bombThrower:state.turn,bombTarget:targetIdx,phase:'bomb',resolved:false};
   const badge=document.getElementById('q-badge');
   badge.textContent='💣 '+(isFamilyCat(cat)?cat:displayCategoryName(cat)); badge.style.background='#8b1a3d'; badge.style.color='#fff';
@@ -3093,6 +3620,8 @@ async function submitQuestionReport(){
       body:JSON.stringify({
         uid,idToken,questionId:q.id,category:current.cat||'',question:q.q||'',
         answer:q.answer||(q.o&&typeof q.a==='number'?q.o[q.a]:''),
+        sourceTitle:q.source?.title||'',
+        sourceUrl:q.source?.url||'',
         reason:document.getElementById('question-report-reason')?.value||'other',
         details:(document.getElementById('question-report-details')?.value||'').trim(),
         appVersion:APP_VERSION,
@@ -3112,12 +3641,29 @@ async function submitQuestionReport(){
     if(button){ button.disabled=false; button.textContent='إرسال البلاغ'; }
   }
 }
+function questionExhausted(cat,d,isFamily=false){
+  return {
+    exhausted:true,
+    code:'question_pool_exhausted',
+    category:cat,
+    difficulty:d,
+    q:'ماكو أسئلة يديدة لهالفئة',
+    answer:isFamily?'ضيف أسئلة ثانية للفئة':'اختار فئة ثانية أو نطر تحديث بنك الأسئلة',
+  };
+}
+function showQuestionExhausted(result){
+  if(!result||!result.exhausted) return false;
+  const level=Number.isInteger(result.difficulty)?` للمستوى ${result.difficulty}`:'';
+  showToast('📚','خلصت الأسئلة اليديدة',
+    `ماكو سؤال ما شفته من قبل بفئة «${displayCategoryName(result.category)}»${level}. ${result.answer}`,false);
+  return true;
+}
 function pickQuestion(cat,d){
   // جولة عائلية: اسحب من أسئلة الفئة العائلية بغضّ النظر عن المستوى، مع منع التكرار
   if(state.familyRound){
     const all=state.familyRound.questions;
     let pool=all.filter(q=>!state.usedQ.has(q.q));
-    if(!pool.length) return {q:'ماكو أسئلة يديدة بهالجولة',answer:'ضيف أسئلة ثانية للفئة'};
+    if(!pool.length) return questionExhausted(cat,d,true);
     const q=pool[Math.floor(Math.random()*pool.length)];
     state.usedQ.add(q.q);
     return q;
@@ -3126,31 +3672,20 @@ function pickQuestion(cat,d){
   const fam=familyCats && familyCats.find(c=>c.name===cat);
   if(fam){
     let pool=fam.questions.filter(q=>!state.usedQ.has(q.q));
-    if(!pool.length) return {q:'ماكو أسئلة يديدة بهالجولة',answer:'ضيف أسئلة ثانية للفئة'};
+    if(!pool.length) return questionExhausted(cat,d,true);
     const q=pool[Math.floor(Math.random()*pool.length)];
     state.usedQ.add(q.q);
     return q;
   }
-  // الفئات الأساسية: اختر سؤالاً من المستوى المطلوب لم يره الحساب في دورة
-  // البنك الحالية. عند استهلاك كل أسئلة المستوى نبدأ دورة جديدة، لكن لا نسمح
-  // أبداً بتكرار سؤال داخل الجولة المفتوحة نفسها.
+  // الفئات الأساسية: صف اللوحة وقيمة النقاط يحددان مستوى الصعوبة، لذلك لا
+  // نخلط المستويات عند نفاد البدائل. لا نمسح سجل الحساب ولا نرجع إلى سؤال
+  // شاهده سابقاً؛ عند نفاد المستوى تتعامل الواجهة مع الحالة الصريحة.
   const local=QUESTION_BANK[cat]||[];
   const sessionIds=state.usedQuestionIds||(state.usedQuestionIds=new Set());
   const history=loadQuestionHistory();
   const exact=local.filter(q=>q.d===d&&!sessionIds.has(q.id)&&!state.usedQ.has(q.q));
-  let pool=exact.filter(q=>!questionWasSeen(history,cat,q.id));
-  if(!pool.length&&exact.length){
-    const exactIds=new Set(exact.map(q=>q.id));
-    history[cat]=(history[cat]||[]).filter(id=>!exactIds.has(id));
-    saveQuestionHistory(history);
-    pool=exact;
-  }
-  if(!pool.length){
-    const remaining=local.filter(q=>!sessionIds.has(q.id)&&!state.usedQ.has(q.q));
-    pool=remaining.filter(q=>!questionWasSeen(history,cat,q.id));
-    if(!pool.length) pool=remaining;
-  }
-  if(!pool.length) return {q:'ما قدرنا نجهّز سؤال لهالفئة',answer:'اختار خانة ثانية'};
+  const pool=exact.filter(q=>!questionWasSeen(history,cat,q));
+  if(!pool.length) return questionExhausted(cat,d);
   const q=pool[Math.floor(Math.random()*pool.length)];
   state.usedQ.add(q.q);
   sessionIds.add(q.id);
@@ -3162,6 +3697,7 @@ function openQuestion(col,r,key,cell){
   sfx('tap'); vibrate(15);
   clearInterval(state.searchTimer); // احتياط: لا يبقى مؤقّت بحث من سؤال سابق يلوّث هذا السؤال
   const cat=state.cats[col]; const q=pickQuestion(cat,r);
+  if(showQuestionExhausted(q)) return q;
   // owner = الفريق صاحب الدور ، stealQueue = بقية الفرق بالتناوب (يدعم أي عدد فرق)
   const owner=state.turn;
   const stealQueue=[];
@@ -3460,7 +3996,16 @@ function useLifeline(id, teamIdx){
     advanceSteal(c.token);
     return;
   } else if(id==='skip'){
-    const nq=pickQuestion(c.cat,c.d); c.q=nq;
+    const nq=pickQuestion(c.cat,c.d);
+    if(nq.exhausted){
+      // لم تُستهلك الوسيلة فعلياً: أبقِ السؤال الحالي وردّ رصيد الفريق،
+      // واعرض سبب عدم وجود بديل بدلاً من تحويل رسالة النفاد إلى سؤال وهمي.
+      team.used.delete(id); team.ll++;
+      showQuestionExhausted(nq);
+      renderLifelines();
+      return nq;
+    }
+    c.q=nq;
     // السؤال البديل لم يُطرح على الفرق التي أجابت النسخة السابقة. يبدأ حق
     // الحكم من الفريق الذي استهلك وسيلة التغيير، ثم تُضاف الفرق اللاحقة فقط.
     c.eligibleTeams=new Set([teamIdx]);
@@ -3673,7 +4218,7 @@ async function unlinkProvider(pid){
     }
     showToast('✅','فكّينا الربط','',false);
     renderAccountLinks();
-  }catch(e){ console.error('unlink:', e); showToast('⚠️','ما قدرنا نفك الربط','',false); }
+  }catch(e){ logClientEvent('error','account.unlink'); showToast('⚠️','ما قدرنا نفك الربط','',false); }
 }
 function renderStats(){
   const acc=stats.totalQ?Math.round((stats.correct/stats.totalQ)*100):0;
@@ -3881,7 +4426,9 @@ function doDeleteFamily(){
 // اللوحة 6 خلايا (سؤال لكل مستوى صعوبة) — أقل من 6 أسئلة يعني تكرار نفس
 // السؤال حرفياً على أكثر من خلية، فامنع اللعب واطلب إكمال العدد أولاً
 const FAMILY_MIN_QUESTIONS = 6;
-function playFamilyRound(i){
+let _startFamilyRoundPending=false;
+async function playFamilyRound(i){
+  if(_startFamilyRoundPending) return false;
   if(!canStartRound()) return;
   const cat=familyCats[i];
   if(cat.questions.length<FAMILY_MIN_QUESTIONS){
@@ -3889,6 +4436,18 @@ function playFamilyRound(i){
     showToast('✋','تحتاج أسئلة أكثر',
       `زيد ${FAMILY_MIN_QUESTIONS-cat.questions.length} سؤال على الأقل بفئة "${cat.name}" عشان ما تتكرر الأسئلة باللوحة`, false);
     return;
+  }
+  _startFamilyRoundPending=true;
+  const startsAsFreeRound=!_hasActiveSubscription;
+  if(startsAsFreeRound){
+    const uid=window._currentUid||storeGet('authUid','');
+    const claimed=await claimFreeRound(uid);
+    if(claimed!==true){
+      _startFamilyRoundPending=false;
+      if(claimed===false) go('s-paywall');
+      else showToast('⚠️','ما قدرنا نثبت الجولة','تأكد من الإنترنت وجرّب مرة ثانية',false);
+      return false;
+    }
   }
   sfx('start'); vibrate(30);
   // أنشئ فرقاً افتراضية سريعة (فريقان)
@@ -3904,13 +4463,15 @@ function playFamilyRound(i){
   state.usedQ=new Set(); state.usedQuestionIds=new Set();
   state.turn=0; state.answered=0; state.cells={};
   state.startedAt=Date.now(); state.roundCorrect=0; state.roundIncorrect=0;
-  state.isFreeRound=!_hasActiveSubscription&&_freeRoundAvailable;
+  state.isFreeRound=startsAsFreeRound;
   state.completedFreeRound=false;
   buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
   void trackMetric('game_started',{
     difficulty:state.difficulty,teams:state.teams.length,
     categoryCount:1,freeRound:state.isFreeRound,familyRound:true,
   });
+  _startFamilyRoundPending=false;
+  return true;
 }
 
 function shakeField(id){
@@ -4008,8 +4569,7 @@ void initPushMessaging().catch(error=>recordNonFatal(error,'firebase.messaging')
     window._currentUid = uid;
     activateLocalAccount(uid);
     void syncQuestionHistory();
-    const crashlytics=getCrashlytics();
-    if(crashlytics && uid) crashlytics.setUserId({userId:uid}).catch(()=>{});
+    void flushMetricEvents();
     // أعطِ WebKit إطارين للرسم قبل بدء اتصال الخادم، ثم أجّل StoreKit/RevenueCat
     // لأنه يوقظ عمليات Apple الثقيلة ولا يلزم لعرض شاشة البداية أو أسعارها الأساسية.
     const afterFirstPaint=(task, delay)=>{
@@ -4024,7 +4584,7 @@ void initPushMessaging().catch(error=>recordNonFatal(error,'firebase.messaging')
         if(ready && document.getElementById('s-paywall')?.classList.contains('active')){
           return loadPaywallPrices();
         }
-      }).catch(e=>console.warn('RevenueCat deferred startup:', (e && e.message) || e));
+      }).catch(()=>logClientEvent('warn','revenuecat.deferred-startup'));
     }, 1800);
   })();
 })();

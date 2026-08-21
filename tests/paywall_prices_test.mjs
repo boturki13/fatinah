@@ -80,6 +80,7 @@ function installCapacitorStub({ authUid, rcApiKey, offeringsResult, shouldThrow,
         set: () => Promise.resolve(),
         clear: () => Promise.resolve(),
       },
+      FatinahDeviceIntegrity: { generateDeviceCheckToken: () => Promise.resolve({ token: 'device-check-test-token' }) },
       FirebaseCrashlytics: {
         setEnabled: () => Promise.resolve(),
         recordException: () => Promise.resolve(),
@@ -126,7 +127,7 @@ async function withPage(fn) {
       return route.abort();
     });
     // زوّر نقطة نهاية مفتاح RevenueCat حتى يتهيّأ الـ SDK محلياً
-    await page.route('**/api/rc-config', (route) =>
+    await page.route('**/api/v2/rc-config', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -134,7 +135,7 @@ async function withPage(fn) {
       })
     );
     // زوّر ربط الهوية حتى يكمل initRevenueCat() إلى RC.configure()
-    await page.route('**/api/revenuecat/identity', (route) =>
+    await page.route('**/api/v2/revenuecat/identity', (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
     );
     await fn(page);
@@ -403,7 +404,7 @@ tests.push(async function restore_purchases_checks_server_and_routes_home() {
       configureDelayMs: 0,
     });
     let statusRequests = 0;
-    await page.route(/\/api\/subscription\/status/, route => {
+    await page.route(/\/api\/v2\/subscription\/status/, route => {
       statusRequests++;
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{"active":true}' });
     });

@@ -1,5 +1,5 @@
-run = "python3 -m http.server 8080"
-entrypoint = "index.html"
+run = "python3 server.py"
+entrypoint = "server.py"
 modules = ["python-base-3.13", "nodejs-24"]
 
 [workflows]
@@ -37,10 +37,6 @@ externalPort = 3000
 [[ports]]
 localPort = 5056
 externalPort = 3001
-
-[[ports]]
-localPort = 8080
-externalPort = 8080
 
 [userenv]
 

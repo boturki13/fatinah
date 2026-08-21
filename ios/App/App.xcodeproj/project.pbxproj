@@ -25,6 +25,8 @@
 		A7E2F1C90101010100000001 /* FatinahMetricKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7E2F1C80101010100000001 /* FatinahMetricKitService.swift */; };
 		B10000000000000000000001 /* DiagnosticsEnvelopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000003 /* DiagnosticsEnvelopeTests.swift */; };
 		B20000000000000000000001 /* AppLaunchUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* AppLaunchUITests.swift */; };
+		C30000000000000000000001 /* FatinahDeviceIntegrityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000003 /* FatinahDeviceIntegrityPlugin.swift */; };
+		C30000000000000000000002 /* DeviceIntegrityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000004 /* DeviceIntegrityTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,6 +73,8 @@
 		B20000000000000000000003 /* AppLaunchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLaunchUITests.swift; sourceTree = "<group>"; };
 		B20000000000000000000004 /* AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB31400A5A5B56C98344CC73 /* Pods_AppTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AppTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C30000000000000000000003 /* FatinahDeviceIntegrityPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FatinahDeviceIntegrityPlugin.swift; sourceTree = "<group>"; };
+		C30000000000000000000004 /* DeviceIntegrityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIntegrityTests.swift; sourceTree = "<group>"; };
 		DC760D0FA7F909621B95AB45 /* Pods-App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.debug.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -144,6 +148,7 @@
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				A7E2F1C80101010100000001 /* FatinahMetricKitService.swift */,
 				A7E2F1C50101010100000001 /* RevenueCatKeyStorePlugin.swift */,
+				C30000000000000000000003 /* FatinahDeviceIntegrityPlugin.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -171,6 +176,7 @@
 			isa = PBXGroup;
 			children = (
 				B10000000000000000000003 /* DiagnosticsEnvelopeTests.swift */,
+				C30000000000000000000004 /* DeviceIntegrityTests.swift */,
 			);
 			path = AppTests;
 			sourceTree = "<group>";
@@ -396,7 +402,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ]; then\n  \"${PODS_ROOT}/FirebaseCrashlytics/run\"\nfi\n";
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ] && [ \"${SKIP_CRASHLYTICS_UPLOAD:-0}\" != \"1\" ]; then\n  \"${PODS_ROOT}/FirebaseCrashlytics/run\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -410,6 +416,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				A7E2F1C90101010100000001 /* FatinahMetricKitService.swift in Sources */,
 				A7E2F1C60101010100000001 /* RevenueCatKeyStorePlugin.swift in Sources */,
+				C30000000000000000000001 /* FatinahDeviceIntegrityPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -418,6 +425,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B10000000000000000000001 /* DiagnosticsEnvelopeTests.swift in Sources */,
+				C30000000000000000000002 /* DeviceIntegrityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
