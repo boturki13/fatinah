@@ -1,6 +1,109 @@
 import Capacitor
 import Security
 
+struct FatinahKeychainError: Error, Equatable {
+    let status: OSStatus
+}
+
+protocol FatinahSecItemServing {
+    func copyMatching(_ query: [String: Any], result: inout CFTypeRef?) -> OSStatus
+    func add(_ attributes: [String: Any]) -> OSStatus
+    func update(_ query: [String: Any], attributes: [String: Any]) -> OSStatus
+    func delete(_ query: [String: Any]) -> OSStatus
+}
+
+struct FatinahSystemSecItemService: FatinahSecItemServing {
+    func copyMatching(_ query: [String: Any], result: inout CFTypeRef?) -> OSStatus {
+        SecItemCopyMatching(query as CFDictionary, &result)
+    }
+
+    func add(_ attributes: [String: Any]) -> OSStatus {
+        SecItemAdd(attributes as CFDictionary, nil)
+    }
+
+    func update(_ query: [String: Any], attributes: [String: Any]) -> OSStatus {
+        SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+    }
+
+    func delete(_ query: [String: Any]) -> OSStatus {
+        SecItemDelete(query as CFDictionary)
+    }
+}
+
+/// مخزن صغير قابل للاختبار. مفتاح RevenueCat عام، لكن إبقاء دورة حياته في
+/// Keychain يمنع نسخه إلى Preferences ويعطي سلوكاً ثابتاً بعد تحديث التطبيق.
+struct RevenueCatKeychainStore {
+    let service: String
+    let account: String
+    private let security: any FatinahSecItemServing
+
+    init(
+        service: String = "com.fatinah.game.revenuecat",
+        account: String = "public-api-key",
+        security: any FatinahSecItemServing = FatinahSystemSecItemService()
+    ) {
+        self.service = service
+        self.account = account
+        self.security = security
+    }
+
+    func get() throws -> String? {
+        var query = identityQuery
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var result: CFTypeRef?
+        let status = security.copyMatching(query, result: &result)
+        switch status {
+        case errSecSuccess:
+            guard let data = result as? Data,
+                  let value = String(data: data, encoding: .utf8) else {
+                throw FatinahKeychainError(status: errSecDecode)
+            }
+            return value
+        case errSecItemNotFound:
+            return nil
+        default:
+            throw FatinahKeychainError(status: status)
+        }
+    }
+
+    func set(_ value: String) throws {
+        var item = identityQuery
+        item[kSecValueData as String] = Data(value.utf8)
+        item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        let addStatus = security.add(item)
+        switch addStatus {
+        case errSecSuccess:
+            return
+        case errSecDuplicateItem:
+            let updateStatus = security.update(
+                identityQuery,
+                attributes: [kSecValueData as String: Data(value.utf8)]
+            )
+            guard updateStatus == errSecSuccess else {
+                throw FatinahKeychainError(status: updateStatus)
+            }
+        default:
+            throw FatinahKeychainError(status: addStatus)
+        }
+    }
+
+    func clear() throws {
+        let status = security.delete(identityQuery)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw FatinahKeychainError(status: status)
+        }
+    }
+
+    private var identityQuery: [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+    }
+}
+
 @objc(RevenueCatKeyStorePlugin)
 final class RevenueCatKeyStorePlugin: CAPPlugin, CAPBridgedPlugin {
     let identifier = "RevenueCatKeyStorePlugin"
@@ -11,56 +114,55 @@ final class RevenueCatKeyStorePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "clear", returnType: CAPPluginReturnPromise),
     ]
 
-    private let service = "com.fatinah.game.revenuecat"
-    private let account = "public-api-key"
+    private let store = RevenueCatKeychainStore()
+    private let keychainQueue = DispatchQueue(
+        label: "com.fatinah.game.revenuecat-keychain",
+        qos: .userInitiated
+    )
 
     @objc func get(_ call: CAPPluginCall) {
-        var query = baseQuery
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var result: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        if status == errSecItemNotFound { call.resolve(["value": ""]); return }
-        guard status == errSecSuccess, let data = result as? Data,
-              let value = String(data: data, encoding: .utf8) else {
-            call.reject("تعذر قراءة مفتاح RevenueCat من Keychain")
-            return
+        keychainQueue.async { [weak self] in
+            guard let self else { return }
+            do {
+                let value = try self.store.get() ?? ""
+                DispatchQueue.main.async { call.resolve(["value": value]) }
+            } catch {
+                DispatchQueue.main.async {
+                    call.reject("تعذر قراءة مفتاح RevenueCat من Keychain")
+                }
+            }
         }
-        call.resolve(["value": value])
     }
 
     @objc func set(_ call: CAPPluginCall) {
         guard let value = call.getString("value"), value.hasPrefix("appl_") else {
             call.reject("مفتاح RevenueCat غير صالح"); return
         }
-        let data = Data(value.utf8)
-        let status = SecItemUpdate(baseQuery as CFDictionary,
-                                   [kSecValueData as String: data] as CFDictionary)
-        if status == errSecItemNotFound {
-            var item = baseQuery
-            item[kSecValueData as String] = data
-            guard SecItemAdd(item as CFDictionary, nil) == errSecSuccess else {
-                call.reject("تعذر حفظ مفتاح RevenueCat في Keychain"); return
+        keychainQueue.async { [weak self] in
+            guard let self else { return }
+            do {
+                try self.store.set(value)
+                DispatchQueue.main.async { call.resolve() }
+            } catch {
+                DispatchQueue.main.async {
+                    call.reject("تعذر حفظ مفتاح RevenueCat في Keychain")
+                }
             }
-        } else if status != errSecSuccess {
-            call.reject("تعذر تحديث مفتاح RevenueCat في Keychain"); return
         }
-        call.resolve()
     }
 
     @objc func clear(_ call: CAPPluginCall) {
-        let status = SecItemDelete(baseQuery as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            call.reject("تعذر حذف مفتاح RevenueCat من Keychain"); return
+        keychainQueue.async { [weak self] in
+            guard let self else { return }
+            do {
+                try self.store.clear()
+                DispatchQueue.main.async { call.resolve() }
+            } catch {
+                DispatchQueue.main.async {
+                    call.reject("تعذر حذف مفتاح RevenueCat من Keychain")
+                }
+            }
         }
-        call.resolve()
-    }
-
-    private var baseQuery: [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword,
-         kSecAttrService as String: service,
-         kSecAttrAccount as String: account,
-         kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly]
     }
 }
 

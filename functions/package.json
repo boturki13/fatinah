@@ -1,6 +1,6 @@
 {
   "name": "fatinah-functions",
-  "description": "Cloud Functions لتوليد الأسئلة بالذكاء الاصطناعي كمسار احتياطي على iOS",
+  "description": "Cloud Functions متوافقة مع الإصدارات القديمة من فطنة",
   "engines": {
     "node": "22"
   },

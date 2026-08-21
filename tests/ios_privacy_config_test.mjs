@@ -26,21 +26,52 @@ const nativeQuestionBank = await readFile(path.join(root, 'ios/App/App/public/qu
 const cloudFunction = await readFile(path.join(root, 'functions/index.js'), 'utf8');
 const capacitorConfig = await readFile(path.join(root, 'capacitor.config.ts'), 'utf8');
 const podfile = await readFile(path.join(root, 'ios/App/Podfile'), 'utf8');
+const packageJson = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+const metricKitService = await readFile(path.join(root, 'ios/App/App/FatinahMetricKitService.swift'), 'utf8');
+const scheme = await readFile(path.join(root, 'ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme'), 'utf8');
 
 assert.doesNotMatch(
   infoPlist,
   /NSUserTrackingUsageDescription/,
   'لا تضف طلب تتبع ما لم يكن التطبيق يتتبع المستخدمين فعلاً وتُحدَّث إفصاحات App Store Connect.'
 );
+assert.match(entitlements, /com\.apple\.developer\.devicecheck\.appattest-environment/);
+assert.equal(packageJson.dependencies['@capacitor-firebase/app-check'], '8.4.0');
+assert.match(podfile, /pod 'CapacitorFirebaseAppCheck'/);
+assert.match(webLogic, /X-Firebase-AppCheck/);
+assert.match(webLogic, /hydrateNativePreferences\(\)/);
+assert.match(metricKitService, /let manager = MXMetricManager\.shared[\s\S]*?manager\.add\(self\)/);
+assert.match(metricKitService, /MetricKitOutbox/);
+assert.match(metricKitService, /pastPayloads/);
+assert.match(metricKitService, /maximumPendingReports/);
+assert.match(metricKitService, /scheduleRetry\(\)/);
+assert.match(
+  await readFile(path.join(root, 'ios/App/App/AppDelegate.swift'), 'utf8'),
+  /AppCheck\.setAppCheckProviderFactory[\s\S]*?FirebaseApp\.configure\(\)/,
+  'يجب تعيين App Attest قبل تهيئة Firebase.'
+);
+assert.match(project, /AppTests\.xctest/);
+assert.match(project, /AppUITests\.xctest/);
+assert.match(scheme, /BlueprintName = "AppTests"/);
+assert.match(scheme, /BlueprintName = "AppUITests"/);
 
 assert.match(privacyManifest, /<key>NSPrivacyTracking<\/key>\s*<false\/>/);
+assert.doesNotMatch(
+  privacyManifest,
+  /NSPrivacyCollectedDataTypeTracking<\/key>\s*<true\/>/,
+  'فطنة لا تستخدم أي نوع بيانات للتتبع عبر التطبيقات أو المواقع.'
+);
 
 for (const dataType of [
   'NSPrivacyCollectedDataTypeUserID',
   'NSPrivacyCollectedDataTypeName',
   'NSPrivacyCollectedDataTypeEmailAddress',
+  'NSPrivacyCollectedDataTypePhoneNumber',
   'NSPrivacyCollectedDataTypePurchaseHistory',
+  'NSPrivacyCollectedDataTypeDeviceID',
   'NSPrivacyCollectedDataTypeOtherUserContent',
+  'NSPrivacyCollectedDataTypeCrashData',
+  'NSPrivacyCollectedDataTypeOtherDiagnosticData',
 ]) {
   assert.match(privacyManifest, new RegExp(`<string>${dataType}<\\/string>`));
 }
@@ -59,6 +90,28 @@ assert.match(
 );
 assert.match(
   webLogic,
+  /if\(!resp\.ok\)[\s\S]*?throw new Error[\s\S]*?showToast\('⚠️','ما قدرنا نحذف الحساب'[\s\S]*?return;/,
+  'يجب إيقاف حذف Firebase والبيانات المحلية إذا لم يؤكد الخادم حذف البيانات.'
+);
+assert.match(
+  webLogic,
+  /await resetRevenueCatIdentity\(\);[\s\S]*?delete rcIds\[uid\]/,
+  'يجب فصل هوية RevenueCat عند حذف الحساب حتى لا يعود اشتراك المستخدم المحذوف.'
+);
+assert.match(
+  webLogic,
+  /async function resetRevenueCatIdentity\(\)[\s\S]*?await RC\.logOut\(\)[\s\S]*?_rcReady=null;/,
+  'يجب تسجيل الخروج من RevenueCat وتصفير تهيئته قبل دخول مستخدم جديد.'
+);
+assert.match(webApp, /href="https:\/\/apps\.apple\.com\/account\/subscriptions"/);
+assert.match(webApp, /حذف حساب فطنة لا يلغي الاشتراك المتجدد/);
+assert.match(
+  privacyManifest,
+  /NSPrivacyCollectedDataTypeOtherUserContent<\/string>[\s\S]*?NSPrivacyCollectedDataTypeLinked<\/key>\s*<true\/>/,
+  'الفئات العائلية وتقدم اللعب مرتبطان بهوية المستخدم على الخادم.'
+);
+assert.match(
+  webLogic,
   /const current = await FA\.getCurrentUser\(\)\.catch\(\(\)=>null\);[\s\S]*?if\(!current \|\| !current\.user\) return '';/,
   'لا تطلب رمز Firebase بعد تسجيل الخروج أو حذف الحساب.'
 );
@@ -69,8 +122,13 @@ assert.ok(
 );
 assert.match(
   webLogic,
-  /go\('s-paywall'\);\s*void \(async \(\)=>\{[\s\S]*?checkSubscriptionAndRoute\(uid, \{showLoading:false\}\);/,
-  'يجب إظهار واجهة الاشتراك فوراً والتحقق من الصلاحية في الخلفية.'
+  /go\('s-loading'\);\s*void \(async \(\)=>\{[\s\S]*?checkSubscriptionAndRoute\(uid, \{showLoading:false\}\);/,
+  'يجب عدم إظهار الاشتراك قبل التحقق من أهلية الجولة المجانية.'
+);
+assert.match(
+  privacyManifest,
+  /NSPrivacyCollectedDataTypeProductInteraction<\/string>[\s\S]*?NSPrivacyCollectedDataTypePurposeAnalytics<\/string>/,
+  'يجب التصريح عن مؤشرات تفاعل اللعب المستخدمة للتحسين.'
 );
 assert.match(
   webLogic,
@@ -98,18 +156,19 @@ assert.match(
 assert.match(questionBank, /^window\.__QUESTION_BANK_DATA__ = \{/);
 assert.ok(
   Buffer.byteLength(questionBank) > 20_000 && Buffer.byteLength(questionBank) < 100_000,
-  'يجب أن يكون بنك الطوارئ المحلي صغيراً، مع بقاء التوليد الموثق للخادم.'
+  'يجب أن يبقى بنك الأسئلة المحلي ضمن حجم مناسب للتطبيق.'
 );
 assert.equal(nativeWebApp, webApp, 'يجب مزامنة www مع نسخة iOS قبل البناء.');
 assert.equal(nativeWebLogic, webLogic, 'يجب مزامنة JavaScript مع نسخة iOS قبل البناء.');
 assert.equal(nativeWebStyles, webStyles, 'يجب مزامنة CSS مع نسخة iOS قبل البناء.');
 assert.equal(nativeQuestionBank, questionBank, 'يجب مزامنة بنك الأسئلة مع نسخة iOS قبل البناء.');
-assert.match(webLogic, /prepareTrustedRoundQuestions\(state\.cats,token\)/);
-assert.match(webLogic, /AI_ROUND_BLOCKED_CATEGORIES/);
+assert.match(webLogic, /function normalizeQuestionBank\(bank\)/);
+assert.match(webLogic, /function rememberQuestion\(cat,question\)/);
+assert.match(webLogic, /state\.usedQuestionIds=new Set\(\)/);
+assert.doesNotMatch(webLogic, /api\.anthropic\.com|AI_BACKEND_URL|aiGenerate\(/);
 assert.match(webApp, /id="q-source"/);
-assert.match(cloudFunction, /const TRUSTED_SOURCE_HOSTS/);
-assert.match(cloudFunction, /async function reachableTrustedSource/);
-assert.match(cloudFunction, /trustedRound/);
+assert.match(cloudFunction, /status\(410\)/);
+assert.doesNotMatch(cloudFunction, /ANTHROPIC|api\.anthropic\.com|defineSecret/);
 
 console.log('✓ لا يوجد طلب تتبع في iOS أو في Privacy Manifest');
 console.log('✓ إفصاحات الخصوصية المعلنة في المشروع موجودة');
@@ -117,5 +176,5 @@ console.log('✓ Privacy Manifest مضمن في target وGame Center غير مف
 console.log('✓ حذف الحساب لا يعلن نجاحاً قبل التحقق من Firebase');
 console.log('✓ الهويات المحلية القديمة تُرقّى إلى Firebase عند توفرها');
 console.log('✓ واجهة الإقلاع لا تنتظر الشبكة قبل الظهور');
-console.log('✓ بنك الطوارئ مؤجل التحميل وصغير، والتوليد الموثق يبقى خارج التطبيق');
-console.log('✓ الأسئلة المولّدة لا تمر إلا بمراجع HTTPS موثوقة ورابط متاح');
+console.log('✓ بنك الأسئلة المراجع مؤجل التحميل ومصادره ظاهرة داخل التطبيق');
+console.log('✓ التوليد الآلي الخارجي متوقف وسجل عدم التكرار مربوط بالحساب');

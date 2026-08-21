@@ -16,6 +16,9 @@ PODS:
   - CapacitorCommunityKeepAwake (8.0.1):
     - Capacitor
   - CapacitorCordova (8.4.2)
+  - CapacitorFirebaseAppCheck (8.4.0):
+    - Capacitor
+    - FirebaseAppCheck (~> 12.7)
   - CapacitorFirebaseAuthentication (8.4.0):
     - Capacitor
     - CapacitorFirebaseAuthentication/Lite (= 8.4.0)
@@ -41,6 +44,12 @@ PODS:
     - Capacitor
   - CapacitorStatusBar (8.0.3):
     - Capacitor
+  - FirebaseAppCheck (12.7.0):
+    - AppCheckCore (~> 11.0)
+    - FirebaseAppCheckInterop (~> 12.7.0)
+    - FirebaseCore (~> 12.7.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
   - FirebaseAppCheckInterop (12.7.0)
   - FirebaseAuth (12.7.0):
     - FirebaseAppCheckInterop (~> 12.7.0)
@@ -149,6 +158,7 @@ DEPENDENCIES:
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorCommunityKeepAwake (from `../../node_modules/@capacitor-community/keep-awake`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorFirebaseAppCheck (from `../../node_modules/@capacitor-firebase/app-check`)"
   - "CapacitorFirebaseAuthentication (from `../../node_modules/@capacitor-firebase/authentication`)"
   - "CapacitorFirebaseAuthentication/Google (from `../../node_modules/@capacitor-firebase/authentication`)"
   - "CapacitorFirebaseCrashlytics (from `../../node_modules/@capacitor-firebase/crashlytics`)"
@@ -163,6 +173,7 @@ SPEC REPOS:
   trunk:
     - AppAuth
     - AppCheckCore
+    - FirebaseAppCheck
     - FirebaseAppCheckInterop
     - FirebaseAuth
     - FirebaseAuthInterop
@@ -193,6 +204,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor-community/keep-awake"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
+  CapacitorFirebaseAppCheck:
+    :path: "../../node_modules/@capacitor-firebase/app-check"
   CapacitorFirebaseAuthentication:
     :path: "../../node_modules/@capacitor-firebase/authentication"
   CapacitorFirebaseCrashlytics:
@@ -216,6 +229,7 @@ SPEC CHECKSUMS:
   Capacitor: 52f999235b8bd6a7d01694753f4f4d54d182e3a3
   CapacitorCommunityKeepAwake: d41922812644562e94a79acaf7f41e6d9413af8c
   CapacitorCordova: 345eacdc4c8282415446aea4acd8c77d82480bd4
+  CapacitorFirebaseAppCheck: 14546e89b9365920c7380478900162d97a3556b1
   CapacitorFirebaseAuthentication: 78fc52529bea760640c0dd2f152307b04760a43d
   CapacitorFirebaseCrashlytics: 8028a70bcfd94d02bd1f5e41e74636babf9694d8
   CapacitorFirebaseMessaging: 8c7a7d39842d80455b09129ba5b637ce6ff59096
@@ -223,6 +237,7 @@ SPEC CHECKSUMS:
   CapacitorPreferences: cca2021f386efb75947c850334447d9ff22b14f1
   CapacitorSplashScreen: 7bf61c2001557ff9e195e601c6b87344480d3c65
   CapacitorStatusBar: eca7bc2b58d9f886f1ef9edb66e57a9b29c121af
+  FirebaseAppCheck: ca32814649d879d81589ac925ef1c3f833f8453f
   FirebaseAppCheckInterop: d58366471f1dadf2ed998b15f85c658458a10142
   FirebaseAuth: 88beaef7c688a2950541552b6dd195d22137c41a
   FirebaseAuthInterop: deb2638881b5d98c88c4371dd0de65b6110f217b
@@ -247,6 +262,6 @@ SPEC CHECKSUMS:
   RevenueCat: a83de0391a1061302699cb55eb1ff0662f5768b5
   RevenuecatPurchasesCapacitor: 9205ff494ad81e19bccef77a88a34599c11ed319
 
-PODFILE CHECKSUM: 37b5d60037589f4f83882ca063fe9cb4fc96d234
+PODFILE CHECKSUM: 7e2512d4f76bd4861cd2c946ca46b4766ab1bfd3
 
 COCOAPODS: 1.16.2

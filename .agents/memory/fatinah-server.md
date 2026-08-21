@@ -1,9 +1,9 @@
 ---
 name: Fatinah server setup
-description: كيف يشتغل خادم فَطِنة على Replit وأسباب الاختيارات
+description: كيف يشتغل خادم فطنة على Replit وأسباب الاختيارات
 ---
 
-# خادم فَطِنة على Replit
+# خادم فطنة على Replit
 
 ## القرار
 الخادم مكتوب بـ Python stdlib فقط (`http.server` + `ThreadingMixIn`) — لا Flask ولا حزم خارجية.

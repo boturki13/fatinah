@@ -3,7 +3,7 @@
 اختبار نهاية-لنهاية لـ RevenueCat webhook endpoint.
 يشغّل خادم مؤقت على منفذ عشوائي مع سر معروف، ثم يختبر:
   1. EXPIRATION   → status = 'inactive'
-  2. CANCELLATION → status = 'canceled'
+  2. CANCELLATION → يبقى status = 'active' حتى EXPIRATION
   3. INITIAL_PURCHASE (uid جديد) → status = 'active' (سجل جديد)
   4. مفتاح خاطئ  → 401
   5. RENEWAL      → status = 'active'
@@ -134,14 +134,24 @@ check('يُرجع 200', code == 200, f'code={code}')
 check("status → 'inactive'", db_status('uid_expire') == 'inactive',
       f"status={db_status('uid_expire')}")
 
-# 3. CANCELLATION → canceled
+# 3. CANCELLATION يوقف التجديد فقط؛ لا يلغي الفترة المدفوعة
 print('\n3. CANCELLATION')
 insert_sub('uid_cancel', 'active')
 link_identity('uid_cancel', RC_CANCEL)
 code, _ = post('/api/revenuecat/webhook', make_event('CANCELLATION', RC_CANCEL))
 check('يُرجع 200', code == 200, f'code={code}')
-check("status → 'canceled'", db_status('uid_cancel') == 'canceled',
+check("status يبقى 'active' حتى EXPIRATION", db_status('uid_cancel') == 'active',
       f"status={db_status('uid_cancel')}")
+
+# 3b. BILLING_ISSUE لا يثبت انتهاء الاستحقاق؛ EXPIRATION هو الحد الفاصل
+print('\n3b. BILLING_ISSUE')
+RC_BILLING = '23232323-2323-4232-8232-232323232323'
+insert_sub('uid_billing', 'active')
+link_identity('uid_billing', RC_BILLING)
+code, _ = post('/api/revenuecat/webhook', make_event('BILLING_ISSUE', RC_BILLING))
+check('يُرجع 200', code == 200, f'code={code}')
+check("status يبقى 'active' أثناء محاولة استرداد الدفع", db_status('uid_billing') == 'active',
+      f"status={db_status('uid_billing')}")
 
 # 4. INITIAL_PURCHASE على uid جديد → ينشئ سجل active
 print('\n4. INITIAL_PURCHASE (uid جديد)')
@@ -239,14 +249,42 @@ check("status → 'active' عبر alias", db_status('uid_alias') == 'active',
       f"status={db_status('uid_alias')}")
 
 # 12. سر غير مهيَّأ → 503 (fail-closed، لا تحديث أبداً)
-print('\n12. سر webhook غير مهيَّأ → 503')
+print('\n12. TRANSFER ينقل الاستحقاق ولا يتركه على الحساب المصدر')
+RC_TRANSFER_FROM = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+RC_TRANSFER_TO = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+link_identity('uid_transfer_from', RC_TRANSFER_FROM)
+link_identity('uid_transfer_to', RC_TRANSFER_TO)
+insert_sub('uid_transfer_from', 'active')
+insert_sub('uid_transfer_to', 'inactive')
+transfer_event = {'event': {
+    'type': 'TRANSFER', 'id': 'evt_transfer_accounts',
+    'transferred_from': [RC_TRANSFER_FROM],
+    'transferred_to': [RC_TRANSFER_TO],
+}}
+code, response = post('/api/revenuecat/webhook', transfer_event)
+check('TRANSFER يُرجع 200', code == 200, f'code={code}')
+check('الحساب المصدر يصبح inactive', db_status('uid_transfer_from') == 'inactive')
+check('الحساب الوجهة يصبح active', db_status('uid_transfer_to') == 'active')
+check('الاستجابة تحدد الوجهة', response.get('uid') == 'uid_transfer_to')
+
+# 13. الاستحقاق المؤقت يُفعّل الوصول إلى أن يرسل RevenueCat حدثه اللاحق
+print('\n13. TEMPORARY_ENTITLEMENT_GRANT')
+RC_TEMP = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+link_identity('uid_temporary', RC_TEMP)
+code, _ = post('/api/revenuecat/webhook',
+               make_event('TEMPORARY_ENTITLEMENT_GRANT', RC_TEMP))
+check('الاستحقاق المؤقت يُرجع 200', code == 200, f'code={code}')
+check('الاستحقاق المؤقت يصبح active', db_status('uid_temporary') == 'active')
+
+# 14. سر غير مهيَّأ → 503 (fail-closed، لا تحديث أبداً)
+print('\n14. سر webhook غير مهيَّأ → 503')
 os.environ['REVENUECAT_WEBHOOK_SECRET'] = ''
 code, _ = post('/api/revenuecat/webhook', make_event('RENEWAL', RC_RENEW))
 check('يُرجع 503', code == 503, f'code={code}')
 os.environ['REVENUECAT_WEBHOOK_SECRET'] = SECRET
 
-# 13. مستخدم منتهي الاشتراك لا يملك وصولاً حتى لو فشل Firestore (SQLite هو المرجع)
-print('\n13. لا وصول بعد الانتهاء حتى مع فشل Firestore')
+# 15. مستخدم منتهي الاشتراك لا يملك وصولاً حتى لو فشل Firestore (SQLite هو المرجع)
+print('\n15. لا وصول بعد الانتهاء حتى مع فشل Firestore')
 code, resp = get('/api/subscription/status?uid=uid_expire')
 check('active=false للاشتراك المنتهي', resp.get('active') is False,
       f"active={resp.get('active')}")

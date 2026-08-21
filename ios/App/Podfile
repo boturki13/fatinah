@@ -9,6 +9,7 @@ def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCommunityKeepAwake', :path => '../../node_modules/@capacitor-community/keep-awake'
+  pod 'CapacitorFirebaseAppCheck', :path => '../../node_modules/@capacitor-firebase/app-check'
   pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
   pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
   pod 'CapacitorFirebaseMessaging', :path => '../../node_modules/@capacitor-firebase/messaging'
@@ -25,6 +26,13 @@ target 'App' do
   # JavaScript call reaches the native plugin but the provider implementation
   # is compiled out and the promise never resolves.
   pod 'CapacitorFirebaseAuthentication/Google', :path => '../../node_modules/@capacitor-firebase/authentication'
+
+  # AppTests يستخدم @testable import App؛ لذلك يحتاج مسارات وحدات Pods التي
+  # يعتمد عليها App (Capacitor وFirebase) من دون ربط نسخة ثانية من الأطر.
+  # وضعه داخل App يبقي هذا الإرث صالحاً بعد كل `cap sync`/`pod install`.
+  target 'AppTests' do
+    inherit! :search_paths
+  end
 end
 
 post_install do |installer|

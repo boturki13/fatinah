@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.fatinah.game',
-  appName: 'فَطِنة',
+  appName: 'فطنة',
   webDir: 'www',
   backgroundColor: '#120B24',
   ios: {
