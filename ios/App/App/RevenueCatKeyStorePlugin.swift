@@ -166,9 +166,44 @@ final class RevenueCatKeyStorePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
+/// Compatibility account-boundary bridge. MetricKit and Crashlytics remain
+/// anonymous; these calls only trigger fail-closed cleanup of legacy telemetry
+/// files so existing web logout/delete-account ordering stays safe.
+@objc(FatinahTelemetryIdentityPlugin)
+final class FatinahTelemetryIdentityPlugin: CAPPlugin, CAPBridgedPlugin {
+    let identifier = "FatinahTelemetryIdentityPlugin"
+    let jsName = "FatinahTelemetryIdentity"
+    let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "setOwner", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "clearOwner", returnType: CAPPluginReturnPromise),
+    ]
+
+    @objc func setOwner(_ call: CAPPluginCall) {
+        guard let uid = call.getString("uid"), !uid.isEmpty else {
+            call.reject("معرّف المستخدم مطلوب")
+            return
+        }
+        FatinahMetricKitService.shared.setOwnerUID(uid) { accepted in
+            if accepted {
+                call.resolve()
+            } else {
+                call.reject("معرّف المستخدم غير صالح")
+            }
+        }
+    }
+
+    @objc func clearOwner(_ call: CAPPluginCall) {
+        FatinahMetricKitService.shared.clearOwnerAndPurge { removedCount in
+            call.resolve(["removedCount": removedCount])
+        }
+    }
+}
+
 @objc(FatinahBridgeViewController)
 final class FatinahBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(RevenueCatKeyStorePlugin())
+        bridge?.registerPluginInstance(FatinahTelemetryIdentityPlugin())
+        bridge?.registerPluginInstance(FatinahDeviceIntegrityPlugin())
     }
 }

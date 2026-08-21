@@ -13,6 +13,7 @@ from http.server import HTTPServer
 
 os.environ['FIREBASE_PROJECT_ID'] = 'test-project'
 os.environ['GOOGLE_API_KEY'] = ''
+os.environ['FATINAH_ENVIRONMENT'] = 'local'
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import server as srv
 
@@ -47,16 +48,16 @@ def request(method, path, payload=None, token='TEST_ID_TOKEN'):
 
 try:
     uid = urllib.parse.quote('question-user')
-    status, result = request('GET', f'/api/questions/seen?uid={uid}')
+    status, result = request('GET', f'/api/v2/questions/seen?uid={uid}')
     assert status == 200 and result['items'] == []
 
-    status, _ = request('POST', '/api/questions/seen', {
+    status, _ = request('POST', '/api/v2/questions/seen', {
         'uid': 'question-user', 'idToken': 'WRONG',
         'items': [{'id': 'q2-alpha', 'category': 'علوم'}],
     }, token='WRONG')
     assert status == 401
 
-    status, _ = request('POST', '/api/questions/seen', {
+    status, _ = request('POST', '/api/v2/questions/seen', {
         'uid': 'question-user', 'idToken': 'TEST_ID_TOKEN',
         'items': [{'id': '../invalid', 'category': 'علوم'}],
     })
@@ -70,12 +71,12 @@ try:
             {'id': 'q2-alpha', 'category': 'علوم'},
         ],
     }
-    status, result = request('POST', '/api/questions/seen', payload)
+    status, result = request('POST', '/api/v2/questions/seen', payload)
     assert status == 200 and result['saved'] == 2
-    status, result = request('POST', '/api/questions/seen', payload)
+    status, result = request('POST', '/api/v2/questions/seen', payload)
     assert status == 200 and result['saved'] == 2
 
-    status, result = request('GET', f'/api/questions/seen?uid={uid}')
+    status, result = request('GET', f'/api/v2/questions/seen?uid={uid}')
     assert status == 200
     assert {(item['id'], item['category']) for item in result['items']} == {
         ('q2-alpha', 'علوم'),

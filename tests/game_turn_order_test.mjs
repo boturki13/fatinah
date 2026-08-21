@@ -25,6 +25,7 @@ function installNativeTestHarness() {
         getIdToken: () => Promise.resolve({ token: 'turn-order-token' }),
       },
       RevenueCatKeyStore: { get: () => Promise.resolve({ value: 'appl_TEST' }), set: ok, clear: ok },
+      FatinahDeviceIntegrity: { generateDeviceCheckToken: () => Promise.resolve({ token: 'device-check-test-token' }) },
       Purchases: { configure: ok, setAttributes: ok, setEmail: ok, setDisplayName: ok },
       FirebaseCrashlytics: { setEnabled: ok, recordException: ok, setUserId: ok },
       SplashScreen: { hide: ok },
@@ -41,11 +42,15 @@ async function createGame(browser, teamNames) {
   await page.route('**/*', route => {
     const requestUrl = route.request().url();
     if (requestUrl.startsWith('file://')) return route.continue();
-    if (requestUrl.includes('/api/subscription/status')) {
+    if (requestUrl.includes('/api/v2/subscription/status')) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{"active":true}' });
     }
-    if (requestUrl.includes('/api/revenuecat/identity')) {
+    if (requestUrl.includes('/api/v2/revenuecat/identity')) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    }
+    if (requestUrl.includes('/api/v2/questions/seen')) {
+      const body = route.request().method() === 'GET' ? '{"items":[]}' : '{"ok":true}';
+      return route.fulfill({ status: 200, contentType: 'application/json', body });
     }
     return route.abort();
   });
@@ -256,9 +261,19 @@ async function testSkipResetsQuestionEligibility(browser) {
   const names = ['اللاعب الأول', 'اللاعب الثاني', 'اللاعب الثالث'];
   const { context, page } = await createGame(browser, names);
   try {
+    // استخدم فئة لها أكثر من سؤال في المستوى نفسه؛ تغيير السؤال لا يجوز أن
+    // يستعين بمستوى آخر لمجرد أن الفئة القديمة لا تملك بديلاً في هذا الصف.
+    await page.evaluate(() => {
+      state.cats[0]='ألعاب الفيديو';
+      buildBoard();
+    });
     await openQuestion(page);
+    const originalQuestion=await page.evaluate(() => ({id:state.cur.q.id,d:state.cur.q.d}));
     await page.getByRole('button', { name: /اطرح على اللاعب الثاني/ }).click();
     await page.getByRole('button', { name: 'تغيير السؤال — فريق اللاعب الثاني' }).click();
+    const replacementQuestion=await page.evaluate(() => ({id:state.cur.q.id,d:state.cur.q.d}));
+    assert.notEqual(replacementQuestion.id, originalQuestion.id, 'تغيير السؤال يحتاج بديلاً جديداً.');
+    assert.equal(replacementQuestion.d, originalQuestion.d, 'السؤال البديل يجب أن يبقى في مستوى صف اللوحة نفسه.');
     await page.getByRole('button', { name: '👁️ اكشف الإجابة' }).click();
     const eligible = await page.locator('.verdict-row .vb').allTextContents();
     assert.deepEqual(eligible, ['✅ اللاعب الثاني'], 'السؤال البديل لم يُطرح على اللاعب الأول');

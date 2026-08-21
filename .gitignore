@@ -6,6 +6,7 @@ firebase-debug.log
 __pycache__/
 *.py[cod]
 *.egg-info/
+.venv/
 
 # Local review artifacts and generated screenshots
 work/
@@ -28,4 +29,10 @@ xcuserdata/
 .env.*
 !.env.example
 *.p12
+*.p8
+*.pem
+*.key
 *.mobileprovision
+*service-account*.json
+*service_account*.json
+firebase-adminsdk-*.json

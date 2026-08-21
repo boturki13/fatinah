@@ -46,7 +46,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if pushDiagnosticsEnabled {
             Messaging.messaging().token { token, error in
                 if let error {
-                    print("❌ FCM token fetch failed: \(error.localizedDescription)")
+                    print("❌ FCM token fetch failed: \(String(describing: type(of: error)))")
                     return
                 }
                 if token != nil {
@@ -62,7 +62,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        print("❌ APNs registration FAILED: \(error.localizedDescription)")
+        print("❌ APNs registration FAILED: \(String(describing: type(of: error)))")
         NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
     }
 

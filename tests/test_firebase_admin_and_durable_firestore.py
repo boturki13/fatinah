@@ -3,10 +3,13 @@
 import os
 import sys
 import unittest
+from datetime import datetime, timezone
+from unittest import mock
 
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import server as srv
+import firebase_admin_bridge as firebase_bridge
 
 
 class FirebaseAdminAuthenticationTests(unittest.TestCase):
@@ -40,6 +43,20 @@ class FirebaseAdminAuthenticationTests(unittest.TestCase):
 
         self.assertFalse(srv.uid_matches_token('uid-1', 'unverified-token'))
         self.assertEqual(called, [])
+
+    def test_admin_verification_checks_revocation_and_user_existence(self):
+        with mock.patch.object(
+                firebase_bridge, '_firebase_app', return_value='test-app'), \
+             mock.patch(
+                'firebase_admin.auth.verify_id_token',
+                return_value={'uid': 'uid-1'},
+             ) as verify:
+            self.assertEqual(
+                firebase_bridge.verify_id_token('valid-token')['uid'],
+                'uid-1',
+            )
+        verify.assert_called_once_with(
+            'valid-token', app='test-app', check_revoked=True)
 
 
 class DurableFirestoreTests(unittest.TestCase):
@@ -76,6 +93,25 @@ class DurableFirestoreTests(unittest.TestCase):
             for key, value in encoded.items()
         }
         self.assertEqual(decoded, source)
+
+        timestamp = datetime(2026, 8, 21, 12, 30, tzinfo=timezone.utc)
+        self.assertEqual(
+            srv._firestore_value(timestamp),
+            {'timestampValue': '2026-08-21T12:30:00.000000Z'},
+        )
+
+    def test_document_decoder_keeps_update_time_for_conditional_lock_release(self):
+        decoded = srv._firestore_decode_document({
+            'name': (
+                'projects/test-project/databases/(default)/documents/'
+                'service_locks/devicecheck_free_round_claim'
+            ),
+            'fields': {'expires_at': {'integerValue': '123'}},
+            'updateTime': '2026-08-21T12:00:00.123456Z',
+        })
+        self.assertEqual(decoded['expires_at'], 123)
+        self.assertEqual(decoded['_document_id'], 'devicecheck_free_round_claim')
+        self.assertEqual(decoded['_update_time'], '2026-08-21T12:00:00.123456Z')
 
     def test_named_database_and_document_segments_are_encoded(self):
         os.environ['FIRESTORE_DATABASE_ID'] = 'fatinah-native'
@@ -123,6 +159,10 @@ class DurableFirestoreTests(unittest.TestCase):
                     {'_document_id': 'event-direct'},
                     {'_document_id': 'event-transfer'},
                 ]
+            if (collection, field, value, op) == (
+                    'app_attest_challenges', 'uid_hash',
+                    srv._app_attest_uid_hash('uid-1'), 'EQUAL'):
+                return [{'_document_id': 'challenge-1'}]
             return []
         srv.firestore_query_documents = query_documents
         documents['revenuecat_pending/rc-random-id/events'] = [
@@ -138,6 +178,7 @@ class DurableFirestoreTests(unittest.TestCase):
             'users/uid-1/game_events/event-1',
             'users/uid-1/ios_diagnostics/diagnostic-1',
             'question_reports/report-1',
+            'app_attest_challenges/challenge-1',
             'revenuecat_events/event-direct',
             'revenuecat_events/event-transfer',
             'revenuecat_pending/rc-random-id/events/pending-event',

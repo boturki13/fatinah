@@ -3,7 +3,7 @@
 يخدم index.html وfirebase-config.js ويدير اشتراكات Apple IAP عبر RevenueCat.
 أسئلة اللعبة تصدر من بنك محتوى ثابت ومراجع؛ لا يوجد توليد آلي للمستخدم.
 """
-import gzip, hashlib, json, os, sqlite3, threading, time, urllib.request, urllib.error, urllib.parse, uuid
+import base64, datetime, gzip, hashlib, ipaddress, json, os, secrets, socket, sqlite3, threading, time, urllib.request, urllib.error, urllib.parse, uuid
 import smtplib, ssl
 from email.message import EmailMessage
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -15,6 +15,18 @@ PORT      = int(os.environ.get('PORT', 5000))
 WWW_DIR   = os.path.join(os.path.dirname(__file__), 'www')
 HTML_FILE = os.path.join(WWW_DIR, 'index.html')
 DB_PATH   = os.path.join(os.path.dirname(__file__), 'subscriptions.db')
+IOS_DIAGNOSTIC_RETENTION_DAYS = 30
+
+def safe_log_reference(value) -> str:
+    """بصمة قصيرة للسجلات؛ لا تطبع UID أو App User ID أو report ID خاماً."""
+    text = str(value or '')
+    if not text:
+        return 'none'
+    return hashlib.sha256(text.encode('utf-8')).hexdigest()[:12]
+
+def exception_kind(exc: BaseException) -> str:
+    """نوع ثابت قابل للتشخيص من دون message قد تحمل بيانات مستخدم/اعتماد."""
+    return type(exc).__name__
 
 def firestore_database_name():
     """اسم قاعدة Firestore بصيغة REST، مع دعم default القديم."""
@@ -97,6 +109,8 @@ def init_db():
             category      TEXT NOT NULL,
             question_text TEXT NOT NULL,
             answer_text   TEXT,
+            source_title  TEXT,
+            source_url    TEXT,
             reason        TEXT NOT NULL,
             details       TEXT,
             app_version   TEXT,
@@ -108,6 +122,12 @@ def init_db():
         )
     ''')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_question_reports_status ON question_reports(email_status, created_at)')
+    for ddl in (
+        "ALTER TABLE question_reports ADD COLUMN source_title TEXT",
+        "ALTER TABLE question_reports ADD COLUMN source_url TEXT",
+    ):
+        try: conn.execute(ddl)
+        except sqlite3.OperationalError: pass
     # قياسات منتج محدودة ومقيدة بقائمة أحداث؛ لا نخزن نص السؤال أو البريد.
     conn.execute('''
         CREATE TABLE IF NOT EXISTS game_events (
@@ -164,13 +184,125 @@ def init_db():
         CREATE TABLE IF NOT EXISTS ios_diagnostics (
             report_id   TEXT PRIMARY KEY,
             uid         TEXT NOT NULL,
+            schema_version INTEGER,
+            privacy_scope TEXT,
             report_type TEXT NOT NULL,
             payload     TEXT NOT NULL,
             app_version TEXT,
             created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    for ddl in (
+        "ALTER TABLE ios_diagnostics ADD COLUMN schema_version INTEGER",
+        "ALTER TABLE ios_diagnostics ADD COLUMN privacy_scope TEXT",
+    ):
+        try: conn.execute(ddl)
+        except sqlite3.OperationalError: pass
     conn.execute('CREATE INDEX IF NOT EXISTS idx_ios_diagnostics_uid_time ON ios_diagnostics(uid, created_at)')
+    conn.execute(
+        "DELETE FROM ios_diagnostics "
+        "WHERE created_at < datetime('now', ?)",
+        (f'-{IOS_DIAGNOSTIC_RETENTION_DAYS} days',),
+    )
+    # App Attest يربط المطالبة بمفتاح Secure Enclave ثابت للتثبيت، بدلاً من
+    # الثقة برمزي DeviceCheck مستقلين لا يستطيع الخادم إثبات أنهما من الجهاز
+    # نفسه. Firestore هو المرجع في production؛ هذه الجداول للاختبارات والكاش.
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS app_attest_challenges (
+            challenge_id    TEXT PRIMARY KEY,
+            uid_hash        TEXT NOT NULL,
+            key_id_hash     TEXT NOT NULL,
+            purpose         TEXT NOT NULL,
+            client_data     TEXT NOT NULL,
+            request_hash    TEXT NOT NULL DEFAULT '',
+            expires_at      INTEGER NOT NULL,
+            consumed_at     INTEGER
+        )
+    ''')
+    challenge_columns = {
+        row[1] for row in conn.execute(
+            'PRAGMA table_info(app_attest_challenges)').fetchall()
+    }
+    desired_challenge_columns = {
+        'challenge_id', 'uid_hash', 'key_id_hash', 'purpose', 'client_data',
+        'request_hash', 'expires_at', 'consumed_at',
+    }
+    if challenge_columns != desired_challenge_columns:
+        # التحديات عمرها خمس دقائق ولا يجوز ترحيل بياناتها المرتبطة بالحساب
+        # من المخطط القديم. إسقاطها fail-closed ويجبر العميل على طلب تحدٍ جديد.
+        conn.execute('DROP TABLE app_attest_challenges')
+        conn.execute('''
+            CREATE TABLE app_attest_challenges (
+                challenge_id    TEXT PRIMARY KEY,
+                uid_hash        TEXT NOT NULL,
+                key_id_hash     TEXT NOT NULL,
+                purpose         TEXT NOT NULL,
+                client_data     TEXT NOT NULL,
+                request_hash    TEXT NOT NULL DEFAULT '',
+                expires_at      INTEGER NOT NULL,
+                consumed_at     INTEGER
+            )
+        ''')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_app_attest_challenges_expiry ON app_attest_challenges(expires_at)')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS app_attest_keys (
+            key_id_hash     TEXT PRIMARY KEY,
+            key_id          TEXT NOT NULL UNIQUE,
+            public_key_pem  TEXT NOT NULL,
+            receipt         TEXT NOT NULL,
+            counter         INTEGER NOT NULL DEFAULT 0,
+            environment     TEXT NOT NULL,
+            attested_at     INTEGER NOT NULL
+        )
+    ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS free_round_installations (
+            key_id_hash TEXT PRIMARY KEY,
+            owner_hash TEXT NOT NULL,
+            state TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            completed_at INTEGER
+        )
+    ''')
+    # المطالبة تبدأ pending قبل تغيير bit0 لدى Apple، ثم تصبح completed بعد
+    # حفظ ربط الحساب. هكذا يستطيع الحساب نفسه إكمال المحاولة بعد فشل مؤقت،
+    # بينما يبقى حساب آخر محجوباً. لا نخزن UID خاماً في سجل التثبيت.
+    installation_columns = {
+        row[1] for row in conn.execute(
+            'PRAGMA table_info(free_round_installations)').fetchall()
+    }
+    desired_installation_columns = {
+        'key_id_hash', 'owner_hash', 'state', 'created_at', 'updated_at',
+        'completed_at',
+    }
+    if installation_columns != desired_installation_columns:
+        conn.execute('DROP TABLE IF EXISTS free_round_installations_v13')
+        conn.execute('''
+            CREATE TABLE free_round_installations_v13 (
+                key_id_hash TEXT PRIMARY KEY,
+                owner_hash TEXT NOT NULL,
+                state TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                completed_at INTEGER
+            )
+        ''')
+        conn.execute('''
+            INSERT OR IGNORE INTO free_round_installations_v13
+            (key_id_hash, owner_hash, state, created_at, updated_at,
+             completed_at)
+            SELECT key_id_hash, '', 'completed',
+                   COALESCE(completed_at, CAST(strftime('%s','now') AS INTEGER)),
+                   COALESCE(completed_at, CAST(strftime('%s','now') AS INTEGER)),
+                   completed_at
+            FROM free_round_installations
+        ''')
+        conn.execute('DROP TABLE free_round_installations')
+        conn.execute('''
+            ALTER TABLE free_round_installations_v13
+            RENAME TO free_round_installations
+        ''')
     conn.commit()
     conn.close()
 
@@ -203,7 +335,7 @@ def verify_firebase_id_token(id_token: str):
                 'email': decoded.get('email'),
             }
         except Exception as e:
-            print(f'Admin ID token verify error: {e}')
+            print(f'Admin ID token verify error: {exception_kind(e)}')
             return None
     api_key = os.environ.get('GOOGLE_API_KEY', '')
     if not api_key or not id_token:
@@ -219,7 +351,7 @@ def verify_firebase_id_token(id_token: str):
         users = data.get('users') or []
         return users[0] if users else None
     except Exception as e:
-        print(f'ID token verify error: {e}')
+        print(f'ID token verify error: {exception_kind(e)}')
         return None
 
 def uid_matches_token(uid: str, id_token: str) -> bool:
@@ -242,18 +374,173 @@ def uid_matches_token(uid: str, id_token: str) -> bool:
     verified = verify_firebase_id_token(id_token)
     return bool(verified and verified.get('localId') == uid)
 
+
+# ─── عزل عقود API والبيئات ──────────────────────────────────────────────────
+# المسارات غير المرقمة تبقى v1 حفاظاً على تطبيق 1.2. يمكن لتطبيق 1.3 اختيار
+# v2 إما بالمسار /api/v2/... أو بالرأس X-Fatinah-API-Version: 2. لا نستنتج
+# النسخة من User-Agent أو App Check لأن كليهما غير مضمون أثناء الطرح التدريجي.
+API_VERSION_HEADER = 'X-Fatinah-API-Version'
+DEPLOYMENT_ENVIRONMENTS = {'local', 'staging', 'production'}
+PRODUCTION_BACKEND_HOSTS = {
+    'ata20.com',
+    'www.ata20.com',
+    'us-central1-fatinah-game.cloudfunctions.net',
+}
+PRODUCTION_GENERATION_HOSTS = {
+    'us-central1-fatinah-game.cloudfunctions.net',
+}
+LEGACY_GENERATION_TIMEOUT_SECONDS = 42
+LEGACY_GENERATION_ALLOWED_HOSTS_ENV = 'FATINAH_V1_GENERATION_ALLOWED_HOSTS'
+
+
+def configured_deployment_environment():
+    """يعيد البيئة المصرح بها صراحةً، أو None عند الغياب/الخطأ."""
+    raw = os.environ.get('FATINAH_ENVIRONMENT')
+    if raw is None or not raw.strip():
+        return None
+    value = raw.strip().lower()
+    aliases = {
+        'dev': 'local', 'development': 'local',
+        'stage': 'staging', 'prod': 'production',
+    }
+    value = aliases.get(value, value)
+    return value if value in DEPLOYMENT_ENVIRONMENTS else None
+
+
+def deployment_environment() -> str:
+    raw = os.environ.get('FATINAH_ENVIRONMENT')
+    if raw is None or not raw.strip():
+        return 'unconfigured'
+    value = configured_deployment_environment()
+    return value or 'invalid'
+
+
+def public_web_game_enabled() -> bool:
+    """لا تعرض حزمة اللعبة إلا في بيئة تطوير/اختبار معلنة صراحةً."""
+    return configured_deployment_environment() in {'local', 'staging'}
+
+
+def env_flag(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None or not value.strip():
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on', 'enabled')
+
+
+def _single_api_version_header(headers) -> str:
+    if hasattr(headers, 'get_all'):
+        values = headers.get_all(API_VERSION_HEADER) or []
+    else:
+        value = headers.get(API_VERSION_HEADER, '')
+        values = [] if value is None or value == '' else [value]
+    # نرفض التكرار حتى لو تطابقت القيم؛ بعض الوسطاء يختار الأول وبعضهم الأخير.
+    if len(values) > 1:
+        raise ValueError('تكرر رأس نسخة API')
+    value = str(values[0] if values else '').strip().lower()
+    if ',' in value:
+        raise ValueError('رأس نسخة API مركّب وغير مدعوم')
+    return value
+
+
+def resolve_api_contract(path: str, headers) -> tuple[str, str]:
+    """يعيد (المسار الداخلي، النسخة)، ويرفض تعارض المسار مع الرأس."""
+    explicit_version = None
+    canonical_path = path
+    for version in ('1', '2'):
+        prefix = f'/api/v{version}'
+        if path == prefix:
+            explicit_version = version
+            canonical_path = '/api'
+            break
+        if path.startswith(prefix + '/'):
+            explicit_version = version
+            canonical_path = '/api' + path[len(prefix):]
+            break
+
+    is_api_path = path == '/api' or path.startswith('/api/')
+    requested = _single_api_version_header(headers) if is_api_path else ''
+    if requested.startswith('v'):
+        requested = requested[1:]
+    if requested and requested not in ('1', '2'):
+        raise ValueError('نسخة API غير مدعومة')
+    if explicit_version and requested and explicit_version != requested:
+        raise ValueError('نسخة API في المسار لا تطابق الرأس')
+
+    # أي مسار API قديم بلا رقم يبقى v1. الرؤوس لا تؤثر في الملفات العامة.
+    version = explicit_version or (requested if is_api_path else '1') or '1'
+    return canonical_path, version
+
+
+V2_ROUTE_FEATURES = {
+    '/api/version': None,
+    '/api/rc-config': None,
+    '/api/auth/check-anonymous': None,
+    '/api/subscription/status': None,
+    '/api/account/delete': None,
+    '/api/account/profile': None,
+    '/api/revenuecat/identity': None,
+    '/api/admin/db-status': None,
+    '/api/admin/metrics': None,
+    '/api/generate': None,  # tombstone v2؛ لا يصل إلى AI
+    '/api/app-attest/status': 'app_attest',
+    '/api/app-attest/challenge': 'app_attest',
+    '/api/app-attest/attest': 'app_attest',
+    '/api/free-round/status': 'free_round',
+    '/api/free-round/complete': 'free_round',
+    '/api/questions/seen': 'question_history',
+    '/api/questions/report': 'question_reports',
+    '/api/metrics/event': 'metrics',
+    '/api/ios-diagnostics': 'ios_diagnostics',
+    '/api/revenuecat/webhook': 'revenuecat_webhook',
+}
+
+# هذه المسارات أضيفت لأول مرة في 1.3، ولا يوجد عميل 1.2 يحتاجها. إبقاؤها
+# متاحة بعقد v1 يجعل نسخة API التي يختارها العميل وسيلة لتجاوز App Check أو
+# App Attest أو DeviceCheck. لذلك يرفضها الخادم قبل الوصول إلى المعالج ما لم
+# يكن العقد الفعلي v2.
+V2_ONLY_ROUTES = {
+    '/api/app-attest/status',
+    '/api/app-attest/challenge',
+    '/api/app-attest/attest',
+    '/api/free-round/status',
+    '/api/free-round/complete',
+    '/api/questions/seen',
+    '/api/questions/report',
+    '/api/metrics/event',
+}
+
+
+def v2_feature_enabled(feature: str) -> bool:
+    """أعلام v2 صريحة في الإنتاج، ومفعلة افتراضياً محلياً وفي staging."""
+    env_name = f'FATINAH_V2_FEATURE_{feature.upper()}_ENABLED'
+    default = deployment_environment() in {'local', 'staging'}
+    return env_flag(env_name, default)
+
+
+def legacy_v1_generation_enabled() -> bool:
+    # Opt-in صريح: نشر الكود بلا إعداد مكتمل لا يفعّل تكلفة AI بالخطأ.
+    # لاستمرار 1.2 يجب ضبط القيمة true في بيئة production قبل النشر.
+    return env_flag('FATINAH_V1_AI_GENERATION_ENABLED', False)
+
+
 APP_CHECK_PROTECTED_PATHS = {
     '/api/account/delete', '/api/account/profile',
+    '/api/app-attest/status', '/api/app-attest/challenge',
+    '/api/app-attest/attest',
     '/api/free-round/complete', '/api/free-round/status',
     '/api/questions/seen', '/api/questions/report',
     '/api/metrics/event', '/api/ios-diagnostics',
     '/api/revenuecat/identity', '/api/subscription/status',
 }
 
-def app_check_enforcement_enabled() -> bool:
-    return os.environ.get('FIREBASE_APP_CHECK_ENFORCE', '').strip().lower() in (
-        '1', 'true', 'yes', 'enforce'
-    )
+def app_check_enforcement_enabled(api_version: str = '1') -> bool:
+    """لا نفرض App Check على v1 افتراضياً لأن تطبيق 1.2 لا يرسل الرمز."""
+    version_key = f'FATINAH_V{api_version}_APP_CHECK_ENFORCE'
+    if os.environ.get(version_key, '').strip():
+        return env_flag(version_key)
+    if api_version == '2':
+        return env_flag('FIREBASE_APP_CHECK_ENFORCE', False)
+    return False
 
 def verify_app_check_header(headers, path: str):
     """يعيد (valid, reason). وضع المراقبة يسجل فقط؛ الإنفاذ متغير بيئة."""
@@ -269,8 +556,175 @@ def verify_app_check_header(headers, path: str):
         verify_app_check_token(token)
         return True, 'verified'
     except Exception as exc:
-        print(f'[App Check] verification failed path={path}: {exc}')
+        print(f'[App Check] verification failed path={path}: {exception_kind(exc)}')
         return False, 'invalid'
+
+
+def app_attest_enforcement_enabled(api_version: str = '1') -> bool:
+    """App Attest المباشر مطلوب لمطالبة العرض في v2 production.
+
+    Firebase App Check يثبت سلامة التطبيق، لكنه لا يعطينا معرّف مفتاح ثابتاً
+    نربط به جولة واحدة. لذلك نستخدم assertion مباشرًا فوق App Check.
+    """
+    version_key = f'FATINAH_V{api_version}_APP_ATTEST_ENFORCE'
+    if os.environ.get(version_key, '').strip():
+        return env_flag(version_key)
+    return api_version == '2' and deployment_environment() == 'production'
+
+
+def app_attest_identity() -> tuple[str, str, str]:
+    """أعد App ID prefix وBundle ID وبيئة Apple المتوقعة."""
+    prefix = os.environ.get('APPLE_APP_ATTEST_APP_ID_PREFIX', '').strip()
+    bundle_id = os.environ.get('APPLE_APP_ATTEST_BUNDLE_ID', '').strip()
+    environment = os.environ.get(
+        'APPLE_DEVICECHECK_ENVIRONMENT', '').strip().lower()
+    if not re.fullmatch(r'[A-Z0-9]{10}', prefix):
+        raise DeviceCheckConfigurationError(
+            'APPLE_APP_ATTEST_APP_ID_PREFIX غير صالح')
+    if bundle_id != 'com.fatinah.game':
+        raise DeviceCheckConfigurationError(
+            'APPLE_APP_ATTEST_BUNDLE_ID لا يطابق التطبيق')
+    if environment in {'development', 'sandbox'}:
+        expected_environment = 'development'
+    elif environment == 'production':
+        expected_environment = 'production'
+    else:
+        raise DeviceCheckConfigurationError(
+            'بيئة App Attest غير محددة')
+    return prefix, bundle_id, expected_environment
+
+
+class DeviceCheckConfigurationError(RuntimeError):
+    """إعدادات خدمة DeviceCheck الخادمية ناقصة أو غير صالحة."""
+
+
+class DeviceCheckServiceError(RuntimeError):
+    """فشل مؤقت أو رفض من خدمة DeviceCheck لدى Apple."""
+
+
+class DeviceCheckClaimBusyError(RuntimeError):
+    """توجد مطالبة أخرى قيد التنفيذ؛ على العميل إعادة المحاولة."""
+
+
+_devicecheck_claim_local_lock = threading.Lock()
+_DEVICECHECK_CLAIM_LOCK_PATH = 'service_locks/devicecheck_free_round_claim'
+_DEVICECHECK_CLAIM_LEASE_SECONDS = 120
+
+
+def devicecheck_enforcement_enabled(api_version: str = '1') -> bool:
+    """احمِ العرض المجاني على v2 في الإنتاج، مع سماح صريح للاختبارات المحلية.
+
+    تطبيق 1.2 لا يرسل DeviceCheck token؛ لذلك لا يتغير عقد v1. أما 1.3
+    (عقد v2) فيفشل مغلقاً في production إذا غابت مفاتيح Apple الخادمية.
+    """
+    version_key = f'FATINAH_V{api_version}_DEVICECHECK_ENFORCE'
+    if os.environ.get(version_key, '').strip():
+        return env_flag(version_key)
+    return api_version == '2' and deployment_environment() == 'production'
+
+
+def _base64url(value: bytes) -> str:
+    return base64.urlsafe_b64encode(value).rstrip(b'=').decode('ascii')
+
+
+def _devicecheck_private_key_bytes() -> bytes:
+    raw = os.environ.get('APPLE_DEVICECHECK_PRIVATE_KEY', '').strip()
+    if not raw:
+        raise DeviceCheckConfigurationError('APPLE_DEVICECHECK_PRIVATE_KEY مفقود')
+    if 'BEGIN PRIVATE KEY' not in raw and 'BEGIN EC PRIVATE KEY' not in raw:
+        try:
+            raw = base64.b64decode(raw, validate=True).decode('utf-8')
+        except Exception as exc:
+            raise DeviceCheckConfigurationError(
+                'APPLE_DEVICECHECK_PRIVATE_KEY ليس PEM أو Base64 صالحاً') from exc
+    return raw.replace('\\n', '\n').encode('utf-8')
+
+
+def devicecheck_auth_jwt(now: int | None = None) -> str:
+    """أنشئ JWT ES256 قصير العمر لخدمة Apple من أسرار الخادم فقط."""
+    key_id = os.environ.get('APPLE_DEVICECHECK_KEY_ID', '').strip()
+    team_id = os.environ.get('APPLE_DEVICECHECK_TEAM_ID', '').strip()
+    if not key_id or not team_id:
+        raise DeviceCheckConfigurationError(
+            'APPLE_DEVICECHECK_KEY_ID وAPPLE_DEVICECHECK_TEAM_ID مطلوبان')
+    try:
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import ec
+        from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+
+        header = _base64url(json.dumps(
+            {'alg': 'ES256', 'kid': key_id}, separators=(',', ':')
+        ).encode('utf-8'))
+        payload = _base64url(json.dumps(
+            {'iss': team_id, 'iat': int(now if now is not None else time.time())},
+            separators=(',', ':')
+        ).encode('utf-8'))
+        signing_input = f'{header}.{payload}'.encode('ascii')
+        private_key = serialization.load_pem_private_key(
+            _devicecheck_private_key_bytes(), password=None)
+        if not isinstance(private_key, ec.EllipticCurvePrivateKey):
+            raise ValueError('DeviceCheck key is not elliptic-curve')
+        signature_der = private_key.sign(signing_input, ec.ECDSA(hashes.SHA256()))
+        r, s = decode_dss_signature(signature_der)
+        signature = r.to_bytes(32, 'big') + s.to_bytes(32, 'big')
+        return f'{header}.{payload}.{_base64url(signature)}'
+    except DeviceCheckConfigurationError:
+        raise
+    except Exception as exc:
+        raise DeviceCheckConfigurationError('تعذّر تحميل مفتاح DeviceCheck') from exc
+
+
+def _devicecheck_api_base() -> str:
+    environment = os.environ.get('APPLE_DEVICECHECK_ENVIRONMENT', '').strip().lower()
+    if environment in {'development', 'sandbox'}:
+        return 'https://api.development.devicecheck.apple.com'
+    if environment in {'', 'production'}:
+        return 'https://api.devicecheck.apple.com'
+    raise DeviceCheckConfigurationError('APPLE_DEVICECHECK_ENVIRONMENT غير صالح')
+
+
+def devicecheck_request(operation: str, device_token: str, *, bit0=None, bit1=None) -> dict:
+    """استعلم أو حدّث bit العرض المجاني باستخدام token جديد أحضره التطبيق."""
+    token = (device_token or '').strip()
+    if not token or '\n' in token or '\r' in token or len(token) > 4096:
+        raise ValueError('DeviceCheck token غير صالح')
+    if operation not in {'query_two_bits', 'update_two_bits'}:
+        raise ValueError('عملية DeviceCheck غير مدعومة')
+    payload = {
+        'device_token': token,
+        'transaction_id': str(uuid.uuid4()),
+        'timestamp': int(time.time() * 1000),
+    }
+    if operation == 'update_two_bits':
+        if bit0 is not None:
+            payload['bit0'] = bool(bit0)
+        if bit1 is not None:
+            payload['bit1'] = bool(bit1)
+    request = urllib.request.Request(
+        f'{_devicecheck_api_base()}/v1/{operation}',
+        data=json.dumps(payload, separators=(',', ':')).encode('utf-8'),
+        method='POST',
+        headers={
+            'Authorization': f'Bearer {devicecheck_auth_jwt()}',
+            'Content-Type': 'application/json',
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=8) as response:
+            raw = response.read(16_384)
+            if response.status != 200:
+                raise DeviceCheckServiceError(f'Apple HTTP {response.status}')
+            if not raw:
+                return {}
+            result = json.loads(raw.decode('utf-8'))
+            if not isinstance(result, dict):
+                raise DeviceCheckServiceError('استجابة Apple غير صالحة')
+            return result
+    except urllib.error.HTTPError as exc:
+        # لا نسجل token أو جسم الرد لأنه قد يحمل معلومات تشخيصية حساسة.
+        raise DeviceCheckServiceError(f'Apple HTTP {exc.code}') from exc
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        raise DeviceCheckServiceError('تعذّر الاتصال بخدمة Apple DeviceCheck') from exc
 
 def is_valid_rc_app_user_id(value: str) -> bool:
     """نقبل UUID canonical فقط حتى لا يعود أي مسار لاستخدام UID/email مباشرة."""
@@ -405,7 +859,7 @@ def metric_properties_are_safe(event_name: str, properties: dict) -> bool:
 def _send_question_report_email(row) -> str:
     """أرسل بلاغاً محفوظاً عبر SMTP. لا يوجد أي سر داخل تطبيق iOS."""
     (report_id, _uid, question_id, category, question_text, answer_text,
-     reason, details, app_version, _created_at) = row
+     source_title, source_url, reason, details, app_version, _created_at) = row
     host = os.environ.get('SMTP_HOST', '').strip()
     from_address = os.environ.get('SMTP_FROM', '').strip()
     if not host or not from_address:
@@ -416,6 +870,11 @@ def _send_question_report_email(row) -> str:
     password = os.environ.get('SMTP_PASSWORD', '')
     use_ssl = os.environ.get('SMTP_USE_SSL', '').lower() in ('1', 'true', 'yes')
     use_tls = os.environ.get('SMTP_USE_TLS', 'true').lower() not in ('0', 'false', 'no')
+    if not use_ssl and not use_tls and (
+            username or deployment_environment() == 'production'):
+        # لا نسمح بإرسال البلاغات أو بيانات اعتماد SMTP بنص صريح. نبقي
+        # الرسالة pending_configuration لتُرسل تلقائياً بعد تصحيح الإعداد.
+        return 'pending_configuration'
 
     message = EmailMessage()
     message['From'] = from_address
@@ -430,6 +889,8 @@ def _send_question_report_email(row) -> str:
         f'التفاصيل: {details or "—"}\n'
         f'السؤال: {question_text}\n'
         f'الإجابة الحالية: {answer_text or "—"}\n'
+        f'عنوان المصدر: {source_title or "—"}\n'
+        f'رابط المصدر: {source_url or "—"}\n'
         f'إصدار التطبيق: {app_version or "—"}\n'
     )
     context = ssl.create_default_context()
@@ -456,10 +917,11 @@ def deliver_pending_question_reports(limit: int = 20) -> int:
     try:
         rows = conn.execute('''
             SELECT report_id, uid, question_id, category, question_text,
-                   answer_text, reason, details, app_version, created_at
+                   answer_text, source_title, source_url, reason, details,
+                   app_version, created_at
             FROM question_reports
             WHERE email_status IN ('pending','failed','pending_configuration')
-              AND email_attempts < 20
+              AND (email_status='pending_configuration' OR email_attempts < 20)
             ORDER BY created_at LIMIT ?
         ''', (limit,)).fetchall()
         for row in rows:
@@ -468,20 +930,22 @@ def deliver_pending_question_reports(limit: int = 20) -> int:
                 conn.execute('''
                     UPDATE question_reports
                     SET email_status=?, email_error=NULL,
-                        email_attempts=email_attempts+1,
+                        email_attempts=email_attempts +
+                            CASE WHEN ?='pending_configuration' THEN 0 ELSE 1 END,
                         emailed_at=CASE WHEN ?='sent' THEN CURRENT_TIMESTAMP ELSE emailed_at END
                     WHERE report_id=?
-                ''', (status, status, row[0]))
+                ''', (status, status, status, row[0]))
                 status_updates.append((row[0], status, None))
                 delivered += int(status == 'sent')
             except Exception as exc:
+                error_kind = exception_kind(exc)
                 conn.execute('''
                     UPDATE question_reports
                     SET email_status='failed', email_error=?,
                         email_attempts=email_attempts+1
                     WHERE report_id=?
-                ''', (str(exc)[:500], row[0]))
-                status_updates.append((row[0], 'failed', str(exc)[:500]))
+                ''', (error_kind, row[0]))
+                status_updates.append((row[0], 'failed', error_kind))
         conn.commit()
     finally:
         conn.close()
@@ -495,14 +959,16 @@ def deliver_pending_question_reports(limit: int = 20) -> int:
                         '%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                 })
             except Exception as exc:
-                print(f'[Question Reports] Firestore status sync failed {report_id}: {exc}')
+                print('[Question Reports] Firestore status sync failed '
+                      f'ref={safe_log_reference(report_id)}: {exception_kind(exc)}')
     return delivered
 
 def _question_report_email_worker():
     while True:
         time.sleep(60)
         try: deliver_pending_question_reports()
-        except Exception as exc: print(f'[Question Reports] retry error: {exc}')
+        except Exception as exc:
+            print(f'[Question Reports] retry error: {exception_kind(exc)}')
 def get_revenuecat_secret():
     """مفتاح تحقق ويبهوك RevenueCat — يُقارَن مع رأس Authorization الوارد."""
     return os.environ.get('REVENUECAT_WEBHOOK_SECRET', '')
@@ -601,6 +1067,15 @@ def _firestore_value(value):
         return {'integerValue': str(value)}
     if isinstance(value, float):
         return {'doubleValue': value}
+    if isinstance(value, datetime.datetime):
+        normalized = value
+        if normalized.tzinfo is None:
+            normalized = normalized.replace(tzinfo=datetime.timezone.utc)
+        normalized = normalized.astimezone(datetime.timezone.utc)
+        return {
+            'timestampValue': normalized.isoformat(
+                timespec='microseconds').replace('+00:00', 'Z')
+        }
     if isinstance(value, list):
         return {'arrayValue': {'values': [_firestore_value(item) for item in value]}}
     if isinstance(value, dict):
@@ -638,6 +1113,9 @@ def _firestore_decode_document(document):
         for key, value in (document.get('fields') or {}).items()
     }
     result['_document_id'] = (document.get('name') or '').rsplit('/', 1)[-1]
+    # updateTime ليس من بيانات التطبيق، لكنه شرط مقارنة آمن عند تحرير lease.
+    # إبقاؤه باسم داخلي يمنع حذف قفل استحوذت عليه عملية أخرى بعد انتهاء lease.
+    result['_update_time'] = document.get('updateTime') or ''
     return result
 
 def _firestore_document_url(project_id: str, document_path: str) -> str:
@@ -687,6 +1165,42 @@ def firestore_set_document(document_path: str, data: dict, *, merge: bool = True
     except urllib.error.HTTPError as exc:
         raise RuntimeError(_firestore_http_error(exc, f'set {document_path}')) from exc
 
+
+def firestore_set_document_if_update_time(document_path: str, data: dict,
+                                          update_time: str) -> bool:
+    """حدّث وثيقة فقط إذا لم تتغير منذ قراءتها.
+
+    يستخدم App Attest الشرط لمنع طلبين متزامنين من قبول عدّاد assertion
+    انطلاقاً من الحالة القديمة نفسها.
+    """
+    if not update_time:
+        return False
+    project_id, token = _firestore_credentials()
+    fields = {str(key): _firestore_value(value) for key, value in data.items()}
+    query_items = [
+        ('updateMask.fieldPaths', key) for key in fields
+    ] + [('currentDocument.updateTime', update_time)]
+    url = _firestore_document_url(project_id, document_path)
+    url += '?' + urllib.parse.urlencode(query_items, doseq=True)
+    req = urllib.request.Request(
+        url,
+        data=json.dumps({'fields': fields}, ensure_ascii=False).encode(),
+        method='PATCH',
+        headers={
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json; charset=utf-8',
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            response.read()
+        return True
+    except urllib.error.HTTPError as exc:
+        if exc.code in {404, 409, 412}:
+            return False
+        raise RuntimeError(
+            _firestore_http_error(exc, f'conditional set {document_path}')) from exc
+
 def firestore_delete_document(document_path: str):
     project_id, token = _firestore_credentials()
     req = urllib.request.Request(
@@ -700,6 +1214,154 @@ def firestore_delete_document(document_path: str):
     except urllib.error.HTTPError as exc:
         if exc.code != 404:
             raise RuntimeError(_firestore_http_error(exc, f'delete {document_path}')) from exc
+
+
+def firestore_create_document_if_absent(document_path: str, data: dict):
+    """أنشئ وثيقة ذرياً، أو أعد None إذا كان الاسم مستخدماً بالفعل.
+
+    createDocument في Firestore يضمن أن نسختين من خادم autoscale لا
+    تستحوذان على lease نفسه. تعاد updateTime لاستخدامها كشرط عند التحرير.
+    """
+    segments = [segment for segment in document_path.strip('/').split('/') if segment]
+    if len(segments) < 2 or len(segments) % 2:
+        raise ValueError('مسار وثيقة Firestore غير صالح')
+    project_id, token = _firestore_credentials()
+    parent_segments = segments[:-2]
+    collection_id, document_id = segments[-2:]
+    base = (
+        f'https://firestore.googleapis.com/v1/projects/{project_id}'
+        f'/databases/{firestore_database_path()}/documents'
+    )
+    if parent_segments:
+        base += '/' + '/'.join(
+            urllib.parse.quote(segment, safe='') for segment in parent_segments)
+    url = (
+        f'{base}/{urllib.parse.quote(collection_id, safe="")}?'
+        + urllib.parse.urlencode({'documentId': document_id})
+    )
+    fields = {str(key): _firestore_value(value) for key, value in data.items()}
+    req = urllib.request.Request(
+        url,
+        data=json.dumps({'fields': fields}, ensure_ascii=False).encode(),
+        method='POST',
+        headers={
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json; charset=utf-8',
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            document = json.loads(response.read())
+            update_time = str(document.get('updateTime') or '').strip()
+            if not update_time:
+                raise RuntimeError('Firestore createDocument بلا updateTime')
+            return update_time
+    except urllib.error.HTTPError as exc:
+        if exc.code == 409:
+            return None
+        raise RuntimeError(
+            _firestore_http_error(exc, f'create {document_path}')) from exc
+
+
+def firestore_delete_document_if_update_time(document_path: str,
+                                             update_time: str) -> bool:
+    """احذف وثيقة فقط إن بقيت النسخة ذات updateTime نفسها."""
+    if not update_time:
+        return False
+    project_id, token = _firestore_credentials()
+    url = _firestore_document_url(project_id, document_path)
+    url += '?' + urllib.parse.urlencode({
+        'currentDocument.updateTime': update_time,
+    })
+    req = urllib.request.Request(
+        url, method='DELETE', headers={'Authorization': f'Bearer {token}'})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            response.read()
+        return True
+    except urllib.error.HTTPError as exc:
+        if exc.code in {404, 409, 412}:
+            return False
+        raise RuntimeError(
+            _firestore_http_error(exc, f'conditional delete {document_path}')) from exc
+
+
+def acquire_devicecheck_claim_guard():
+    """تسلسل query→update محلياً وعبر كل نسخ خادم autoscale.
+
+    DeviceCheck يقدّم عمليتي استعلام وتحديث منفصلتين ولا يعرض معرّف جهاز
+    ثابتاً للخادم. لذلك نستخدم lease عالمي قصير في Firestore حول العمليتين؛
+    هذا يمنع حسابين متزامنين من رؤية bit0=false معاً. في الإنتاج نفشل
+    مغلقاً إذا لم يتوفر المخزن الدائم، بينما تستخدم الاختبارات المحلية
+    القفل داخل العملية فقط.
+    """
+    if not _devicecheck_claim_local_lock.acquire(timeout=5):
+        raise DeviceCheckClaimBusyError('مطالبة محلية أخرى قيد التنفيذ')
+
+    handle = {'distributed': False, 'update_time': ''}
+    try:
+        if not firestore_durable_available():
+            if deployment_environment() == 'production' or durable_storage_required():
+                raise DeviceCheckConfigurationError(
+                    'قفل DeviceCheck الموزع يحتاج Firestore')
+            return handle
+
+        owner = str(uuid.uuid4())
+        for _ in range(2):
+            now = int(time.time())
+            update_time = firestore_create_document_if_absent(
+                _DEVICECHECK_CLAIM_LOCK_PATH,
+                {
+                    'owner': owner,
+                    'expires_at': now + _DEVICECHECK_CLAIM_LEASE_SECONDS,
+                    'purpose': 'devicecheck_free_round_claim',
+                },
+            )
+            if update_time:
+                return {
+                    'distributed': True,
+                    'update_time': update_time,
+                }
+
+            existing = firestore_get_document(_DEVICECHECK_CLAIM_LOCK_PATH)
+            if not existing:
+                continue
+            try:
+                expires_at = int(existing.get('expires_at') or 0)
+            except (TypeError, ValueError):
+                expires_at = 0
+            existing_update_time = str(existing.get('_update_time') or '').strip()
+            if expires_at > now or not existing_update_time:
+                raise DeviceCheckClaimBusyError('مطالبة موزعة أخرى قيد التنفيذ')
+            if not firestore_delete_document_if_update_time(
+                    _DEVICECHECK_CLAIM_LOCK_PATH, existing_update_time):
+                raise DeviceCheckClaimBusyError('تغير مالك المطالبة الموزعة')
+
+        raise DeviceCheckClaimBusyError('تعذّر الاستحواذ على المطالبة الموزعة')
+    except (DeviceCheckClaimBusyError, DeviceCheckConfigurationError):
+        _devicecheck_claim_local_lock.release()
+        raise
+    except Exception as exc:
+        _devicecheck_claim_local_lock.release()
+        raise DeviceCheckServiceError(
+            'تعذّر إنشاء قفل DeviceCheck الموزع') from exc
+
+
+def release_devicecheck_claim_guard(handle) -> None:
+    """حرر lease الذي نملكه فقط؛ عند تعذر الحذف تنتهي صلاحيته تلقائياً."""
+    try:
+        if handle and handle.get('distributed'):
+            try:
+                firestore_delete_document_if_update_time(
+                    _DEVICECHECK_CLAIM_LOCK_PATH,
+                    str(handle.get('update_time') or ''),
+                )
+            except Exception as exc:
+                # لا نُفشل مطالبة ثُبتت لدى Apple؛ lease القصير يتعافى ذاتياً.
+                print(f'[DeviceCheck] distributed lock release failed: {type(exc).__name__}')
+    finally:
+        if _devicecheck_claim_local_lock.locked():
+            _devicecheck_claim_local_lock.release()
 
 def firestore_list_documents(collection_path: str, *, page_size: int = 1000):
     project_id, token = _firestore_credentials()
@@ -728,7 +1390,9 @@ def firestore_list_documents(collection_path: str, *, page_size: int = 1000):
 def firestore_query_documents(collection_id: str, field_path: str, value,
                               *, op: str = 'EQUAL'):
     """استعلام حقل بسيط لاسترجاع/حذف سجلات مستخدم بعينه."""
-    if op not in {'EQUAL', 'ARRAY_CONTAINS'}:
+    if op not in {
+        'EQUAL', 'ARRAY_CONTAINS', 'LESS_THAN', 'LESS_THAN_OR_EQUAL',
+    }:
         raise ValueError('Firestore query operator غير مسموح')
     project_id, token = _firestore_credentials()
     url = (
@@ -811,6 +1475,657 @@ def durable_write(document_path: str, data: dict, *, merge: bool = True) -> bool
         raise RuntimeError('التخزين الدائم مطلوب لكن بيانات اعتماد Firestore غير مكتملة')
     return False
 
+
+def ios_diagnostic_retention_fields(now=None) -> dict:
+    """حقول زمنية موحّدة لـSQLite/Firestore دون هوية مستخدم."""
+    created = now or datetime.datetime.now(datetime.timezone.utc)
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=datetime.timezone.utc)
+    created = created.astimezone(datetime.timezone.utc)
+    expires = created + datetime.timedelta(days=IOS_DIAGNOSTIC_RETENTION_DAYS)
+    return {
+        'created_at': created.isoformat(
+            timespec='seconds').replace('+00:00', 'Z'),
+        'expire_at': expires,
+    }
+
+
+def persist_free_round_completion(uid: str) -> None:
+    """ثبّت ملكية الجولة دائماً قبل تحديث الكاش المحلي."""
+    durable_write(f'free_rounds/{uid}', {
+        'uid': uid,
+        'completed': True,
+        'completed_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+    })
+    conn = db_connect()
+    try:
+        conn.execute(
+            'INSERT OR IGNORE INTO free_rounds (uid) VALUES (?)', (uid,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+# ─── App Attest: تحديات قصيرة ومفاتيح تثبيت موثقة ───────────────────────────
+APP_ATTEST_CHALLENGE_TTL_SECONDS = 300
+APP_ATTEST_PURPOSES = {
+    'attest', 'free_round_status', 'free_round_complete',
+}
+
+
+class AppAttestValidationError(RuntimeError):
+    """بيانات App Attest مفقودة أو مرفوضة أو معاد تشغيلها."""
+
+
+class AppAttestStorageError(RuntimeError):
+    """تعذر الوصول إلى الحالة الدائمة اللازمة لقرار App Attest."""
+
+
+def _app_attest_key_material(key_id: str) -> tuple[str, bytes]:
+    value = str(key_id or '').strip()
+    if not value or len(value) > 128 or '\n' in value or '\r' in value:
+        raise AppAttestValidationError('معرّف App Attest غير صالح')
+    try:
+        decoded = base64.b64decode(value, validate=True)
+    except Exception as exc:
+        raise AppAttestValidationError('معرّف App Attest غير صالح') from exc
+    if len(decoded) != 32 or base64.b64encode(decoded).decode('ascii') != value:
+        raise AppAttestValidationError('معرّف App Attest غير قياسي')
+    return hashlib.sha256(decoded).hexdigest(), decoded
+
+
+def _app_attest_request_hash(value: str = '') -> str:
+    normalized = str(value or '').strip().lower()
+    if normalized and not re.fullmatch(r'[0-9a-f]{64}', normalized):
+        raise AppAttestValidationError('بصمة الطلب غير صالحة')
+    return normalized
+
+
+def _app_attest_uid_hash(uid: str) -> str:
+    """بصمة حساب خاصة بسياق App Attest؛ لا نخزن UID الخام في التحديات."""
+    value = str(uid or '').strip()
+    if not value or len(value) > 256:
+        raise AppAttestValidationError('هوية حساب App Attest غير صالحة')
+    return hashlib.sha256(
+        b'fatinah-app-attest-uid-v1\0' + value.encode('utf-8')
+    ).hexdigest()
+
+
+def _app_attest_client_data(*, challenge_id: str, challenge: bytes,
+                            uid_hash: str,
+                            key_id_hash: str, purpose: str,
+                            request_hash: str) -> bytes:
+    # JSON canonical ثابت بين JavaScript والخادم. لا يحتوي token أو نصاً
+    # شخصياً؛ بصمة uid تربط assertion بالحساب من دون تخزين المعرّف الخام.
+    return json.dumps({
+        'challenge': base64.b64encode(challenge).decode('ascii'),
+        'challengeId': challenge_id,
+        'keyIdHash': key_id_hash,
+        'purpose': purpose,
+        'requestHash': request_hash,
+        'uidHash': uid_hash,
+    }, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+
+
+def create_app_attest_challenge(uid: str, key_id: str, purpose: str,
+                                request_hash: str = '') -> dict:
+    if purpose not in APP_ATTEST_PURPOSES:
+        raise AppAttestValidationError('غرض App Attest غير صالح')
+    key_id_hash, _ = _app_attest_key_material(key_id)
+    uid_hash = _app_attest_uid_hash(uid)
+    request_hash = _app_attest_request_hash(request_hash)
+    challenge = secrets.token_bytes(32)
+    expires_at = int(time.time()) + APP_ATTEST_CHALLENGE_TTL_SECONDS
+
+    for _ in range(3):
+        challenge_id = secrets.token_urlsafe(24)
+        client_data = _app_attest_client_data(
+            challenge_id=challenge_id,
+            challenge=challenge,
+            uid_hash=uid_hash,
+            key_id_hash=key_id_hash,
+            purpose=purpose,
+            request_hash=request_hash,
+        )
+        record = {
+            'uid_hash': uid_hash,
+            'key_id_hash': key_id_hash,
+            'purpose': purpose,
+            'client_data': base64.b64encode(client_data).decode('ascii'),
+            'request_hash': request_hash,
+            'expires_at': expires_at,
+            # حقل Timestamp مستقل لتفعيل Firestore TTL على المجموعة. يبقى
+            # expires_at الرقمي للتحقق المتزامن الدقيق قبل قبول assertion.
+            'expire_at': datetime.datetime.fromtimestamp(
+                expires_at, tz=datetime.timezone.utc),
+        }
+        if firestore_durable_available():
+            try:
+                if firestore_create_document_if_absent(
+                        f'app_attest_challenges/{challenge_id}', record):
+                    break
+            except Exception as exc:
+                raise AppAttestStorageError(
+                    'تعذّر حفظ تحدي App Attest') from exc
+        elif deployment_environment() == 'production' or durable_storage_required():
+            raise AppAttestStorageError(
+                'تحديات App Attest تحتاج Firestore')
+        else:
+            conn = db_connect()
+            try:
+                conn.execute('DELETE FROM app_attest_challenges WHERE expires_at < ?',
+                             (int(time.time()) - 60,))
+                conn.execute('''
+                    INSERT INTO app_attest_challenges
+                    (challenge_id, uid_hash, key_id_hash, purpose, client_data,
+                     request_hash, expires_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    challenge_id, uid_hash, key_id_hash, purpose,
+                    record['client_data'], request_hash, expires_at,
+                ))
+                conn.commit()
+                break
+            except sqlite3.IntegrityError:
+                continue
+            finally:
+                conn.close()
+    else:
+        raise AppAttestStorageError('تعذّر إنشاء تحدي App Attest فريد')
+
+    return {
+        'challengeId': challenge_id,
+        'clientData': record['client_data'],
+        'expiresIn': APP_ATTEST_CHALLENGE_TTL_SECONDS,
+    }
+
+
+def get_app_attest_challenge(challenge_id: str, *, uid: str, key_id: str,
+                             purpose: str, request_hash: str = '') -> dict:
+    if not re.fullmatch(r'[A-Za-z0-9_-]{24,64}', str(challenge_id or '')):
+        raise AppAttestValidationError('معرّف التحدي غير صالح')
+    key_id_hash, _ = _app_attest_key_material(key_id)
+    uid_hash = _app_attest_uid_hash(uid)
+    request_hash = _app_attest_request_hash(request_hash)
+    if firestore_durable_available():
+        try:
+            record = firestore_get_document(
+                f'app_attest_challenges/{challenge_id}')
+        except Exception as exc:
+            raise AppAttestStorageError('تعذّر قراءة تحدي App Attest') from exc
+    elif deployment_environment() == 'production' or durable_storage_required():
+        raise AppAttestStorageError('تحديات App Attest تحتاج Firestore')
+    else:
+        conn = db_connect()
+        try:
+            row = conn.execute('''
+                SELECT uid_hash, key_id_hash, purpose, client_data, request_hash,
+                       expires_at, consumed_at
+                FROM app_attest_challenges WHERE challenge_id=?
+            ''', (challenge_id,)).fetchone()
+        finally:
+            conn.close()
+        record = None if not row else {
+            'uid_hash': row[0], 'key_id_hash': row[1], 'purpose': row[2],
+            'client_data': row[3], 'request_hash': row[4],
+            'expires_at': row[5], 'consumed_at': row[6],
+        }
+    if not record or record.get('consumed_at'):
+        raise AppAttestValidationError('تحدي App Attest غير موجود أو مستخدم')
+    if int(record.get('expires_at') or 0) < int(time.time()):
+        raise AppAttestValidationError('انتهت صلاحية تحدي App Attest')
+    stored_uid_hash = str(record.get('uid_hash') or '')
+    if (not secrets.compare_digest(stored_uid_hash, uid_hash)
+            or record.get('key_id_hash') != key_id_hash
+            or record.get('purpose') != purpose
+            or str(record.get('request_hash') or '') != request_hash):
+        raise AppAttestValidationError('سياق تحدي App Attest لا يطابق الطلب')
+    record['challenge_id'] = challenge_id
+    return record
+
+
+def consume_app_attest_challenge(record: dict) -> None:
+    challenge_id = str(record.get('challenge_id') or '')
+    if firestore_durable_available():
+        update_time = str(record.get('_update_time') or '')
+        try:
+            consumed = firestore_delete_document_if_update_time(
+                f'app_attest_challenges/{challenge_id}', update_time)
+        except Exception as exc:
+            raise AppAttestStorageError(
+                'تعذّر استهلاك تحدي App Attest') from exc
+        if not consumed:
+            raise AppAttestValidationError('استُخدم تحدي App Attest بالتزامن')
+        return
+    conn = db_connect()
+    try:
+        changed = conn.execute('''
+            UPDATE app_attest_challenges SET consumed_at=?
+            WHERE challenge_id=? AND consumed_at IS NULL
+        ''', (int(time.time()), challenge_id)).rowcount
+        conn.commit()
+    finally:
+        conn.close()
+    if changed != 1:
+        raise AppAttestValidationError('استُخدم تحدي App Attest بالتزامن')
+
+
+def get_app_attest_key(key_id: str):
+    key_id_hash, _ = _app_attest_key_material(key_id)
+    if firestore_durable_available():
+        try:
+            return firestore_get_document(f'app_attest_keys/{key_id_hash}')
+        except Exception as exc:
+            raise AppAttestStorageError('تعذّرت قراءة مفتاح App Attest') from exc
+    if deployment_environment() == 'production' or durable_storage_required():
+        raise AppAttestStorageError('مفاتيح App Attest تحتاج Firestore')
+    conn = db_connect()
+    try:
+        row = conn.execute('''
+            SELECT key_id, public_key_pem, receipt, counter, environment,
+                   attested_at FROM app_attest_keys WHERE key_id_hash=?
+        ''', (key_id_hash,)).fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return None
+    return {
+        'key_id': row[0], 'public_key_pem': row[1], 'receipt': row[2],
+        'counter': row[3], 'environment': row[4], 'attested_at': row[5],
+        '_local': True,
+    }
+
+
+def store_app_attest_key(key_id: str, result, environment: str) -> None:
+    key_id_hash, _ = _app_attest_key_material(key_id)
+    record = {
+        'key_id': key_id,
+        'public_key_pem': result.public_key_pem.decode('ascii'),
+        'receipt': base64.b64encode(result.receipt).decode('ascii'),
+        'counter': 0,
+        'environment': environment,
+        'attested_at': int(time.time()),
+    }
+    if firestore_durable_available():
+        try:
+            created = firestore_create_document_if_absent(
+                f'app_attest_keys/{key_id_hash}', record)
+            if created:
+                return
+            existing = firestore_get_document(f'app_attest_keys/{key_id_hash}')
+            if existing and existing.get('key_id') == key_id:
+                return
+            raise AppAttestValidationError(
+                'مفتاح App Attest مرتبط بسجل آخر')
+        except AppAttestValidationError:
+            raise
+        except Exception as exc:
+            raise AppAttestStorageError('تعذّر حفظ مفتاح App Attest') from exc
+    if deployment_environment() == 'production' or durable_storage_required():
+        raise AppAttestStorageError('مفاتيح App Attest تحتاج Firestore')
+    conn = db_connect()
+    try:
+        conn.execute('''
+            INSERT INTO app_attest_keys
+            (key_id_hash, key_id, public_key_pem, receipt, counter,
+             environment, attested_at)
+            VALUES (?, ?, ?, ?, 0, ?, ?)
+            ON CONFLICT(key_id_hash) DO NOTHING
+        ''', (
+            key_id_hash, key_id, record['public_key_pem'], record['receipt'],
+            environment, record['attested_at'],
+        ))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def update_app_attest_counter(key_id: str, key_record: dict,
+                              new_counter: int) -> None:
+    key_id_hash, _ = _app_attest_key_material(key_id)
+    if firestore_durable_available():
+        try:
+            changed = firestore_set_document_if_update_time(
+                f'app_attest_keys/{key_id_hash}',
+                {'counter': int(new_counter)},
+                str(key_record.get('_update_time') or ''),
+            )
+        except Exception as exc:
+            raise AppAttestStorageError(
+                'تعذّر تحديث عداد App Attest') from exc
+        if not changed:
+            raise AppAttestValidationError(
+                'تغير عداد App Attest بالتزامن؛ أعد المحاولة بتحدٍ جديد')
+        return
+    conn = db_connect()
+    try:
+        conn.execute('BEGIN IMMEDIATE')
+        changed = conn.execute('''
+            UPDATE app_attest_keys SET counter=?
+            WHERE key_id_hash=? AND counter=?
+        ''', (int(new_counter), key_id_hash,
+              int(key_record.get('counter') or 0))).rowcount
+        conn.commit()
+    finally:
+        conn.close()
+    if changed != 1:
+        raise AppAttestValidationError(
+            'تغير عداد App Attest بالتزامن؛ أعد المحاولة بتحدٍ جديد')
+
+
+def _app_attest_claim_owner_hash(uid: str, key_id_hash: str) -> str:
+    """بصمة مالك خاصة بالتثبيت؛ لا تخزن UID خاماً ولا تربط أجهزة مختلفة."""
+    value = str(uid or '').strip()
+    if not value or len(value) > 256:
+        raise AppAttestValidationError('هوية مالك مطالبة التثبيت غير صالحة')
+    return hashlib.sha256(
+        b'fatinah-free-round-owner-v1\0'
+        + key_id_hash.encode('ascii') + b'\0' + value.encode('utf-8')
+    ).hexdigest()
+
+
+def _normalize_app_attest_installation_claim(record):
+    if not record:
+        return None
+    owner_hash = str(record.get('owner_hash') or '').strip().lower()
+    state = str(record.get('state') or '').strip().lower()
+    # وثائق النسخة التجريبية القديمة كانت تحتوي completed_at فقط. نتعامل
+    # معها كمطالبة مكتملة مجهولة المالك: تُحظر إعادة المطالبة ولا تُنسب لأحد.
+    if not state and record.get('completed_at') is not None:
+        state = 'completed'
+    if state not in {'pending', 'completed'}:
+        raise AppAttestStorageError('حالة مطالبة التثبيت تالفة')
+    if owner_hash and not re.fullmatch(r'[0-9a-f]{64}', owner_hash):
+        raise AppAttestStorageError('مالك مطالبة التثبيت تالف')
+    normalized = dict(record)
+    normalized['owner_hash'] = owner_hash
+    normalized['state'] = state
+    return normalized
+
+
+def app_attest_installation_claim(key_id: str):
+    key_id_hash, _ = _app_attest_key_material(key_id)
+    if firestore_durable_available():
+        try:
+            return _normalize_app_attest_installation_claim(
+                firestore_get_document(
+                    f'free_round_installations/{key_id_hash}'))
+        except Exception as exc:
+            if isinstance(exc, AppAttestStorageError):
+                raise
+            raise AppAttestStorageError(
+                'تعذّرت قراءة مطالبة التثبيت') from exc
+    if deployment_environment() == 'production' or durable_storage_required():
+        raise AppAttestStorageError('مطالبات التثبيت تحتاج Firestore')
+    conn = db_connect()
+    try:
+        row = conn.execute('''
+            SELECT owner_hash, state, created_at, updated_at, completed_at
+            FROM free_round_installations
+            WHERE key_id_hash=?
+        ''', (key_id_hash,)).fetchone()
+    finally:
+        conn.close()
+    return _normalize_app_attest_installation_claim(None if not row else {
+        'owner_hash': row[0], 'state': row[1], 'created_at': row[2],
+        'updated_at': row[3], 'completed_at': row[4], '_local': True,
+    })
+
+
+def app_attest_installation_claim_access(key_id: str, uid: str,
+                                         record=None) -> str:
+    """أعد missing/owned_pending/owned_completed/conflict دون كشف المالك."""
+    key_id_hash, _ = _app_attest_key_material(key_id)
+    claim = (_normalize_app_attest_installation_claim(record)
+             if record is not None else app_attest_installation_claim(key_id))
+    if not claim:
+        return 'missing'
+    expected_owner = _app_attest_claim_owner_hash(uid, key_id_hash)
+    stored_owner = str(claim.get('owner_hash') or '')
+    if (not stored_owner
+            or not secrets.compare_digest(stored_owner, expected_owner)):
+        return 'conflict'
+    return f"owned_{claim['state']}"
+
+
+def reserve_app_attest_installation_claim(key_id: str, uid: str) -> str:
+    """احجز التثبيت ذرياً قبل تغيير DeviceCheck لدى Apple.
+
+    created_pending تعني أن هذا الطلب أنشأ الحجز. owned_pending تعني محاولة
+    استرداد للحساب نفسه. أي سجل لمالك مختلف يبقى conflict بلا استبدال.
+    """
+    key_id_hash, _ = _app_attest_key_material(key_id)
+    owner_hash = _app_attest_claim_owner_hash(uid, key_id_hash)
+    now = int(time.time())
+    record = {
+        'owner_hash': owner_hash,
+        'state': 'pending',
+        'created_at': now,
+        'updated_at': now,
+    }
+    if firestore_durable_available():
+        try:
+            path = f'free_round_installations/{key_id_hash}'
+            created_update_time = firestore_create_document_if_absent(
+                path, record)
+            if created_update_time:
+                return 'created_pending'
+            existing = firestore_get_document(path)
+            if not existing:
+                raise RuntimeError(
+                    'اختفت مطالبة التثبيت بعد تعارض الإنشاء')
+            return app_attest_installation_claim_access(
+                key_id, uid, existing)
+        except Exception as exc:
+            if isinstance(exc, (AppAttestStorageError,
+                                AppAttestValidationError)):
+                raise
+            raise AppAttestStorageError(
+                'تعذّر حجز مطالبة التثبيت') from exc
+    if deployment_environment() == 'production' or durable_storage_required():
+        raise AppAttestStorageError('مطالبات التثبيت تحتاج Firestore')
+    conn = db_connect()
+    try:
+        conn.execute('BEGIN IMMEDIATE')
+        created = conn.execute('''
+            INSERT OR IGNORE INTO free_round_installations
+            (key_id_hash, owner_hash, state, created_at, updated_at,
+             completed_at)
+            VALUES (?, ?, 'pending', ?, ?, NULL)
+        ''', (key_id_hash, owner_hash, now, now)).rowcount == 1
+        row = conn.execute('''
+            SELECT owner_hash, state, created_at, updated_at, completed_at
+            FROM free_round_installations WHERE key_id_hash=?
+        ''', (key_id_hash,)).fetchone()
+        conn.commit()
+    finally:
+        conn.close()
+    if not row:
+        raise AppAttestStorageError('تعذّر قراءة مطالبة التثبيت المحجوزة')
+    access = app_attest_installation_claim_access(key_id, uid, {
+        'owner_hash': row[0], 'state': row[1], 'created_at': row[2],
+        'updated_at': row[3], 'completed_at': row[4], '_local': True,
+    })
+    return 'created_pending' if created and access == 'owned_pending' else access
+
+
+def complete_app_attest_installation_claim(key_id: str, uid: str) -> None:
+    """حوّل pending إلى completed بشرط بقاء المالك نفسه."""
+    key_id_hash, _ = _app_attest_key_material(key_id)
+    owner_hash = _app_attest_claim_owner_hash(uid, key_id_hash)
+    now = int(time.time())
+    if firestore_durable_available():
+        path = f'free_round_installations/{key_id_hash}'
+        for _ in range(2):
+            try:
+                claim = _normalize_app_attest_installation_claim(
+                    firestore_get_document(path))
+                access = app_attest_installation_claim_access(
+                    key_id, uid, claim)
+                if access == 'owned_completed':
+                    return
+                if access != 'owned_pending':
+                    raise AppAttestValidationError(
+                        'مطالبة التثبيت ليست مملوكة لهذا الحساب')
+                changed = firestore_set_document_if_update_time(
+                    path,
+                    {
+                        'state': 'completed',
+                        'updated_at': now,
+                        'completed_at': now,
+                    },
+                    str(claim.get('_update_time') or ''),
+                )
+                if changed:
+                    return
+            except (AppAttestValidationError, AppAttestStorageError):
+                raise
+            except Exception as exc:
+                raise AppAttestStorageError(
+                    'تعذّر إكمال مطالبة التثبيت') from exc
+        try:
+            claim = _normalize_app_attest_installation_claim(
+                firestore_get_document(path))
+        except Exception as exc:
+            raise AppAttestStorageError(
+                'تعذّر التحقق من اكتمال مطالبة التثبيت') from exc
+        if app_attest_installation_claim_access(
+                key_id, uid, claim) == 'owned_completed':
+            return
+        raise AppAttestStorageError(
+            'تغيرت مطالبة التثبيت بالتزامن قبل اكتمالها')
+    if deployment_environment() == 'production' or durable_storage_required():
+        raise AppAttestStorageError('مطالبات التثبيت تحتاج Firestore')
+    conn = db_connect()
+    try:
+        conn.execute('BEGIN IMMEDIATE')
+        changed = conn.execute('''
+            UPDATE free_round_installations
+            SET state='completed', updated_at=?, completed_at=?
+            WHERE key_id_hash=? AND owner_hash=? AND state='pending'
+        ''', (now, now, key_id_hash, owner_hash)).rowcount
+        row = conn.execute('''
+            SELECT owner_hash, state, created_at, updated_at, completed_at
+            FROM free_round_installations WHERE key_id_hash=?
+        ''', (key_id_hash,)).fetchone()
+        conn.commit()
+    finally:
+        conn.close()
+    if changed == 1:
+        return
+    access = app_attest_installation_claim_access(key_id, uid, None if not row else {
+        'owner_hash': row[0], 'state': row[1], 'created_at': row[2],
+        'updated_at': row[3], 'completed_at': row[4], '_local': True,
+    })
+    if access != 'owned_completed':
+        raise AppAttestValidationError(
+            'مطالبة التثبيت ليست مملوكة لهذا الحساب')
+
+
+def _decode_app_attest_artifact(value: str, *, maximum: int) -> bytes:
+    encoded = str(value or '').strip()
+    if not encoded or len(encoded) > (maximum * 2):
+        raise AppAttestValidationError('بيانات App Attest مفقودة أو كبيرة')
+    try:
+        decoded = base64.b64decode(encoded, validate=True)
+    except Exception as exc:
+        raise AppAttestValidationError('بيانات App Attest ليست Base64') from exc
+    if not decoded or len(decoded) > maximum:
+        raise AppAttestValidationError('حجم بيانات App Attest غير صالح')
+    return decoded
+
+
+def free_round_app_attest_request_hash(uid: str, device_token: str,
+                                       update_token: str = '') -> str:
+    canonical = json.dumps({
+        'deviceCheckTokenHash': hashlib.sha256(
+            str(device_token or '').encode('utf-8')).hexdigest(),
+        'deviceCheckUpdateTokenHash': (
+            hashlib.sha256(str(update_token).encode('utf-8')).hexdigest()
+            if update_token else ''
+        ),
+        'uid': str(uid or ''),
+    }, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+
+
+def verify_app_attest_attestation(*, uid: str, key_id: str,
+                                  challenge_id: str,
+                                  attestation_object: str) -> None:
+    challenge = get_app_attest_challenge(
+        challenge_id, uid=uid, key_id=key_id, purpose='attest')
+    client_data = _decode_app_attest_artifact(
+        str(challenge.get('client_data') or ''), maximum=65_536)
+    artifact = _decode_app_attest_artifact(
+        attestation_object, maximum=2 * 1024 * 1024)
+    team_id, bundle_id, environment = app_attest_identity()
+    try:
+        from app_attest import AppAttestVerificationError, verify_attestation
+    except ImportError as exc:
+        raise AppAttestStorageError(
+            'مكوّن التحقق من App Attest غير متاح') from exc
+    try:
+        result = verify_attestation(
+            artifact,
+            key_id=key_id,
+            challenge=client_data,
+            team_id=team_id,
+            bundle_id=bundle_id,
+            environment=environment,
+        )
+    except AppAttestVerificationError as exc:
+        raise AppAttestValidationError(exc.code) from exc
+    # نحفظ المفتاح أولاً؛ إن ضاعت الاستجابة بعد ذلك يستطيع endpoint الحالة
+    # تأكيد التسجيل من دون استدعاء attestKey مرة ثانية.
+    store_app_attest_key(key_id, result, environment)
+    consume_app_attest_challenge(challenge)
+
+
+def verify_app_attest_assertion(*, uid: str, key_id: str,
+                                challenge_id: str, assertion: str,
+                                purpose: str, request_hash: str = '') -> None:
+    challenge = get_app_attest_challenge(
+        challenge_id, uid=uid, key_id=key_id, purpose=purpose,
+        request_hash=request_hash)
+    key_record = get_app_attest_key(key_id)
+    if not key_record or key_record.get('key_id') != key_id:
+        raise AppAttestValidationError('مفتاح App Attest غير مسجّل')
+    _, _, environment = app_attest_identity()
+    if key_record.get('environment') != environment:
+        raise AppAttestValidationError('بيئة مفتاح App Attest لا تطابق الخادم')
+    client_data = _decode_app_attest_artifact(
+        str(challenge.get('client_data') or ''), maximum=65_536)
+    artifact = _decode_app_attest_artifact(assertion, maximum=65_536)
+    try:
+        public_key_pem = str(
+            key_record.get('public_key_pem') or '').encode('ascii')
+    except UnicodeEncodeError as exc:
+        raise AppAttestValidationError(
+            'سجل مفتاح App Attest غير صالح') from exc
+    team_id, bundle_id, _ = app_attest_identity()
+    try:
+        from app_attest import AppAttestVerificationError, verify_assertion
+    except ImportError as exc:
+        raise AppAttestStorageError(
+            'مكوّن التحقق من App Attest غير متاح') from exc
+    try:
+        result = verify_assertion(
+            artifact,
+            client_data=client_data,
+            public_key_pem=public_key_pem,
+            team_id=team_id,
+            bundle_id=bundle_id,
+            previous_counter=int(key_record.get('counter') or 0),
+        )
+    except AppAttestVerificationError as exc:
+        raise AppAttestValidationError(exc.code) from exc
+    except (UnicodeEncodeError, ValueError) as exc:
+        raise AppAttestValidationError('سجل مفتاح App Attest غير صالح') from exc
+    # عداد المفتاح هو حاجز إعادة التشغيل الذري. نحذّف التحدي بعده؛ إذا تعذر
+    # الحذف فإعادة نفس assertion تظل مرفوضة لأن العداد لم يعد أكبر.
+    update_app_attest_counter(key_id, key_record, result.counter)
+    consume_app_attest_challenge(challenge)
+
 # ─── Firestore REST upsert ───────────────────────────────────────────────────
 def firestore_upsert_subscription(uid: str, status: str, expires_at=None) -> bool:
     """
@@ -834,7 +2149,7 @@ def firestore_upsert_subscription(uid: str, status: str, expires_at=None) -> boo
         durable_write(f'subscriptions/{uid}', payload)
         return True
     except Exception as exc:
-        print(f'[Firestore] خطأ: {exc}')
+        print(f'[Firestore] خطأ: {exception_kind(exc)}')
         return False
 
 def firestore_delete_subscription(uid: str) -> None:
@@ -854,6 +2169,15 @@ def firestore_delete_subscription(uid: str) -> None:
 
     for report in firestore_query_documents('question_reports', 'uid', uid):
         firestore_delete_document(f'question_reports/{report["_document_id"]}')
+
+    # تحديات App Attest غير المستخدمة لا تحمل UID خاماً، لكنها تبقى قابلة
+    # للربط بالحساب عبر بصمة مخصصة. نحذفها فور حذف الحساب، بينما تتولى سياسة
+    # Firestore TTL حذف أي تحدٍ منتهي لم يُستهلك أو يُحذف بهذه العملية.
+    uid_hash = _app_attest_uid_hash(uid)
+    for challenge in firestore_query_documents(
+            'app_attest_challenges', 'uid_hash', uid_hash):
+        firestore_delete_document(
+            f'app_attest_challenges/{challenge["_document_id"]}')
 
     # أحداث RevenueCat تحتوي نسخة من payload ومعرّفات المعاملة. نحذف ما
     # يشير إلى uid مباشرةً، وما يتصل بمعرّف RevenueCat في rc_ids (مهم لأحداث
@@ -1146,13 +2470,48 @@ def replay_pending_revenuecat_events(rc_app_user_id: str) -> int:
                     f'{document["_document_id"]}')
                 replayed += 1
         except Exception as exc:
-            print(f'[RevenueCat] replay failed event={document.get("event_id")}: {exc}')
+            print('[RevenueCat] replay failed '
+                  f'event_ref={safe_log_reference(document.get("event_id"))}: '
+                  f'{exception_kind(exc)}')
     return replayed
 
 # ─── قراءة index.html ────────────────────────────────────────────────────────
 def read_html():
     with open(HTML_FILE, 'rb') as f:
         return f.read()
+
+
+def production_landing_html() -> bytes:
+    """صفحة عامة آمنة؛ تطبيق اللعبة نفسه موزع داخل حزمة iOS فقط.
+
+    منطق الاشتراك والأسئلة الموجود في JavaScript ليس حاجز صلاحيات صالحًا
+    لمتصفح عام. لذلك لا نخدم حزمة اللعبة من خادم production، ونبقي الموقع
+    العام مقتصرًا على تعريف التطبيق وروابط Apple والوثائق القانونية.
+    """
+    return b'''<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>\xd9\x81\xd8\xb7\xd9\x86\xd8\xa9</title>
+  <style>
+    :root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#10091f;color:#fff}
+    main{max-width:42rem;margin:2rem;padding:2.5rem;border:1px solid #ffffff29;border-radius:1.5rem;
+      text-align:center;background:linear-gradient(145deg,#24102f,#10091f)}
+    h1{font-size:3rem;margin:.25rem} p{line-height:1.8;color:#d9cfe7}
+    a{color:#fff} .store{display:inline-block;margin:1rem;padding:.9rem 1.25rem;border-radius:999px;
+      background:#ff356d;text-decoration:none;font-weight:700}
+    nav{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem}
+  </style>
+</head>
+<body><main>
+  <h1>\xd9\x81\xd8\xb7\xd9\x86\xd8\xa9</h1>
+  <p>\xd9\x84\xd8\xb9\xd8\xa8\xd8\xa9 \xd8\xa7\xd9\x84\xd8\xb0\xd9\x83\xd8\xa7\xd8\xa1 \xd9\x88\xd8\xa7\xd9\x84\xd9\x81\xd8\xb7\xd9\x86\xd8\xa9 \xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xa7\xd8\xb9\xd9\x8a\xd8\xa9. \xd8\xad\xd9\x85\xd9\x91\xd9\x84 \xd8\xa7\xd9\x84\xd8\xaa\xd8\xb7\xd8\xa8\xd9\x8a\xd9\x82 \xd8\xa7\xd9\x84\xd8\xb1\xd8\xb3\xd9\x85\xd9\x8a \xd9\x85\xd9\x86 App Store.</p>
+  <a class="store" href="https://apps.apple.com/app/id6794660419" rel="noopener">App Store</a>
+  <nav><a href="/privacy-policy.html">\xd8\xb3\xd9\x8a\xd8\xa7\xd8\xb3\xd8\xa9 \xd8\xa7\xd9\x84\xd8\xae\xd8\xb5\xd9\x88\xd8\xb5\xd9\x8a\xd8\xa9</a><a href="/terms-of-service.html">\xd8\xb4\xd8\xb1\xd9\x88\xd8\xb7 \xd8\xa7\xd9\x84\xd8\xa7\xd8\xb3\xd8\xaa\xd8\xae\xd8\xaf\xd8\xa7\xd9\x85</a></nav>
+</main></body></html>'''
 
 # ─── Firebase config ─────────────────────────────────────────────────────────
 def firebase_config_js():
@@ -1169,6 +2528,243 @@ def firebase_config_js():
         f'window.FIREBASE_CONFIG = {json.dumps(cfg)};\n'
         f'window.FIREBASE_CONFIGURED = {"true" if configured else "false"};\n'
     ).encode()
+
+
+# تطبيق 1.2 يستعمل اسم الدالة القديم مباشرة على iOS، كما يستعمل هذا المسار
+# عند التشغيل على الويب/localhost. نبقي العقد نفسه طوال نافذة التوافق، بينما
+# يظل التوليد خارج server.py حتى لا تتكرر أسرار الذكاء الاصطناعي أو منطقها.
+LEGACY_V1_GENERATION_URL = (
+    'https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions'
+)
+
+
+def legacy_v1_generation_url() -> str:
+    configured = os.environ.get('FATINAH_V1_GENERATION_URL', '').strip()
+    if configured:
+        return configured
+    # staging/local لا يستدعيان production ضمنياً. في الإنتاج نحافظ على
+    # الوجهة التاريخية لتطبيق 1.2 ما لم تُضبط وجهة صريحة.
+    return (
+        LEGACY_V1_GENERATION_URL
+        if configured_deployment_environment() == 'production'
+        else ''
+    )
+
+
+def _configured_host_allowlist(name: str) -> set[str]:
+    hosts = set()
+    for raw in os.environ.get(name, '').split(','):
+        host = raw.strip().lower().rstrip('.')
+        if host and re.fullmatch(r'[a-z0-9.-]{1,253}', host):
+            hosts.add(host)
+    return hosts
+
+
+def _legacy_generation_allowed_hosts() -> set[str]:
+    environment = configured_deployment_environment()
+    if environment == 'production':
+        return set(PRODUCTION_GENERATION_HOSTS)
+    configured = _configured_host_allowlist(LEGACY_GENERATION_ALLOWED_HOSTS_ENV)
+    if environment == 'staging':
+        return configured
+    if environment == 'local':
+        return configured | {'127.0.0.1', '::1', 'localhost'}
+    return set()
+
+
+def _hostname_resolves_to_public_ips(hostname: str, port: int) -> bool:
+    try:
+        literal = ipaddress.ip_address(hostname)
+    except ValueError:
+        literal = None
+    if literal is not None:
+        return literal.is_global
+    try:
+        addresses = socket.getaddrinfo(
+            hostname, port, type=socket.SOCK_STREAM)
+    except (OSError, socket.gaierror):
+        return False
+    resolved = set()
+    for address in addresses:
+        try:
+            resolved.add(ipaddress.ip_address(address[4][0]))
+        except (ValueError, IndexError):
+            return False
+    return bool(resolved) and all(address.is_global for address in resolved)
+
+
+def _legacy_generation_endpoint_is_safe(url: str) -> bool:
+    try:
+        parsed = urllib.parse.urlparse(url)
+    except ValueError:
+        return False
+    hostname = (parsed.hostname or '').lower().rstrip('.')
+    if parsed.username or parsed.password or parsed.fragment:
+        return False
+    environment = configured_deployment_environment()
+    if hostname not in _legacy_generation_allowed_hosts():
+        return False
+    try:
+        port = parsed.port or (443 if parsed.scheme == 'https' else 80)
+    except ValueError:
+        return False
+    local_http = (
+        environment == 'local'
+        and parsed.scheme == 'http'
+        and hostname in {'127.0.0.1', '::1', 'localhost'}
+    )
+    if not local_http:
+        if parsed.scheme != 'https' or port != 443:
+            return False
+        if not _hostname_resolves_to_public_ips(hostname, port):
+            return False
+    if environment == 'production':
+        return parsed.path == '/generateQuestions' and not parsed.query
+    return True
+
+
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _open_legacy_generation_request(request, timeout: int):
+    opener = urllib.request.build_opener(_NoRedirectHandler())
+    return opener.open(request, timeout=timeout)
+
+
+def _sanitized_legacy_generation_response(status: int, result: dict,
+                                          count: int) -> tuple[int, dict]:
+    """لا يمرر حقول upstream عمياءً كي لا تتسرب بيانات تشخيصية أو أسرار."""
+    if 200 <= status < 300:
+        questions = result.get('questions')
+        if not isinstance(questions, list):
+            return 502, {'error': 'استجابة خدمة التوليد غير صالحة'}
+        safe_questions = []
+        for question in questions[:count]:
+            if not isinstance(question, dict):
+                continue
+            q = str(question.get('q') or '').strip()[:600]
+            answer = str(question.get('answer') or '').strip()[:400]
+            if not q or not answer:
+                continue
+            clean = {'q': q, 'answer': answer}
+            question_id = question.get('id')
+            if isinstance(question_id, (str, int)) and not isinstance(question_id, bool):
+                clean['id'] = str(question_id)[:160]
+            source = question.get('source')
+            if isinstance(source, dict):
+                source_url = str(source.get('url') or '').strip()[:2048]
+                try:
+                    parsed_source = urllib.parse.urlparse(source_url)
+                except ValueError:
+                    parsed_source = None
+                if parsed_source and parsed_source.scheme == 'https' and parsed_source.hostname:
+                    clean['source'] = {
+                        'title': str(source.get('title') or 'مرجع موثوق').strip()[:120],
+                        'url': source_url,
+                    }
+            safe_questions.append(clean)
+        return status, {
+            'questions': safe_questions,
+            'trustedSources': result.get('trustedSources') is True,
+        }
+
+    safe_status = status if 400 <= status <= 599 else 502
+    message = str(result.get('error') or 'تعذّر التوليد، حاول لاحقاً').strip()[:300]
+    payload = {'error': message or 'تعذّر التوليد، حاول لاحقاً'}
+    code = result.get('code')
+    if isinstance(code, str) and re.fullmatch(r'[a-z0-9_]{1,64}', code):
+        payload['code'] = code
+    return safe_status, payload
+
+
+def legacy_generate_questions(data: dict) -> tuple[int, dict]:
+    """يمرر عقد v1 القديم بعد التحقق محلياً؛ لا يعيد 410 أثناء الدعم."""
+    if not legacy_v1_generation_enabled():
+        return 503, {
+            'error': 'التوليد القديم غير متاح مؤقتاً',
+            'code': 'legacy_feature_disabled',
+        }
+    if not isinstance(data, dict):
+        return 400, {'error': 'JSON غير صالح'}
+
+    uid = str(data.get('uid') or '').strip()
+    id_token = str(data.get('idToken') or '').strip()
+    topic = str(data.get('topic') or '').strip()[:200]
+    try:
+        count = int(data.get('count') or 6)
+    except (TypeError, ValueError):
+        return 400, {'error': 'count غير صالح'}
+    count = max(4, min(12, count))
+    if not uid or not id_token:
+        return 401, {'error': 'رمز الدخول مطلوب'}
+    if not topic:
+        return 400, {'error': 'topic مطلوب'}
+    if not uid_matches_token(uid, id_token):
+        return 401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}
+    # حد أولي بعد إثبات الهوية وقبل أي شبكة. trustedRound قيمة عميل ولا تمنح
+    # حصة أعلى؛ الحد واحد لكل مستخدمي عقد 1.2.
+    if rate_limited(f'legacy-ai:{uid}', 10, 600):
+        return 429, {'error': 'طلبات كثيرة جداً — حاول بعد قليل'}
+    if not subscription_is_active(uid):
+        return 403, {'error': 'اشتراك فعّال مطلوب'}
+
+    trusted_round = data.get('trustedRound') is True
+
+    seen = data.get('seen') or []
+    if not isinstance(seen, list):
+        return 400, {'error': 'seen غير صالح'}
+    safe_seen = []
+    for item in seen[-5000:]:
+        if isinstance(item, (str, int)) and not isinstance(item, bool):
+            safe_seen.append(str(item)[:160])
+
+    endpoint = legacy_v1_generation_url()
+    if not _legacy_generation_endpoint_is_safe(endpoint):
+        return 503, {
+            'error': 'إعداد خدمة التوليد القديم غير صالح',
+            'code': 'legacy_backend_misconfigured',
+        }
+
+    payload = json.dumps({
+        'topic': topic,
+        'count': count,
+        'seen': safe_seen,
+        'uid': uid,
+        'idToken': id_token,
+        'trustedRound': trusted_round,
+    }, ensure_ascii=False).encode()
+    request = urllib.request.Request(
+        endpoint,
+        data=payload,
+        method='POST',
+        headers={
+            'Content-Type': 'application/json; charset=utf-8',
+            API_VERSION_HEADER: '1',
+        },
+    )
+    try:
+        with _open_legacy_generation_request(
+                request, timeout=LEGACY_GENERATION_TIMEOUT_SECONDS) as response:
+            raw = response.read(2 * 1024 * 1024 + 1)
+            status = response.status
+    except urllib.error.HTTPError as exc:
+        status = exc.code
+        raw = exc.read(64 * 1024)
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        print(f'[Legacy AI v1] upstream unavailable: {type(exc).__name__}')
+        return 502, {'error': 'تعذّر التوليد، حاول لاحقاً'}
+
+    if len(raw) > 2 * 1024 * 1024:
+        return 502, {'error': 'استجابة خدمة التوليد أكبر من الحد المسموح'}
+    try:
+        result = json.loads(raw or b'{}')
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return 502, {'error': 'استجابة خدمة التوليد غير صالحة'}
+    if not isinstance(result, dict):
+        return 502, {'error': 'استجابة خدمة التوليد غير صالحة'}
+    return _sanitized_legacy_generation_response(status, result, count)
 
 # ─── صفحات قانونية عامة (لمتطلبات App Store Connect) ────────────────────────
 PRIVACY_BODY = '''
@@ -1195,11 +2791,10 @@ PRIVACY_BODY = '''
 
 TERMS_BODY = '''
 <h1>شروط الاستخدام</h1>
-<p><b>آخر تحديث: يوليو 2025</b></p>
+<p><b>آخر تحديث: 21 أغسطس 2026</b></p>
 <p>باستخدامك تطبيق <b>فطنة</b> فأنت توافق على هذه الشروط.</p>
 <p><b>الاشتراك:</b><br>
-• الاشتراك الشهري: $3.99 شهرياً<br>
-• الاشتراك السنوي: $29.99 سنوياً<br>
+• يعرض App Store السعر الشهري والسنوي بعملتك المحلية قبل تأكيد الشراء<br>
 • يتجدد الاشتراك تلقائياً ما لم يُلغَ قبل 24 ساعة من انتهاء الفترة الحالية<br>
 • يمكن إلغاؤه في أي وقت من إعدادات Apple ID</p>
 <p><b>الاستخدام المقبول:</b><br>
@@ -1209,7 +2804,7 @@ TERMS_BODY = '''
 <p><b>إخلاء المسؤولية:</b><br>
 التطبيق مقدَّم "كما هو" بدون ضمانات. المطوّر غير مسؤول عن أي أضرار ناجمة عن الاستخدام.</p>
 <p><b>التواصل:</b><br>
-boturki13@gmail.com</p>
+fatinahgame@gmail.com</p>
 '''
 
 def legal_page_html(kind: str) -> bytes:
@@ -1241,16 +2836,7 @@ def legal_page_html(kind: str) -> bytes:
 
 # ─── HTTP handler ─────────────────────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
-    # حدود حجم الجسم لكل نقطة API (بايت) — يمنع الطلبات الضخمة
-    _DEFAULT_MAX_BODY = 64 * 1024          # 64 كيلوبايت للنقاط العامة
-    _MAX_BODY = {
-        '/api/generate':              8  * 1024,   # موضوع + قائمة seen
-        '/api/revenuecat/webhook':    32 * 1024,   # RevenueCat events
-        '/api/account/delete':        4  * 1024,
-        '/api/account/profile':       4  * 1024,
-        '/api/questions/seen':       32  * 1024,
-        '/api/ios-diagnostics':     640  * 1024,
-    }
+    _api_version = '1'
 
     def log_message(self, fmt, *args):
         pass
@@ -1295,14 +2881,57 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Type',   'application/json; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Expose-Headers',
+                         f'{API_VERSION_HEADER}, X-Fatinah-Environment')
+        self.send_header(API_VERSION_HEADER, getattr(self, '_api_version', '1'))
+        self.send_header('X-Fatinah-Environment', deployment_environment())
+        self.send_header('Vary', API_VERSION_HEADER)
         self.end_headers()
         self.wfile.write(body)
+
+    def select_api_contract(self, path: str):
+        try:
+            canonical_path, version = resolve_api_contract(path, self.headers)
+        except ValueError as exc:
+            self._api_version = '1'
+            self.send_json(400, {
+                'error': str(exc),
+                'code': 'unsupported_api_version',
+            })
+            return None
+        self._api_version = version
+        return canonical_path
+
+    def api_feature_allows(self, path: str) -> bool:
+        if self._api_version != '2':
+            if path in V2_ONLY_ROUTES:
+                self.send_json(404, {
+                    'error': 'المسار متاح في عقد API v2 فقط',
+                    'code': 'v2_route_required',
+                })
+                return False
+            return True
+        if path not in V2_ROUTE_FEATURES:
+            self.send_json(404, {
+                'error': 'المسار غير معرّف في عقد API v2',
+                'code': 'unsupported_v2_route',
+            })
+            return False
+        feature = V2_ROUTE_FEATURES[path]
+        if feature is None or v2_feature_enabled(feature):
+            return True
+        self.send_json(503, {
+            'error': 'الميزة غير مفعلة في هذه البيئة',
+            'code': 'feature_disabled',
+            'feature': feature,
+        })
+        return False
 
     def app_integrity_allows(self, path: str) -> bool:
         valid, reason = verify_app_check_header(self.headers, path)
         if valid:
             return True
-        if app_check_enforcement_enabled():
+        if app_check_enforcement_enabled(self._api_version):
             self.send_json(401, {
                 'error': 'تعذّر التحقق من سلامة نسخة التطبيق',
                 'code': 'app_check_failed',
@@ -1313,18 +2942,34 @@ class Handler(BaseHTTPRequestHandler):
         return True
 
     def do_OPTIONS(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = self.select_api_contract(parsed.path)
+        if path is None:
+            return
+        if not self.api_feature_allows(path):
+            return
         self.send_response(204)
         self.send_header('Access-Control-Allow-Origin',  '*')
         self.send_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
         self.send_header('Access-Control-Allow-Headers',
-                         'Content-Type, Authorization, X-Firebase-AppCheck')
+                         'Content-Type, Authorization, X-Firebase-AppCheck, '
+                         f'{API_VERSION_HEADER}, X-DeviceCheck-Token, '
+                         'X-App-Attest-Key-Id, X-App-Attest-Challenge-Id, '
+                         'X-App-Attest-Assertion, X-App-Attest-Request-Hash')
+        self.send_header(API_VERSION_HEADER, self._api_version)
+        self.send_header('X-Fatinah-Environment', deployment_environment())
+        self.send_header('Vary', API_VERSION_HEADER)
         self.end_headers()
 
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
-        path   = parsed.path
+        path = self.select_api_contract(parsed.path)
+        if path is None:
+            return
         params = urllib.parse.parse_qs(parsed.query)
 
+        if not self.api_feature_allows(path):
+            return
         if not self.app_integrity_allows(path):
             return
 
@@ -1333,7 +2978,22 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/admin/promo' or path.startswith('/api/promo/'):
             self.send_json(410, {'error': 'تم إيقاف أكواد التفعيل الخاصة؛ استخدم Apple Offer Codes'}); return
 
-        if path == '/api/rc-config':
+        if path == '/api/version':
+            self.send_json(200, {
+                'apiVersion': self._api_version,
+                'environment': deployment_environment(),
+                'unversionedDefault': '1',
+                'supportedVersions': ['1', '2'],
+                'features': (
+                    {name: v2_feature_enabled(name)
+                     for name in sorted({value for value in V2_ROUTE_FEATURES.values()
+                                         if value is not None})}
+                    if self._api_version == '2'
+                    else {'legacyAiGeneration': legacy_v1_generation_enabled()}
+                ),
+            })
+
+        elif path == '/api/rc-config':
             # مفتاح RevenueCat publishable (iOS) — يُقدَّم من البيئة بدلاً من تضمينه في HTML
             self.send_json(200, {'apiKey': os.environ.get('REVENUECAT_IOS_API_KEY', '')})
 
@@ -1414,7 +3074,8 @@ class Handler(BaseHTTPRequestHandler):
                             conn.close()
                     source = 'firestore'
                 except Exception as exc:
-                    print(f'[Subscription] Firestore read failed uid={uid}: {exc}')
+                    print('[Subscription] Firestore read failed '
+                          f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
                     if durable_storage_required():
                         self.send_json(503, {'error': 'تعذّر التحقق من الاشتراك الآن'}); return
             conn = db_connect()
@@ -1440,10 +3101,94 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(400, {'error': 'uid مطلوب'}); return
             if not uid_matches_token(uid, bearer_token(self.headers)):
                 self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
-            if firestore_durable_available():
+            installation_completed = False
+            if app_attest_enforcement_enabled(self._api_version):
+                key_id = (self.headers.get('X-App-Attest-Key-Id', '') or '').strip()
+                challenge_id = (
+                    self.headers.get('X-App-Attest-Challenge-Id', '') or '').strip()
+                assertion = (
+                    self.headers.get('X-App-Attest-Assertion', '') or '').strip()
+                request_hash = (
+                    self.headers.get('X-App-Attest-Request-Hash', '') or '').strip()
+                device_token_for_hash = (
+                    self.headers.get('X-DeviceCheck-Token', '') or '').strip()
+                expected_hash = free_round_app_attest_request_hash(
+                    uid, device_token_for_hash)
+                if request_hash != expected_hash:
+                    self.send_json(401, {
+                        'error': 'إثبات App Attest لا يطابق طلب الجولة',
+                        'code': 'app_attest_context_mismatch',
+                    }); return
+                try:
+                    verify_app_attest_assertion(
+                        uid=uid, key_id=key_id,
+                        challenge_id=challenge_id, assertion=assertion,
+                        purpose='free_round_status', request_hash=request_hash,
+                    )
+                    installation_claim = app_attest_installation_claim(key_id)
+                    installation_access = app_attest_installation_claim_access(
+                        key_id, uid, installation_claim)
+                    # pending للحساب نفسه قابل للاسترداد؛ أما مطالبة حساب آخر
+                    # أو مطالبة مكتملة فتجعلان العرض غير متاح.
+                    installation_completed = installation_access in {
+                        'conflict', 'owned_completed',
+                    }
+                except AppAttestValidationError as exc:
+                    print('[App Attest] free-round status rejected: '
+                          f'{exception_kind(exc)}')
+                    self.send_json(401, {
+                        'error': 'تعذّر التحقق من تثبيت التطبيق',
+                        'code': 'app_attest_invalid',
+                    }); return
+                except (AppAttestStorageError,
+                        DeviceCheckConfigurationError) as exc:
+                    print('[App Attest] free-round status unavailable: '
+                          f'{type(exc).__name__}')
+                    self.send_json(503, {
+                        'error': 'تعذّر التحقق من تثبيت التطبيق الآن',
+                        'code': 'app_attest_unavailable',
+                    }); return
+            device_completed = False
+            if devicecheck_enforcement_enabled(self._api_version):
+                device_token = (self.headers.get('X-DeviceCheck-Token', '') or '').strip()
+                if not device_token:
+                    self.send_json(401, {
+                        'error': 'تعذّر التحقق من أهلية الجهاز للجولة المجانية',
+                        'code': 'device_check_missing',
+                    }); return
+                try:
+                    device_state = devicecheck_request('query_two_bits', device_token)
+                except ValueError:
+                    self.send_json(400, {
+                        'error': 'رمز DeviceCheck غير صالح',
+                        'code': 'device_check_invalid',
+                    }); return
+                except DeviceCheckConfigurationError as exc:
+                    print(f'[DeviceCheck] configuration error: {exception_kind(exc)}')
+                    self.send_json(503, {
+                        'error': 'التحقق من الجولة المجانية غير مجهّأ على الخادم',
+                        'code': 'device_check_not_configured',
+                    }); return
+                except DeviceCheckServiceError as exc:
+                    print(f'[DeviceCheck] query failed: {exception_kind(exc)}')
+                    self.send_json(503, {
+                        'error': 'تعذّر التحقق من أهلية الجهاز الآن',
+                        'code': 'device_check_unavailable',
+                    }); return
+                if device_state.get('bit1') is True:
+                    self.send_json(403, {
+                        'error': 'هذا الجهاز غير مؤهل للعرض المجاني',
+                        'code': 'device_flagged',
+                    }); return
+                device_completed = device_state.get('bit0') is True
+            account_completed = False
+            use_local_account_claim = not firestore_durable_available()
+            if not use_local_account_claim:
                 try:
                     document = firestore_get_document(f'free_rounds/{uid}')
-                    if document and document.get('completed') is True:
+                    account_completed = bool(
+                        document and document.get('completed') is True)
+                    if account_completed:
                         conn = db_connect()
                         try:
                             conn.execute('INSERT OR IGNORE INTO free_rounds (uid) VALUES (?)', (uid,))
@@ -1451,16 +3196,20 @@ class Handler(BaseHTTPRequestHandler):
                         finally:
                             conn.close()
                 except Exception as exc:
-                    print(f'[Free Round] Firestore read failed uid={uid}: {exc}')
+                    print('[Free Round] Firestore read failed '
+                          f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
                     if durable_storage_required():
                         self.send_json(503, {'error': 'تعذّر التحقق من الجولة المجانية الآن'}); return
-            conn = db_connect()
-            try:
-                completed = bool(conn.execute(
-                    'SELECT 1 FROM free_rounds WHERE uid=?', (uid,)
-                ).fetchone())
-            finally:
-                conn.close()
+            if use_local_account_claim:
+                conn = db_connect()
+                try:
+                    account_completed = bool(conn.execute(
+                        'SELECT 1 FROM free_rounds WHERE uid=?', (uid,)
+                    ).fetchone())
+                finally:
+                    conn.close()
+            completed = (installation_completed or device_completed
+                         or account_completed)
             self.send_json(200, {'eligible': not completed, 'completed': completed})
 
         elif path == '/api/questions/seen':
@@ -1490,7 +3239,8 @@ class Handler(BaseHTTPRequestHandler):
                         finally:
                             conn.close()
                 except Exception as exc:
-                    print(f'[Question Seen] Firestore read failed uid={uid}: {exc}')
+                    print('[Question Seen] Firestore read failed '
+                          f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
                     if durable_storage_required():
                         self.send_json(503, {'error': 'تعذّرت مزامنة سجل الأسئلة الآن'}); return
             conn = db_connect()
@@ -1511,7 +3261,11 @@ class Handler(BaseHTTPRequestHandler):
             })
 
         elif path in ('/', '/index.html'):
-            body = read_html()
+            # حزمة iOS تحمل ملفات اللعبة محلياً. تقديمها على الويب في
+            # production يجعل Boolean داخل JavaScript هو حاجز الاشتراك، وهو
+            # قابل للتعديل من DevTools. الموقع العام يعرض صفحة تعريف فقط.
+            body = (read_html() if public_web_game_enabled()
+                    else production_landing_html())
             # طبقة دفاع إضافية ضد XSS: تمنع تحميل سكربتات خارجية وتقيّد
             # الوجهات التي يمكن لأي كود مُدرَج أن يرسل لها بيانات.
             content_security_policy = (
@@ -1531,6 +3285,16 @@ class Handler(BaseHTTPRequestHandler):
         elif path in ('/app.js', '/app.css', '/question-bank.js', '/approved-question-bank.js',
                       '/privacy-policy.html', '/terms-of-service.html'):
             fname = path.lstrip('/')
+            game_assets = {
+                'app.js', 'app.css', 'question-bank.js',
+                'approved-question-bank.js',
+            }
+            if not public_web_game_enabled() and fname in game_assets:
+                self.send_json(404, {
+                    'error': 'اللعبة متاحة من تطبيق فطنة الرسمي على App Store',
+                    'code': 'ios_app_only',
+                })
+                return
             ctype = ('application/javascript; charset=utf-8' if fname.endswith('.js')
                      else 'text/css; charset=utf-8' if fname.endswith('.css')
                      else 'text/html; charset=utf-8')
@@ -1594,6 +3358,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(404); self.end_headers()
 
         elif path == '/download/index.html':
+            if not public_web_game_enabled():
+                self.send_json(404, {
+                    'error': 'التطبيق متاح عبر App Store فقط',
+                    'code': 'ios_app_only',
+                })
+                return
             with open(HTML_FILE, 'rb') as f:
                 body = f.read()
             self.send_response(200)
@@ -1647,21 +3417,36 @@ class Handler(BaseHTTPRequestHandler):
 
     # حدود حجم body لكل نقطة POST — تُعيد 413 مبكراً قبل قراءة البيانات
     _MAX_BODY: dict = {
-        '/api/generate':                1_024,   # مسار متوقف للإصدارات القديمة
+        '/api/generate':                1_024,   # v2 متوقف؛ يرفع max_body_for سقف v1
         '/api/account/delete':          4_096,   # 4 KB   (uid + idToken)
         '/api/revenuecat/webhook':     65_536,   # 64 KB  (حدث RevenueCat)
         '/api/revenuecat/identity':     2_048,   # uid + UUID + token
         '/api/account/profile':         2_048,   # 2 KB   (name + email + provider)
+        '/api/app-attest/challenge':     4_096,
+        '/api/app-attest/attest':      262_144,  # CBOR x5c + receipt بصيغة Base64
         '/api/questions/seen':          32_768,  # حتى 100 معرّف في دفعة مزامنة
-        '/api/free-round/complete':      2_048,
+        '/api/free-round/complete':     64_000,  # DeviceCheck + App Attest assertion
         '/api/questions/report':         8_192,
         '/api/metrics/event':            4_096,
         '/api/ios-diagnostics':        655_360,
     }
     _DEFAULT_MAX_BODY = 16_384  # 16 KB للمسارات غير المدرجة
 
+    def max_body_for(self, path: str) -> int:
+        # تطبيق 1.2 قد يرسل قائمة seen كبيرة. نبقي سقفاً محكوماً ومتوافقاً،
+        # فيما يظل v2 المتوقف صغيراً ولا يقرأ حمولة غير لازمة.
+        if path == '/api/generate' and self._api_version == '1':
+            return 256 * 1024
+        return self._MAX_BODY.get(path, self._DEFAULT_MAX_BODY)
+
     def do_POST(self):
-        path   = self.path.split('?')[0]
+        parsed = urllib.parse.urlparse(self.path)
+        path = self.select_api_contract(parsed.path)
+        if path is None:
+            return
+
+        if not self.api_feature_allows(path):
+            return
 
         if path.startswith('/api/promo/'):
             self.send_json(410, {'error': 'تم إيقاف أكواد التفعيل الخاصة؛ استخدم Apple Offer Codes'}); return
@@ -1676,7 +3461,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(400, {'error': 'Content-Length غير صالح'}); return
         length = int(raw_length or 0)
 
-        max_allowed = self._MAX_BODY.get(path, self._DEFAULT_MAX_BODY)
+        max_allowed = self.max_body_for(path)
         if length > max_allowed:
             self.send_json(413, {'error': f'حجم الطلب كبير جداً (الحد: {max_allowed} بايت)'}); return
 
@@ -1685,15 +3470,107 @@ class Handler(BaseHTTPRequestHandler):
         if not self.app_integrity_allows(path):
             return
 
-        # ─── مسار التوليد القديم (متوقف) ────────────────────────────────────
+        if path in {
+            '/api/app-attest/status', '/api/app-attest/challenge',
+            '/api/app-attest/attest',
+        }:
+            if self._api_version != '2':
+                self.send_json(404, {
+                    'error': 'App Attest متاح في عقد API v2 فقط',
+                    'code': 'app_attest_v2_only',
+                })
+                return
+            try:
+                data = json.loads(body)
+            except Exception:
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
+            if not isinstance(data, dict):
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
+            uid = str(data.get('uid') or '').strip()
+            id_token = str(
+                data.get('idToken') or bearer_token(self.headers) or '').strip()
+            key_id = str(data.get('keyId') or '').strip()
+            if not uid or not key_id:
+                self.send_json(400, {
+                    'error': 'uid وkeyId مطلوبان',
+                    'code': 'app_attest_input_missing',
+                }); return
+            if not uid_matches_token(uid, id_token):
+                self.send_json(401, {
+                    'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى',
+                }); return
+            if rate_limited(f'app-attest:{path}:{uid}', 20, 600):
+                self.send_json(429, {
+                    'error': 'طلبات App Attest كثيرة جداً — حاول لاحقاً',
+                }); return
+            try:
+                _app_attest_key_material(key_id)
+                if path == '/api/app-attest/status':
+                    key_record = get_app_attest_key(key_id)
+                    self.send_json(200, {
+                        'attested': bool(key_record),
+                    })
+                    return
+
+                if path == '/api/app-attest/challenge':
+                    purpose = str(data.get('purpose') or '').strip()
+                    request_hash = str(data.get('requestHash') or '').strip()
+                    key_record = get_app_attest_key(key_id)
+                    if purpose == 'attest' and key_record:
+                        self.send_json(409, {
+                            'error': 'مفتاح App Attest مسجّل مسبقاً',
+                            'code': 'app_attest_already_registered',
+                        }); return
+                    if purpose != 'attest' and not key_record:
+                        self.send_json(409, {
+                            'error': 'يجب تسجيل مفتاح App Attest أولاً',
+                            'code': 'app_attest_not_registered',
+                        }); return
+                    challenge = create_app_attest_challenge(
+                        uid, key_id, purpose, request_hash)
+                    self.send_json(201, challenge)
+                    return
+
+                verify_app_attest_attestation(
+                    uid=uid,
+                    key_id=key_id,
+                    challenge_id=str(data.get('challengeId') or ''),
+                    attestation_object=str(data.get('attestationObject') or ''),
+                )
+                self.send_json(201, {'attested': True})
+                return
+            except AppAttestValidationError as exc:
+                print(f'[App Attest] rejected path={path}: {exception_kind(exc)}')
+                self.send_json(401, {
+                    'error': 'تعذّر التحقق من سلامة تثبيت التطبيق',
+                    'code': 'app_attest_invalid',
+                }); return
+            except (AppAttestStorageError, DeviceCheckConfigurationError) as exc:
+                print(f'[App Attest] unavailable path={path}: {type(exc).__name__}')
+                self.send_json(503, {
+                    'error': 'خدمة سلامة التطبيق غير متاحة مؤقتاً',
+                    'code': 'app_attest_unavailable',
+                }); return
+
+        # ─── عقد التوليد: v1 متوافق، وv2 متوقف صراحةً ───────────────────────
         if path == '/api/generate':
-            self.send_json(410, {
-                'error': 'تم إيقاف التوليد الآلي. تستخدم فطنة بنك أسئلة مراجعاً مسبقاً.'
-            }); return
+            if self._api_version == '2':
+                self.send_json(410, {
+                    'error': 'يستخدم API v2 بنك أسئلة مراجعاً مسبقاً.',
+                    'code': 'ai_generation_retired',
+                }); return
+            try:
+                data = json.loads(body)
+            except Exception:
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
+            status, result = legacy_generate_questions(data)
+            self.send_json(status, result); return
 
         elif path == '/api/free-round/complete':
             try: data = json.loads(body)
             except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            if not isinstance(data, dict):
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
             uid = str(data.get('uid') or '').strip()
             id_token = str(data.get('idToken') or bearer_token(self.headers) or '').strip()
             if not uid:
@@ -1702,21 +3579,256 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
             if rate_limited(f'free-round:{uid}', 10, 600):
                 self.send_json(429, {'error': 'طلبات كثيرة جداً — حاول بعد قليل'}); return
+            device_token = str(
+                data.get('deviceCheckToken')
+                or self.headers.get('X-DeviceCheck-Token', '')
+                or ''
+            ).strip()
+            update_token = str(data.get('deviceCheckUpdateToken') or '').strip()
+            app_attest_key_id = ''
+            installation_access = 'missing'
+            if app_attest_enforcement_enabled(self._api_version):
+                app_attest_key_id = str(data.get('appAttestKeyId') or '').strip()
+                request_hash = str(
+                    data.get('appAttestRequestHash') or '').strip()
+                expected_hash = free_round_app_attest_request_hash(
+                    uid, device_token, update_token)
+                if request_hash != expected_hash:
+                    self.send_json(401, {
+                        'error': 'إثبات App Attest لا يطابق طلب الجولة',
+                        'code': 'app_attest_context_mismatch',
+                    }); return
+                try:
+                    verify_app_attest_assertion(
+                        uid=uid,
+                        key_id=app_attest_key_id,
+                        challenge_id=str(
+                            data.get('appAttestChallengeId') or ''),
+                        assertion=str(data.get('appAttestAssertion') or ''),
+                        purpose='free_round_complete',
+                        request_hash=request_hash,
+                    )
+                    installation_claim = app_attest_installation_claim(
+                        app_attest_key_id)
+                    installation_access = app_attest_installation_claim_access(
+                        app_attest_key_id, uid, installation_claim)
+                    if installation_access == 'conflict':
+                        self.send_json(409, {
+                            'error': 'استُخدمت الجولة المجانية لهذا التثبيت',
+                            'code': 'free_round_installation_already_claimed',
+                            'completed': True,
+                        }); return
+                except AppAttestValidationError as exc:
+                    print('[App Attest] free-round claim rejected: '
+                          f'{exception_kind(exc)}')
+                    self.send_json(401, {
+                        'error': 'تعذّر التحقق من تثبيت التطبيق',
+                        'code': 'app_attest_invalid',
+                    }); return
+                except (AppAttestStorageError,
+                        DeviceCheckConfigurationError) as exc:
+                    print('[App Attest] free-round claim unavailable: '
+                          f'{type(exc).__name__}')
+                    self.send_json(503, {
+                        'error': 'تعذّر التحقق من تثبيت التطبيق الآن',
+                        'code': 'app_attest_unavailable',
+                    }); return
+            if installation_access == 'owned_completed':
+                try:
+                    # يصلح سجل UID إن اكتملت مطالبة التثبيت في محاولة سابقة
+                    # ثم تعطل حفظ سجل الحساب أو ضاع الرد على العميل.
+                    persist_free_round_completion(uid)
+                except Exception as exc:
+                    print('[Free Round] completed installation recovery failed: '
+                          f'{type(exc).__name__}')
+                    self.send_json(503, {
+                        'error': 'تعذّر استرداد الجولة المثبتة الآن؛ حاول مرة أخرى',
+                        'code': 'free_round_claim_persistence_failed',
+                    }); return
+                self.send_json(200, {
+                    'ok': True, 'completed': True, 'alreadyClaimed': True,
+                }); return
+            if devicecheck_enforcement_enabled(self._api_version):
+                if not device_token:
+                    self.send_json(401, {
+                        'error': 'تعذّر التحقق من الجهاز قبل بدء الجولة',
+                        'code': 'device_check_missing',
+                    }); return
+                if not update_token:
+                    self.send_json(401, {
+                        'error': 'تعذّر تأكيد الجهاز قبل بدء الجولة',
+                        'code': 'device_check_update_token_missing',
+                    }); return
+                claim_guard = None
+                try:
+                    # القفل يبقى ممسوكاً حتى حفظ ربط الحساب وإكمال مطالبة
+                    # التثبيت. مطالبة pending تُنشأ قبل تغيير Apple، فتغلق
+                    # نافذة التعطل بعد update_two_bits وقبل Firestore.
+                    claim_guard = acquire_devicecheck_claim_guard()
+                    device_state = devicecheck_request('query_two_bits', device_token)
+                    if device_state.get('bit1') is True:
+                        self.send_json(403, {
+                            'error': 'هذا الجهاز غير مؤهل للعرض المجاني',
+                            'code': 'device_flagged',
+                        }); return
+                    device_was_already_claimed = device_state.get('bit0') is True
+                    if device_was_already_claimed:
+                        # pending موجودة من محاولة سابقة للحساب نفسه هي دليل
+                        # الاسترداد بعد أن غيّرت Apple bit0 وضاع حفظ Firestore.
+                        if installation_access == 'owned_pending':
+                            same_account = True
+                        else:
+                            same_account = False
+                            if firestore_durable_available():
+                                try:
+                                    document = firestore_get_document(
+                                        f'free_rounds/{uid}')
+                                    same_account = bool(
+                                        document
+                                        and document.get('completed') is True)
+                                except Exception as exc:
+                                    raise DeviceCheckServiceError(
+                                        'تعذّر قراءة مالك الجولة المجانية') from exc
+                            elif (deployment_environment() == 'production'
+                                  or durable_storage_required()):
+                                raise DeviceCheckConfigurationError(
+                                    'ملكية الجولة المجانية تحتاج Firestore')
+                            else:
+                                conn = db_connect()
+                                try:
+                                    same_account = bool(conn.execute(
+                                        'SELECT 1 FROM free_rounds WHERE uid=?',
+                                        (uid,)).fetchone())
+                                finally:
+                                    conn.close()
+                        if not same_account:
+                            self.send_json(409, {
+                                'error': 'استُخدمت الجولة المجانية على هذا الجهاز',
+                                'code': 'free_round_already_claimed',
+                                'completed': True,
+                            }); return
+                        # سجل UID قديم موثوق يسمح بترقية تثبيت لم يكن له سجل
+                        # App Attest بعد، من دون منح الجولة لحساب جديد.
+                        if app_attest_key_id and installation_access == 'missing':
+                            installation_access = (
+                                reserve_app_attest_installation_claim(
+                                    app_attest_key_id, uid))
+                            if installation_access == 'conflict':
+                                self.send_json(409, {
+                                    'error': 'استُخدمت الجولة المجانية لهذا التثبيت',
+                                    'code': 'free_round_installation_already_claimed',
+                                    'completed': True,
+                                }); return
+                    else:
+                        # لا نغيّر bit0 إلا بعد نجاح الحجز الدائم. إذا تعطل
+                        # الحفظ هنا فلا يتغير شيء لدى Apple ويمكن إعادة الطلب.
+                        if app_attest_key_id:
+                            installation_access = (
+                                reserve_app_attest_installation_claim(
+                                    app_attest_key_id, uid))
+                            if installation_access == 'conflict':
+                                self.send_json(409, {
+                                    'error': 'استُخدمت الجولة المجانية لهذا التثبيت',
+                                    'code': 'free_round_installation_already_claimed',
+                                    'completed': True,
+                                }); return
+                            if installation_access == 'owned_completed':
+                                # سجل التثبيت هو المرجع هنا؛ لا نعيد تغيير
+                                # Apple، ونمر بمسار الإصلاح الموحّد أدناه.
+                                device_was_already_claimed = True
+                        # bit0 مخصص لفطنة: تم استهلاك العرض التعريفي على الجهاز.
+                        # نستخدم token جديداً لعملية التحديث كما توصي Apple.
+                        if installation_access != 'owned_completed':
+                            devicecheck_request(
+                                'update_two_bits', update_token, bit0=True)
+
+                    try:
+                        # الترتيب مقصود: UID أولاً، ثم completed. عند أي فشل
+                        # تبقى pending باسم بصمة المالك، فيسترد الحساب نفسه
+                        # المحاولة ويُمنع أي حساب آخر من الاستحواذ عليها.
+                        persist_free_round_completion(uid)
+                        if app_attest_key_id:
+                            complete_app_attest_installation_claim(
+                                app_attest_key_id, uid)
+                    except AppAttestValidationError:
+                        self.send_json(409, {
+                            'error': 'تغير مالك مطالبة التثبيت',
+                            'code': 'free_round_installation_already_claimed',
+                            'completed': True,
+                        }); return
+                    except Exception as exc:
+                        print('[Free Round] recoverable persistence failure: '
+                              f'{type(exc).__name__}')
+                        self.send_json(503, {
+                            'error': 'تم حجز الجولة وتعذّر تثبيتها؛ حاول مرة أخرى',
+                            'code': 'free_round_claim_persistence_failed',
+                        }); return
+                    response = {'ok': True, 'completed': True}
+                    if device_was_already_claimed:
+                        response['alreadyClaimed'] = True
+                    self.send_json(200, response)
+                    return
+                except ValueError:
+                    self.send_json(400, {
+                        'error': 'رمز DeviceCheck غير صالح',
+                        'code': 'device_check_invalid',
+                    }); return
+                except DeviceCheckClaimBusyError:
+                    self.send_json(503, {
+                        'error': 'يجري تأكيد جولة أخرى الآن — حاول مرة ثانية',
+                        'code': 'free_round_claim_busy',
+                    }); return
+                except AppAttestStorageError as exc:
+                    print('[App Attest] installation claim failed: '
+                          f'{type(exc).__name__}')
+                    self.send_json(503, {
+                        'error': 'تعذّر تثبيت مطالبة الجولة الآن',
+                        'code': 'app_attest_unavailable',
+                    }); return
+                except DeviceCheckConfigurationError as exc:
+                    print(f'[DeviceCheck] configuration error: {exception_kind(exc)}')
+                    self.send_json(503, {
+                        'error': 'التحقق من الجولة المجانية غير مجهّأ على الخادم',
+                        'code': 'device_check_not_configured',
+                    }); return
+                except DeviceCheckServiceError as exc:
+                    print(f'[DeviceCheck] claim failed: {exception_kind(exc)}')
+                    self.send_json(503, {
+                        'error': 'تعذّر تأكيد الجولة المجانية الآن',
+                        'code': 'device_check_unavailable',
+                    }); return
+                finally:
+                    if claim_guard is not None:
+                        release_devicecheck_claim_guard(claim_guard)
+            if app_attest_key_id:
+                try:
+                    installation_access = reserve_app_attest_installation_claim(
+                        app_attest_key_id, uid)
+                except AppAttestStorageError as exc:
+                    print('[App Attest] installation claim failed: '
+                          f'{type(exc).__name__}')
+                    self.send_json(503, {
+                        'error': 'تعذّر تثبيت مطالبة الجولة الآن',
+                        'code': 'app_attest_unavailable',
+                    }); return
+                if installation_access == 'conflict':
+                    self.send_json(409, {
+                        'error': 'استُخدمت الجولة المجانية لهذا التثبيت',
+                        'code': 'free_round_installation_already_claimed',
+                        'completed': True,
+                    }); return
             try:
-                durable_write(f'free_rounds/{uid}', {
-                    'uid': uid,
-                    'completed': True,
-                    'completed_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                })
+                persist_free_round_completion(uid)
+                if app_attest_key_id:
+                    complete_app_attest_installation_claim(
+                        app_attest_key_id, uid)
             except Exception as exc:
-                print(f'[Free Round] durable write failed uid={uid}: {exc}')
-                self.send_json(503, {'error': 'تعذّر حفظ الجولة بأمان — ستتم إعادة المحاولة'}); return
-            conn = db_connect()
-            try:
-                conn.execute('INSERT OR IGNORE INTO free_rounds (uid) VALUES (?)', (uid,))
-                conn.commit()
-            finally:
-                conn.close()
+                print('[Free Round] durable write failed '
+                      f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
+                self.send_json(503, {
+                    'error': 'تعذّر حفظ الجولة بأمان — ستتم إعادة المحاولة',
+                    'code': 'free_round_claim_persistence_failed',
+                }); return
             self.send_json(200, {'ok': True, 'completed': True})
 
         elif path == '/api/questions/report':
@@ -1728,6 +3840,8 @@ class Handler(BaseHTTPRequestHandler):
             category = str(data.get('category') or '').strip()
             question_text = str(data.get('question') or '').strip()
             answer_text = str(data.get('answer') or '').strip()
+            source_title = str(data.get('sourceTitle') or '').strip()
+            source_url = str(data.get('sourceUrl') or '').strip()
             reason = str(data.get('reason') or '').strip()
             details = str(data.get('details') or '').strip()
             app_version = str(data.get('appVersion') or '').strip()
@@ -1740,6 +3854,15 @@ class Handler(BaseHTTPRequestHandler):
                     or any(ord(char) < 32 for char in category)
                     or not question_text or len(question_text) > 600
                     or len(answer_text) > 400
+                    or len(source_title) > 240
+                    or any(ord(char) < 32 for char in source_title)
+                    or len(source_url) > 2048
+                    or (source_url and (
+                        urllib.parse.urlparse(source_url).scheme != 'https'
+                        or not urllib.parse.urlparse(source_url).hostname
+                        or urllib.parse.urlparse(source_url).username is not None
+                        or urllib.parse.urlparse(source_url).password is not None
+                    ))
                     or reason not in REPORT_REASONS
                     or len(details) > 500
                     or len(app_version) > 40):
@@ -1752,6 +3875,8 @@ class Handler(BaseHTTPRequestHandler):
                 'category': category,
                 'question_text': question_text,
                 'answer_text': answer_text,
+                'source_title': source_title,
+                'source_url': source_url,
                 'reason': reason,
                 'details': details,
                 'app_version': app_version,
@@ -1761,17 +3886,21 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 durable_write(f'question_reports/{report_id}', report_record, merge=False)
             except Exception as exc:
-                print(f'[Question Report] durable write failed report={report_id}: {exc}')
+                print('[Question Report] durable write failed '
+                      f'report_ref={safe_log_reference(report_id)}: '
+                      f'{exception_kind(exc)}')
                 self.send_json(503, {'error': 'تعذّر حفظ البلاغ بأمان — حاول مرة أخرى'}); return
             conn = db_connect()
             try:
                 conn.execute('''
                     INSERT INTO question_reports
                     (report_id, uid, question_id, category, question_text,
-                     answer_text, reason, details, app_version)
-                    VALUES (?,?,?,?,?,?,?,?,?)
+                     answer_text, source_title, source_url, reason, details,
+                     app_version)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?)
                 ''', (report_id, uid, question_id, category, question_text,
-                      answer_text, reason, details, app_version))
+                      answer_text, source_title, source_url, reason, details,
+                      app_version))
                 conn.commit()
             finally:
                 conn.close()
@@ -1779,7 +3908,8 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 deliver_pending_question_reports(limit=5)
             except Exception as exc:
-                print(f'[Question Reports] immediate delivery error: {exc}')
+                print('[Question Reports] immediate delivery error: '
+                      f'{exception_kind(exc)}')
             conn = db_connect()
             try:
                 row = conn.execute(
@@ -1794,7 +3924,9 @@ class Handler(BaseHTTPRequestHandler):
                     })
                 except Exception as exc:
                     # البلاغ نفسه محفوظ بالفعل؛ حالة البريد تحسين يمكن استعادته.
-                    print(f'[Question Report] email state sync failed report={report_id}: {exc}')
+                    print('[Question Report] email state sync failed '
+                          f'report_ref={safe_log_reference(report_id)}: '
+                          f'{exception_kind(exc)}')
             self.send_json(201, {
                 'ok': True,
                 'reportId': report_id,
@@ -1845,7 +3977,9 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 durable_write(f'users/{uid}/game_events/{event_id}', metric_record, merge=False)
             except Exception as exc:
-                print(f'[Metrics] durable write failed event={event_id}: {exc}')
+                print('[Metrics] durable write failed '
+                      f'event_ref={safe_log_reference(event_id)}: '
+                      f'{exception_kind(exc)}')
                 self.send_json(503, {'error': 'تعذّر حفظ المؤشر بأمان'}); return
             conn = db_connect()
             try:
@@ -1870,6 +4004,85 @@ class Handler(BaseHTTPRequestHandler):
             report_type = str(data.get('reportType') or '').strip()
             payload = str(data.get('payload') or '')
             app_version = str(data.get('appVersion') or '').strip()[:40]
+            privacy_scope = str(data.get('privacyScope') or '').strip()
+            schema_version = data.get('schemaVersion')
+
+            # 1.3 يرسل MetricKit بلا UID إطلاقاً: App Check يثبت أن الطلب من
+            # نسخة أصلية، بينما لا نربط تقريراً يغطي نافذة زمنية سابقة بحساب
+            # قد يكون دخل لاحقاً على الجهاز نفسه. يبقى عقد v1 كما هو لتوافق
+            # النسخة المنشورة.
+            if self._api_version == '2':
+                app_check_valid, _ = verify_app_check_header(self.headers, path)
+                if not app_check_valid:
+                    self.send_json(401, {
+                        'error': 'تعذّر التحقق من سلامة نسخة التطبيق',
+                        'code': 'app_check_required',
+                    }); return
+                if uid or data.get('idToken') is not None:
+                    self.send_json(400, {
+                        'error': 'تقارير التشخيص المجهولة لا تقبل هوية مستخدم',
+                        'code': 'diagnostic_identity_forbidden',
+                    }); return
+                if (schema_version != 2 or privacy_scope != 'anonymous'
+                        or not re.fullmatch(r'[0-9a-f]{64}', report_id)):
+                    self.send_json(400, {'error': 'نطاق خصوصية تقرير iOS غير صالح'}); return
+                if not payload or len(payload.encode()) > 512_000:
+                    self.send_json(400, {'error': 'تقرير iOS غير صالح'}); return
+                try:
+                    decoded_payload = base64.b64decode(payload, validate=True)
+                    decoded_json = json.loads(decoded_payload)
+                    if not isinstance(decoded_json, dict):
+                        raise ValueError('payload root')
+                except Exception:
+                    self.send_json(400, {'error': 'حمولة تقرير iOS غير صالحة'}); return
+                # بصمة مؤقتة لرمز App Check توزع الحد حتى خلف reverse proxy،
+                # من دون حفظ الرمز نفسه أو ربط التقرير بحساب/جهاز دائم.
+                app_check_token = str(
+                    self.headers.get('X-Firebase-AppCheck', '') or '')
+                rate_identity = hashlib.sha256(
+                    app_check_token.encode('utf-8')).hexdigest()[:24]
+                if rate_limited(
+                        f'ios-diagnostics-anonymous:{rate_identity}', 40, 3600):
+                    self.send_json(429, {'error': 'طلبات تقارير كثيرة جداً'}); return
+                retention = ios_diagnostic_retention_fields()
+                record = {
+                    'report_id': report_id,
+                    'schema_version': schema_version,
+                    'privacy_scope': privacy_scope,
+                    'report_type': report_type,
+                    'payload': payload,
+                    'app_version': app_version,
+                    **retention,
+                }
+                if report_type not in {'metric', 'diagnostic'}:
+                    self.send_json(400, {'error': 'تقرير iOS غير صالح'}); return
+                try:
+                    durable_write(
+                        f'ios_diagnostics_anonymous/{report_id}', record, merge=False)
+                except Exception as exc:
+                    print('[MetricKit] durable anonymous write failed '
+                          f'report_ref={safe_log_reference(report_id)}: '
+                          f'{exception_kind(exc)}')
+                    self.send_json(503, {'error': 'تعذّر حفظ تقرير التشخيص بأمان'}); return
+                conn = db_connect()
+                try:
+                    conn.execute(
+                        "DELETE FROM ios_diagnostics "
+                        "WHERE created_at < datetime('now', ?)",
+                        (f'-{IOS_DIAGNOSTIC_RETENTION_DAYS} days',),
+                    )
+                    conn.execute('''INSERT OR IGNORE INTO ios_diagnostics
+                        (report_id, uid, schema_version, privacy_scope,
+                         report_type, payload, app_version)
+                        VALUES (?,?,?,?,?,?,?)''',
+                        (report_id, '', schema_version, privacy_scope,
+                         report_type, payload, app_version))
+                    conn.commit()
+                finally:
+                    conn.close()
+                self.send_json(202, {'ok': True, 'reportId': report_id})
+                return
+
             if not uid or not uid_matches_token(uid, id_token):
                 self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
             if (not re.fullmatch(r'[A-Za-z0-9-]{20,64}', report_id)
@@ -1878,21 +4091,29 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(400, {'error': 'تقرير iOS غير صالح'}); return
             if rate_limited(f'ios-diagnostics:{uid}', 40, 3600):
                 self.send_json(429, {'error': 'طلبات تقارير كثيرة جداً'}); return
+            retention = ios_diagnostic_retention_fields()
             record = {
                 'report_id': report_id,
                 'uid': uid,
                 'report_type': report_type,
                 'payload': payload,
                 'app_version': app_version,
-                'created_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                **retention,
             }
             try:
                 durable_write(f'users/{uid}/ios_diagnostics/{report_id}', record, merge=False)
             except Exception as exc:
-                print(f'[MetricKit] durable write failed report={report_id}: {exc}')
+                print('[MetricKit] durable write failed '
+                      f'report_ref={safe_log_reference(report_id)}: '
+                      f'{exception_kind(exc)}')
                 self.send_json(503, {'error': 'تعذّر حفظ تقرير التشخيص بأمان'}); return
             conn = db_connect()
             try:
+                conn.execute(
+                    "DELETE FROM ios_diagnostics "
+                    "WHERE created_at < datetime('now', ?)",
+                    (f'-{IOS_DIAGNOSTIC_RETENTION_DAYS} days',),
+                )
                 conn.execute('''INSERT OR IGNORE INTO ios_diagnostics
                     (report_id, uid, report_type, payload, app_version)
                     VALUES (?,?,?,?,?)''',
@@ -1944,7 +4165,8 @@ class Handler(BaseHTTPRequestHandler):
                         for _, question_id, category in clean_items
                     ])
                 except Exception as exc:
-                    print(f'[Question Seen] durable batch failed uid={uid}: {exc}')
+                    print('[Question Seen] durable batch failed '
+                          f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
                     self.send_json(503, {'error': 'تعذّر حفظ سجل الأسئلة بأمان'}); return
             elif durable_storage_required():
                 self.send_json(503, {'error': 'التخزين الدائم غير مهيأ'}); return
@@ -2035,7 +4257,8 @@ class Handler(BaseHTTPRequestHandler):
                     firestore_delete_subscription(uid)
                 except Exception as exc:
                     conn.rollback()
-                    print(f'[Account Delete] فشل حذف Firestore uid={uid}: {exc}')
+                    print('[Account Delete] فشل حذف Firestore '
+                          f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
                     self.send_json(503, {
                         'error': 'تعذّر حذف بيانات الحساب السحابية — حاول مرة أخرى'
                     })
@@ -2096,7 +4319,8 @@ class Handler(BaseHTTPRequestHandler):
             except sqlite3.OperationalError:
                 self.send_json(503, {'error': 'قاعدة البيانات مشغولة — حاول بعد لحظات'})
             except Exception as exc:
-                print(f'[Profile] durable write failed uid={uid}: {exc}')
+                print('[Profile] durable write failed '
+                      f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
                 self.send_json(503, {'error': 'تعذّر حفظ الملف الشخصي بأمان'})
 
         # ─── ربط RevenueCat UUID بحساب Firebase ─────────────────────────────
@@ -2134,7 +4358,8 @@ class Handler(BaseHTTPRequestHandler):
                         }),
                     ])
                 except Exception as exc:
-                    print(f'[RevenueCat] identity durable write failed uid={uid}: {exc}')
+                    print('[RevenueCat] identity durable write failed '
+                          f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
                     self.send_json(503, {'error': 'تعذّر حفظ ربط الاشتراك بأمان'}); return
             elif durable_storage_required():
                 self.send_json(503, {'error': 'التخزين الدائم غير مهيأ'}); return
@@ -2162,7 +4387,9 @@ class Handler(BaseHTTPRequestHandler):
                     replayed = replay_pending_revenuecat_events(rc_app_user_id)
                 except Exception as exc:
                     # الربط محفوظ؛ سيعيد webhook أو نداء الربط القادم المعالجة.
-                    print(f'[RevenueCat] pending replay failed rc={rc_app_user_id}: {exc}')
+                    print('[RevenueCat] pending replay failed '
+                          f'rc_ref={safe_log_reference(rc_app_user_id)}: '
+                          f'{exception_kind(exc)}')
             self.send_json(200, {'ok': True, 'replayed': replayed})
 
 
@@ -2189,7 +4416,8 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 # RevenueCat يعيد أحداث 5xx بنفس event.id؛ لا نُرجع 2xx قبل
                 # اكتمال الكتابة الدائمة حتى لا يضيع الاستحقاق.
-                print(f'[RevenueCat] durable processing failed: {exc}')
+                print('[RevenueCat] durable processing failed: '
+                      f'{exception_kind(exc)}')
                 self.send_json(503, {'error': 'تعذّرت معالجة الحدث بأمان — ستتم إعادة المحاولة'})
 
         else:
@@ -2244,24 +4472,23 @@ def _firestore_get_token():
             tok = json.loads(resp.read())
         return tok.get('access_token'), None
     except Exception as e:
-        return None, str(e)
+        return None, exception_kind(e)
 
 def _firestore_http_error(exc, operation='request'):
-    """استخرج رسالة Google المفيدة من HTTPError دون تسجيل أي اعتماد سري."""
+    """استخرج الحالة/السبب فقط؛ رسالة Google قد تحمل مسار حساب أو مستند."""
     if not isinstance(exc, urllib.error.HTTPError):
-        return f'Firestore {operation} error: {exc}'
+        return f'Firestore {operation} error: {exception_kind(exc)}'
     try:
         raw = exc.read().decode('utf-8', errors='replace')
         details = json.loads(raw).get('error') or {}
         status = details.get('status') or ''
-        message = details.get('message') or raw[:240]
         reason = ''
         for item in details.get('details') or []:
             if item.get('@type', '').endswith('ErrorInfo'):
                 reason = item.get('reason') or ''
                 break
         suffix = f' ({reason})' if reason else ''
-        return f'Firestore HTTP {exc.code}: {status or "HTTP_ERROR"}: {message}{suffix}'
+        return f'Firestore HTTP {exc.code}: {status or "HTTP_ERROR"}{suffix}'
     except Exception:
         return f'Firestore HTTP {exc.code}: تعذّر قراءة تفاصيل الخطأ'
 
@@ -2307,7 +4534,7 @@ def enqueue_outbox(uid: str, payload: dict):
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f'[OUTBOX] تعذّر الإضافة إلى الـ outbox: {e}')
+        print(f'[OUTBOX] تعذّر الإضافة إلى الـ outbox: {exception_kind(e)}')
 
 def enqueue_outbox_on_connection(conn, uid: str, payload: dict):
     """نسخة من enqueue_outbox تستخدم معاملة قائمة لضمان ذرية تحديث الاشتراك."""
@@ -2402,17 +4629,20 @@ def _outbox_worker():
                 conn.execute('DELETE FROM subscription_outbox WHERE id=?', (row_id,))
                 conn.commit()
                 conn.close()
-                print(f'[OUTBOX] ✅ أُرسل uid={uid} إلى Firestore بنجاح.')
+                print('[OUTBOX] ✅ أُرسل السجل إلى Firestore '
+                      f'uid_ref={safe_log_reference(uid)}.')
             except Exception as e:
                 delay = min(2 ** attempts * 60, 3600)
                 conn = db_connect()
                 conn.execute(
                     "UPDATE subscription_outbox SET attempts=attempts+1, last_error=?, "
                     "next_retry=datetime('now','+'||?||' seconds') WHERE id=?",
-                    (str(e)[:500], delay, row_id))
+                    (exception_kind(e), delay, row_id))
                 conn.commit()
                 conn.close()
-                print(f'[OUTBOX] ❌ فشل uid={uid} (محاولة {attempts+1}): {e}')
+                print('[OUTBOX] ❌ فشل السجل '
+                      f'uid_ref={safe_log_reference(uid)} '
+                      f'(محاولة {attempts+1}): {exception_kind(e)}')
 
 # ─── مزامنة Firestore عند بدء التشغيل ──────────────────────────────────────
 def _upsert_docs_to_sqlite(docs):
@@ -2450,7 +4680,7 @@ def _upsert_docs_to_sqlite(docs):
     except Exception as e:
         try: conn.rollback()
         except Exception: pass
-        return count, f'SQLite upsert error: {e}'
+        return count, f'SQLite upsert error: {exception_kind(e)}'
     finally:
         conn.close()
 
@@ -2508,8 +4738,9 @@ def restore_pending_question_reports():
             conn.execute('''
                 INSERT OR IGNORE INTO question_reports
                 (report_id, uid, question_id, category, question_text,
-                 answer_text, reason, details, app_version, email_status, created_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                 answer_text, source_title, source_url, reason, details,
+                 app_version, email_status, created_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
             ''', (
                 report_id,
                 document.get('uid') or '',
@@ -2517,6 +4748,8 @@ def restore_pending_question_reports():
                 document.get('category') or '',
                 document.get('question_text') or '',
                 document.get('answer_text') or '',
+                document.get('source_title') or '',
+                document.get('source_url') or '',
                 document.get('reason') or 'other',
                 document.get('details') or '',
                 document.get('app_version') or '',
@@ -2585,7 +4818,8 @@ def _run_startup_recovery():
         if restored_reports:
             print(f'[STARTUP] استعيد {restored_reports} بلاغاً بانتظار التسليم.')
     except Exception as exc:
-        print(f'[STARTUP] تعذّرت استعادة بلاغات البريد: {exc}')
+        print('[STARTUP] تعذّرت استعادة بلاغات البريد: '
+              f'{exception_kind(exc)}')
 
 # ─── تشغيل ───────────────────────────────────────────────────────────────────
 if __name__ == '__main__':

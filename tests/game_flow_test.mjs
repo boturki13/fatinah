@@ -18,6 +18,7 @@ function installNativeTestHarness() {
         getIdToken: () => Promise.resolve({ token: 'e2e-token' }),
       },
       RevenueCatKeyStore: { get: () => Promise.resolve({ value: 'appl_TEST' }), set: ok, clear: ok },
+      FatinahDeviceIntegrity: { generateDeviceCheckToken: () => Promise.resolve({ token: 'device-check-test-token' }) },
       Purchases: { configure: ok, setAttributes: ok, setEmail: ok, setDisplayName: ok },
       FirebaseCrashlytics: { setEnabled: ok, recordException: ok, setUserId: ok },
       SplashScreen: { hide: ok }, Preferences: { remove: ok }, KeepAwake: { keepAwake: ok, allowSleep: ok },
@@ -32,11 +33,15 @@ try {
   await page.route('**/*', route => {
     const requestUrl = route.request().url();
     if (requestUrl.startsWith('file://')) return route.continue();
-    if (requestUrl.includes('/api/subscription/status')) {
+    if (requestUrl.includes('/api/v2/subscription/status')) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{"active":true}' });
     }
-    if (requestUrl.includes('/api/revenuecat/identity')) {
+    if (requestUrl.includes('/api/v2/revenuecat/identity')) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    }
+    if (requestUrl.includes('/api/v2/questions/seen')) {
+      const body = route.request().method() === 'GET' ? '{"items":[]}' : '{"ok":true}';
+      return route.fulfill({ status: 200, contentType: 'application/json', body });
     }
     return route.abort();
   });

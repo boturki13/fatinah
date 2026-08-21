@@ -1419,9 +1419,9 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
       "answer": "ما",
       "explanation": "تُستخدم «ما» للاستفهام عن غير العاقل.",
       "source": {
-        "title": "مجمع اللغة العربية بالقاهرة | معنى ما",
-        "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D9%85%D8%B9%D8%AC%D9%85/dic-19/%D9%85%D8%A7-%D9%87%D9%88-%D9%85%D9%81%D8%B1%D8%AF-%D8%A7%D9%84%D9%85%D8%A7%D8%B9%D8%B2",
-        "publisher": "مجمع اللغة العربية بالقاهرة"
+        "title": "جامعة الملك سعود — أسلوب الاستفهام وأدواته",
+        "url": "https://faculty.ksu.edu.sa/sites/default/files/slwb_lstfhm_.pdf",
+        "publisher": "جامعة الملك سعود"
       },
       "review": {
         "status": "approved",
@@ -1759,9 +1759,9 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
       "answer": "عبد الله بن المقفع",
       "explanation": "يوضح المرجع أن ابن المقفع ترجم «كليلة ودمنة» عن الفارسية.",
       "source": {
-        "title": "مجمع اللغة العربية بالقاهرة | الرواية الفلسفية",
-        "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D9%85%D8%B9%D8%AC%D9%85/dic-349/f%5Dghw-lk-hl-f%5Dghw-uk",
-        "publisher": "مجمع اللغة العربية بالقاهرة"
+        "title": "مكتبة الكونغرس — كليلة ودمنة",
+        "url": "https://www.loc.gov/item/2021667224/",
+        "publisher": "مكتبة الكونغرس"
       },
       "review": {
         "status": "approved",
@@ -2568,6 +2568,113 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "bankVersion": 3,
         "reviewedAt": "2026-08-20T11:07:14.538Z",
         "reviewer": "Codex-assisted source review",
+        "religiousSourceAndIsnadConfirmed": false,
+        "generationModel": "gpt-5.6-terra",
+        "verificationModel": "gpt-5.6-terra"
+      }
+    }
+  ],
+  "معلومات عامة": [
+    {
+      "id": "gq-6cdbafa1b07cca088788",
+      "d": 2,
+      "q": "أيّ الأخوين رايت كان يقود طائرة «فلاير 1903» في أول رحلة ناجحة لها؟",
+      "answer": "أورفيل رايت",
+      "explanation": "كان أورفيل رايت هو قائد الطائرة في الرحلة الأولى الناجحة.",
+      "source": {
+        "title": "1903 Wright Flyer",
+        "url": "https://airandspace.si.edu/collection-objects/wright-1903-flyer/nasm_A19610048000",
+        "publisher": "المتحف الوطني للطيران والفضاء، مؤسسة سميثسونيان"
+      },
+      "review": {
+        "status": "approved",
+        "bankVersion": 3,
+        "reviewedAt": "2026-08-21T13:49:13.093Z",
+        "reviewer": "Codex source review 2026-08-21",
+        "religiousSourceAndIsnadConfirmed": false,
+        "generationModel": "gpt-5.6-terra",
+        "verificationModel": "gpt-5.6-terra"
+      }
+    },
+    {
+      "id": "gq-03fb2f17c37a4da7079e",
+      "d": 3,
+      "q": "أي حضارة كانت البتراء عاصمتها المنحوتة في الصخر؟",
+      "answer": "الأنباط",
+      "explanation": "كانت البتراء العاصمة الصخرية للأنباط.",
+      "source": {
+        "title": "Petra",
+        "url": "https://whc.unesco.org/en/list/326/",
+        "publisher": "مركز التراث العالمي، اليونسكو"
+      },
+      "review": {
+        "status": "approved",
+        "bankVersion": 3,
+        "reviewedAt": "2026-08-21T13:49:13.140Z",
+        "reviewer": "Codex source review 2026-08-21",
+        "religiousSourceAndIsnadConfirmed": false,
+        "generationModel": "gpt-5.6-terra",
+        "verificationModel": "gpt-5.6-terra"
+      }
+    },
+    {
+      "id": "gq-4983f93c84a68562b03b",
+      "d": 4,
+      "q": "في أي بلد تقع خطوط نازكا وبالبا الشهيرة؟",
+      "answer": "بيرو",
+      "explanation": "تقع هذه الخطوط الأثرية في السهل الساحلي الجاف في بيرو.",
+      "source": {
+        "title": "Lines and Geoglyphs of Nasca and Palpa",
+        "url": "https://whc.unesco.org/en/list/700/",
+        "publisher": "مركز التراث العالمي، اليونسكو"
+      },
+      "review": {
+        "status": "approved",
+        "bankVersion": 3,
+        "reviewedAt": "2026-08-21T13:49:13.189Z",
+        "reviewer": "Codex source review 2026-08-21",
+        "religiousSourceAndIsnadConfirmed": false,
+        "generationModel": "gpt-5.6-terra",
+        "verificationModel": "gpt-5.6-terra"
+      }
+    },
+    {
+      "id": "gq-e1373f0b846bbbf80f57",
+      "d": 5,
+      "q": "ما اسم المملكة التي كانت مدينة تشان تشان عاصمتها؟",
+      "answer": "مملكة تشيمو",
+      "explanation": "كانت تشان تشان عاصمة مملكة تشيمو قبل سقوطها بيد الإنكا.",
+      "source": {
+        "title": "Chan Chan Archaeological Zone",
+        "url": "https://whc.unesco.org/en/list/366",
+        "publisher": "مركز التراث العالمي، اليونسكو"
+      },
+      "review": {
+        "status": "approved",
+        "bankVersion": 3,
+        "reviewedAt": "2026-08-21T13:49:13.236Z",
+        "reviewer": "Codex source review 2026-08-21",
+        "religiousSourceAndIsnadConfirmed": false,
+        "generationModel": "gpt-5.6-terra",
+        "verificationModel": "gpt-5.6-terra"
+      }
+    },
+    {
+      "id": "gq-2c18b9d72bf948fc7a94",
+      "d": 6,
+      "q": "إلى أي شعب تنسب اليونسكو حضارة البانتو التي تشهد عليها أطلال زيمبابوي الكبرى؟",
+      "answer": "شعب الشونا",
+      "explanation": "تعد أطلال زيمبابوي الكبرى شاهداً على حضارة البانتو الخاصة بشعب الشونا.",
+      "source": {
+        "title": "Great Zimbabwe National Monument",
+        "url": "https://whc.unesco.org/en/list/364/",
+        "publisher": "مركز التراث العالمي، اليونسكو"
+      },
+      "review": {
+        "status": "approved",
+        "bankVersion": 3,
+        "reviewedAt": "2026-08-21T13:49:13.284Z",
+        "reviewer": "Codex source review 2026-08-21",
         "religiousSourceAndIsnadConfirmed": false,
         "generationModel": "gpt-5.6-terra",
         "verificationModel": "gpt-5.6-terra"

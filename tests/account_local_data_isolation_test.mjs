@@ -29,6 +29,7 @@ function installHarness() {
         getIdToken: () => Promise.resolve({ token: 'account-token' }),
       },
       RevenueCatKeyStore: { get: () => Promise.resolve({ value: '' }), set: ok, clear: ok },
+      FatinahDeviceIntegrity: { generateDeviceCheckToken: () => Promise.resolve({ token: 'device-check-test-token' }) },
       FirebaseCrashlytics: { setEnabled: ok, recordException: ok, setUserId: ok },
       SplashScreen: { hide: ok },
       Preferences: { remove: ok },
@@ -42,7 +43,7 @@ try {
   await page.addInitScript(installHarness);
   await page.route('**/*', route => {
     if (route.request().url().startsWith('file://')) return route.continue();
-    if (route.request().url().includes('/api/subscription/status')) {
+    if (route.request().url().includes('/api/v2/subscription/status')) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{"active":true}' });
     }
     return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
