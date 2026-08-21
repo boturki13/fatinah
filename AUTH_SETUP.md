@@ -1,4 +1,4 @@
-# إعداد نظام الهوية الموحّد (Auth) — فَطِنة
+# إعداد نظام الهوية الموحّد (Auth) — فطنة
 
 هذا الملف يوثّق كل خطوة إعداد خارجية (Firebase Console / Xcode) لازمة كي يعمل
 نظام الدخول الموحّد بالكامل: جلسة مجهولة أولى + ترقية لـ Apple/Google/بريد +
@@ -6,7 +6,8 @@
 
 ## 1. المتغيّرات البيئية المطلوبة
 
-هذه موجودة بالفعل في بيئة Replit الحالية (Secrets):
+اضبط هذه القيم داخل مخزن أسرار كل بيئة؛ لا تضع قيمها في Git، ولا تشارك مشروع
+Firebase أو حساب الخدمة بين staging وproduction:
 
 | المتغيّر | الاستخدام |
 |---|---|
@@ -16,9 +17,9 @@
 | `FIRESTORE_DATABASE_ID` | معرّف قاعدة Firestore Native (حالياً `fatinah-native`) |
 | `FIREBASE_APP_ID`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_STORAGE_BUCKET` | بقية إعداد Firebase Web SDK |
 
-إن لم تكن `FIREBASE_PROJECT_ID` موجودة، يتراجع الخادم تلقائياً لسلوك "الثقة
-بالـ uid القادم من العميل" (بيئة تطوير محلية بلا Firebase حقيقي) — راجع
-`firebase_is_configured()` في `server.py`.
+إن لم تكن `FIREBASE_PROJECT_ID` أو بيانات التحقق موجودة، يرفض الخادم نقاط
+الهوية المحمية افتراضياً؛ لا يثق بالـuid القادم من العميل. راجع
+`firebase_is_configured()` و`uid_matches_token()` في `server.py`.
 
 ## 2. Firebase Console — خطوات إلزامية
 
@@ -146,7 +147,7 @@
 | Webhook URL | `https://ata20.com/api/revenuecat/webhook` |
 | Authorization header value | نفس قيمة السر `REVENUECAT_WEBHOOK_SECRET` المحفوظة في Replit Secrets |
 | Environment | `Production` |
-| App | تطبيق فَطِنة iOS |
+| App | تطبيق فطنة iOS |
 | Event type | All، أو الأحداث الموضحة أدناه |
 
 اترك **Paywall events** معطّلة؛ فهي أحداث واجهة وليست أحداث اشتراك. إذا لم
@@ -165,7 +166,8 @@
 - `app_user_id` غير مربوط بهوية Firebase: `202` ولا يُنشأ اشتراك.
 - شراء أو استعادة ناجحة: `INITIAL_PURCHASE` يجعل الحالة `active`.
 - التجديد: `RENEWAL` يجعل الحالة `active`.
-- الإلغاء أو الانتهاء أو مشكلة الفوترة: الحالة تصبح غير فعّالة.
+- `CANCELLATION` يوقف التجديد فقط وتبقى الحالة فعّالة حتى `EXPIRATION`؛ مشكلة
+  الفوترة تبقي الاستحقاق أثناء فترة الاسترداد، ثم يحسمه حدث الانتهاء.
 - فشل Firestore لا يفتح صلاحية جديدة؛ تُحفظ المحاولة في outbox لإعادة الإرسال.
 
 اختبار المسار المحلي:
@@ -178,3 +180,9 @@ python3 tests/test_revenuecat_webhook.py
 `INITIAL_PURCHASE` و`RENEWAL` و`EXPIRATION` من سجل RevenueCat؛ لا تستخدم بيئة
 Sandbox مع webhook مضبوط على Production. القائمة الكاملة خطوة بخطوة في
 `TESTFLIGHT_CHECKLIST.md`.
+
+عزل إصدار API وسياسة App Check وApp Attest المباشر لكل من 1.2 و1.3 موثقان في
+`API_VERSIONING.md`. لا تستخدم المفتاح العام `FIREBASE_APP_CHECK_ENFORCE`
+لفرض السياسة على v1؛ اضبط `FATINAH_V2_APP_CHECK_ENFORCE` و
+`FATINAH_V2_APP_ATTEST_ENFORCE` في staging أولاً، ثم اختبر مفتاح التثبيت
+والـassertion على جهاز حقيقي قبل production.

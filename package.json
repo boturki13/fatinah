@@ -1,30 +1,47 @@
 {
   "name": "fatinah",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "فطنة — لعبة الذكاء والفطنة الجماعية",
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/patch-ios-dependencies.mjs",
     "sync": "npx cap sync",
     "open:ios": "npx cap open ios",
-    "build:ios": "npx cap sync ios && npx cap open ios"
+    "build:ios": "npx cap sync ios && npx cap open ios",
+    "questions:plan": "node scripts/questions/plan.mjs",
+    "questions:generate": "node scripts/questions/generate.mjs",
+    "questions:review": "node scripts/questions/review.mjs",
+    "questions:select-v13": "node scripts/questions/select-v13.mjs",
+    "questions:publish": "node scripts/questions/publish.mjs",
+    "questions:audit": "node scripts/questions/audit.mjs",
+    "questions:runtime-audit": "node scripts/questions/runtime-release-gate.mjs",
+    "questions:release-gate": "node scripts/questions/runtime-release-gate.mjs --release",
+    "test": "npm run test:static && npm run test:web && npm run test:server",
+    "test:static": "node tests/ios_privacy_config_test.mjs && node tests/messaging_config_test.mjs && node tests/subscription_routing_test.mjs",
+    "test:web": "node tests/question_pipeline_test.mjs && node tests/question_cost_guard_test.mjs && node tests/question_quality_test.mjs && node tests/question_runtime_test.mjs && node tests/question_runtime_release_gate_test.mjs && node tests/kuwaiti_localization_test.mjs && node tests/paywall_prices_test.mjs && node tests/auth_flows_test.mjs && node tests/account_local_data_isolation_test.mjs && node tests/revenuecat_cache_identity_test.mjs && node tests/game_flow_test.mjs && node tests/game_turn_order_test.mjs && node tests/free_round_flow_test.mjs && node tests/free_round_device_identity_test.mjs && node tests/crashlytics_privacy_test.mjs && node tests/responsive_accessibility_test.mjs",
+    "test:server": "python3 tests/test_api_version_contract.py && node tests/test_function_version_contract.mjs && python3 tests/test_revenuecat_webhook.py && python3 tests/test_question_history.py && python3 tests/test_account_delete.py && python3 tests/test_free_round_reports_metrics.py && python3 tests/test_devicecheck_free_round.py && python3 tests/test_app_attest.py && python3 tests/test_app_attest_api.py && python3 tests/test_firebase_admin_and_durable_firestore.py && python3 tests/test_production_release_gate.py"
   },
   "dependencies": {
     "@capacitor-community/keep-awake": "^8.0.0",
-    "@capacitor-firebase/authentication": "^8.0.0",
-    "@capacitor/core": "^8.0.0",
+    "@capacitor-firebase/app-check": "8.4.0",
+    "@capacitor-firebase/authentication": "8.4.0",
+    "@capacitor-firebase/crashlytics": "^8.4.0",
+    "@capacitor-firebase/messaging": "8.4.0",
+    "@capacitor/core": "8.4.2",
     "@capacitor/haptics": "^8.0.0",
-    "@capacitor/ios": "^8.0.0",
+    "@capacitor/ios": "8.4.2",
     "@capacitor/preferences": "^8.0.0",
     "@capacitor/splash-screen": "^8.0.0",
     "@capacitor/status-bar": "^8.0.0",
-    "@revenuecat/purchases-capacitor": "^13.0.0",
-    "firebase": "^12.0.0",
+    "@revenuecat/purchases-capacitor": "^13.4.0",
+    "firebase": "12.17.1",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.0.0"
+    "@capacitor/cli": "8.4.2",
+    "playwright": "^1.62.1"
   },
   "overrides": {
-    "brace-expansion": ">=2.1.4"
+    "brace-expansion": ">=5.0.9"
   }
 }

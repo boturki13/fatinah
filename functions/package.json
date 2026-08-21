@@ -1,0 +1,16 @@
+{
+  "name": "fatinah-functions",
+  "description": "Cloud Functions متوافقة مع الإصدارات القديمة من فطنة",
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^14.2.0",
+    "firebase-functions": "^7.3.2"
+  },
+  "overrides": {
+    "uuid": ">=11.1.1"
+  },
+  "private": true
+}

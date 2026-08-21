@@ -1,3 +1,38 @@
 node_modules/
 .DS_Store
 subscriptions.db
+firebase-debug.log
+.env.local
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Local review artifacts and generated screenshots
+work/
+
+# Xcode build products and local archives
+DerivedData/
+build/
+*.xcarchive
+*.ipa
+*.xcresult
+*.dSYM
+
+# Local Swift/Xcode user state
+.swiftpm/
+xcuserdata/
+*.xcuserstate
+
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+*.p12
+*.p8
+*.pem
+*.key
+*.mobileprovision
+*service-account*.json
+*service_account*.json
+firebase-adminsdk-*.json

@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const root = new URL('../', import.meta.url);
+const pkg = JSON.parse(fs.readFileSync(new URL('package.json', root), 'utf8'));
+const config = JSON.parse(fs.readFileSync(new URL('capacitor.config.json', root), 'utf8'));
+const delegate = fs.readFileSync(new URL('ios/App/App/AppDelegate.swift', root), 'utf8');
+const app = fs.readFileSync(new URL('www/app.js', root), 'utf8');
+
+assert.equal(pkg.dependencies['@capacitor-firebase/messaging'], '8.4.0');
+assert.deepEqual(config.plugins.FirebaseMessaging.presentationOptions, ['alert', 'badge', 'sound']);
+assert.match(delegate, /capacitorDidRegisterForRemoteNotifications/);
+assert.match(delegate, /didReceiveRemoteNotification/);
+assert.match(delegate, /Messaging\.messaging\(\)\.apnsToken = deviceToken/);
+assert.match(delegate, /if pushDiagnosticsEnabled \{[\s\S]*?Messaging\.messaging\(\)\.token/);
+assert.match(delegate, /CommandLine\.arguments\.contains\("-FatinahPushDiagnostics"\)/);
+assert.match(app, /notificationReceived/);
+assert.match(app, /notificationActionPerformed/);
+assert.match(app, /FirebaseMessaging\.getToken|messaging\.getToken/);
+assert.match(app, /async function initPushMessaging\(\)[\s\S]*?if\(current\.receive!=='granted'\) return false;/);
+assert.doesNotMatch(
+  app.match(/async function initPushMessaging\(\)[\s\S]*?\n\}/)?.[0] || '',
+  /requestPermissions\(/,
+  'لا تطلب إذن الإشعارات تلقائياً أثناء الإقلاع.'
+);
+assert.match(app, /async function enablePushNotifications\(\)[\s\S]*?requestPermissions\(\)/);
+
+console.log('✓ Firebase Messaging يربط APNs ويطلب الإذن فقط بعد إجراء واضح من المستخدم');
