@@ -9,11 +9,12 @@ const config: CapacitorConfig = {
     contentInset: 'always',
     backgroundColor: '#120B24',
     scrollEnabled: true,
-    limitsNavigationsToAppBoundDomains: true
+    limitsNavigationsToAppBoundDomains: false
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 1500,
+      launchAutoHide: false,
+      launchShowDuration: 700,
       backgroundColor: '#120B24',
       showSpinner: false,
       androidScaleType: 'CENTER_CROP',
@@ -27,7 +28,10 @@ const config: CapacitorConfig = {
     },
     FirebaseAuthentication: {
       skipNativeAuth: false,
-      providers: ['apple.com', 'google.com']
+      providers: ['apple.com', 'google.com', 'phone']
+    },
+    FirebaseMessaging: {
+      presentationOptions: ['alert', 'badge', 'sound']
     }
   }
 };

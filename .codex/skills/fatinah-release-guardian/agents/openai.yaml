@@ -1,0 +1,4 @@
+interface:
+  display_name: "معايير فطنة"
+  short_description: "حماية جودة وأمان تحديثات تطبيق فطنة"
+  default_prompt: "استخدم $fatinah-release-guardian لتطوير أو مراجعة تحديث فطنة وفق معايير المحتوى والاشتراك والأمان والنشر."

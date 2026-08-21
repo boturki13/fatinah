@@ -1,0 +1,109 @@
+name: iOS release gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ios-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  XCODE_VERSION: '26.6'
+  IOS_SDK_MAJOR: '26'
+  NODE_VERSION: '22'
+  PYTHON_VERSION: '3.13'
+
+jobs:
+  verify:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Select Xcode
+        shell: bash
+        run: sudo xcode-select -s "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: '0.11.28'
+
+      - name: Verify toolchain versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e 'const expected = process.env.NODE_VERSION.split("."); const actual = process.versions.node.split("."); if (!expected.every((part, index) => part === actual[index])) throw new Error(`Expected Node ${process.env.NODE_VERSION}.x, got ${process.versions.node}`);'
+          python3 -c 'import os, sys; expected_text = os.environ["PYTHON_VERSION"]; expected = tuple(map(int, expected_text.split("."))); actual = sys.version_info[:len(expected)]; assert actual == expected, "Expected Python {}.x, got {}".format(expected_text, sys.version.split()[0])'
+          xcode_version="$(xcodebuild -version | awk 'NR == 1 { print $2 }')"
+          case "${xcode_version}" in
+            "${XCODE_VERSION}"*) ;;
+            *) echo "Expected Xcode ${XCODE_VERSION}.x, got ${xcode_version}" >&2; exit 1 ;;
+          esac
+          sdk_version="$(xcrun --sdk iphoneos --show-sdk-version)"
+          sdk_major="${sdk_version%%.*}"
+          if (( sdk_major < IOS_SDK_MAJOR )); then
+            echo "Expected iOS SDK ${IOS_SDK_MAJOR} or newer, got ${sdk_version}" >&2
+            exit 1
+          fi
+          printf 'Node %s | Python %s | Xcode %s | iOS SDK %s\n' \
+            "$(node --version)" "$(python3 --version 2>&1)" "${xcode_version}" "${sdk_version}"
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix functions
+          uv sync --locked
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Web, server, security, and content tests
+        run: |
+          npm test
+          npm audit --omit=dev
+          npm audit --prefix functions --omit=dev
+          node -e "const handlers=require('./functions/index.js'); if (!handlers.generateQuestions || !handlers.generateQuestionsV2) throw new Error('Cloud Function handlers missing')"
+          npm run questions:audit
+          npm run questions:runtime-audit
+
+      - name: Sync native iOS project
+        run: npx cap sync ios
+
+      - name: Swift Testing and XCUITest
+        run: |
+          simulator_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(d["udid"] for devices in data["devices"].values() for d in devices if d.get("isAvailable") and "iPhone" in d["name"]))')
+          xcodebuild test \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -destination "platform=iOS Simulator,id=${simulator_id}" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Unsigned Release build (no external uploads)
+        run: >-
+          xcodebuild build
+          -workspace ios/App/App.xcworkspace
+          -scheme App
+          -configuration Release
+          -sdk iphoneos
+          -destination 'generic/platform=iOS'
+          COMPILER_INDEX_STORE_ENABLE=NO
+          CODE_SIGNING_ALLOWED=NO
+          SKIP_CRASHLYTICS_UPLOAD=1
+
+      # اترك الاختبارات والبناء غير الموقّع يعملان حتى أثناء ترحيل المحتوى،
+      # ثم امنع دمج/إصدار 1.3 في الخطوة النهائية بلا تعطيل تغذية CI الراجعة.
+      - name: Question content release gate
+        run: npm run questions:release-gate

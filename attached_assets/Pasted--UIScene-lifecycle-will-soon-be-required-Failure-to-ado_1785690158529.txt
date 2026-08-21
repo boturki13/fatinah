@@ -33,5 +33,5 @@ ERROR MESSAGE:  {"message":"This operation is restricted to administrators only.
 ⚡️  TO JS undefined
 ⚡️  TO JS undefined
 ⚡️  TO JS undefined
-⚡️  TO JS {"token":"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwY2FkODZkNzY5ZmFkZTViODkxNmQ5Y2U1MDc0YzgyMGYwNjdkNTIiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vZmF0aW5haC1nYW1lIiwiYXVkIjoiZmF0aW5haC1nYW1lIiwiYXV0aF90aW1lIjoxNzg1NTIyODQyLCJ1c2VyX2lkIjo
+[REDACTED_FIREBASE_TOKEN_LOG]
 ⚡️  [error] - RC init: {}

@@ -1,4 +1,4 @@
-# TASK: Implement Production Authentication & Identity Linking — فَطِنة (iOS)
+# TASK: Implement Production Authentication & Identity Linking — فطنة (iOS)
 
 ## 1. ROLE
 You are a senior iOS platform engineer. You are implementing a production-grade
@@ -7,7 +7,7 @@ placeholder code, mock screens, or TODO stubs. Every path you write must be
 functional and testable on a physical device.
 
 ## 2. CONTEXT
-- App: "فَطِنة" — Arabic-language party/trivia game.
+- App: "فطنة" — Arabic-language party/trivia game.
 - Stack: Capacitor 6 hybrid app. HTML/CSS/JavaScript running in WKWebView,
   wrapped in a native iOS shell. Not SwiftUI, not UIKit-native.
 - Current state: the app contains a NON-FUNCTIONAL social login screen (UI only,

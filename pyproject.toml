@@ -4,6 +4,11 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
-    "cryptography>=50.0.0",
+    "cbor2>=5.7.1",
+    "cryptography>=49.0.0",
+    "firebase-admin>=7.5.0",
     "stripe>=15.3.1",
 ]
+
+[tool.setuptools]
+py-modules = ["server", "firebase_admin_bridge", "app_attest"]

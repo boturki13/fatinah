@@ -1,6 +1,6 @@
 ---
 name: App Store readiness audit
-description: القيود الخارجية المتغيرة التي يجب فحصها قبل رفع فَطِنة إلى App Store
+description: القيود الخارجية المتغيرة التي يجب فحصها قبل رفع فطنة إلى App Store
 ---
 
 لرفع تطبيق iOS إلى App Store بعد 28 أبريل 2026، يجب بناء الأرشيف باستخدام Xcode 26 أو أحدث وSDK iOS 26 أو أحدث، ولا يكفي نجاح `npx cap sync` داخل Linux.
