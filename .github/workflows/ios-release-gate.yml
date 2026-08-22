@@ -80,7 +80,7 @@ jobs:
           npm run questions:runtime-audit
 
       - name: Sync native iOS project
-        run: npx cap sync ios
+        run: npm run sync:ios
 
       - name: Swift Testing and XCUITest
         run: |
