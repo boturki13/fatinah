@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const appSource = fs.readFileSync(new URL('../www/app.js', import.meta.url), 'utf8');
+const indexSource = fs.readFileSync(new URL('../www/index.html', import.meta.url), 'utf8');
 assert.doesNotMatch(
   appSource,
   /go\(_freeRoundAvailable\?'s-home':'s-paywall'\)/,
@@ -54,6 +55,14 @@ const activeRc = async () => true;
 const freeRound = async () => true;
 const usedFreeRound = async () => false;
 const tests = [];
+
+tests.push(async function family_offer_code_uses_apple_redemption() {
+  assert.match(indexSource, />🎁 ضع الكود هنا<\/button>/);
+  assert.match(indexSource, /كود الأهل والأصدقاء يُنشأ ويُسترد بأمان عبر Apple/);
+  assert.doesNotMatch(indexSource, /عندي كود عرض من Apple|عندك كود مجاني/);
+  assert.match(appSource, /async function redeemAppleOfferCode\(\)[\s\S]*?presentCodeRedemptionSheet\(\)/);
+  console.log('  ✓ كود الأهل والأصدقاء يظهر بالنص الجديد ويُسترد عبر Apple');
+});
 
 tests.push(async function server_active_opens_home() {
   const tracker = makeGoTracker();
