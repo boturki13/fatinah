@@ -57,8 +57,17 @@ jobs:
           npx cap copy ios
           node scripts/images/fetch-release-assets.mjs --asset=v1/fire-extinguisher.avif
 
-      - name: Run deterministic, web, iOS metadata, and server tests
-        run: npm run test:ci
+      - name: Run release metadata and static tests
+        run: npm run test:static
+
+      - name: Run deterministic source tests
+        run: npm run test:deterministic-sources
+
+      - name: Run web application tests
+        run: npm run test:web:core
+
+      - name: Run server and Cloud Functions tests
+        run: npm run test:server
 
   release-assets:
     name: Release asset integrity
