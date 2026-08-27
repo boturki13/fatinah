@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const manifestPath = path.join(root, 'server-assets/question-images/release-manifest.json');
 const verifyOnly = process.argv.includes('--verify-only');
+const assetArgument = process.argv.find(argument => argument.startsWith('--asset='));
+const requestedAsset = assetArgument?.slice('--asset='.length);
 const concurrencyArgument = process.argv.find(argument => argument.startsWith('--concurrency='));
 const concurrency = Math.max(1, Math.min(16, Number(concurrencyArgument?.split('=')[1] || 8)));
 const allowedHosts = new Set(['ata20.com']);
@@ -14,6 +16,13 @@ const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
 
 if (!Array.isArray(manifest.items) || manifest.items.length === 0) {
   throw new Error('release_manifest_empty');
+}
+
+const items = requestedAsset
+  ? manifest.items.filter(item => item.relativePath === requestedAsset)
+  : manifest.items;
+if (requestedAsset && items.length !== 1) {
+  throw new Error(`release_asset_not_unique:${requestedAsset}:${items.length}`);
 }
 
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -57,8 +66,8 @@ let downloaded = 0;
 const missing = [];
 
 async function worker() {
-  while (cursor < manifest.items.length) {
-    const item = manifest.items[cursor++];
+  while (cursor < items.length) {
+    const item = items[cursor++];
     const destination = destinationFor(item);
     if (await validLocalAsset(item, destination)) {
       verified++;
@@ -84,6 +93,7 @@ console.log(JSON.stringify({
   ready: true,
   manifestStatus: manifest.status,
   assetCount: manifest.items.length,
+  processedAssetCount: items.length,
   verified,
   downloaded,
 }, null, 2));

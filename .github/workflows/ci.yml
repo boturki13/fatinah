@@ -52,6 +52,11 @@ jobs:
           uv sync --locked
           npx playwright install --with-deps chromium
 
+      - name: Prepare generated test assets
+        run: |
+          npx cap copy ios
+          node scripts/images/fetch-release-assets.mjs --asset=v1/fire-extinguisher.avif
+
       - name: Run deterministic, web, iOS metadata, and server tests
         run: npm run test:ci
 
