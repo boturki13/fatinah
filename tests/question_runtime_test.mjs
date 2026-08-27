@@ -3,6 +3,7 @@ import { chromium } from 'playwright';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
+import { loadImageQuestionBank, loadRuntimeQuestionBank } from '../scripts/questions/lib.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const url = `file://${path.join(root, 'www/index.html')}`;
@@ -16,12 +17,25 @@ const expectedV13Groups = {
   'اللغة العربية':'فنون وأدب',
   'كتب وروايات':'فنون وأدب',
 };
-const publishedCount = JSON.parse(fs.readFileSync(path.join(root, 'content/questions/published.json'), 'utf8')).length;
+const imageQuestions = Object.values(loadImageQuestionBank()).flat();
+const approvedImageCount = imageQuestions.filter(question => question.review?.status === 'approved').length;
+const blockedImageCount = imageQuestions.length - approvedImageCount;
+const runtimeTextQuestions = Object.values(loadRuntimeQuestionBank().bank).flat();
 const appSource = fs.readFileSync(path.join(root, 'www/app.js'), 'utf8');
 assert.match(
   appSource,
   /async function startGame\(\)[\s\S]*?await syncQuestionHistory\(\)/,
   'بدء الجولة يجب أن ينتظر مزامنة سجل الحساب قبل اختيار الأسئلة.',
+);
+assert.match(
+  appSource,
+  /async function startGame\(\)[\s\S]*?await prepareSelectedImageCategories\(\)[\s\S]*?findRoundStockIssue\(\)[\s\S]*?claimFreeRound\(/,
+  'بدء الجولة يجب أن يفحص مخزون كل مستوى بعد تجهيز الصور وقبل استهلاك الجولة المجانية.',
+);
+assert.match(
+  appSource,
+  /const stockIssue=findRoundStockIssue\(\);[\s\S]*?if\(stockIssue\)[\s\S]*?renderCats\(\);[\s\S]*?go\('s-cats'\);/,
+  'فشل فحص المخزون يجب أن يرجع اللاعب لاختيار فئات جديدة.',
 );
 
 const browser = await chromium.launch();
@@ -88,6 +102,39 @@ try {
     state.cats=[exhaustedCategory]; state.cells={[exhaustedKey]:{used:false}}; state.cur=null;
     const exhaustedCell=document.createElement('button');
     const exhaustedOpenResult=openQuestion(0,exhaustedLevel,exhaustedKey,exhaustedCell);
+    const exhaustionSnapshot={
+      leftCellAvailable:state.cells[exhaustedKey].used===false&&!exhaustedCell.classList.contains('used'),
+      leftQuestionClosed:state.cur===null&&!document.getElementById('q-wrap').classList.contains('show'),
+      toastTitle:document.getElementById('toast-t').textContent,
+      toastDescription:document.getElementById('toast-d').textContent,
+    };
+
+    // لا تبدأ الجولة من الأساس إذا كان أحد مستويات الفئة المختارة مستهلكاً؛
+    // ومن شاشة النتيجة نرجع اللاعب لاختيار فئات جديدة بدل إعادة جولة معلّقة.
+    _hasActiveSubscription=true;
+    _subscriptionResolved=true;
+    _freeRoundAvailable=false;
+    _startGamePending=false;
+    storeSet('authProvider','local');
+    state.teamCount=2;
+    state.teams=[
+      {name:'فريق 1',score:0,ll:3,used:new Set(),idx:0,bombUsed:false},
+      {name:'فريق 2',score:0,ll:3,used:new Set(),idx:1,bombUsed:false},
+    ];
+    state.catCount=1;
+    state.cats=[exhaustedCategory];
+    state.cells={};
+    go('s-result');
+    const stockIssue=findRoundStockIssue();
+    const exhaustedStartResult=await startGame();
+    const roundPreflight={
+      issue:stockIssue,
+      startResult:exhaustedStartResult,
+      boardCellCount:Object.keys(state.cells).length,
+      selectedCategoryCount:state.cats.length,
+      toastTitle:document.getElementById('toast-t').textContent,
+      toastDescription:document.getElementById('toast-d').textContent,
+    };
 
     // سجل 1.2 كان يحفظ معرّفاً مشتقاً من النص. بعد اعتماد معرّف 1.3
     // الثابت تحريرياً يجب أن يبقى الاسم السابق حاجزاً للتكرار.
@@ -106,15 +153,15 @@ try {
       ids: questions.map(q=>q.id),
       duplicateTexts: Object.entries(QUESTION_BANK).flatMap(([cat, qs]) => {
         const seen=new Set();
-        return qs.filter(q=>seen.has(q.q.trim())||!seen.add(q.q.trim())).map(q=>`${cat}: ${q.q}`);
+        return qs.filter(q=>!q.image).filter(q=>seen.has(q.q.trim())||!seen.add(q.q.trim())).map(q=>`${cat}: ${q.q}`);
       }),
       invalidSources: questions.filter(q=>!q.source||!/^https:\/\//.test(q.source.url||'')).map(q=>q.q),
       approved: questions.filter(q=>q.review?.status==='approved').length,
       pending: questions.filter(q=>['pending_review','pending_religious_review'].includes(q.review?.status)).length,
       invalidApprovals: questions.filter(q=>q.review?.status==='approved'&&(!q.review?.reviewer||!q.review?.reviewedAt)).map(q=>q.q),
-      religiousPending: Object.entries(QUESTION_BANK).flatMap(([category,rows])=>
+      invalidReligiousApprovals: Object.entries(QUESTION_BANK).flatMap(([category,rows])=>
         religiousCategories.includes(category)
-          ? rows.filter(q=>q.review?.status!=='pending_religious_review').map(q=>`${category}: ${q.q}`)
+          ? rows.filter(q=>q.review?.status!=='approved'||q.review?.religiousSourceAndIsnadConfirmed!==true).map(q=>`${category}: ${q.q}`)
           : []),
       categoryFallback: questions.filter(q=>q.source?.scope==='category_fallback').length,
       volatile: questions.filter(q=>/2026|حالياً|حتى الآن|بحلول/.test(q.q+' '+q.answer)).map(q=>q.q),
@@ -128,6 +175,7 @@ try {
         previousIds:migratedQuestion.previousIds,
         result:migratedHistoryResult,
       },
+      roundPreflight,
       exhaustion:{
         category:exhaustedCategory,
         level:exhaustedLevel,
@@ -136,29 +184,35 @@ try {
         selectedQuestions,
         result:exhaustedResult,
         openResult:exhaustedOpenResult,
-        leftCellAvailable:state.cells[exhaustedKey].used===false&&!exhaustedCell.classList.contains('used'),
-        leftQuestionClosed:state.cur===null&&!document.getElementById('q-wrap').classList.contains('show'),
+        leftCellAvailable:exhaustionSnapshot.leftCellAvailable,
+        leftQuestionClosed:exhaustionSnapshot.leftQuestionClosed,
         historyBeforeExhaustion:historyBeforeExhaustion[exhaustedCategory]||[],
         historyAfterExhaustion:historyAfterExhaustion[exhaustedCategory]||[],
-        toastTitle:document.getElementById('toast-t').textContent,
-        toastDescription:document.getElementById('toast-d').textContent,
+        toastTitle:exhaustionSnapshot.toastTitle,
+        toastDescription:exhaustionSnapshot.toastDescription,
       },
     };
   }, {religiousCategories:religious,newCategories:v13Categories});
 
-  assert.equal(audit.categories, 32 + v13Categories.length);
-  assert.equal(audit.total, 234 + publishedCount, 'البنك الأساسي مع جميع الأسئلة الجديدة المعتمدة.');
+  assert.equal(audit.categories, 40 + v13Categories.length);
+  assert.equal(audit.total, runtimeTextQuestions.length + imageQuestions.length,
+    'بنك التشغيل المحلي يجب أن يضم النصوص المنشورة وكل أسئلة الصور المجهزة.');
   assert.equal(new Set(audit.ids).size, audit.ids.length, 'كل سؤال يحتاج معرفاً فريداً.');
   assert.match(audit.idMigration.id,/^q3-/,'أسئلة البنك القديم تحتاج معرّف 1.3 ثابتاً لا يعتمد على النص.');
   assert.match(audit.idMigration.previousIds[0],/^q2-/,'يجب الاحتفاظ بمعرّف 1.2 لترحيل سجل المشاهدة.');
-  assert.equal(audit.idMigration.result.exhausted,true,'السؤال المشاهد بمعرّف 1.2 لا يجوز أن يظهر مجدداً في 1.3.');
+  assert.notEqual(audit.idMigration.result.id,audit.idMigration.id,
+    'السؤال المشاهد بمعرّف 1.2 لا يجوز أن يظهر مجدداً في 1.3.');
+  assert.notEqual(audit.idMigration.result.exhausted,true,
+    'وجود أسئلة جديدة في المستوى يسمح بالمتابعة بدل اعتباره مستنفداً بالكامل.');
   assert.deepEqual(audit.duplicateTexts, [], `يوجد نص سؤال مكرر داخل الفئة: ${audit.duplicateTexts.join(' | ')}`);
   assert.deepEqual(audit.invalidSources, [], 'كل سؤال يحتاج رابط مصدر HTTPS.');
-  assert.equal(audit.approved,publishedCount,'لا يجوز اعتماد سوى سجلات النشر الفعلية المراجعة.');
-  assert.equal(audit.pending,234,'أسئلة base والإضافات القديمة تبقى معلقة حتى تدقيقها فردياً.');
+  assert.equal(audit.approved,runtimeTextQuestions.length+approvedImageCount,
+    'الأسئلة النصية والصور غير المحجوبة يجب أن تحمل اعتماداً فردياً قابلاً للتدقيق.');
+  assert.equal(audit.pending,blockedImageCount,
+    'المعلّق الوحيد المسموح هو فئة اللاعبين المحجوبة إلى اعتماد حق الاسم والصورة التجارية.');
   assert.deepEqual(audit.invalidApprovals, [], 'كل اعتماد صريح يحتاج اسم مراجع وتاريخ مراجعة.');
-  assert.deepEqual(audit.religiousPending, [], 'كل سؤال ديني قديم يبقى pending_religious_review حتى تأكيد المصدر والإسناد.');
-  assert.ok(audit.categoryFallback>0,'يجب وسم مراجع الفئة العامة صراحةً حتى تكشفها بوابة الإصدار.');
+  assert.deepEqual(audit.invalidReligiousApprovals, [], 'كل سؤال ديني معتمد يحتاج تأكيد المصدر والإسناد.');
+  assert.equal(audit.categoryFallback,0,'كل سؤال يحتاج مرجعاً خاصاً به، لا رابط فئة عاماً.');
   assert.deepEqual(audit.volatile, [], `وجدت أسئلة سريعة التقادم: ${audit.volatile.join(' | ')}`);
   for(const category of religious){
     assert.equal(audit.categoryCounts[category], 12, `${category}: يجب أن تحتوي 12 سؤالاً.`);
@@ -200,8 +254,17 @@ try {
   );
   assert.match(audit.exhaustion.toastTitle, /خلصت الأسئلة/);
   assert.match(audit.exhaustion.toastDescription, /ماكو سؤال ما شفته من قبل/);
-  console.log(`✓ البنك الفعلي: ${234 + publishedCount} سؤالاً، ${publishedCount} معتمداً فعلياً و234 قيد التدقيق`);
-  console.log('✓ الفئات الدينية: سؤالان لكل مستوى، كلها معلّقة حتى تأكيد المصدر والإسناد، ولا تكرار في جولتين');
+  assert.deepEqual(audit.roundPreflight.issue,{
+    category:audit.exhaustion.category,
+    difficulty:audit.exhaustion.level,
+  },'فحص ما قبل الجولة يجب أن يحدد الفئة والمستوى المنهك بدقة.');
+  assert.equal(audit.roundPreflight.startResult,false,'لا يجوز بدء جولة نعرف مسبقاً أنها لن تكتمل.');
+  assert.equal(audit.roundPreflight.boardCellCount,0,'لا يجوز بناء لوحة ناقصة بعد فشل فحص المخزون.');
+  assert.equal(audit.roundPreflight.selectedCategoryCount,0,'اختيار الجولة السابقة المنهك يجب أن يُمسح قبل الاختيار الجديد.');
+  assert.match(audit.roundPreflight.toastTitle,/اختار فئة ثانية/);
+  assert.match(audit.roundPreflight.toastDescription,/عشان نضمن إن الجولة تكتمل/);
+  console.log(`✓ البنك المحمّل للاختبار: ${audit.total} سؤالاً؛ المعتمد ${audit.approved} والمحجوب بحقوق اللاعبين ${audit.pending}`);
+  console.log('✓ الفئات الدينية: سؤالان لكل مستوى، وكل مصدر وإسناد مؤكد، ولا تكرار في جولتين');
   console.log('✓ فئات 1.3 لها أيقونات وفلاتر، ونفاد الأسئلة لا يمسح سجل المستخدم أو يكرر سؤالاً');
 } finally {
   await browser.close();

@@ -57,6 +57,7 @@ def valid_environment() -> dict[str, str]:
         "FATINAH_APP_ATTEST_TTL_CONFIGURED": "true",
         "FATINAH_IOS_DIAGNOSTICS_TTL_CONFIGURED": "true",
         "FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED": "true",
+        "FATINAH_DISTRIBUTED_RATE_LIMIT_TTL_CONFIGURED": "true",
         "GOOGLE_API_KEY": "GOOGLE_API_KEY_SENTINEL",
         "FIREBASE_AUTH_DOMAIN": "fatinah-game.firebaseapp.com",
         "FIREBASE_PROJECT_ID": "fatinah-game",
@@ -96,6 +97,26 @@ environment = valid_environment()
 checks = gate.audit_environment(environment)
 assert gate.release_ready(checks), gate.render_human(checks)
 assert all(check.status == "pass" for check in checks)
+
+
+# The reviewed remote question bank is required by the 1.3 round endpoint.
+# Production defaults features to disabled, so both omission and an explicit
+# false value must prevent a misleading READY result.
+for disabled_value in (None, "false"):
+    question_bank_disabled = dict(environment)
+    if disabled_value is None:
+        question_bank_disabled.pop(
+            "FATINAH_V2_FEATURE_QUESTION_BANK_ENABLED", None
+        )
+    else:
+        question_bank_disabled[
+            "FATINAH_V2_FEATURE_QUESTION_BANK_ENABLED"
+        ] = disabled_value
+    question_bank_checks = gate.audit_environment(question_bank_disabled)
+    assert statuses(question_bank_checks)[
+        "v2.feature.question_bank.enabled"
+    ] == "fail"
+    assert not gate.release_ready(question_bank_checks)
 
 
 # The report contains identifiers and statuses only, never environment values.
@@ -147,6 +168,7 @@ broken.update({
     "FATINAH_APP_ATTEST_TTL_CONFIGURED": "false",
     "FATINAH_IOS_DIAGNOSTICS_TTL_CONFIGURED": "false",
     "FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED": "false",
+    "FATINAH_DISTRIBUTED_RATE_LIMIT_TTL_CONFIGURED": "false",
 })
 broken_statuses = statuses(gate.audit_environment(broken))
 assert broken_statuses["deployment.environment.production"] == "fail"
@@ -157,6 +179,34 @@ assert broken_statuses["v2.feature.free_round.enabled"] == "fail"
 assert broken_statuses["app_attest.firestore_ttl.enabled"] == "fail"
 assert broken_statuses["ios_diagnostics.firestore_ttl.enabled"] == "fail"
 assert broken_statuses["operations.distributed_rate_limit.enabled"] == "fail"
+assert broken_statuses[
+    "operations.distributed_rate_limit.ttl.enabled"
+] == "fail"
+
+limiter_without_ttl = dict(environment)
+limiter_without_ttl[
+    "FATINAH_DISTRIBUTED_RATE_LIMIT_TTL_CONFIGURED"
+] = "false"
+limiter_statuses = statuses(gate.audit_environment(limiter_without_ttl))
+assert limiter_statuses["operations.distributed_rate_limit.enabled"] == "pass"
+assert limiter_statuses[
+    "operations.distributed_rate_limit.ttl.enabled"
+] == "fail"
+assert not gate.release_ready(gate.audit_environment(limiter_without_ttl))
+
+
+# The limiter flag is not a self-attestation: production must also have the
+# reviewed Firestore database and usable Admin credentials for atomic CAS.
+limiter_without_firestore = dict(environment)
+limiter_without_firestore["FIREBASE_SERVICE_ACCOUNT_JSON"] = "{}"
+limiter_statuses = statuses(gate.audit_environment(limiter_without_firestore))
+assert limiter_statuses["operations.distributed_rate_limit.enabled"] == "fail"
+assert not gate.release_ready(gate.audit_environment(limiter_without_firestore))
+
+limiter_with_wrong_database = dict(environment)
+limiter_with_wrong_database["FIRESTORE_DATABASE_ID"] = "default"
+limiter_statuses = statuses(gate.audit_environment(limiter_with_wrong_database))
+assert limiter_statuses["operations.distributed_rate_limit.enabled"] == "fail"
 
 
 # v1 App Check must remain explicitly disabled while App Store version 1.2 lives.

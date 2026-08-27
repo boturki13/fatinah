@@ -16,9 +16,9 @@ import {
   totalEstimatedUsd,
 } from '../scripts/questions/cost.mjs';
 
-assert.equal(PRICING_AS_OF, '2026-08-21');
+assert.equal(PRICING_AS_OF, '2026-08-24');
 assert.deepEqual(BUILTIN_MODEL_PRICING['gpt-5.6-terra'], { inputUsdPerMillion: 2, outputUsdPerMillion: 12 });
-assert.deepEqual(BUILTIN_MODEL_PRICING['gpt-5.6-sol'], { inputUsdPerMillion: 5, outputUsdPerMillion: 30 });
+assert.deepEqual(BUILTIN_MODEL_PRICING['gpt-5.6-sol'], { inputUsdPerMillion: 4, outputUsdPerMillion: 20 });
 assert.deepEqual(BUILTIN_MODEL_PRICING['gpt-5.6-luna'], { inputUsdPerMillion: 0.2, outputUsdPerMillion: 1.2 });
 assert.throws(() => resolveModelPricing('future-unknown-model', {}), /سعر النموذج.*غير معروف/);
 assert.deepEqual(
@@ -29,7 +29,7 @@ assert.deepEqual(
   }),
   {
     model: 'private-priced-model', inputUsdPerMillion: 7, outputUsdPerMillion: 35,
-    source: 'env', pricingAsOf: '2026-08-21',
+    source: 'env', pricingAsOf: '2026-08-24',
   },
 );
 assert.throws(
@@ -86,11 +86,11 @@ const verificationReserve = estimateResponseReserve({
 assert.equal(WEB_SEARCH_CONTEXT_TOKEN_RESERVE_PER_CALL, 8_000);
 assert.equal(verificationReserve.toolContextInputTokenReserve, 16_000);
 assert.equal(verificationReserve.inputTokens, 26_000);
-assert.equal(verificationReserve.estimatedUsd, 0.24);
+assert.ok(Math.abs(verificationReserve.estimatedUsd - 0.184) < 1e-12);
 const generationPlusReserve = totalEstimatedUsd(actualUsage, verificationReserve);
-assert.ok(Math.abs(generationPlusReserve - 0.286) < 1e-12);
-assert.equal(assertWithinBudget(generationPlusReserve, 0.29, 'test'), true);
-assert.throws(() => assertWithinBudget(generationPlusReserve, 0.28, 'before_verification'), /لم تُنفذ المرحلة التالية/);
+assert.ok(Math.abs(generationPlusReserve - 0.23) < 1e-12);
+assert.equal(assertWithinBudget(generationPlusReserve, 0.24, 'test'), true);
+assert.throws(() => assertWithinBudget(generationPlusReserve, 0.22, 'before_verification'), /لم تُنفذ المرحلة التالية/);
 
 const generator = fs.readFileSync(new URL('../scripts/questions/generate.mjs', import.meta.url), 'utf8');
 assert.equal((generator.match(/max_output_tokens:/g) || []).length, 2, 'كل Responses call يحتاج max_output_tokens.');

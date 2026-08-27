@@ -25,6 +25,8 @@ python3 server.py
 | `FIREBASE_AUTH_DOMAIN` | Google/Apple sign-in في المتصفح | لـ auth |
 | `FIREBASE_PROJECT_ID` | Google/Apple sign-in في المتصفح | لـ auth |
 | `FIRESTORE_DATABASE_ID` | معرّف قاعدة Firestore Native | `fatinah-native` |
+| `FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED` | يفعّل حد Firestore الموزع | نعم في Autoscale/production |
+| `FATINAH_DISTRIBUTED_RATE_LIMIT_TTL_CONFIGURED` | يؤكد تفعيل TTL على `distributed_rate_limits.expire_at` | نعم في Autoscale/production |
 | `FIREBASE_APP_ID` | Google/Apple sign-in في المتصفح | لـ auth |
 | `FIREBASE_MESSAGING_SENDER_ID` | Google/Apple sign-in في المتصفح | لـ auth |
 

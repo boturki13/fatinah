@@ -3,7 +3,7 @@
 يخدم index.html وfirebase-config.js ويدير اشتراكات Apple IAP عبر RevenueCat.
 أسئلة اللعبة تصدر من بنك محتوى ثابت ومراجع؛ لا يوجد توليد آلي للمستخدم.
 """
-import base64, datetime, gzip, hashlib, ipaddress, json, os, secrets, socket, sqlite3, threading, time, urllib.request, urllib.error, urllib.parse, uuid
+import base64, datetime, gzip, hashlib, io, ipaddress, json, os, secrets, socket, sqlite3, threading, time, urllib.request, urllib.error, urllib.parse, uuid
 import smtplib, ssl
 from email.message import EmailMessage
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -14,8 +14,174 @@ import re
 PORT      = int(os.environ.get('PORT', 5000))
 WWW_DIR   = os.path.join(os.path.dirname(__file__), 'www')
 HTML_FILE = os.path.join(WWW_DIR, 'index.html')
+QUESTION_IMAGE_DIR = os.path.join(
+    os.path.dirname(__file__), 'server-assets', 'question-images')
+QUESTION_BANK_DIR = os.path.join(
+    os.path.dirname(__file__), 'server-assets', 'question-bank', 'v1')
+QUESTION_BANK_FILE = os.path.join(QUESTION_BANK_DIR, 'bank.json')
 DB_PATH   = os.path.join(os.path.dirname(__file__), 'subscriptions.db')
 IOS_DIAGNOSTIC_RETENTION_DAYS = 30
+QUESTION_IMAGE_ALLOWED_ORIGINS = frozenset({
+    'capacitor://localhost',
+    'ionic://localhost',
+    'https://fatinah-next-1-3-security-review.replit.app',
+})
+
+
+def bounded_env_int(name: str, default: int, minimum: int, maximum: int) -> int:
+    """Read an integer setting while preserving secure production bounds."""
+    try:
+        value = int(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(value, maximum))
+
+
+# A finite read timeout releases slow/incomplete HTTP requests. A bounded worker
+# count prevents unauthenticated clients from creating an unlimited number of
+# handler threads. Both settings remain configurable inside conservative bounds.
+HTTP_REQUEST_TIMEOUT_SECONDS = bounded_env_int(
+    'FATINAH_HTTP_REQUEST_TIMEOUT_SECONDS', 15, 5, 30)
+HTTP_MAX_WORKER_THREADS = bounded_env_int(
+    'FATINAH_HTTP_MAX_WORKER_THREADS', 64, 8, 128)
+# في Replit Deployment يصل الاتصال إلى التطبيق من طبقة البروكسي المُدارة.
+# لذلك قد تشترك طلبات لاعبين مختلفين في عنوان TCP peer واحد، ولا يجوز أن
+# نعامل هذا العنوان كأنه لاعب واحد ونخنق النسخة كلها بأربعة اتصالات. يبقى
+# الحد العام للخيوط هو حاجز Slowloris الأساسي، ويصبح حد الـpeer مساوياً له
+# في النشر فقط. محلياً يبقى الحد المحافظ 4 لاختبار الحماية من عميل مباشر.
+IS_REPLIT_DEPLOYMENT = os.environ.get('REPLIT_DEPLOYMENT', '').strip() == '1'
+HTTP_DEFAULT_CONNECTIONS_PER_PEER = (
+    HTTP_MAX_WORKER_THREADS if IS_REPLIT_DEPLOYMENT else 4)
+HTTP_MAX_CONNECTIONS_PER_IP = bounded_env_int(
+    'FATINAH_HTTP_MAX_CONNECTIONS_PER_IP',
+    HTTP_DEFAULT_CONNECTIONS_PER_PEER, 2, HTTP_MAX_WORKER_THREADS)
+
+_question_bank_cache = {'mtime_ns': None, 'document': None}
+_question_bank_cache_lock = threading.Lock()
+ISLAMIC_REMOTE_SOURCE_CATEGORIES = (
+    'السيرة النبوية', 'فتوحات المسلمين', 'القرآن الكريم', 'الصحابة',
+    'الخلفاء الراشدون', 'دين وسيرة', 'الأنبياء والرسل',
+)
+
+
+def load_server_question_bank():
+    """اقرأ نسخة البنك المنشورة فقط وتحقق من بصمتها قبل تقديم أي سؤال."""
+    stat = os.stat(QUESTION_BANK_FILE)
+    with _question_bank_cache_lock:
+        if (_question_bank_cache['document'] is not None and
+                _question_bank_cache['mtime_ns'] == stat.st_mtime_ns):
+            return _question_bank_cache['document']
+        if stat.st_size > 50 * 1024 * 1024:
+            raise ValueError('ملف بنك الأسئلة يتجاوز 50MB')
+        with open(QUESTION_BANK_FILE, 'r', encoding='utf-8') as bank_file:
+            document = json.load(bank_file)
+        if (not isinstance(document, dict) or document.get('schemaVersion') != 1 or
+                not isinstance(document.get('categories'), dict)):
+            raise ValueError('مخطط بنك الأسئلة غير صالح')
+        categories = document['categories']
+        questions = []
+        for category, rows in categories.items():
+            if (not isinstance(category, str) or not category.strip() or
+                    not isinstance(rows, list)):
+                raise ValueError('فئة غير صالحة في بنك الأسئلة')
+            questions.extend(rows)
+        question_count = document.get('questionCount')
+        target_bank_size = document.get('targetBankSize')
+        if (not isinstance(question_count, int) or isinstance(question_count, bool) or
+                question_count != len(questions)):
+            raise ValueError('عدد أسئلة البنك لا يطابق المحتوى')
+        if (not isinstance(target_bank_size, int) or isinstance(target_bank_size, bool) or
+                target_bank_size < 1 or target_bank_size > 100_000):
+            raise ValueError('هدف بنك الأسئلة غير صالح')
+        expected_ready = question_count == target_bank_size
+        if document.get('ready') is not expected_ready:
+            raise ValueError('حالة جاهزية بنك الأسئلة لا تطابق عدده')
+        seen_ids = set()
+        for question in questions:
+            if (not isinstance(question, dict) or
+                    not re.fullmatch(r'gq-[a-f0-9]{20}', str(question.get('id') or '')) or
+                    question['id'] in seen_ids or
+                    question.get('d') not in range(1, 7) or
+                    not isinstance(question.get('q'), str) or
+                    not 12 <= len(question['q'].strip()) <= 220 or
+                    not isinstance(question.get('answer'), str) or
+                    not 1 <= len(question['answer'].strip()) <= 140 or
+                    question.get('review', {}).get('status') != 'approved'):
+                raise ValueError('سجل غير صالح في بنك الأسئلة')
+            source_url = str(question.get('source', {}).get('url') or '')
+            if not source_url.startswith('https://'):
+                raise ValueError('مصدر سؤال غير آمن في بنك الأسئلة')
+            seen_ids.add(question['id'])
+        canonical = json.dumps(
+            categories, ensure_ascii=False,
+            separators=(',', ':')).encode('utf-8')
+        digest = hashlib.sha256(canonical).hexdigest()
+        if not secrets.compare_digest(digest, str(document.get('sha256') or '')):
+            raise ValueError('بصمة بنك الأسئلة لا تطابق المحتوى')
+        _question_bank_cache.update(mtime_ns=stat.st_mtime_ns, document=document)
+        return document
+
+
+def select_remote_round_questions(request_data: dict):
+    """اختر سؤالاً واحداً لكل مستوى وفئة، ولا تبدأ جولة ناقصة."""
+    categories = request_data.get('categories')
+    excluded = request_data.get('excludeQuestionIds', [])
+    if (not isinstance(categories, list) or not 1 <= len(categories) <= 8 or
+            any(not isinstance(item, str) or not 1 <= len(item.strip()) <= 80
+                for item in categories) or len(set(categories)) != len(categories)):
+        return 400, {'error': 'الفئات غير صالحة', 'code': 'invalid_categories'}
+    if (not isinstance(excluded, list) or len(excluded) > 2000 or
+            any(not isinstance(item, str) or len(item) > 128 for item in excluded)):
+        return 400, {'error': 'قائمة الأسئلة السابقة غير صالحة', 'code': 'invalid_exclusions'}
+    document = load_server_question_bank()
+    if document.get('ready') is not True:
+        return 503, {
+            'error': 'بنك الأسئلة الجديد لم يكتمل بعد',
+            'code': 'question_bank_not_ready',
+            'questionCount': int(document.get('questionCount') or 0),
+            'targetBankSize': int(document.get('targetBankSize') or 4000),
+        }
+    bank = document['categories']
+    excluded_ids = set(excluded)
+    selected = {}
+    missing = []
+    for raw_category in categories:
+        category = raw_category.strip()
+        source_categories = (ISLAMIC_REMOTE_SOURCE_CATEGORIES
+                             if category == 'إسلاميات' else (category,))
+        rows = []
+        for source_category in source_categories:
+            source_rows = bank.get(source_category, [])
+            if isinstance(source_rows, list):
+                rows.extend(source_rows)
+        chosen = []
+        for level in range(1, 7):
+            candidates = [row for row in rows
+                          if isinstance(row, dict) and row.get('d') == level
+                          and isinstance(row.get('id'), str)
+                          and row['id'] not in excluded_ids
+                          and isinstance(row.get('q'), str) and row['q'].strip()
+                          and isinstance(row.get('answer'), str) and row['answer'].strip()
+                          and row.get('review', {}).get('status') == 'approved']
+            if not candidates:
+                missing.append({'category': category, 'difficulty': level})
+                continue
+            question = secrets.choice(candidates)
+            excluded_ids.add(question['id'])
+            chosen.append(question)
+        selected[category] = chosen
+    if missing:
+        return 409, {
+            'error': 'بنك الجولة لا يحتوي أسئلة جديدة كافية',
+            'code': 'question_pool_incomplete',
+            'missing': missing,
+            'bankVersion': document.get('bankVersion'),
+        }
+    return 200, {
+        'schemaVersion': 1,
+        'bankVersion': document.get('bankVersion'),
+        'questions': selected,
+    }
 
 def safe_log_reference(value) -> str:
     """بصمة قصيرة للسجلات؛ لا تطبع UID أو App User ID أو report ID خاماً."""
@@ -488,6 +654,7 @@ V2_ROUTE_FEATURES = {
     '/api/free-round/status': 'free_round',
     '/api/free-round/complete': 'free_round',
     '/api/questions/seen': 'question_history',
+    '/api/questions/round': 'question_bank',
     '/api/questions/report': 'question_reports',
     '/api/metrics/event': 'metrics',
     '/api/ios-diagnostics': 'ios_diagnostics',
@@ -505,6 +672,7 @@ V2_ONLY_ROUTES = {
     '/api/free-round/status',
     '/api/free-round/complete',
     '/api/questions/seen',
+    '/api/questions/round',
     '/api/questions/report',
     '/api/metrics/event',
 }
@@ -528,7 +696,7 @@ APP_CHECK_PROTECTED_PATHS = {
     '/api/app-attest/status', '/api/app-attest/challenge',
     '/api/app-attest/attest',
     '/api/free-round/complete', '/api/free-round/status',
-    '/api/questions/seen', '/api/questions/report',
+    '/api/questions/seen', '/api/questions/round', '/api/questions/report',
     '/api/metrics/event', '/api/ios-diagnostics',
     '/api/revenuecat/identity', '/api/subscription/status',
 }
@@ -768,25 +936,192 @@ def bearer_token(headers) -> str:
         return auth[len('Bearer '):].strip()
     return ''
 
-# ─── حد معدل بسيط في الذاكرة لكل IP (يمنع brute-force لأكواد المكافأة) ────────
-_rate_lock    = threading.Lock()
+# ─── حد معدل محلي/موزع ─────────────────────────────────────────────────────
+# الذاكرة تكفي للتطوير المحلي فقط. في production أو Replit Deployment تُحفظ
+# النافذة في Firestore وتُحدّث بشرط updateTime، فيرى كل خادم Autoscale العداد
+# نفسه. لا نخزن UID أو مفتاح الحد خاماً؛ اسم الوثيقة بصمة أحادية الاتجاه.
+_rate_lock = threading.Lock()
 _rate_buckets = {}   # key -> list[timestamps]
+_rate_limit_failure_log_lock = threading.Lock()
+_rate_limit_failure_log_at = 0.0
+_DISTRIBUTED_RATE_LIMIT_COLLECTION = 'distributed_rate_limits'
+_DISTRIBUTED_RATE_LIMIT_MAX_RETRIES = 8
 
-def rate_limited(key: str, max_calls: int, window_sec: int) -> bool:
-    """يعيد True إن تجاوز المفتاح الحد المسموح خلال النافذة الزمنية."""
+
+class DistributedRateLimitUnavailable(RuntimeError):
+    """تعذّر اتخاذ قرار حد موزع؛ مسارات الإنتاج تفشل مغلقاً."""
+
+
+def distributed_rate_limit_ttl_configured() -> bool:
+    """هل أكد المشغّل تفعيل TTL على distributed_rate_limits.expire_at؟"""
+    return env_flag(
+        'FATINAH_DISTRIBUTED_RATE_LIMIT_TTL_CONFIGURED', False)
+
+
+def distributed_rate_limit_configured() -> bool:
+    """هل أكد المشغّل تفعيل Firestore limiter وسياسة TTL الخاصة به؟"""
+    return (
+        env_flag('FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED', False)
+        and distributed_rate_limit_ttl_configured()
+    )
+
+
+def distributed_rate_limit_required() -> bool:
+    """Autoscale/production لا يجوز أن يعود إلى عداد داخل عملية واحدة."""
+    return (
+        deployment_environment() == 'production'
+        or IS_REPLIT_DEPLOYMENT
+        or distributed_rate_limit_configured()
+    )
+
+
+def _rate_limit_document_path(key: str) -> str:
+    normalized = str(key or '').strip()
+    if not normalized or len(normalized) > 1024:
+        raise ValueError('مفتاح حد المعدل غير صالح')
+    digest = hashlib.sha256(
+        b'fatinah-distributed-rate-limit-v1\0'
+        + normalized.encode('utf-8')
+    ).hexdigest()
+    return f'{_DISTRIBUTED_RATE_LIMIT_COLLECTION}/{digest}'
+
+
+def _distributed_rate_limited(key: str, max_calls: int,
+                              window_sec: int) -> bool:
+    """Sliding window ذرية عبر Firestore مع optimistic compare-and-set.
+
+    كل طلب مقبول يكتب قائمة timestamps صغيرة (أكبر حد حالي 300). إذا تنافست
+    نسختان يعيد الخاسر القراءة والمحاولة؛ وعند نفاد المحاولات يرفع خطأً كي
+    يفشل الغلاف مغلقاً. expire_at مخصص لسياسة Firestore TTL ولا يدخل القرار.
+    """
+    if (not isinstance(max_calls, int) or isinstance(max_calls, bool)
+            or not 1 <= max_calls <= 10_000
+            or not isinstance(window_sec, int) or isinstance(window_sec, bool)
+            or not 1 <= window_sec <= 86_400):
+        raise ValueError('سياسة حد المعدل غير صالحة')
+    if not firestore_durable_available():
+        raise DistributedRateLimitUnavailable(
+            'بيانات اعتماد Firestore غير متاحة لحد المعدل')
+
+    document_path = _rate_limit_document_path(key)
+    window_ms = window_sec * 1000
+    for attempt in range(_DISTRIBUTED_RATE_LIMIT_MAX_RETRIES):
+        now_ms = int(time.time() * 1000)
+        try:
+            record = firestore_get_document(document_path)
+        except Exception as exc:
+            raise DistributedRateLimitUnavailable(
+                'تعذّرت قراءة عداد حد المعدل') from exc
+
+        raw_calls = [] if not record else record.get('calls', [])
+        if (not isinstance(raw_calls, list) or len(raw_calls) > 10_000
+                or any(isinstance(value, bool)
+                       or not isinstance(value, (int, float))
+                       for value in raw_calls)):
+            raise DistributedRateLimitUnavailable(
+                'وثيقة حد المعدل غير صالحة')
+        recent = []
+        for value in raw_calls:
+            timestamp = int(value)
+            # اختلاف الساعة الصغير بين نسخ managed hosting لا يفتح حصة
+            # إضافية: timestamp المستقبلي القريب يُحسب. قفزة أكبر من خمس
+            # دقائق تعني ساعة/وثيقة غير موثوقة ونفشل مغلقاً.
+            if timestamp < 0 or timestamp > now_ms + 300_000:
+                raise DistributedRateLimitUnavailable(
+                    'timestamp حد المعدل غير صالح')
+            if now_ms - timestamp < window_ms:
+                recent.append(timestamp)
+        if len(recent) >= max_calls:
+            return True
+
+        recent.append(now_ms)
+        expiry = datetime.datetime.fromtimestamp(
+            (now_ms + (window_ms * 2)) / 1000,
+            tz=datetime.timezone.utc,
+        )
+        updated = {
+            'calls': recent,
+            'max_calls': max_calls,
+            'window_seconds': window_sec,
+            'updated_at_ms': now_ms,
+            'expire_at': expiry,
+        }
+        try:
+            if record is None:
+                if firestore_create_document_if_absent(
+                        document_path, updated):
+                    return False
+            else:
+                update_time = str(record.get('_update_time') or '').strip()
+                if not update_time:
+                    raise DistributedRateLimitUnavailable(
+                        'وثيقة حد المعدل بلا updateTime')
+                if firestore_set_document_if_update_time(
+                        document_path, updated, update_time):
+                    return False
+        except DistributedRateLimitUnavailable:
+            raise
+        except Exception as exc:
+            raise DistributedRateLimitUnavailable(
+                'تعذّر تحديث عداد حد المعدل') from exc
+
+        # تعارض CAS طبيعي تحت الطلب المتزامن. مهلة قصيرة تحد الازدحام من دون
+        # إبقاء خيط HTTP معلقاً زمناً ملحوظاً.
+        if attempt + 1 < _DISTRIBUTED_RATE_LIMIT_MAX_RETRIES:
+            time.sleep(min(0.004 * (attempt + 1), 0.02))
+
+    raise DistributedRateLimitUnavailable(
+        'تجاوز حد المعدل عدد محاولات التزامن')
+
+
+def _local_rate_limited(key: str, max_calls: int, window_sec: int) -> bool:
     now = time.time()
     with _rate_lock:
-        bucket = [t for t in _rate_buckets.get(key, []) if now - t < window_sec]
+        bucket = [
+            timestamp for timestamp in _rate_buckets.get(key, [])
+            if now - timestamp < window_sec
+        ]
         if len(bucket) >= max_calls:
             _rate_buckets[key] = bucket
             return True
         bucket.append(now)
         _rate_buckets[key] = bucket
-        # تنظيف دوري خفيف لمنع تضخم الذاكرة
-        if len(_rate_buckets) > 10000:
-            for k in [k for k, v in _rate_buckets.items() if not v or now - v[-1] > window_sec]:
-                _rate_buckets.pop(k, None)
+        if len(_rate_buckets) > 10_000:
+            for stale_key in [
+                    stale_key for stale_key, timestamps in _rate_buckets.items()
+                    if not timestamps or now - timestamps[-1] > window_sec]:
+                _rate_buckets.pop(stale_key, None)
     return False
+
+
+def _log_distributed_rate_limit_failure(key: str, exc: BaseException) -> None:
+    """سجل تشخيصاً بلا UID وبحد مرة كل دقيقة لتجنب إغراق السجلات."""
+    global _rate_limit_failure_log_at
+    now = time.monotonic()
+    with _rate_limit_failure_log_lock:
+        if now - _rate_limit_failure_log_at < 60:
+            return
+        _rate_limit_failure_log_at = now
+    print('[Rate Limit] distributed decision unavailable '
+          f'key_ref={safe_log_reference(key)}: {exception_kind(exc)}')
+
+
+def rate_limited(key: str, max_calls: int, window_sec: int) -> bool:
+    """يعيد True عند التجاوز أو عند تعذر الحماية الموزعة المطلوبة.
+
+    الفشل المغلق مقصود: تعطل Firestore أو نسيان العلم في production لا يسمح
+    لطلبات الكتابة/التوليد بتجاوز الحماية عبر نسخة Autoscale أخرى.
+    """
+    if not distributed_rate_limit_required():
+        return _local_rate_limited(key, max_calls, window_sec)
+    try:
+        if not distributed_rate_limit_configured():
+            raise DistributedRateLimitUnavailable(
+                'حد المعدل الموزع غير مفعّل')
+        return _distributed_rate_limited(key, max_calls, window_sec)
+    except Exception as exc:
+        _log_distributed_rate_limit_failure(key, exc)
+        return True
 
 REPORT_EMAIL_TO = 'ata@ata20.com'
 REPORT_REASONS = {
@@ -1196,7 +1531,7 @@ def firestore_set_document_if_update_time(document_path: str, data: dict,
             response.read()
         return True
     except urllib.error.HTTPError as exc:
-        if exc.code in {404, 409, 412}:
+        if exc.code in {404, 409, 412} or _firestore_precondition_failed(exc):
             return False
         raise RuntimeError(
             _firestore_http_error(exc, f'conditional set {document_path}')) from exc
@@ -1280,7 +1615,7 @@ def firestore_delete_document_if_update_time(document_path: str,
             response.read()
         return True
     except urllib.error.HTTPError as exc:
-        if exc.code in {404, 409, 412}:
+        if exc.code in {404, 409, 412} or _firestore_precondition_failed(exc):
             return False
         raise RuntimeError(
             _firestore_http_error(exc, f'conditional delete {document_path}')) from exc
@@ -2838,6 +3173,23 @@ def legal_page_html(kind: str) -> bytes:
 class Handler(BaseHTTPRequestHandler):
     _api_version = '1'
 
+    def setup(self):
+        super().setup()
+        original_reader = self.rfile
+        self._deadline_reader = DeadlineSocketReader(
+            self.connection,
+            getattr(self.server, 'request_timeout_seconds',
+                    HTTP_REQUEST_TIMEOUT_SECONDS))
+        self.rfile = io.BufferedReader(self._deadline_reader)
+        original_reader.close()
+
+    def handle_one_request(self):
+        # The deadline is absolute for the whole request line, headers and body;
+        # receiving another byte never extends it. Reset only for a genuinely
+        # new keep-alive request.
+        self._deadline_reader.reset_deadline()
+        return super().handle_one_request()
+
     def log_message(self, fmt, *args):
         pass
 
@@ -3260,6 +3612,34 @@ class Handler(BaseHTTPRequestHandler):
                 'bankVersion': 3,
             })
 
+        elif path.startswith('/assets/question-images/'):
+            relative_path = path[len('/assets/question-images/'):]
+            image_root = os.path.realpath(QUESTION_IMAGE_DIR)
+            full_path = os.path.realpath(os.path.join(image_root, relative_path))
+            extension = os.path.splitext(full_path)[1].lower()
+            if (not relative_path or not full_path.startswith(image_root + os.sep)
+                    or extension not in ('.avif', '.webp')):
+                self.send_response(404); self.end_headers(); return
+            content_type = ('image/avif' if extension == '.avif' else 'image/webp')
+            try:
+                with open(full_path, 'rb') as image_file:
+                    body = image_file.read()
+                origin = (self.headers.get('Origin') or '').strip()
+                image_headers = {'Cross-Origin-Resource-Policy': 'same-site'}
+                if origin in QUESTION_IMAGE_ALLOWED_ORIGINS:
+                    image_headers.update({
+                        'Access-Control-Allow-Origin': origin,
+                        'Access-Control-Expose-Headers': 'ETag',
+                        'Cross-Origin-Resource-Policy': 'cross-origin',
+                        'Vary': 'Origin',
+                    })
+                self.send_asset(
+                    body, content_type,
+                    'public, max-age=31536000, immutable', compress=False,
+                    extra_headers=image_headers)
+            except FileNotFoundError:
+                self.send_response(404); self.end_headers()
+
         elif path in ('/', '/index.html'):
             # حزمة iOS تحمل ملفات اللعبة محلياً. تقديمها على الويب في
             # production يجعل Boolean داخل JavaScript هو حاجز الاشتراك، وهو
@@ -3283,11 +3663,13 @@ class Handler(BaseHTTPRequestHandler):
                 extra_headers={'Content-Security-Policy': content_security_policy})
 
         elif path in ('/app.js', '/app.css', '/question-bank.js', '/approved-question-bank.js',
+                      '/image-question-bank.js', '/image-question-bank-commons.js',
                       '/privacy-policy.html', '/terms-of-service.html'):
             fname = path.lstrip('/')
             game_assets = {
                 'app.js', 'app.css', 'question-bank.js',
-                'approved-question-bank.js',
+                'approved-question-bank.js', 'image-question-bank.js',
+                'image-question-bank-commons.js',
             }
             if not public_web_game_enabled() and fname in game_assets:
                 self.send_json(404, {
@@ -3425,6 +3807,7 @@ class Handler(BaseHTTPRequestHandler):
         '/api/app-attest/challenge':     4_096,
         '/api/app-attest/attest':      262_144,  # CBOR x5c + receipt بصيغة Base64
         '/api/questions/seen':          32_768,  # حتى 100 معرّف في دفعة مزامنة
+        '/api/questions/round':         262_144, # فئات الجولة ومعرّفات الأسئلة السابقة
         '/api/free-round/complete':     64_000,  # DeviceCheck + App Attest assertion
         '/api/questions/report':         8_192,
         '/api/metrics/event':            4_096,
@@ -3551,6 +3934,45 @@ class Handler(BaseHTTPRequestHandler):
                     'error': 'خدمة سلامة التطبيق غير متاحة مؤقتاً',
                     'code': 'app_attest_unavailable',
                 }); return
+
+        # بنك 1.3 مراجع مسبقاً ويُسحب عند بدء الجولة؛ لا يوجد توليد AI للاعب.
+        # الوصول خاص بمشترك مسجّل ومتحقق الهوية. الجولة المجانية تستخدم البنك
+        # المحلي المحدود، فلا يتحول هذا المسار إلى منفذ عام لاستخراج المحتوى.
+        if path == '/api/questions/round':
+            if self._api_version != '2':
+                self.send_json(404, {
+                    'error': 'بنك الجولات متاح في عقد API v2 فقط',
+                    'code': 'question_bank_v2_only',
+                }); return
+            try:
+                data = json.loads(body)
+            except Exception:
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
+            if not isinstance(data, dict):
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
+            uid = str(data.get('uid') or '').strip()
+            id_token = str(data.get('idToken') or bearer_token(self.headers) or '').strip()
+            if not uid or not uid_matches_token(uid, id_token):
+                self.send_json(401, {
+                    'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى',
+                    'code': 'question_bank_auth_required',
+                }); return
+            if not subscription_is_active(uid):
+                self.send_json(403, {
+                    'error': 'بنك الجولات الموسع متاح للمشتركين فقط',
+                    'code': 'subscription_required',
+                }); return
+            if rate_limited(f'question-round:{safe_log_reference(uid)}', 30, 600):
+                self.send_json(429, {'error': 'طلبات كثيرة جداً — حاول بعد قليل'}); return
+            try:
+                status, result = select_remote_round_questions(data)
+            except (FileNotFoundError, ValueError, OSError) as exc:
+                print(f'[Question Bank] unavailable: {exception_kind(exc)}')
+                self.send_json(503, {
+                    'error': 'بنك الأسئلة غير متاح مؤقتاً',
+                    'code': 'question_bank_unavailable',
+                }); return
+            self.send_json(status, result); return
 
         # ─── عقد التوليد: v1 متوافق، وv2 متوقف صراحةً ───────────────────────
         if path == '/api/generate':
@@ -4196,6 +4618,10 @@ class Handler(BaseHTTPRequestHandler):
             # تحقّق من هوية الطالب — يمنع حذف حساب شخص آخر (بديل Firestore Rules)
             if not uid_matches_token(uid, id_token):
                 self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
+            if rate_limited(f'account-delete:{uid}', 5, 3600):
+                self.send_json(429, {
+                    'error': 'طلبات حذف كثيرة جداً — حاول لاحقاً'
+                }); return
 
             conn = None
             try:
@@ -4291,6 +4717,10 @@ class Handler(BaseHTTPRequestHandler):
 
             if not uid_matches_token(uid, id_token):
                 self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
+            if rate_limited(f'account-profile:{uid}', 30, 600):
+                self.send_json(429, {
+                    'error': 'طلبات تحديث كثيرة جداً — حاول لاحقاً'
+                }); return
 
             try:
                 profile = {
@@ -4337,6 +4767,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(400, {'error': 'UUID RevenueCat غير صالح'}); return
             if not uid_matches_token(uid, id_token):
                 self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
+            if rate_limited(f'revenuecat-identity:{uid}', 20, 600):
+                self.send_json(429, {
+                    'error': 'طلبات ربط كثيرة جداً — حاول لاحقاً'
+                }); return
 
             if firestore_durable_available():
                 try:
@@ -4410,6 +4844,12 @@ class Handler(BaseHTTPRequestHandler):
 
             try:   event = json.loads(body)
             except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
+            # webhook موثّق لكنه يكتب حالة اشتراك وصندوق وارد. حد عالمي واسع
+            # يحمي Firestore من سر مسرّب/عميل معطوب ولا يعيق retries الطبيعية.
+            if rate_limited('revenuecat-webhook', 600, 60):
+                self.send_json(429, {
+                    'error': 'أحداث كثيرة جداً — ستتم إعادة المحاولة'
+                }); return
             try:
                 status, response = process_revenuecat_event(event)
                 self.send_json(status, response)
@@ -4474,26 +4914,135 @@ def _firestore_get_token():
     except Exception as e:
         return None, exception_kind(e)
 
+def _firestore_http_error_details(exc):
+    """اقرأ حالة Google مرة واحدة من دون الاحتفاظ بالنص الخام الحساس."""
+    if not isinstance(exc, urllib.error.HTTPError):
+        return '', ''
+    cached = getattr(exc, '_fatinah_firestore_error_details', None)
+    if cached is not None:
+        return cached
+    try:
+        raw = exc.read().decode('utf-8', errors='replace')
+        details = json.loads(raw).get('error') or {}
+        status = str(details.get('status') or '').strip()
+        reason = ''
+        for item in details.get('details') or []:
+            if item.get('@type', '').endswith('ErrorInfo'):
+                reason = str(item.get('reason') or '').strip()
+                break
+    except Exception:
+        status, reason = '', ''
+    finally:
+        exc.close()
+    result = (status, reason)
+    setattr(exc, '_fatinah_firestore_error_details', result)
+    return result
+
+
+def _firestore_precondition_failed(exc) -> bool:
+    """Enterprise Firestore يعيد stale updateTime كـ HTTP 400 أحياناً."""
+    if not isinstance(exc, urllib.error.HTTPError) or exc.code != 400:
+        return False
+    status, _reason = _firestore_http_error_details(exc)
+    return status == 'FAILED_PRECONDITION'
+
+
 def _firestore_http_error(exc, operation='request'):
     """استخرج الحالة/السبب فقط؛ رسالة Google قد تحمل مسار حساب أو مستند."""
     if not isinstance(exc, urllib.error.HTTPError):
         return f'Firestore {operation} error: {exception_kind(exc)}'
-    try:
-        raw = exc.read().decode('utf-8', errors='replace')
-        details = json.loads(raw).get('error') or {}
-        status = details.get('status') or ''
-        reason = ''
-        for item in details.get('details') or []:
-            if item.get('@type', '').endswith('ErrorInfo'):
-                reason = item.get('reason') or ''
-                break
-        suffix = f' ({reason})' if reason else ''
-        return f'Firestore HTTP {exc.code}: {status or "HTTP_ERROR"}{suffix}'
-    except Exception:
+    status, reason = _firestore_http_error_details(exc)
+    if not status and not reason:
         return f'Firestore HTTP {exc.code}: تعذّر قراءة تفاصيل الخطأ'
+    suffix = f' ({reason})' if reason else ''
+    return f'Firestore HTTP {exc.code}: {status or "HTTP_ERROR"}{suffix}'
+
+class DeadlineSocketReader(io.RawIOBase):
+    """Socket reader with a non-sliding deadline for one complete HTTP request."""
+
+    def __init__(self, connection, timeout_seconds):
+        super().__init__()
+        self.connection = connection
+        self.timeout_seconds = timeout_seconds
+        self.deadline = 0.0
+        self.reset_deadline()
+
+    def readable(self):
+        return True
+
+    def fileno(self):
+        return self.connection.fileno()
+
+    def reset_deadline(self):
+        self.deadline = time.monotonic() + self.timeout_seconds
+
+    def readinto(self, buffer):
+        remaining = self.deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError('HTTP request read deadline exceeded')
+        self.connection.settimeout(remaining)
+        return self.connection.recv_into(buffer)
+
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
+    request_timeout_seconds = HTTP_REQUEST_TIMEOUT_SECONDS
+    max_worker_threads = HTTP_MAX_WORKER_THREADS
+    max_connections_per_ip = HTTP_MAX_CONNECTIONS_PER_IP
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._worker_slots = threading.BoundedSemaphore(self.max_worker_threads)
+        self._client_slots_lock = threading.Lock()
+        self._client_slot_counts = {}
+
+    def _acquire_client_slot(self, client_address):
+        client_ip = str(client_address[0])
+        with self._client_slots_lock:
+            count = self._client_slot_counts.get(client_ip, 0)
+            if count >= self.max_connections_per_ip:
+                return False
+            self._client_slot_counts[client_ip] = count + 1
+            return True
+
+    def _release_client_slot(self, client_address):
+        client_ip = str(client_address[0])
+        with self._client_slots_lock:
+            count = self._client_slot_counts.get(client_ip, 0)
+            if count <= 1:
+                self._client_slot_counts.pop(client_ip, None)
+            else:
+                self._client_slot_counts[client_ip] = count - 1
+
+    def get_request(self):
+        request, client_address = super().get_request()
+        request.settimeout(self.request_timeout_seconds)
+        return request, client_address
+
+    def process_request(self, request, client_address):
+        # Reject excess connections before ThreadingMixIn allocates another
+        # thread. Existing requests recover automatically through the socket
+        # timeout above, including incomplete headers and slow POST bodies.
+        if not self._worker_slots.acquire(blocking=False):
+            self.shutdown_request(request)
+            return
+        if not self._acquire_client_slot(client_address):
+            self._worker_slots.release()
+            self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, client_address)
+        except BaseException:
+            self._release_client_slot(client_address)
+            self._worker_slots.release()
+            raise
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._release_client_slot(client_address)
+            self._worker_slots.release()
 
 # ─── حالة بدء التشغيل (تُستخدم في /api/admin/db-status) ────────────────────
 import datetime as _dt, threading as _threading

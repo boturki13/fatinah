@@ -7,9 +7,12 @@ import { fileURLToPath } from 'node:url';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(SCRIPT_DIR, '../..');
 export const MANIFEST_PATH = path.join(ROOT, 'content', 'questions', 'runtime-audit-manifest.json');
+export const LEGACY_REVIEWS_PATH = path.join(ROOT, 'content', 'questions', 'legacy-reviews.json');
 
 const BASE_BANK_PATH = path.join(ROOT, 'www', 'question-bank.js');
 const APPROVED_BANK_PATH = path.join(ROOT, 'www', 'approved-question-bank.js');
+const REVIEWED_SOURCES_PATH = path.join(ROOT, 'www', 'reviewed-question-sources.js');
+const REVIEWED_LEDGER_PATH = path.join(ROOT, 'www', 'reviewed-question-ledger.js');
 const APP_PATH = path.join(ROOT, 'www', 'app.js');
 const PUBLISHED_PATH = path.join(ROOT, 'content', 'questions', 'published.json');
 
@@ -117,7 +120,7 @@ function resolveSourceProvenance({ component, raw, override, fallback, effective
   return 'unknown_derived';
 }
 
-function runtimeBankFromApp({ base, approved, additions, overrides, fallbacks, appSource }) {
+function runtimeBankFromApp({ base, approved, additions, overrides, reviewedSources, reviewedLedger, fallbacks, appSource }) {
   const combined = {};
   const categories = [...new Set([...Object.keys(base), ...Object.keys(approved)])];
   for (const category of categories) {
@@ -131,6 +134,10 @@ function runtimeBankFromApp({ base, approved, additions, overrides, fallbacks, a
     QUESTION_OVERRIDES: overrides,
     QUESTION_SOURCE_BY_CATEGORY: fallbacks,
     combined,
+    window: {
+      __REVIEWED_QUESTION_SOURCES__: reviewedSources,
+      __LEGACY_QUESTION_REVIEWS__: reviewedLedger,
+    },
     result: null,
   };
   const hashQuestion = extractFunction(appSource, 'hashQuestion');
@@ -147,6 +154,20 @@ function canonicalFingerprint(value) {
   return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
 
+export function legacyReviewFingerprint(question) {
+  return canonicalFingerprint({
+    auditId: question.auditId,
+    runtimeId: question.runtimeId,
+    category: question.category,
+    difficultyLevel: question.difficultyLevel,
+    question: question.question,
+    answer: question.answer,
+    choices: question.choices,
+    correctChoiceIndex: question.correctChoiceIndex,
+    citation: question.citation?.effective || null,
+  });
+}
+
 export function buildRuntimeAuditManifest() {
   const appSource = fs.readFileSync(APP_PATH, 'utf8');
   const base = javascriptData(
@@ -161,12 +182,26 @@ export function buildRuntimeAuditManifest() {
   );
   const additions = extractObject(appSource, /const\s+QUESTION_ADDITIONS\s*=/, 'QUESTION_ADDITIONS');
   const overrides = extractObject(appSource, /const\s+QUESTION_OVERRIDES\s*=/, 'QUESTION_OVERRIDES');
+  const reviewedSources = javascriptData(
+    REVIEWED_SOURCES_PATH,
+    /window\.__REVIEWED_QUESTION_SOURCES__\s*=/,
+    '__REVIEWED_QUESTION_SOURCES__',
+  );
+  const reviewedLedger = fs.existsSync(REVIEWED_LEDGER_PATH)
+    ? javascriptData(
+        REVIEWED_LEDGER_PATH,
+        /window\.__LEGACY_QUESTION_REVIEWS__\s*=/,
+        '__LEGACY_QUESTION_REVIEWS__',
+      )
+    : {};
   const fallbacks = extractObject(
     appSource,
     /const\s+QUESTION_SOURCE_BY_CATEGORY\s*=/,
     'QUESTION_SOURCE_BY_CATEGORY',
   );
   const published = readJson(PUBLISHED_PATH);
+  const legacyReviews = fs.existsSync(LEGACY_REVIEWS_PATH) ? readJson(LEGACY_REVIEWS_PATH) : [];
+  const legacyReviewByAuditId = new Map(legacyReviews.map(review => [review.auditId, review]));
   const publishedById = new Map();
   const duplicatePublishedIds = [];
   for (const record of published) {
@@ -174,7 +209,16 @@ export function buildRuntimeAuditManifest() {
     publishedById.set(record.id, record);
   }
 
-  const runtime = runtimeBankFromApp({ base, approved, additions, overrides, fallbacks, appSource });
+  const runtime = runtimeBankFromApp({
+    base,
+    approved,
+    additions,
+    overrides,
+    reviewedSources,
+    reviewedLedger,
+    fallbacks,
+    appSource,
+  });
   const runtimeCategories = [...new Set([...Object.keys(base), ...Object.keys(approved)])];
   const questions = [];
   const publishedRuntimeIds = new Set();
@@ -198,18 +242,41 @@ export function buildRuntimeAuditManifest() {
       const origin = origins[runtimeIndex];
       const originalCount = baseRows.length + publishedRows.length;
       const override = runtimeIndex < originalCount ? overrides[category]?.[origin.raw.d] : null;
+      const reviewedSource = runtimeIndex < originalCount
+        ? reviewedSources[category]?.[origin.raw.d]
+        : null;
       const fallback = fallbacks[category] || null;
       const sourceProvenance = resolveSourceProvenance({
         component: origin.component,
         raw: origin.raw,
-        override,
+        override: reviewedSource ? { source: reviewedSource } : override,
         fallback,
         effective: runtimeQuestion.source,
       });
       const publishedRecord = publishedById.get(runtimeQuestion.id);
       const exactPublishedMatch = origin.component === 'published'
         && publishedRecordMatchesRuntime(publishedRecord, runtimeQuestion, category);
-      const reviewStatus = exactPublishedMatch ? 'approved' : 'legacy_pending';
+      const auditId = `${origin.component}:${category}:${origin.sourceIndex}`;
+      const reviewCandidate = {
+        auditId,
+        runtimeId: String(runtimeQuestion.id || ''),
+        category,
+        difficultyLevel: Number(runtimeQuestion.d),
+        question: String(runtimeQuestion.q || ''),
+        answer: runtimeQuestion.answer == null ? null : String(runtimeQuestion.answer),
+        choices: Array.isArray(runtimeQuestion.o) ? runtimeQuestion.o : null,
+        correctChoiceIndex: Number.isInteger(runtimeQuestion.a) ? runtimeQuestion.a : null,
+        citation: { effective: runtimeQuestion.source || null },
+      };
+      const legacyReview = legacyReviewByAuditId.get(auditId);
+      const exactLegacyReview = !exactPublishedMatch
+        && legacyReview?.decision === 'approved'
+        && legacyReview?.questionFingerprintSha256 === legacyReviewFingerprint(reviewCandidate)
+        && Boolean(legacyReview?.reviewer)
+        && Boolean(legacyReview?.reviewedAt)
+        && Boolean(legacyReview?.sourceClaimConfirmed)
+        && (!legacyReview?.religious || legacyReview?.religiousSourceAndIsnadConfirmed === true);
+      const reviewStatus = exactPublishedMatch || exactLegacyReview ? 'approved' : 'legacy_pending';
       if (exactPublishedMatch) publishedRuntimeIds.add(runtimeQuestion.id);
       const runtimeClaimsApproval = runtimeQuestion.review?.status === 'approved';
       const sourceFile = origin.component === 'base'
@@ -219,7 +286,7 @@ export function buildRuntimeAuditManifest() {
           : 'www/app.js#QUESTION_ADDITIONS';
 
       questions.push({
-        auditId: `${origin.component}:${category}:${origin.sourceIndex}`,
+        auditId,
         runtimeId: String(runtimeQuestion.id || ''),
         previousIds: Array.isArray(runtimeQuestion.previousIds) ? runtimeQuestion.previousIds : [],
         category,
@@ -248,7 +315,17 @@ export function buildRuntimeAuditManifest() {
               reviewer: publishedRecord.review?.reviewer || null,
               reviewedAt: publishedRecord.review?.reviewedAt || null,
             }
-          : {
+          : exactLegacyReview
+            ? {
+                status: 'approved',
+                basis: 'exact_individual_legacy_review',
+                publishedRecordId: null,
+                reviewer: legacyReview.reviewer,
+                reviewedAt: legacyReview.reviewedAt,
+                notes: legacyReview.notes || '',
+                religiousSourceAndIsnadConfirmed: Boolean(legacyReview.religiousSourceAndIsnadConfirmed),
+              }
+            : {
               status: 'legacy_pending',
               basis: origin.component === 'published'
                 ? 'published_runtime_record_mismatch'
@@ -292,15 +369,18 @@ export function buildRuntimeAuditManifest() {
   const manifest = {
     schemaVersion: 1,
     policy: {
-      approvedDefinition: 'Only a runtime question that exactly matches an approved record in content/questions/published.json.',
-      legacyDefinition: 'Every other base or addition question remains legacy_pending until individual claim/source review and publication.',
+      approvedDefinition: 'A runtime question is approved only by an exact published record or an exact fingerprinted individual review in the legacy ledger.',
+      legacyDefinition: 'Every other base or addition question remains legacy_pending until individual question, answer, and source review.',
       categoryFallbackPolicy: 'A category-level URL is discovery context only and is not claim-specific evidence.',
     },
     inputs: {
       base: 'www/question-bank.js',
       publishedRuntime: 'www/approved-question-bank.js',
       additionsAndNormalization: 'www/app.js',
+      reviewedQuestionSources: 'www/reviewed-question-sources.js',
+      reviewedQuestionRuntimeLedger: 'www/reviewed-question-ledger.js',
       publicationLedger: 'content/questions/published.json',
+      legacyReviewLedger: 'content/questions/legacy-reviews.json',
     },
     components,
     counts,

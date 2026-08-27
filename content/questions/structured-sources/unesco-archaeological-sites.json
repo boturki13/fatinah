@@ -1,0 +1,2865 @@
+{
+  "schemaVersion": 1,
+  "sourceProfile": "wikidata_entities_v1",
+  "sourceDataset": "https://query.wikidata.org/sparql?format=json&query=%0ASELECT%20DISTINCT%20%3Fsite%20%3FsiteLabel%20%3Fcountry%20%3FcountryLabel%20%3FwhId%20%3Fsitelinks%20%3FinscriptionDate%20%3Finception%20%3Fculture%20%3Fqualification%20WHERE%20%7B%0A%20%20%3Fsite%20wdt%3AP757%20%3FwhId%20%3B%0A%20%20%20%20%20%20%20%20wdt%3AP17%20%3Fcountry%20%3B%0A%20%20%20%20%20%20%20%20wdt%3AP31%2Fwdt%3AP279*%20wd%3AQ839954%20%3B%0A%20%20%20%20%20%20%20%20rdfs%3Alabel%20%3FsiteLabel%20%3B%0A%20%20%20%20%20%20%20%20wikibase%3Asitelinks%20%3Fsitelinks%20.%0A%20%20BIND(REPLACE(STR(%3FwhId)%2C%20%22-.*%24%22%2C%20%22%22)%20AS%20%3FwhPropertyId)%0A%20%20%3FheritageProperty%20wdt%3AP757%20%3FwhPropertyId%20%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20p%3AP1435%20%3FheritageDesignationStatement%20.%0A%20%20%3FheritageDesignationStatement%20ps%3AP1435%20wd%3AQ9259%20%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20pq%3AP580%20%3FinscriptionDate%20.%0A%20%20%3Fcountry%20wdt%3AP463%20wd%3AQ1065%20%3B%0A%20%20%20%20%20%20%20%20%20%20%20rdfs%3Alabel%20%3FcountryLabel%20.%0A%20%20FILTER(LANG(%3FsiteLabel)%20%3D%20%22ar%22)%0A%20%20FILTER(LANG(%3FcountryLabel)%20%3D%20%22ar%22)%0A%20%20%7B%0A%20%20%20%20%3Fsite%20wdt%3AP571%20%3Finception%20.%0A%20%20%20%20FILTER(%3Finception%20%3C%20%22%2B1000-01-01T00%3A00%3A00Z%22%5E%5Exsd%3AdateTime)%0A%20%20%20%20BIND(%22dated_before_1000%22%20AS%20%3Fqualification)%0A%20%20%7D%20UNION%20%7B%0A%20%20%20%20%3Fsite%20wdt%3AP2596%20%3Fculture%20.%0A%20%20%20%20BIND(%22explicit_culture%22%20AS%20%3Fqualification)%0A%20%20%7D%20UNION%20%7B%0A%20%20%20%20VALUES%20%3Fsite%20%7B%20wd%3AQ43473%20wd%3AQ39671%20wd%3AQ5788%20wd%3AQ5859%20wd%3AQ5747%20wd%3AQ42798%20wd%3AQ5725%20wd%3AQ129072%20wd%3AQ131013%20wd%3AQ134140%20wd%3AQ5699%20wd%3AQ5715%20wd%3AQ173532%20wd%3AQ200200%20wd%3AQ29317%20wd%3AQ172613%20wd%3AQ168518%20wd%3AQ214944%20wd%3AQ2620036%20wd%3AQ5780%20wd%3AQ522862%20wd%3AQ181427%20wd%3AQ61750%20wd%3AQ192522%20wd%3AQ190048%20wd%3AQ191504%20wd%3AQ230025%20wd%3AQ4523%20wd%3AQ27356%20wd%3AQ277540%20wd%3AQ208379%20wd%3AQ32378%20wd%3AQ219279%20wd%3AQ178835%20wd%3AQ484458%20wd%3AQ156093%20wd%3AQ44112%20wd%3AQ189616%20wd%3AQ47721%20wd%3AQ181007%20wd%3AQ638445%20wd%3AQ43286%20wd%3AQ9278%20wd%3AQ188694%20wd%3AQ459629%20wd%3AQ329967%20wd%3AQ214827%20wd%3AQ217379%20wd%3AQ308807%20wd%3AQ457362%20wd%3AQ223385%20wd%3AQ208177%20wd%3AQ272777%20wd%3AQ272771%20wd%3AQ696193%20wd%3AQ1025825%20wd%3AQ816437%20wd%3AQ385086%20wd%3AQ318422%20wd%3AQ854672%20wd%3AQ505617%20wd%3AQ499019%20wd%3AQ117623%20wd%3AQ27985%20wd%3AQ538061%20wd%3AQ651278%20wd%3AQ732554%20wd%3AQ943327%20wd%3AQ846967%20wd%3AQ214007%20wd%3AQ115253%20wd%3AQ237128%20wd%3AQ331603%20%7D%0A%20%20%20%20BIND(%22curated_ancient_site%22%20AS%20%3Fqualification)%0A%20%20%7D%0A%7D",
+  "finalFactSource": "Wikidata heritage designation start-time statement, with the UNESCO property page retained as the primary reference link",
+  "selectionRule": "Archaeological site with Arabic label, one current UN-member country, UNESCO ID and inscription year, and an ancient-date/culture/curated qualification",
+  "retrievedAt": "2026-08-25T19:45:44.042Z",
+  "records": [
+    {
+      "sourceRecordId": "unesco-archaeological-site-q43473",
+      "siteQid": "Q43473",
+      "siteNameAr": "أنغكور وات",
+      "countryNameAr": "كمبوديا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q424",
+      "whComponentId": "668-001",
+      "whPropertyId": "668",
+      "sitelinks": 137,
+      "inscriptionYear": 1992,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0802-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/668",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q43473",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "7d029b485ddd256007d6464c0c40dad64bb6d61cf65847f709772ec19a861847"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q10288",
+      "siteQid": "Q10288",
+      "siteNameAr": "بارثينون",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "404",
+      "whPropertyId": "404",
+      "sitelinks": 136,
+      "inscriptionYear": 1987,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0500-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q4246634"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/404",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q10288",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "05858e68d7c563a5b1f1063f5245d2306da122d50e057859c91421bdafc4e555"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q39671",
+      "siteQid": "Q39671",
+      "siteNameAr": "ستونهنج",
+      "countryNameAr": "المملكة المتحدة",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q145",
+      "whComponentId": "373",
+      "whPropertyId": "373",
+      "sitelinks": 135,
+      "inscriptionYear": 1986,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-1848-01-01T00:00:00Z",
+        "-3000-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/373",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q39671",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "8fc23ea9a9da36ea63d6c43ef57573f0eb2a8f9df7a2585d342a3d536fcdedad"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q22647",
+      "siteQid": "Q22647",
+      "siteNameAr": "طروادة",
+      "countryNameAr": "تركيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q43",
+      "whComponentId": "849",
+      "whPropertyId": "849",
+      "sitelinks": 121,
+      "inscriptionYear": 1998,
+      "qualifications": [
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-2999-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/849",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q22647",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "6c5337470cc8814b45e15aa152531a944c4c28f8fb16ab32286c14dedbadf89d"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q5788",
+      "siteQid": "Q5788",
+      "siteNameAr": "البتراء",
+      "countryNameAr": "الأردن",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q810",
+      "whComponentId": "326",
+      "whPropertyId": "326",
+      "sitelinks": 117,
+      "inscriptionYear": 1985,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0799-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11029653"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/326",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q5788",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "9e57c00f8c7b4a4869b98012c0b4ad2f138f349f20c1c06d474e5072ac67bbec"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q5859",
+      "siteQid": "Q5859",
+      "siteNameAr": "تشيتشن إيتزا",
+      "countryNameAr": "المكسيك",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q96",
+      "whComponentId": "483",
+      "whPropertyId": "483",
+      "sitelinks": 109,
+      "inscriptionYear": 1989,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "0455-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q28567"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/483",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q5859",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "9b1e9092858ee8a97da3dfe9cf0ba08549c7fe7c751cb4fd4304128a1b182705"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q5747",
+      "siteQid": "Q5747",
+      "siteNameAr": "تدمر",
+      "countryNameAr": "سوريا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q858",
+      "whComponentId": "23bis",
+      "whPropertyId": "23bis",
+      "sitelinks": 107,
+      "inscriptionYear": 1980,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11772"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/23bis",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q5747",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "29440de8b4f82d24776381fbae53cceaa82a3b6c18d2acab52e54cd31d2a7938"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q129072",
+      "siteQid": "Q129072",
+      "siteNameAr": "تخت جمشيد",
+      "countryNameAr": "إيران",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q794",
+      "whComponentId": "114",
+      "whPropertyId": "114",
+      "sitelinks": 103,
+      "inscriptionYear": 1979,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0510-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q25763"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/114",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q129072",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "47aa06582d7b51dcc37c3db83c422e55d6e6df3240e48f7f8c63140a9c313da5"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q42798",
+      "siteQid": "Q42798",
+      "siteNameAr": "بوروبودور",
+      "countryNameAr": "إندونيسيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q252",
+      "whComponentId": "592-001",
+      "whPropertyId": "592",
+      "sitelinks": 99,
+      "inscriptionYear": 1991,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0800-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/592",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q42798",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "ecc10bdc751bae6fd3e4fdef71a416de4573e79e6dac62d33459db8193f225b2"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q5725",
+      "siteQid": "Q5725",
+      "siteNameAr": "موهينجو دارو",
+      "countryNameAr": "باكستان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q843",
+      "whComponentId": "138",
+      "whPropertyId": "138",
+      "sitelinks": 98,
+      "inscriptionYear": 1980,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/138",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q5725",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "2703e0456a2e122fc257260c62ab3d7f3558ea14112c63ee9c005bdbbd343dee"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q131013",
+      "siteQid": "Q131013",
+      "siteNameAr": "أكروبوليس أثينا",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "404",
+      "whPropertyId": "404",
+      "sitelinks": 97,
+      "inscriptionYear": 1987,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0500-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11772"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/404",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q131013",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "6ca5299fb73a44423b01118d4c50d7f83a27802ce2d5cdc6a7ade2880960cd20"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q134140",
+      "siteQid": "Q134140",
+      "siteNameAr": "أبو سمبل",
+      "countryNameAr": "مصر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q79",
+      "whComponentId": "88-001",
+      "whPropertyId": "88",
+      "sitelinks": 93,
+      "inscriptionYear": 1979,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-1273-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11768"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/88",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q134140",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "4ff7f9d528507b0d71acf3ed609b298cd8dcfc8c2c7ee4785fd5baf2d04ae71d"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q132564",
+      "siteQid": "Q132564",
+      "siteNameAr": "موكناي",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "941-001",
+      "whPropertyId": "941",
+      "sitelinks": 91,
+      "inscriptionYear": 1999,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q181264"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/941",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q132564",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "330a5a480daef7f9191a02aa878ddd50ec2ede86eab6118c281668a14199dabf"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q38888",
+      "siteQid": "Q38888",
+      "siteNameAr": "أوليمبيا",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "517",
+      "whPropertyId": "517",
+      "sitelinks": 89,
+      "inscriptionYear": 1989,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11772"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/517",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q38888",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "4f5347bdce68c69911a19eaf4100878d4596cf1180aca93c367591a67b41798c"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q5699",
+      "siteQid": "Q5699",
+      "siteNameAr": "أور",
+      "countryNameAr": "العراق",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q796",
+      "whComponentId": "1481-006",
+      "whPropertyId": "1481",
+      "sitelinks": 86,
+      "inscriptionYear": 2016,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-3799-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1471568",
+        "http://www.wikidata.org/entity/Q16630263",
+        "http://www.wikidata.org/entity/Q656043"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1481",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q5699",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "ec0df3307a5a33dedc6b774077bc30f1320b180b516f4b9cb2989fe0b0258bfb"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q178835",
+      "siteQid": "Q178835",
+      "siteNameAr": "بعلبك",
+      "countryNameAr": "لبنان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q822",
+      "whComponentId": "294",
+      "whPropertyId": "294",
+      "sitelinks": 86,
+      "inscriptionYear": 1984,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/294",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q178835",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "6ecf37cae1e31c93f4612b81b5fdd8bfef1dae1b2b0edd39be559598100a7446"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q5715",
+      "siteQid": "Q5715",
+      "siteNameAr": "منف",
+      "countryNameAr": "مصر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q79",
+      "whComponentId": "86-001",
+      "whPropertyId": "86",
+      "sitelinks": 86,
+      "inscriptionYear": 1979,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/86",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q5715",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "d662a2a6860a42620caa01e12421c831996c01536a08ff0c2bea85179eb1a511"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q173532",
+      "siteQid": "Q173532",
+      "siteNameAr": "جبيل",
+      "countryNameAr": "لبنان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q822",
+      "whComponentId": "295",
+      "whPropertyId": "295",
+      "sitelinks": 83,
+      "inscriptionYear": 1984,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-8000-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/295",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q173532",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "1dd3dfe6bc05b4028c64658d487d86d8e3006fbdfde80db01214f021a1b4e243"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q57357",
+      "siteQid": "Q57357",
+      "siteNameAr": "سور هادريان",
+      "countryNameAr": "المملكة المتحدة",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q145",
+      "whComponentId": "430-001",
+      "whPropertyId": "430",
+      "sitelinks": 82,
+      "inscriptionYear": 1987,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "0122-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1747689"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/430",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q57357",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "b19ff941d90d6cf4a79d6c138470fba6231cb75be5b947608b1ef88fd7388eab"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q200200",
+      "siteQid": "Q200200",
+      "siteNameAr": "آشور",
+      "countryNameAr": "العراق",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q796",
+      "whComponentId": "1130",
+      "whPropertyId": "1130",
+      "sitelinks": 79,
+      "inscriptionYear": 2003,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-2499-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1130",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q200200",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "e06b29d0fdc94f4a758d927ee45d550bff6de96dc4ae7b981b5a5972fc83a251"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q29317",
+      "siteQid": "Q29317",
+      "siteNameAr": "باغان",
+      "countryNameAr": "ميانمار",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q836",
+      "whComponentId": "1588",
+      "whPropertyId": "1588",
+      "sitelinks": 79,
+      "inscriptionYear": 2019,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0200-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1588",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q29317",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "9b32754c6f865a0928dada4f2d95545a96c4e231a2b60eb0174affa7bcc3a047"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q172613",
+      "siteQid": "Q172613",
+      "siteNameAr": "تيوتيهواكان",
+      "countryNameAr": "المكسيك",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q96",
+      "whComponentId": "414",
+      "whPropertyId": "414",
+      "sitelinks": 78,
+      "inscriptionYear": 1987,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q116795888"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/414",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q172613",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "34629908509d7dfb0fa7f62408a37fa2cb45e4437a1d9813713c3a79a258ed8c"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q214944",
+      "siteQid": "Q214944",
+      "siteNameAr": "غوبيكلي تيبي",
+      "countryNameAr": "تركيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q43",
+      "whComponentId": "1572",
+      "whPropertyId": "1572",
+      "sitelinks": 78,
+      "inscriptionYear": 2018,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-9999-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1572",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q214944",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "a9405060b7b505e1bfaca9e33b8b161741b51ac04decc02e8b0a767886564ba3"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q133575",
+      "siteQid": "Q133575",
+      "siteNameAr": "كهف ألتاميرا",
+      "countryNameAr": "إسبانيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q29",
+      "whComponentId": "310-001",
+      "whPropertyId": "310",
+      "sitelinks": 76,
+      "inscriptionYear": 1985,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-13000-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1121344",
+        "http://www.wikidata.org/entity/Q40203",
+        "http://www.wikidata.org/entity/Q693549"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/310",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q133575",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "4a27cb2f5c9b6d7b4e9d577ab8025a5843762501effa97f82f09295a2c7f9f06"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q168518",
+      "siteQid": "Q168518",
+      "siteNameAr": "الوركاء",
+      "countryNameAr": "العراق",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q796",
+      "whComponentId": "1481-005",
+      "whPropertyId": "1481",
+      "sitelinks": 75,
+      "inscriptionYear": 2016,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-3199-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q35355",
+        "http://www.wikidata.org/entity/Q731494"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1481",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q168518",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "7a4e7e48680650ace45f4cb4ea81f59c8ec96b2c938ccc06c97a7a312d0eb86e"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q44112",
+      "siteQid": "Q44112",
+      "siteNameAr": "قورينا",
+      "countryNameAr": "ليبيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q1016",
+      "whComponentId": "190",
+      "whPropertyId": "190",
+      "sitelinks": 74,
+      "inscriptionYear": 1982,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-0629-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/190",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q44112",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "528f6bd3a77f1a86f946b1d9917bc6c7ad26fbd701a431409b5a6a4b1519742d"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q189616",
+      "siteQid": "Q189616",
+      "siteNameAr": "مغارات إلورا",
+      "countryNameAr": "الهند",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q668",
+      "whComponentId": "243",
+      "whPropertyId": "243",
+      "sitelinks": 74,
+      "inscriptionYear": 1983,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/243",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q189616",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "f871986d6aaca131a35a43b9f3a63080d3f19cb9085423bb6d242bf40dee9439"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q156093",
+      "siteQid": "Q156093",
+      "siteNameAr": "تاكسيلا",
+      "countryNameAr": "باكستان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q843",
+      "whComponentId": "139",
+      "whPropertyId": "139",
+      "sitelinks": 73,
+      "inscriptionYear": 1980,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/139",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q156093",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "ae3d4d7611c9ff2b258b6b8cfc9957949cd11ae3cfd38638ac2031f503b9d5a3"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q18986",
+      "siteQid": "Q18986",
+      "siteNameAr": "فرغامس",
+      "countryNameAr": "تركيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q43",
+      "whComponentId": "1457",
+      "whPropertyId": "1457",
+      "sitelinks": 72,
+      "inscriptionYear": 2014,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0800-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11772",
+        "http://www.wikidata.org/entity/Q1747689"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1457",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q18986",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "0e1e84476620aac70c2ab03dd17795d6e4de856994cf2d5aa9adbe4e74670080"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q178813",
+      "siteQid": "Q178813",
+      "siteNameAr": "هركولانيوم",
+      "countryNameAr": "إيطاليا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q38",
+      "whComponentId": "829-003",
+      "whPropertyId": "829",
+      "sitelinks": 72,
+      "inscriptionYear": 1997,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q120754777",
+        "http://www.wikidata.org/entity/Q487908",
+        "http://www.wikidata.org/entity/Q500272"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/829",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q178813",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "cab705e63f05f54271cf5633d03e98ab271cc36988da9f0288bab5a94a06ce66"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q47721",
+      "siteQid": "Q47721",
+      "siteNameAr": "برامبانان",
+      "countryNameAr": "إندونيسيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q252",
+      "whComponentId": "642",
+      "whPropertyId": "642",
+      "sitelinks": 71,
+      "inscriptionYear": 1991,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0850-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/642",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q47721",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "f6b71975c7230ae589ee298468d14432e8708947029185bc5ad9fcda318db9a5"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q181007",
+      "siteQid": "Q181007",
+      "siteNameAr": "حتوساس",
+      "countryNameAr": "تركيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q43",
+      "whComponentId": "377-001",
+      "whPropertyId": "377",
+      "sitelinks": 71,
+      "inscriptionYear": 1986,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/377",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q181007",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "ccb89fac581374c4d3e4390c1ba5b6e2ec23edd6e7dd3df707a9cb1b152edeb2"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q61750",
+      "siteQid": "Q61750",
+      "siteNameAr": "تيواناكو",
+      "countryNameAr": "بوليفيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q750",
+      "whComponentId": "567",
+      "whPropertyId": "567",
+      "sitelinks": 70,
+      "inscriptionYear": 2000,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/567",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q61750",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "32269b31aadb2740462a0c4a88cee4573b6f71fc73b0d7c26164e725c9155a4d"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q192522",
+      "siteQid": "Q192522",
+      "siteNameAr": "كاتال هويوك",
+      "countryNameAr": "تركيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q43",
+      "whComponentId": "1405",
+      "whPropertyId": "1405",
+      "sitelinks": 70,
+      "inscriptionYear": 2012,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-7499-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1405",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q192522",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "da447a0c5c3dfcdf965431b3645f41f4ca87898429cb0c49b09b63ead9397820"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q2620036",
+      "siteQid": "Q2620036",
+      "siteNameAr": "خطوط نازكا",
+      "countryNameAr": "بيرو",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q419",
+      "whComponentId": "700",
+      "whPropertyId": "700",
+      "sitelinks": 69,
+      "inscriptionYear": 1994,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0199-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q2739669"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/700",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q2620036",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "6064cc6640b5b114a34921146aee2070d380bee294fa62d33dcc52218b47c7a7"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q190048",
+      "siteQid": "Q190048",
+      "siteNameAr": "طاسيلي ناجر",
+      "countryNameAr": "الجزائر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q262",
+      "whComponentId": "179",
+      "whPropertyId": "179",
+      "sitelinks": 69,
+      "inscriptionYear": 1982,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q36422",
+        "http://www.wikidata.org/entity/Q57404139",
+        "http://www.wikidata.org/entity/Q58843"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/179",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q190048",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "f15b86e5788c2ae8d4b0c5585e82d7880fe879e3c91d35b1cad2c71a6b9882e2"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q191504",
+      "siteQid": "Q191504",
+      "siteNameAr": "لبدة الكبرى",
+      "countryNameAr": "ليبيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q1016",
+      "whComponentId": "183",
+      "whPropertyId": "183",
+      "sitelinks": 69,
+      "inscriptionYear": 1982,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-0700-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/183",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q191504",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "7d525e428d085b4ba5163a5b7c5e889f943605fcf03e843f93f4f788d51c4e88"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q181427",
+      "siteQid": "Q181427",
+      "siteNameAr": "بالينكي",
+      "countryNameAr": "المكسيك",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q96",
+      "whComponentId": "411",
+      "whPropertyId": "411",
+      "sitelinks": 67,
+      "inscriptionYear": 1987,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q28567"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/411",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q181427",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "119ee0b9d56e0414e4a7e5005bc246340cb537e666cdb30e316657bbc8570fa4"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q5780",
+      "siteQid": "Q5780",
+      "siteNameAr": "أهرامات مروي",
+      "countryNameAr": "السودان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q1049",
+      "whComponentId": "1336-001",
+      "whPropertyId": "1336",
+      "sitelinks": 66,
+      "inscriptionYear": 2011,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-2500-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11768"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1336",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q5780",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "ea2efc52c58452e339ec0581128735fbea735a9b587e901e365fd7531a8b7ce6"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q230025",
+      "siteQid": "Q230025",
+      "siteNameAr": "باسارغاد",
+      "countryNameAr": "إيران",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q794",
+      "whComponentId": "1106",
+      "whPropertyId": "1106",
+      "sitelinks": 66,
+      "inscriptionYear": 2004,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1106",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q230025",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "41eb03a73353c05941276837c1861e83571e09da46522146234997e9021d7716"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q4523",
+      "siteQid": "Q4523",
+      "siteNameAr": "جغا زنبيل",
+      "countryNameAr": "إيران",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q794",
+      "whComponentId": "113",
+      "whPropertyId": "113",
+      "sitelinks": 66,
+      "inscriptionYear": 1979,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/113",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q4523",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "3316f78c28ec319352b8ba48cc66a1bd4eb325f7b346cdaae54674dfed477dad"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q43286",
+      "siteQid": "Q43286",
+      "siteNameAr": "كهوف موغاو",
+      "countryNameAr": "الصين",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q148",
+      "whComponentId": "440",
+      "whPropertyId": "440",
+      "sitelinks": 65,
+      "inscriptionYear": 1987,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/440",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q43286",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "818945a00b2d866b2c7972ac9fcfc79c7dca1446126572187eb99d4ded7f342a"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q638445",
+      "siteQid": "Q638445",
+      "siteNameAr": "تاوريس خيرسون",
+      "countryNameAr": "أوكرانيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q212",
+      "whComponentId": "1411-001",
+      "whPropertyId": "1411",
+      "sitelinks": 64,
+      "inscriptionYear": 2013,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1411",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q638445",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "7489205f8ad90281a8ad7dc66c0ec62caa326616b614423e05fbe4684375bc13"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q9278",
+      "siteQid": "Q9278",
+      "siteNameAr": "أبو مينا",
+      "countryNameAr": "مصر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q79",
+      "whComponentId": "90",
+      "whPropertyId": "90",
+      "sitelinks": 62,
+      "inscriptionYear": 1979,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/90",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q9278",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "e0e0c9e8212103bba5413fd92415229d004acdce9d749b44325ff9d1706c82c3"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q188694",
+      "siteQid": "Q188694",
+      "siteNameAr": "بوترنت",
+      "countryNameAr": "ألبانيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q222",
+      "whComponentId": "570",
+      "whPropertyId": "570",
+      "sitelinks": 62,
+      "inscriptionYear": 1992,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11772"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/570",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q188694",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "74197f2f8fa4e39b27ff85b055ee988240a92c6a607f1f34728588b5d1e98030"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q205131",
+      "siteQid": "Q205131",
+      "siteNameAr": "ليشان بودا العملاق",
+      "countryNameAr": "الصين",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q148",
+      "whComponentId": "779-002",
+      "whPropertyId": "779",
+      "sitelinks": 62,
+      "inscriptionYear": 1996,
+      "qualifications": [
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0803-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/779",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q205131",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "68a41d72abe91003ac2407451061c9a8c8baf20f05087b63367d01bae52393ba"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q237128",
+      "siteQid": "Q237128",
+      "siteNameAr": "محمية ميسا فيردي الوطنية",
+      "countryNameAr": "الولايات المتحدة",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q30",
+      "whComponentId": "27",
+      "whPropertyId": "27",
+      "sitelinks": 60,
+      "inscriptionYear": 1978,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/27",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q237128",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "ac1c6e20a100bf82199e6ccb3db764823d355152589a0f11585b146b3787d553"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q189764",
+      "siteQid": "Q189764",
+      "siteNameAr": "بونت دي غار",
+      "countryNameAr": "فرنسا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q142",
+      "whComponentId": "344",
+      "whPropertyId": "344",
+      "sitelinks": 59,
+      "inscriptionYear": 1985,
+      "qualifications": [
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0050-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/344",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q189764",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "c236e8e14330db02cbadb7cdea256dbfd8b989d707cefe89de4c748ab0553364"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q459629",
+      "siteQid": "Q459629",
+      "siteNameAr": "تيمقاد",
+      "countryNameAr": "الجزائر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q262",
+      "whComponentId": "194",
+      "whPropertyId": "194",
+      "sitelinks": 59,
+      "inscriptionYear": 1982,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1200427"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/194",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q459629",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "7ba3f055a259c1eb3116a897511a417184e31574906506af91eb9405e92ce387"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q232615",
+      "siteQid": "Q232615",
+      "siteNameAr": "سارد",
+      "countryNameAr": "تركيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q43",
+      "whComponentId": "1731-001",
+      "whPropertyId": "1731",
+      "sitelinks": 59,
+      "inscriptionYear": 2025,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1778719"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1731",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q232615",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "cc052b43b2658a9c73507e51989a097c3d9e546659279b1010c25ae4ea856749"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q374096",
+      "siteQid": "Q374096",
+      "siteNameAr": "كهف شوفيه",
+      "countryNameAr": "فرنسا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q142",
+      "whComponentId": "1426",
+      "whPropertyId": "1426",
+      "sitelinks": 59,
+      "inscriptionYear": 2014,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11759"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1426",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q374096",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "c576f67680d122a097b6d16db24eb581b837fa3048b53189cf917fed10aad841"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q27356",
+      "siteQid": "Q27356",
+      "siteNameAr": "مدائن صالح",
+      "countryNameAr": "السعودية",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q851",
+      "whComponentId": "1293",
+      "whPropertyId": "1293",
+      "sitelinks": 58,
+      "inscriptionYear": 2008,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1293",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q27356",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "e77937db42416175491c2a9872475ec2ca08e6c6809041410f89ae4431e40eb6"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q331603",
+      "siteQid": "Q331603",
+      "siteNameAr": "ملاجئ بيمبتكا الصخرية",
+      "countryNameAr": "الهند",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q668",
+      "whComponentId": "925",
+      "whPropertyId": "925",
+      "sitelinks": 58,
+      "inscriptionYear": 2003,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/925",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q331603",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "0ef75da7e832dacc25a86a6f1293d0d7a5b39640fc938d870993701ca0a32c80"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q329967",
+      "siteQid": "Q329967",
+      "siteNameAr": "بايستوم",
+      "countryNameAr": "إيطاليا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q38",
+      "whComponentId": "842",
+      "whPropertyId": "842",
+      "sitelinks": 57,
+      "inscriptionYear": 1998,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-0599-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/842",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q329967",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "f23585b9609f9f0ef7b360bbe5a14f94220ebfc26e1c15ee10b2e9263661f73d"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q214827",
+      "siteQid": "Q214827",
+      "siteNameAr": "كوبان",
+      "countryNameAr": "هندوراس",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q783",
+      "whComponentId": "129",
+      "whPropertyId": "129",
+      "sitelinks": 56,
+      "inscriptionYear": 1980,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q28567"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/129",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q214827",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "c6c67ecad77900c7bfbb0dfffea4d40273685b4c879ad60126bfd395a1d60e33"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q217379",
+      "siteQid": "Q217379",
+      "siteNameAr": "تيرنز",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "941-002",
+      "whPropertyId": "941",
+      "sitelinks": 55,
+      "inscriptionYear": 1999,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q181264"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/941",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q217379",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "38c1dc0a82d3ee7d8031ac66e2721ef0cd60df1c22cbfc73aad745eb1f2926bd"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q308807",
+      "siteQid": "Q308807",
+      "siteNameAr": "جبال أكاكوس",
+      "countryNameAr": "ليبيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q1016",
+      "whComponentId": "287",
+      "whPropertyId": "287",
+      "sitelinks": 55,
+      "inscriptionYear": 1985,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/287",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q308807",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "ac55d61f8ffb91fcce210543c705274f3e4a98a4a9d52c1a8d3264b0d0fceb1e"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q457362",
+      "siteQid": "Q457362",
+      "siteNameAr": "جميلة",
+      "countryNameAr": "الجزائر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q262",
+      "whComponentId": "191",
+      "whPropertyId": "191",
+      "sitelinks": 55,
+      "inscriptionYear": 1982,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/191",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q457362",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "1e2eeb9688f1ca267a7116cf54daec3e6b9419339395a3a57bc05efa14d62a4e"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q223385",
+      "siteQid": "Q223385",
+      "siteNameAr": "كهف دي لاس مانوس",
+      "countryNameAr": "الأرجنتين",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q414",
+      "whComponentId": "936",
+      "whPropertyId": "936",
+      "sitelinks": 55,
+      "inscriptionYear": 1999,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q852425"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/936",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q223385",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "c20096957002d4fd2121078893f80346d921efebaeab98ba6cd47c4f530c26d3"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q210065",
+      "siteQid": "Q210065",
+      "siteNameAr": "إريدو",
+      "countryNameAr": "العراق",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q796",
+      "whComponentId": "1481-007",
+      "whPropertyId": "1481",
+      "sitelinks": 54,
+      "inscriptionYear": 2016,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q35355"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1481",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q210065",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "40a124ac2081067d6b8e43dfbb975a13c0595e8182421efcfff6df3605c80acf"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q333661",
+      "siteQid": "Q333661",
+      "siteNameAr": "كاهوكيا",
+      "countryNameAr": "الولايات المتحدة",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q30",
+      "whComponentId": "198bis",
+      "whPropertyId": "198bis",
+      "sitelinks": 54,
+      "inscriptionYear": 1982,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1052095"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/198bis",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q333661",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "747bd3fb0e86f746de47cf720b412d54e489e7ec2d53f26f87033bc9bf214b7a"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q214007",
+      "siteQid": "Q214007",
+      "siteNameAr": "تسوديلو",
+      "countryNameAr": "بوتسوانا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q963",
+      "whComponentId": "1021",
+      "whPropertyId": "1021",
+      "sitelinks": 53,
+      "inscriptionYear": 2001,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1021",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q214007",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "30792202e722a5ac1807ba84116fa91321bff96781d54dae4eedfc17aa20e644"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q19053",
+      "siteQid": "Q19053",
+      "siteNameAr": "ميستراس",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "511",
+      "whPropertyId": "511",
+      "sitelinks": 53,
+      "inscriptionYear": 1989,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q12544"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/511",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q19053",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "e76b36328ce7337bdaedb693fdac003d7bfe62c26bc312d502cc4a884b27995f"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q846967",
+      "siteQid": "Q846967",
+      "siteNameAr": "نان مادول",
+      "countryNameAr": "ولايات ميكرونيسيا المتحدة",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q702",
+      "whComponentId": "1503",
+      "whPropertyId": "1503",
+      "sitelinks": 53,
+      "inscriptionYear": 2016,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1503",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q846967",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "ea443957c1e4efd52a73f10de6cf396e655a3f037ed5dda6e575cc8dbbe7694c"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q391215",
+      "siteQid": "Q391215",
+      "siteNameAr": "وليلي",
+      "countryNameAr": "المغرب",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q1028",
+      "whComponentId": "836",
+      "whPropertyId": "836",
+      "sitelinks": 53,
+      "inscriptionYear": 1997,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0399-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1747689",
+        "http://www.wikidata.org/entity/Q4383747",
+        "http://www.wikidata.org/entity/Q45315"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/836",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q391215",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "c9c9eaa9f1a59c1848116736f51b47252f8e3073306bf39c304675e63df01fa0"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q210957",
+      "siteQid": "Q210957",
+      "siteNameAr": "الجدار الأنطوني",
+      "countryNameAr": "المملكة المتحدة",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q145",
+      "whComponentId": "430-008",
+      "whPropertyId": "430",
+      "sitelinks": 52,
+      "inscriptionYear": 1987,
+      "qualifications": [
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0142-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/430",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q210957",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "a80e3dcd593b8e1c19ab55c13d9f7b370271cb4936026636ed5a3c7a12f784a1"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q45949",
+      "siteQid": "Q45949",
+      "siteNameAr": "برياه فيهير",
+      "countryNameAr": "كمبوديا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q424",
+      "whComponentId": "1224",
+      "whPropertyId": "1224",
+      "sitelinks": 52,
+      "inscriptionYear": 2008,
+      "qualifications": [
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0893-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1224",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q45949",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "85ff2ff5b0e7aa6e70ba11320d545f07ed3451097f990c0aa42ef3a585ac2ee2"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q277540",
+      "siteQid": "Q277540",
+      "siteNameAr": "تشان تشان",
+      "countryNameAr": "بيرو",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q419",
+      "whComponentId": "366",
+      "whPropertyId": "366",
+      "sitelinks": 52,
+      "inscriptionYear": 1986,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "0850-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q901198"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/366",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q277540",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "c355d380560cc81c9bc4b3da91403ced67e76d5e77d63b5500f00fa5b528c8b5"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q322287",
+      "siteQid": "Q322287",
+      "siteNameAr": "قصر دقلديانوس",
+      "countryNameAr": "كرواتيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q224",
+      "whComponentId": "97-001",
+      "whPropertyId": "97",
+      "sitelinks": 52,
+      "inscriptionYear": 1979,
+      "qualifications": [
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0293-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/97",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q322287",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "57850182d4fd086e24bc32937c7fe60fffa079e96c74c2aaec26d6cee0df461f"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q208177",
+      "siteQid": "Q208177",
+      "siteNameAr": "بيركا",
+      "countryNameAr": "السويد",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q34",
+      "whComponentId": "555-001",
+      "whPropertyId": "555",
+      "sitelinks": 51,
+      "inscriptionYear": 1993,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/555",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q208177",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "1da469a2631a1cc669c7a0465d31ceacceedf7a47d8b5a381c5dba74f4b1432a"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q272777",
+      "siteQid": "Q272777",
+      "siteNameAr": "فيلا هادريان",
+      "countryNameAr": "إيطاليا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q38",
+      "whComponentId": "907",
+      "whPropertyId": "907",
+      "sitelinks": 51,
+      "inscriptionYear": 1999,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1747689"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/907",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q272777",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "46ad16c4c0ea21e12d3250ba39e67ef924779dcdb4e1ef5ed08e16bde175f1a4"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q272771",
+      "siteQid": "Q272771",
+      "siteNameAr": "كالاكمول",
+      "countryNameAr": "المكسيك",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q96",
+      "whComponentId": "1061",
+      "whPropertyId": "1061",
+      "sitelinks": 51,
+      "inscriptionYear": 2002,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q28567"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1061",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q272771",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "e338efb8bb8a6b2964480de569352c24e3ebda5c092c9871ef2ef8b2f74afae6"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q242741",
+      "siteQid": "Q242741",
+      "siteNameAr": "ارخثيون",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "404-004",
+      "whPropertyId": "404",
+      "sitelinks": 50,
+      "inscriptionYear": 1987,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0500-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11772"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/404",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q242741",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "4abcec0d2e90ed0775b2fa352f8cb290a8b8ead725b7ab5e08cd735957d05128"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q696193",
+      "siteQid": "Q696193",
+      "siteNameAr": "إكباتان",
+      "countryNameAr": "إيران",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q794",
+      "whComponentId": "1716",
+      "whPropertyId": "1716",
+      "sitelinks": 50,
+      "inscriptionYear": 2024,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1716",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q696193",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "5a0e19af9117a4a4d6d8aa70202c4cca6933e0d5a7e7d6988f405edeaae9c3ce"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q115253",
+      "siteQid": "Q115253",
+      "siteNameAr": "تخت سليمان",
+      "countryNameAr": "إيران",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q794",
+      "whComponentId": "1077",
+      "whPropertyId": "1077",
+      "sitelinks": 50,
+      "inscriptionYear": 2003,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1077",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q115253",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "49899169d10cc536e977a3d05f6322a6b9e9a45d027eaec3433b38191e6c45f3"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q1025825",
+      "siteQid": "Q1025825",
+      "siteNameAr": "شهر سوخته",
+      "countryNameAr": "إيران",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q794",
+      "whComponentId": "1456",
+      "whPropertyId": "1456",
+      "sitelinks": 50,
+      "inscriptionYear": 2014,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1456",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q1025825",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "462de72f74aca6ced2859012de2e107f5865263d24e5a71d0e78a657ddf1ccd2"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q816437",
+      "siteQid": "Q816437",
+      "siteNameAr": "سكارا براي",
+      "countryNameAr": "المملكة المتحدة",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q145",
+      "whComponentId": "514bis-004",
+      "whPropertyId": "514bis",
+      "sitelinks": 49,
+      "inscriptionYear": 1999,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-3179-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/514bis",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q816437",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "a6451b020af4c654ddb21b60afbd6fc4ef9613403dbbd87e438aa4c287f4149c"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q385086",
+      "siteQid": "Q385086",
+      "siteNameAr": "شويروكويتا",
+      "countryNameAr": "قبرص",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q229",
+      "whComponentId": "848",
+      "whPropertyId": "848",
+      "sitelinks": 49,
+      "inscriptionYear": 1998,
+      "qualifications": [
+        "curated_ancient_site",
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-7000-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/848",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q385086",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "20d7e17a21f29992445f7fb6a989a653a6ba8cbfe33a5e6b89bf133ccd8c3c45"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q318422",
+      "siteQid": "Q318422",
+      "siteNameAr": "كيوريجوا",
+      "countryNameAr": "غواتيمالا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q774",
+      "whComponentId": "149",
+      "whPropertyId": "149",
+      "sitelinks": 49,
+      "inscriptionYear": 1981,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q28567"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/149",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q318422",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "0dbce28c5b52f9fe3159cdfb2f1ab3641823be9fb108ccd270526cb68c029407"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q854672",
+      "siteQid": "Q854672",
+      "siteNameAr": "نسا",
+      "countryNameAr": "تركمانستان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q874",
+      "whComponentId": "1242",
+      "whPropertyId": "1242",
+      "sitelinks": 49,
+      "inscriptionYear": 2007,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1986139",
+        "http://www.wikidata.org/entity/Q25763"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1242",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q854672",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "fca184634cf1bb4fbd27bc8136898685557b882005876db4212a4d20a2c7abe6"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q505617",
+      "siteQid": "Q505617",
+      "siteNameAr": "فيلا رومانا ديل كاسالي",
+      "countryNameAr": "إيطاليا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q38",
+      "whComponentId": "832",
+      "whPropertyId": "832",
+      "sitelinks": 48,
+      "inscriptionYear": 1997,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1747689"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/832",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q505617",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "29b01c5a91fd3ee9b86db6e3a0c415c30e3717eba837f5d73d6aace29d560158"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q393841",
+      "siteQid": "Q393841",
+      "siteNameAr": "المدن المنسية",
+      "countryNameAr": "سوريا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q858",
+      "whComponentId": "1348",
+      "whPropertyId": "1348",
+      "sitelinks": 47,
+      "inscriptionYear": 2011,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q12544"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1348",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q393841",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "812f22c80ff1b04c04fc62b1edeb9b155679dc3c3208a1dff6e0f19a7fbc04ce"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q499019",
+      "siteQid": "Q499019",
+      "siteNameAr": "جبل البركل",
+      "countryNameAr": "السودان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q1049",
+      "whComponentId": "1073-001",
+      "whPropertyId": "1073",
+      "sitelinks": 47,
+      "inscriptionYear": 2003,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1073",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q499019",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "27d99c98d1315cdda2f0c8a2b53ad4d58d910cef1e3c13edb372380b14237de7"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q724484",
+      "siteQid": "Q724484",
+      "siteNameAr": "مزاب",
+      "countryNameAr": "الجزائر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q262",
+      "whComponentId": "188",
+      "whPropertyId": "188",
+      "sitelinks": 47,
+      "inscriptionYear": 1982,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1932580",
+        "http://www.wikidata.org/entity/Q2007538"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/188",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q724484",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "750f88f79b1afa7b10a2aca2873dc35883f1479a5d496731126e48d80caa39b3"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q32378",
+      "siteQid": "Q32378",
+      "siteNameAr": "دقة",
+      "countryNameAr": "تونس",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q948",
+      "whComponentId": "794",
+      "whPropertyId": "794",
+      "sitelinks": 46,
+      "inscriptionYear": 1997,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q4383747"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/794",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q32378",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "dd43fae6673760e4c38abd3ffd897a4d0c201ea200f5284ce4ad782e285c0fa0"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q219279",
+      "siteQid": "Q219279",
+      "siteNameAr": "كارال",
+      "countryNameAr": "بيرو",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q419",
+      "whComponentId": "1269",
+      "whPropertyId": "1269",
+      "sitelinks": 46,
+      "inscriptionYear": 2009,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1269",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q219279",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "8d575230d0e0a06b1602db1938d5b828a98d944f5b34a4f6e0194b8c694dec2e"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q117623",
+      "siteQid": "Q117623",
+      "siteNameAr": "تخت بابي",
+      "countryNameAr": "باكستان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q843",
+      "whComponentId": "140-001",
+      "whPropertyId": "140",
+      "sitelinks": 45,
+      "inscriptionYear": 1980,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/140",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q117623",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "63513486174cd88521e4c7541b84e5db8656cdd612cbfc8365aa09fe32ab7d8d"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q27985",
+      "siteQid": "Q27985",
+      "siteNameAr": "خويا دي سيرين",
+      "countryNameAr": "السلفادور",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q792",
+      "whComponentId": "675",
+      "whPropertyId": "675",
+      "sitelinks": 45,
+      "inscriptionYear": 1993,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q28567"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/675",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q27985",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "99d3c53a61763784924f3c54de8ebbf77a233a1add5c432f498ff25c5a17abe5"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q538061",
+      "siteQid": "Q538061",
+      "siteNameAr": "كركوان",
+      "countryNameAr": "تونس",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q948",
+      "whComponentId": "332bis-001",
+      "whPropertyId": "332bis",
+      "sitelinks": 45,
+      "inscriptionYear": 1985,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/332bis",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q538061",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "a3540114c56486a518c40a831f9bac58087e73fe3dac259baa8182aa58bd5bdd"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q732554",
+      "siteQid": "Q732554",
+      "siteNameAr": "تشافين دي هوانتار",
+      "countryNameAr": "بيرو",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q419",
+      "whComponentId": "330",
+      "whPropertyId": "330",
+      "sitelinks": 43,
+      "inscriptionYear": 1985,
+      "qualifications": [
+        "curated_ancient_site",
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q13341477"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/330",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q732554",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "635da5b9061290fa06d8e93715c271acf2c90a2e5acfe52a41974942d6bfa327"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q384813",
+      "siteQid": "Q384813",
+      "siteNameAr": "معبد أثينا نيكه",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "404-005",
+      "whPropertyId": "404",
+      "sitelinks": 43,
+      "inscriptionYear": 1987,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0425-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11772"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/404",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q384813",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "e27b92231d4aa8c117c1d449ae891a353a61bef0d8e647e010da8b4605fa3abe"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q165414",
+      "siteQid": "Q165414",
+      "siteNameAr": "هيديبي",
+      "countryNameAr": "ألمانيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q183",
+      "whComponentId": "1553-012",
+      "whPropertyId": "1553",
+      "sitelinks": 43,
+      "inscriptionYear": 2018,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q12567"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1553",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q165414",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "a0311f861f3080ea1e39170388a2c2305ac208b28eb3a4d1eef897592cdaeeb0"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q943327",
+      "siteQid": "Q943327",
+      "siteNameAr": "وادي تامغالي",
+      "countryNameAr": "كازاخستان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q232",
+      "whComponentId": "1145",
+      "whPropertyId": "1145",
+      "sitelinks": 43,
+      "inscriptionYear": 2004,
+      "qualifications": [
+        "curated_ancient_site"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1145",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q943327",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "f0469f6b174fa3a2d0c56cf7da66951580b80213c5b7ce7b55106d0987ac1c83"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q618495",
+      "siteQid": "Q618495",
+      "siteNameAr": "أفروديسياس",
+      "countryNameAr": "تركيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q43",
+      "whComponentId": "1519",
+      "whPropertyId": "1519",
+      "sitelinks": 42,
+      "inscriptionYear": 2017,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11761"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1519",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q618495",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "bfaa32d7ea91c7b5270ce52309b1b7e863c85332ad4ad25a4e46cb5153e01857"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q839456",
+      "siteQid": "Q839456",
+      "siteNameAr": "الفسطاط",
+      "countryNameAr": "مصر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q79",
+      "whComponentId": "89-001",
+      "whPropertyId": "89",
+      "sitelinks": 41,
+      "inscriptionYear": 1979,
+      "qualifications": [
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0641-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/89",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q839456",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "675799175a9156b239f5878ad3116f9ba78bf7654278905ad4478459389d7ed1"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q2914326",
+      "siteQid": "Q2914326",
+      "siteNameAr": "قصر الجم",
+      "countryNameAr": "تونس",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q948",
+      "whComponentId": "38",
+      "whPropertyId": "38",
+      "sitelinks": 41,
+      "inscriptionYear": 1979,
+      "qualifications": [
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0238-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/38",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q2914326",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "2748b617cd46492218bbeba8b0929c27c32f96fe54cb524f4ca3b4a4ed520ce4"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q822842",
+      "siteQid": "Q822842",
+      "siteNameAr": "أم الرصاص",
+      "countryNameAr": "الأردن",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q810",
+      "whComponentId": "1093",
+      "whPropertyId": "1093",
+      "sitelinks": 40,
+      "inscriptionYear": 2004,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q12544",
+        "http://www.wikidata.org/entity/Q2277"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1093",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q822842",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "e6b58e4ad823812c36577dd4f9b95b2ec536231ed356ba2d239e99e2b7872138"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q542854",
+      "siteQid": "Q542854",
+      "siteNameAr": "غورديوم",
+      "countryNameAr": "تركيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q43",
+      "whComponentId": "1669",
+      "whPropertyId": "1669",
+      "sitelinks": 40,
+      "inscriptionYear": 2023,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q32579"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1669",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q542854",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "c1cf85f51f195596125cb3b7f63507363c223211d0d877ffa79f7e675c6dd46a"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q938685",
+      "siteQid": "Q938685",
+      "siteNameAr": "خامي",
+      "countryNameAr": "زيمبابوي",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q954",
+      "whComponentId": "365",
+      "whPropertyId": "365",
+      "sitelinks": 39,
+      "inscriptionYear": 1986,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q986881"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/365",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q938685",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "6d17928e8b42c3387a126b3bf941d53acd79e0a6f6ba814073c57af6eb81e5a3"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q249707",
+      "siteQid": "Q249707",
+      "siteNameAr": "فيستوس",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "1733-002",
+      "whPropertyId": "1733",
+      "sitelinks": 38,
+      "inscriptionYear": 2025,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-3000-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q134178"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1733",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q249707",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "b11e23906461776bb264dc1921600f2fb35caf11360168b95d35866422dca5c9"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q876451",
+      "siteQid": "Q876451",
+      "siteNameAr": "قلعة ساماي باتا",
+      "countryNameAr": "بوليفيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q750",
+      "whComponentId": "883",
+      "whPropertyId": "883",
+      "sitelinks": 38,
+      "inscriptionYear": 1998,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1552707",
+        "http://www.wikidata.org/entity/Q28573"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/883",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q876451",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "8989eedee1aefcfbc1e5e9aea7db3759f2a102a8389e36a40ed0c7e79752b989"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q636774",
+      "siteQid": "Q636774",
+      "siteNameAr": "وادي المعابد",
+      "countryNameAr": "إيطاليا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q38",
+      "whComponentId": "831",
+      "whPropertyId": "831",
+      "sitelinks": 38,
+      "inscriptionYear": 1997,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q2257531"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/831",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q636774",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "118da82ec3d793802a4961c65e3fc7fd9fcfd2bcc6fd9b0da3efe62f6788e61b"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q644288",
+      "siteQid": "Q644288",
+      "siteNameAr": "ضريح غالا بلاسيديا",
+      "countryNameAr": "إيطاليا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q38",
+      "whComponentId": "788-001",
+      "whPropertyId": "788",
+      "sitelinks": 37,
+      "inscriptionYear": 1996,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q12544"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/788",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q644288",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "2de765fd3e33e052cc5d9b044f139a7bb167b69a00160c457333786c85b0b54c"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q703480",
+      "siteQid": "Q703480",
+      "siteNameAr": "ليتاؤون",
+      "countryNameAr": "تركيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q43",
+      "whComponentId": "484-003",
+      "whPropertyId": "484",
+      "sitelinks": 36,
+      "inscriptionYear": 1988,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11772"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/484",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q703480",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "547038bc6d6919192c921ff3caf6a8045458264ef17bc2960ad55bd48e04fb31"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q841207",
+      "siteQid": "Q841207",
+      "siteNameAr": "معبد هيرايون",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "595-002",
+      "whPropertyId": "595",
+      "sitelinks": 36,
+      "inscriptionYear": 1992,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11772"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/595",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q841207",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "2ae90ffe04b9e7f5e22f4e5f83f3648c62b123718c226ec4108dda00e9df6f50"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q60218",
+      "siteQid": "Q60218",
+      "siteNameAr": "زاكروس",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "1733-004",
+      "whPropertyId": "1733",
+      "sitelinks": 30,
+      "inscriptionYear": 2025,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q134178"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1733",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q60218",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "cf48f972e40f84abe7c713b8aab72bdaa44c80d3a4505d51d8e405bbeaaa3e40"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q1241298",
+      "siteQid": "Q1241298",
+      "siteNameAr": "فيلا الألغاز",
+      "countryNameAr": "إيطاليا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q38",
+      "whComponentId": "829-002",
+      "whPropertyId": "829",
+      "sitelinks": 29,
+      "inscriptionYear": 1997,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q1747689"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/829",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q1241298",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "b657cd136815c4db86ffafe535a1078f03eacfc27947e068f200e3352c02c045"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q477898",
+      "siteQid": "Q477898",
+      "siteNameAr": "بيشابور",
+      "countryNameAr": "إيران",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q794",
+      "whComponentId": "1568-006",
+      "whPropertyId": "1568",
+      "sitelinks": 26,
+      "inscriptionYear": 2018,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "0226-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q25763"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1568",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q477898",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "c5641937505a4da33c096934812beaa62ebb41f0537443c3dfd6825403e2b8e6"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q529923",
+      "siteQid": "Q529923",
+      "siteNameAr": "يازيليكايا",
+      "countryNameAr": "تركيا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q43",
+      "whComponentId": "377-002",
+      "whPropertyId": "377",
+      "sitelinks": 26,
+      "inscriptionYear": 1986,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-1300-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q4496560"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/377",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q529923",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "610e1ed1cf17ef09699b8310f846a11074fbc2f9d5590d71d5aa81bcafb4ff51"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q1258082",
+      "siteQid": "Q1258082",
+      "siteNameAr": "قوس غاليريوس وروتوندا",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "456-002",
+      "whPropertyId": "456",
+      "sitelinks": 25,
+      "inscriptionYear": 1988,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q12544",
+        "http://www.wikidata.org/entity/Q2277"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/456",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q1258082",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "e7d01f695a3a6ba342eb102a15c9f9deb85e834edc64aa509a4f295dc8e53659"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q2119834",
+      "siteQid": "Q2119834",
+      "siteNameAr": "الكرو",
+      "countryNameAr": "السودان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q1049",
+      "whComponentId": "1073-002",
+      "whPropertyId": "1073",
+      "sitelinks": 22,
+      "inscriptionYear": 2003,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11768"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1073",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q2119834",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "87a9a7faa6feb65f062ab2b119f3386530b4b2f30fa4c0d3ead952e760505970"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q3529269",
+      "siteQid": "Q3529269",
+      "siteNameAr": "تيبازة الموريطنية",
+      "countryNameAr": "الجزائر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q262",
+      "whComponentId": "193",
+      "whPropertyId": "193",
+      "sitelinks": 22,
+      "inscriptionYear": 1982,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0600-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q6343"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/193",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q3529269",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "d0b26514680c3e48a20cdfde651b1236a0955213e3880f1f98daaecbac0413fa"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q2119839",
+      "siteQid": "Q2119839",
+      "siteNameAr": "نوري",
+      "countryNameAr": "السودان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q1049",
+      "whComponentId": "1073-003",
+      "whPropertyId": "1073",
+      "sitelinks": 22,
+      "inscriptionYear": 2003,
+      "qualifications": [
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "-0663-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1073",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q2119839",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "0f7913cb6b1b3b9f537647bb87baaadafe2cf4c03cebcfa904a52d2f138c2ccd"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q3407649",
+      "siteQid": "Q3407649",
+      "siteNameAr": "البروبيلايا",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "404-006",
+      "whPropertyId": "404",
+      "sitelinks": 21,
+      "inscriptionYear": 1987,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0436-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11772"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/404",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q3407649",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "74c142daa53bfaaf3cdfefaad951045a514d84c321fb08e1edfd199262fe144a"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q1721920",
+      "siteQid": "Q1721920",
+      "siteNameAr": "كلابشة",
+      "countryNameAr": "مصر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q79",
+      "whComponentId": "88-004",
+      "whPropertyId": "88",
+      "sitelinks": 18,
+      "inscriptionYear": 1979,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11768"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/88",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q1721920",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "e3e1d1d5b5d8cb62acc3e341d0b2e5aa37388ccb0ca51586139b598e89ba0e63"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q984315",
+      "siteQid": "Q984315",
+      "siteNameAr": "قلب لوزة",
+      "countryNameAr": "سوريا",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q858",
+      "whComponentId": "1348-006",
+      "whPropertyId": "1348",
+      "sitelinks": 16,
+      "inscriptionYear": 2011,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q12544"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/1348",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q984315",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "8b5f5174d4bcbb7bc8a4e1b1ca072de95eea7bb4826391f1d9e9834274861daf"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q1728322",
+      "siteQid": "Q1728322",
+      "siteNameAr": "وادي السبوع",
+      "countryNameAr": "مصر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q79",
+      "whComponentId": "88-003",
+      "whPropertyId": "88",
+      "sitelinks": 16,
+      "inscriptionYear": 1979,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11768"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/88",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q1728322",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "e377d359f1627fdb4b9ff20aac370db5d958f6edd95c1182fc93a822119359a5"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q3301866",
+      "siteQid": "Q3301866",
+      "siteNameAr": "الضريح الملكي الموريطني",
+      "countryNameAr": "الجزائر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q262",
+      "whComponentId": "193-003",
+      "whPropertyId": "193",
+      "sitelinks": 14,
+      "inscriptionYear": 1982,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q31723"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/193",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q3301866",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "b001745746e0421626714ad5df4c6bfe215a3f52dd279851f0cf5cc68d6220b6"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q16963755",
+      "siteQid": "Q16963755",
+      "siteNameAr": "إيجاي",
+      "countryNameAr": "اليونان",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q41",
+      "whComponentId": "780",
+      "whPropertyId": "780",
+      "sitelinks": 14,
+      "inscriptionYear": 1996,
+      "qualifications": [
+        "dated_before_1000",
+        "explicit_culture"
+      ],
+      "inceptions": [
+        "-0749-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11772"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/780",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q16963755",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "3262e6f470906bd789eae4fba8c35da57b4895e0d7bc7e57aa0cd32a79b8e616"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q6873175",
+      "siteQid": "Q6873175",
+      "siteNameAr": "مركسا",
+      "countryNameAr": "كوريا الجنوبية",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q884",
+      "whComponentId": "1477-008",
+      "whPropertyId": "1477",
+      "sitelinks": 13,
+      "inscriptionYear": 2015,
+      "qualifications": [
+        "dated_before_1000"
+      ],
+      "inceptions": [
+        "0602-01-01T00:00:00Z"
+      ],
+      "cultureEntityUrls": [],
+      "sourceUrl": "https://whc.unesco.org/en/list/1477",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q6873175",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "a6fa2b869e7fbfc83bfc37e1b8c82c8c6b073a031b731ffa3c4657045dbf71de"
+    },
+    {
+      "sourceRecordId": "unesco-archaeological-site-q11951235",
+      "siteQid": "Q11951235",
+      "siteNameAr": "عمدا",
+      "countryNameAr": "مصر",
+      "countryEntityUrl": "http://www.wikidata.org/entity/Q79",
+      "whComponentId": "88-002",
+      "whPropertyId": "88",
+      "sitelinks": 11,
+      "inscriptionYear": 1979,
+      "qualifications": [
+        "explicit_culture"
+      ],
+      "inceptions": [],
+      "cultureEntityUrls": [
+        "http://www.wikidata.org/entity/Q11768"
+      ],
+      "sourceUrl": "https://whc.unesco.org/en/list/88",
+      "sourcePublisher": "UNESCO World Heritage Centre",
+      "translationIndexUrl": "http://www.wikidata.org/entity/Q11951235",
+      "retrievedAt": "2026-08-25T19:45:44.042Z",
+      "sourcePayloadHash": "63da51c229503ab20b2303bb779e4016157a536f6e1e42b2edca3d02f1222427"
+    }
+  ]
+}

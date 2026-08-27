@@ -12,6 +12,7 @@ import {
   loadBaseCategories,
   loadLocalEnv,
   loadPolicy,
+  loadReligiousSourcePackets,
   readJson,
   reachableTrustedSource,
   responseOutputText,
@@ -57,16 +58,29 @@ const requestedDifficulty = requestedDistribution.length ? 'balanced' : requeste
   : String(args.difficulty || 'normal').trim().toLowerCase();
 const count = Math.min(Math.max(distributionTotal || Number.parseInt(args.count || '10', 10) || 10, 1), 25);
 const dryRun = args['dry-run'] === true;
+const paidAiPilotAuthorized = args['allow-paid-ai-pilot'] === true;
 const allowOversample = args['allow-oversample'] === true;
 const maxSpendUsd = parseMaxSpendUsd(args['max-spend-usd'], { required: !dryRun });
+if (!dryRun && !paidAiPilotAuthorized) {
+  throw new Error(
+    'التوليد المدفوع متوقف في خطة 1.3. استخدم مسار المصادر المنظمة، أو مرّر ' +
+    '--allow-paid-ai-pilot مع ميزانية صريحة لبايلوت استثنائي فقط؛ لم يُرسل أي طلب إلى OpenAI.'
+  );
+}
+// البحث هو أغلى جزء متكرر في الدفعات الكبيرة. نسمح ببحث واحد لكل ثلاثة
+// أسئلة تقريباً لأن الاستعلام الواحد يستطيع إرجاع عدة صفحات رسمية، ثم يبقى
+// التحقق المستقل مسؤولاً عن رفض أي سؤال لا يثبت مصدره مباشرة.
+const generalToolCallBudget = Math.min(10, Math.max(2, Math.ceil(count / 3)));
 const responseLimits = {
   generation: {
-    maxOutputTokens: Math.min(16_000, Math.max(4_000, count * 640)),
-    maxToolCalls: Math.min(25, Math.max(1, count)),
+    // الدفعات الصغيرة تحتاج حيزاً ثابتاً للتفكير إضافة إلى JSON المنظم؛
+    // الحد السابق 3000 كان قد يقطع JSON رغم أن عدد الأسئلة قليل.
+    maxOutputTokens: Math.min(12_000, Math.max(6_000, count * 500)),
+    maxToolCalls: generalToolCallBudget,
   },
   verification: {
-    maxOutputTokens: Math.min(12_000, Math.max(3_000, count * 480)),
-    maxToolCalls: Math.min(25, Math.max(1, count)),
+    maxOutputTokens: Math.min(8_000, Math.max(3_500, count * 300)),
+    maxToolCalls: generalToolCallBudget,
   },
 };
 
@@ -95,9 +109,33 @@ if (!loadBaseCategories().includes(category)) {
   throw new Error(`الفئة «${requestedCategory}» غير موجودة في التطبيق؛ لم يُرسل أي طلب إلى OpenAI.`);
 }
 const religious = isReligiousCategory(category, policy);
+if (religious) {
+  throw new Error(
+    'توليد AI الحر للأسئلة الدينية متوقف دائماً. استخدم مسار القوالب الحتمية مزدوجة التحقق؛ ' +
+    'لم يُرسل أي طلب إلى OpenAI.'
+  );
+}
 const allowedHosts = trustedHostsForCategory(category, policy);
 if (!allowedHosts.length) {
   throw new Error(`لا توجد سياسة مصادر موثوقة خاصة بفئة «${category}»؛ لم يُرسل أي طلب إلى OpenAI.`);
+}
+const allReligiousSourcePackets = religious ? loadReligiousSourcePackets() : [];
+const requestedPacketIds = args['source-packet-ids'] === undefined ? [] : String(args['source-packet-ids'])
+  .split(',').map(value => value.trim()).filter(Boolean);
+const religiousSourcePackets = religious && requestedPacketIds.length
+  ? allReligiousSourcePackets.filter(packet => requestedPacketIds.includes(packet.id))
+  : allReligiousSourcePackets;
+if (religious && !religiousSourcePackets.length) {
+  throw new Error(
+    'التوليد الديني متوقف: أضف نصوصاً ثابتة مراجعة بشرياً إلى ' +
+    'content/questions/religious-source-packets.json؛ لم يُرسل أي طلب إلى OpenAI.'
+  );
+}
+if (religious && count > religiousSourcePackets.length) {
+  throw new Error(
+    `التوليد الديني يحتاج حزمة مصدر مختلفة لكل سؤال: المطلوب ${count} والمتاح ${religiousSourcePackets.length}؛ ` +
+    'لم يُرسل أي طلب إلى OpenAI.'
+  );
 }
 const configuredTarget = args['target-per-level'] === undefined
   ? Number(policy.targetQuestionsPerLevel || 4)
@@ -169,35 +207,47 @@ const distributionInstruction = requestedDistribution.length
 const runtimeGapInstruction = `الحصر المحلي قبل التوليد وجد الفجوات التالية فقط ضمن المستويات المطلوبة: ${requestedLevels.map(level => `المستوى ${level}: ${gaps[level]}`).join('، ')}. لا تستخدم مستوى خارج المستويات المطلوبة.`;
 
 const religiousInstructions = religious
-  ? `هذه فئة دينية أو تاريخية إسلامية. اعتمد حصراً على القرآن الكريم، صحيح البخاري، صحيح مسلم، أو المراجع الثانوية المحددة في السياسة. لا تعتبر رواية الطبري صحيحة لمجرد ورودها فيه، ولا تنسب حديثاً للنبي ﷺ إلا إن كان في الصحيحين أو ثبتت صحته صراحة. كل نتيجة ستظل معلّقة لمراجع بشري.`
-  : 'تجنب الدين والسياسة والطب والأخبار والحقائق المتغيرة زمنياً في هذه الدفعة.';
+  ? `هذه فئة دينية. اعتمد حصراً على النصوص الثابتة المرفقة من القرآن الكريم أو صحيح البخاري. ممنوع البحث المفتوح، وممنوع الاعتماد على الذاكرة، وممنوع إدخال تفسير أو سيرة أو رواية أو مسألة خلافية لا يصرّح بها النص المرفق. استخدم حزمة مختلفة لكل سؤال، وانسخ sourcePacketId وبيانات source من الحزمة حرفياً. كل نتيجة ستظل معلّقة لمراجع بشري.`
+  : 'تجنب الدين والسياسة والطب والأخبار والحقائق المتغيرة زمنياً في هذه الدفعة. استخدم صفحة HTML رسمية حية قابلة للقراءة، ولا تستخدم رابط PDF أو ملف تنزيل أو رابط صورة مباشراً كمصدر. افتح النتيجة وتأكد أن الصفحة نفسها تذكر الدليل قبل إرجاع السؤال.';
 const verificationModel = religious
   ? (process.env.OPENAI_RELIGIOUS_VERIFY_MODEL || 'gpt-5.6-sol')
   : (process.env.OPENAI_QUESTION_VERIFY_MODEL || 'gpt-5.6-terra');
 const verificationDeveloperInstruction =
-  `أنت مدقق مستقل لا منشئ. افحص كل سؤال وإجابته والرابط عبر البحث. ` +
+  `أنت مدقق مستقل لا منشئ. افحص كل سؤال وإجابته ومصدره. ` +
   `ارفض السؤال إذا كان المرجع لا يدعم الإجابة مباشرة، أو كانت الإجابة ملتبسة، ` +
-  `أو العربية غير واضحة. ${religiousInstructions} لا تُصلح النتائج ولا تضف أسئلة جديدة.`;
+  `أو العربية غير واضحة، أو كشف نص السؤال الإجابة كلياً أو جزئياً بما يجعل التخمين بديهياً. ` +
+  `اجعل answerNotRevealed=false عند ذكر اسم الإجابة أو لقبها المميز داخل السؤال، مع استثناء أسئلة المقارنة الإملائية الصريحة التي تعرض اختياراتها عمداً. ${religiousInstructions} ` +
+  `${religious ? 'طابقه بالنص الثابت المرفق فقط، ولا تستخدم البحث.' : 'تحقق من الرابط عبر البحث.'} ` +
+  `لا تُصلح النتائج ولا تضف أسئلة جديدة.`;
+
+const religiousPacketsPrompt = religious ? JSON.stringify(religiousSourcePackets.map(packet => ({
+  id: packet.id,
+  work: packet.work,
+  reference: packet.reference,
+  arabicText: packet.arabicText,
+  source: packet.source,
+}))) : '';
 
 const generationPayload = {
   model: process.env.OPENAI_QUESTION_MODEL || 'gpt-5.6-terra',
   store: false,
   max_output_tokens: responseLimits.generation.maxOutputTokens,
-  max_tool_calls: responseLimits.generation.maxToolCalls,
+  max_tool_calls: religious ? 0 : responseLimits.generation.maxToolCalls,
   reasoning: { effort: religious ? 'high' : 'medium' },
-  tools: [{ type: 'web_search' }],
-  include: ['web_search_call.action.sources'],
+  tools: religious ? [] : [{ type: 'web_search' }],
+  include: religious ? [] : ['web_search_call.action.sources'],
   input: [
     {
       role: 'developer',
-      content: `أنت محرر أسئلة مسابقات عربية محترف. ابحث أولاً ثم أنشئ أسئلة واضحة، صريحة، ذات إجابة واحدة غير ملتبسة. لا تخمّن ولا تستخدم الذاكرة وحدها. ${religiousInstructions} ${categoryGuidance} استخدم روابط HTTPS دقيقة من هذه النطاقات فقط: ${allowedHosts.join(', ')}. لا تكرر أي سؤال داخل الدفعة. لا تستخدم حقائق سريعة التقادم.`,
+      content: `أنت محرر أسئلة مسابقات عربية محترف. ${religious ? 'اقرأ النصوص المرفقة' : 'ابحث أولاً'} ثم أنشئ أسئلة واضحة، صريحة، ذات إجابة واحدة غير ملتبسة. لا تذكر الإجابة أو لقبها المميز داخل نص السؤال، ولا تصغ سؤالاً عن اسم شخصية بينما الاسم ظاهر في عنوان العمل المذكور. يُستثنى فقط سؤال المقارنة الإملائية الذي يعرض اختياراته صراحة. لا تخمّن ولا تستخدم الذاكرة وحدها. ${religiousInstructions} ${categoryGuidance} استخدم روابط HTTPS دقيقة من هذه النطاقات فقط: ${allowedHosts.join(', ')}. لا تكرر أي سؤال داخل الدفعة، ولا تنشئ أكثر من سؤالين من صفحة مصدر واحدة أو عن الموضوع المركزي نفسه داخل الدفعة. نوّع البلدان والأزمنة والعلوم والموضوعات بما يناسب الفئة. لا تستخدم حقائق سريعة التقادم.`,
     },
     {
       role: 'user',
-      content: `أنشئ ${count} سؤالاً لفئة «${category}» بمستوى ${requestedDifficulty}. يجب أن يكون difficultyLevel هو ${levelRange} ومتسقاً مع difficulty. ${balanceInstruction} ${exactLevelInstruction} ${distributionInstruction} ${runtimeGapInstruction} ${requestedFocus ? `توجيه إضافي ملزم: ${requestedFocus}` : ''} اكتب العربية الفصحى المبسطة المناسبة للكويت والخليج. evidence تلخيص قصير لكيف يدعم المرجع الإجابة، وليس اقتباساً طويلاً. لا تعِد موضوعاً أو مؤلفاً أو عملاً مستخدماً في هذه الأمثلة الحالية: ${existingCategoryExamples || 'لا توجد أمثلة بعد'}.`,
+      content: `أنشئ ${count} سؤالاً لفئة «${category}» بمستوى ${requestedDifficulty}. يجب أن يكون difficultyLevel هو ${levelRange} ومتسقاً مع difficulty. ${balanceInstruction} ${exactLevelInstruction} ${distributionInstruction} ${runtimeGapInstruction} ${requestedFocus ? `توجيه إضافي ملزم: ${requestedFocus}` : ''} اكتب العربية الفصحى المبسطة المناسبة للكويت والخليج. explanation يجب أن يشرح سبب صحة الإجابة مباشرة، وممنوع أن يكون عبارة عامة مثل «اختبر معلوماتك» أو «سؤال عن معلم». evidence تلخيص قصير لكيف يدعم المرجع الإجابة، وليس اقتباساً طويلاً. sourcePacketId يجب أن يكون null للأسئلة العامة. لا تعِد موضوعاً أو مؤلفاً أو عملاً مستخدماً في هذه الأمثلة الحالية: ${existingCategoryExamples || 'لا توجد أمثلة بعد'}.${religious ? `\nحزم المصادر الثابتة المراجعة:\n${religiousPacketsPrompt}` : ''}`,
     },
   ],
   text: {
+    verbosity: 'low',
     format: {
       type: 'json_schema', name: 'fatinah_generated_questions', strict: true,
       schema: generatedQuestionsSchema,
@@ -209,7 +259,7 @@ const generationReserve = estimateResponseReserve({
   model: generationPayload.model,
   inputTokenUpperBound: estimateUtf8TokenUpperBound(generationPayload.input),
   maxOutputTokens: generationPayload.max_output_tokens,
-  maxToolCalls: generationPayload.max_tool_calls,
+    maxToolCalls: generationPayload.max_tool_calls,
 });
 const verificationInputPreflightUpperBound =
   estimateUtf8TokenUpperBound([{ role: 'developer', content: verificationDeveloperInstruction }]) +
@@ -244,10 +294,16 @@ if (dryRun) {
 const generationResponse = await createResponse(generationPayload);
 const generationUsage = summarizeResponseUsage(generationResponse, generationPayload.model);
 console.log(JSON.stringify({ stage: 'generation', responseId: generationResponse.id || null, usage: generationUsage }, null, 2));
-const generated = JSON.parse(responseOutputText(generationResponse)).questions || [];
+let generated;
+try {
+  generated = JSON.parse(responseOutputText(generationResponse)).questions || [];
+} catch {
+  throw new Error('استجابة التوليد المنظمة غير مكتملة أو غير صالحة؛ لم يبدأ التحقق ولم يُكتب شيء.');
+}
 
 const provisional = [];
 const acceptedPerLevel = new Map();
+const acceptedPerSourcePage = new Map();
 for (const item of generated) {
   const candidate = {
     ...item,
@@ -268,11 +324,23 @@ for (const item of generated) {
       : requestedLevel ? count : gaps[level] || 0;
   if ((acceptedPerLevel.get(level) || 0) >= levelLimit) continue;
   candidate.difficulty = itemTier;
-  const validation = validateCandidate(candidate, { policy, existingQuestions: [...existingQuestions, ...provisional.map(q => q.question)] });
+  const validation = validateCandidate(candidate, {
+    policy,
+    existingQuestions: [...existingQuestions, ...provisional.map(q => q.question)],
+    religiousSourcePackets,
+  });
   if (!validation.valid || isNearDuplicate(candidate.question, provisional.map(q => q.question))) continue;
+  let normalizedSourcePage;
+  try {
+    const sourceUrl = new URL(candidate.source.url);
+    sourceUrl.hash = '';
+    normalizedSourcePage = sourceUrl.href.replace(/\/$/, '');
+  } catch { continue; }
+  if ((acceptedPerSourcePage.get(normalizedSourcePage) || 0) >= 2) continue;
   if (!await reachableTrustedSource(candidate.source.url, allowedHosts)) continue;
   provisional.push(candidate);
   acceptedPerLevel.set(level, (acceptedPerLevel.get(level) || 0) + 1);
+  acceptedPerSourcePage.set(normalizedSourcePage, (acceptedPerSourcePage.get(normalizedSourcePage) || 0) + 1);
 }
 
 if (!provisional.length) throw new Error('لم تنجح أي نتيجة في الفحص الأولي؛ لم يُكتب شيء.');
@@ -281,18 +349,22 @@ const verificationPayload = {
   model: verificationModel,
   store: false,
   max_output_tokens: responseLimits.verification.maxOutputTokens,
-  max_tool_calls: responseLimits.verification.maxToolCalls,
+  max_tool_calls: religious ? 0 : responseLimits.verification.maxToolCalls,
   reasoning: { effort: religious ? 'high' : 'medium' },
-  tools: [{ type: 'web_search' }],
-  include: ['web_search_call.action.sources'],
+  tools: religious ? [] : [{ type: 'web_search' }],
+  include: religious ? [] : ['web_search_call.action.sources'],
   input: [
     {
       role: 'developer',
       content: verificationDeveloperInstruction,
     },
-    { role: 'user', content: JSON.stringify(provisional) },
+    { role: 'user', content: JSON.stringify({
+      questions: provisional,
+      religiousSourcePackets: religious ? religiousSourcePackets : undefined,
+    }) },
   ],
   text: {
+    verbosity: 'low',
     format: {
       type: 'json_schema', name: 'fatinah_question_verification', strict: true,
       schema: verificationSchema,
@@ -331,7 +403,12 @@ console.log(JSON.stringify({
 }, null, 2));
 assertWithinBudget(runEstimatedUsd, maxSpendUsd, 'before_candidate_write');
 
-const verification = JSON.parse(responseOutputText(verificationResponse)).results || [];
+let verification;
+try {
+  verification = JSON.parse(responseOutputText(verificationResponse)).results || [];
+} catch {
+  throw new Error('استجابة التحقق المنظمة غير مكتملة أو غير صالحة؛ لم تُكتب أي نتائج.');
+}
 const byIndex = new Map(verification.map(result => [result.index, result]));
 const now = new Date().toISOString();
 const seenIds = new Set(existingCandidates.map(candidate => candidate.id));
@@ -340,7 +417,7 @@ const added = [];
 for (const [index, item] of provisional.entries()) {
   const check = byIndex.get(index);
   const passed = check && check.verdict === 'pass' && check.factCorrect &&
-    check.answerExact && check.sourceSupportsClaim && check.clearArabic;
+    check.answerExact && check.answerNotRevealed && check.sourceSupportsClaim && check.clearArabic;
   const candidate = {
     id: stableQuestionId(item),
     category,

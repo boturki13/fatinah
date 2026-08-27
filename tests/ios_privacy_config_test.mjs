@@ -108,6 +108,11 @@ for (const dataType of [
 }
 
 assert.match(project, /PrivacyInfo\.xcprivacy in Resources/);
+assert.match(
+  project,
+  /PLATFORM_NAME[^\n]+iphonesimulator/,
+  'رفع dSYM إلى Crashlytics يجب ألا يعمل أثناء بناء المحاكي المحلي.',
+);
 assert.doesNotMatch(
   entitlements,
   /com\.apple\.developer\.game-center/,

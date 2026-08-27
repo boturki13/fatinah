@@ -41,9 +41,18 @@ All mutating endpoints now require a Firebase ID token verified via Identity Too
 
 ### Tampering
 
-`/api/promo/redeem` requires a valid Firebase ID token and applies two rate limits: a primary per-account limit (10 attempts / 10 minutes per verified uid, checked after token verification) and a coarser per-IP abuse guard (100 attempts / 10 minutes) keyed on the real socket IP. The `X-Forwarded-For` header is ignored entirely, so spoofed forwarded IPs cannot create fresh rate-limit buckets, and the per-uid limit remains effective even when many users share one socket IP behind a reverse proxy.
+Promo routes are retired. Active authenticated write/generation surfaces use a
+per-account (or narrowly scoped webhook) sliding window stored in the production
+Firestore database. Updates use the document `updateTime` precondition, so two
+Replit Autoscale instances cannot each grant a separate quota. Document names
+are domain-separated SHA-256 references and never contain the raw UID.
 
-**Required guarantee**: The rate limiter MUST key on the real socket IP (`self.client_address[0]`), ignoring `X-Forwarded-For` unless the request originates from a verified trusted proxy, and MUST enforce a per-account limit for authenticated abuse. ✅ Currently enforced. Residual risk: an attacker with many Firebase accounts and many source IPs could still attempt distributed guessing, mitigated by code entropy and per-account limits.
+**Required guarantee**: production and Replit deployments MUST use the shared
+Firestore limiter and fail closed if its configuration, TTL confirmation,
+credentials, read, or conditional write is unavailable. The in-process limiter
+is allowed only in local/staging development when both distributed flags are
+off. ✅ Enforced by
+`rate_limited()` and the production release gate.
 
 ### Information Disclosure
 
@@ -55,7 +64,10 @@ Error responses from several POST handlers propagate `str(e)` directly to the cl
 
 ### Denial of Service
 
-Question generation does not run on the server. The app reads a versioned local bank, and the legacy `/api/generate` route returns HTTP 410. Request-body limits remain in place for account and RevenueCat endpoints.
+The 1.3 client reads a versioned reviewed bank. The v1 compatibility generation
+route remains authenticated and is covered by the same distributed limiter;
+v2 generation is retired with HTTP 410. Request-body and bounded-worker limits
+remain in place for account, diagnostics, and RevenueCat endpoints.
 
 ### Elevation of Privilege
 

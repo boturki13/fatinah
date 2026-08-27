@@ -55,6 +55,7 @@ try {
   await page.locator('.cat-pick').first().click();
   await page.locator('.cat-pick').nth(1).click();
   await page.getByRole('button', { name: 'يلا نبدأ!' }).click();
+  await page.locator('#s-board.active').waitFor({ state: 'visible', timeout: 12000 });
 
   assert.equal(await page.locator('#board .cell').count(), 12, 'فئتان × ستة أسئلة');
   const unnamedBoardControls = await page.locator('#s-board button').evaluateAll(elements =>
@@ -69,7 +70,55 @@ try {
   const seenQuestions = new Set();
   await page.locator('#board .cell:not(.used)').first().click();
   seenQuestions.add((await page.locator('#q-text').textContent()).trim());
+  const questionScreen = await page.locator('#q-wrap').evaluate(element => {
+    const wrap = element.getBoundingClientRect();
+    const sheet = element.querySelector('.q-sheet').getBoundingClientRect();
+    const question = element.querySelector('#q-text');
+    const answer = element.querySelector('#answer-box');
+    return {
+      wrap: { width: Math.round(wrap.width), height: Math.round(wrap.height) },
+      sheet: { width: Math.round(sheet.width), height: Math.round(sheet.height) },
+      questionFont: Number.parseFloat(getComputedStyle(question).fontSize),
+      questionLengthClass: question.classList.contains('text-very-long')
+        ? 'very-long'
+        : question.classList.contains('text-long') ? 'long' : 'normal',
+      questionFitsWidth: question.scrollWidth <= question.clientWidth + 1,
+      questionFullyRendered: question.scrollHeight <= question.clientHeight + 1,
+      answerDisplay: getComputedStyle(answer).display,
+      modal: element.getAttribute('aria-modal'),
+      hidden: element.getAttribute('aria-hidden'),
+    };
+  });
+  assert.deepEqual(questionScreen.wrap, { width: 390, height: 844 }, 'صفحة السؤال تغطي شاشة iPhone كاملة');
+  assert.deepEqual(questionScreen.sheet, { width: 390, height: 844 }, 'محتوى السؤال كامل الشاشة وليس ورقة سفلية');
+  const minimumQuestionFont = questionScreen.questionLengthClass === 'very-long'
+    ? 19
+    : questionScreen.questionLengthClass === 'long' ? 23 : 28;
+  assert.ok(questionScreen.questionFont >= minimumQuestionFont, 'نص السؤال واضح ومتناسب مع طوله');
+  assert.ok(questionScreen.questionFitsWidth && questionScreen.questionFullyRendered, 'نص السؤال كامل وغير مقصوص');
+  assert.equal(questionScreen.answerDisplay, 'none', 'الإجابة مخفية عند فتح السؤال');
+  assert.equal(questionScreen.modal, 'true');
+  assert.equal(questionScreen.hidden, 'false');
   await page.getByRole('button', { name: '👁️ اكشف الإجابة' }).click();
+  const revealed = await page.locator('#q-wrap').evaluate(element => ({
+    answerVisible: getComputedStyle(element.querySelector('#answer-box')).display !== 'none',
+    answerFont: Number.parseFloat(getComputedStyle(element.querySelector('#ans-text')).fontSize),
+    answerLengthClass: element.querySelector('#ans-text').classList.contains('text-very-long')
+      ? 'very-long'
+      : element.querySelector('#ans-text').classList.contains('text-long') ? 'long' : 'normal',
+    answerFitsWidth: element.querySelector('#ans-text').scrollWidth <= element.querySelector('#ans-text').clientWidth + 1,
+    answerFullyRendered: element.querySelector('#ans-text').scrollHeight <= element.querySelector('#ans-text').clientHeight + 1,
+    questionVisible: getComputedStyle(element.querySelector('#q-text')).visibility !== 'hidden',
+    answerHidden: element.querySelector('#answer-box').getAttribute('aria-hidden'),
+  }));
+  assert.equal(revealed.answerVisible, true, 'تظهر الإجابة بعد الضغط على زر الكشف');
+  const minimumAnswerFont = revealed.answerLengthClass === 'very-long'
+    ? 18
+    : revealed.answerLengthClass === 'long' ? 22 : 28;
+  assert.ok(revealed.answerFont >= minimumAnswerFont, 'نص الإجابة واضح ومتناسب مع طوله');
+  assert.ok(revealed.answerFitsWidth && revealed.answerFullyRendered, 'نص الإجابة كامل وداخل خانته');
+  assert.equal(revealed.questionVisible, true, 'يبقى السؤال ظاهراً مع الإجابة بعد الكشف');
+  assert.equal(revealed.answerHidden, 'false');
   await page.getByRole('button', { name: /✅ الفريق الأول/ }).click();
   assert.equal((await page.locator('.team-chip .cs').first().textContent()).trim(), '100');
 

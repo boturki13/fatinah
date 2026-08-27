@@ -38,6 +38,7 @@ REQUIRED_V2_FEATURES = (
     "app_attest",
     "free_round",
     "question_history",
+    "question_bank",
     "question_reports",
     "metrics",
     "ios_diagnostics",
@@ -55,6 +56,7 @@ GATE_ENVIRONMENT_NAMES = {
     "FATINAH_APP_ATTEST_TTL_CONFIGURED",
     "FATINAH_IOS_DIAGNOSTICS_TTL_CONFIGURED",
     "FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED",
+    "FATINAH_DISTRIBUTED_RATE_LIMIT_TTL_CONFIGURED",
     "FIREBASE_APP_CHECK_ENFORCE",
     "GOOGLE_API_KEY",
     "FIREBASE_AUTH_DOMAIN",
@@ -460,7 +462,24 @@ def audit_environment(env: Mapping[str, str] | None = None) -> list[GateCheck]:
         _append(
             checks,
             "operations.distributed_rate_limit.enabled",
-            _flag(source, "FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED") is True,
+            _flag(source, "FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED") is True
+            and server.distributed_rate_limit_required()
+            and _value(source, "FATINAH_DURABLE_STORAGE") == "required"
+            and _value(source, "FIREBASE_PROJECT_ID")
+            == PRODUCTION_FIREBASE_PROJECT_ID
+            and _value(source, "FIRESTORE_DATABASE_ID")
+            == PRODUCTION_FIRESTORE_DATABASE_ID
+            and _valid_firebase_service_account(source)
+            and server.firestore_durable_available(),
+        )
+        _append(
+            checks,
+            "operations.distributed_rate_limit.ttl.enabled",
+            _flag(
+                source,
+                "FATINAH_DISTRIBUTED_RATE_LIMIT_TTL_CONFIGURED",
+            ) is True
+            and server.distributed_rate_limit_ttl_configured(),
         )
 
         revenuecat_key = _value(source, "REVENUECAT_IOS_API_KEY")

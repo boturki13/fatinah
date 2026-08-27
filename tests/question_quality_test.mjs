@@ -49,6 +49,28 @@ assert.match(html, /approved-question-bank\.js/);
 assert.match(approvedBank, /__APPROVED_QUESTION_BANK_DATA__/);
 assert.doesNotMatch(app, /api\.anthropic\.com|AI_BACKEND_URL|aiGenerate\(/);
 assert.doesNotMatch(app, /api\.openai\.com|OPENAI_API_KEY/);
+assert.doesNotMatch(
+  app,
+  /q:\s*['"]كم عدد[^'"]*:\s*[^'"]+['"]/u,
+  'سؤال العدّ لا يجوز أن يسرد العناصر المطلوب عدّها داخل نص السؤال.',
+);
+assert.match(app, /q:'كم عدد أيام التشريق\؟',answer:'ثلاثة أيام'/);
+const serverBank = JSON.parse(fs.readFileSync(new URL('server-assets/question-bank/v1/bank.json', root), 'utf8'));
+const runtimeQuestions = Object.values(serverBank.categories).flat();
+assert.ok(!runtimeQuestions.some(item => /(?:UNESCO|اليونسكو).*?(?:المكوّن|المكون|المعرّف|المعرف)\s*\d/iu.test(item.q)),
+  'لا يجوز عرض معرّفات اليونسكو الداخلية للاعب كسؤال معلومات عامة.');
+for (const leakedAnswerQuestion of [
+  'المعروف في السعودية ودول الخليج باسم الكبسة أو المكبوس',
+  'الأنمي (الرسوم المتحركة اليابانية)',
+  'يحمل عنوان رواية «صورة دوريان غراي» اسمها',
+  'يحمل عنوان رواية «فرانكنشتاين» اسمه',
+]) {
+  assert.doesNotMatch(`${app}\n${approvedBank}`,new RegExp(leakedAnswerQuestion.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')),'لا يجوز أن يكشف نص السؤال الإجابة.');
+}
+assert.match(app, /ما اسم طبق خليجي يُطهى من الأرز المتبّل مع اللحم أو الدجاج\؟/);
+assert.match(app, /في أي دولة ظهر فن الأنمي بصورته الحديثة\؟/);
+assert.match(approvedBank, /من الشخصية التي يرتبط مصيرها بصورة مرسومة/);
+assert.match(approvedBank, /من العالم الشاب الذي صنع مخلوقاً حياً/);
 assert.doesNotMatch(html, /توليد بالذكاء|generateFamily\(|id="family-ai"/);
 assert.doesNotMatch(privacy, /Anthropic|Google AI|مزوّد الذكاء الاصطناعي/);
 assert.doesNotMatch(`${appTerms}\n${publicTerms}`, /\$3\.99|\$29\.99|قوانين المملكة العربية السعودية/);
@@ -72,5 +94,5 @@ assert.match(server, /ai_generation_retired/);
 assert.match(server, /HTML_FILE = os\.path\.join\(WWW_DIR, 'index\.html'\)/);
 
 console.log('✓ جميع الفئات تحتفظ بستة مستويات وأسئلتها المحلية غير مكررة');
-console.log('✓ الفئات الدينية مقيّدة بالمراجع المعتمدة وتبقى pending حتى تدقيق كل إسناد');
+console.log('✓ الفئات الدينية مقيّدة بمراجعة صريحة، واعتماد التشغيل موثق ببصمة لكل سؤال وإسناده');
 console.log('✓ لا يوجد مفتاح أو استدعاء OpenAI/Claude داخل تطبيق المستخدم أو خادم اللعب');

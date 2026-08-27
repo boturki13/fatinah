@@ -1,0 +1,1722 @@
+{
+  "schemaVersion": 1,
+  "targetBankSize": 5000,
+  "futureTargetBankSize": 15000,
+  "visibleCategoryCount": 39,
+  "internalCategoryCount": 45,
+  "currentTotal": 5000,
+  "gapTotal": 0,
+  "components": {
+    "runtimeText": 390,
+    "runtimeImages": 875,
+    "stagedApproved": 3735
+  },
+  "visibleTargets": {
+    "معلومات عامة": 125,
+    "رياضة": 125,
+    "تاريخ": 125,
+    "جغرافيا": 125,
+    "أمثال": 125,
+    "ثقافة خليجية": 125,
+    "علوم وتقنية": 125,
+    "محرّكات ومركبات": 125,
+    "ألغاز وتحدّي ذكاء": 187,
+    "الشعر العربي": 125,
+    "الفضاء والكون": 125,
+    "حيوانات وطبيعة": 125,
+    "حضارات قديمة": 125,
+    "جسم الإنسان": 125,
+    "كأس العالم": 125,
+    "أعلام الدول": 125,
+    "خرائط دول": 125,
+    "إجابة سريعة": 188,
+    "دوري أبطال أوروبا": 125,
+    "أنمي": 125,
+    "كأس الخليج": 125,
+    "مسلسلات خليجية": 125,
+    "أفلام عربية": 125,
+    "الألعاب الأولمبية": 125,
+    "أغاني خليجية": 125,
+    "ألعاب الفيديو": 125,
+    "اللغة العربية": 125,
+    "كتب وروايات": 125,
+    "اختراعات واكتشافات": 125,
+    "مطابخ العالم": 125,
+    "وش الرابط؟": 125,
+    "تعرف على الصورة": 125,
+    "أعلام منو؟": 125,
+    "وين هالمعلم؟": 125,
+    "شنو هالحيوان؟": 125,
+    "شنو بالفضاء؟": 125,
+    "شنو هالشي؟": 125,
+    "كنوز الحضارات": 125,
+    "إسلاميات": 125
+  },
+  "categories": {
+    "معلومات عامة": {
+      "visibleCategory": "معلومات عامة",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "رياضة": {
+      "visibleCategory": "رياضة",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "تاريخ": {
+      "visibleCategory": "تاريخ",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "جغرافيا": {
+      "visibleCategory": "جغرافيا",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "أمثال": {
+      "visibleCategory": "أمثال",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "ثقافة خليجية": {
+      "visibleCategory": "ثقافة خليجية",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "دين وسيرة": {
+      "visibleCategory": "إسلاميات",
+      "kind": "text",
+      "target": 16,
+      "levels": {
+        "1": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "2": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "3": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "4": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "5": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "6": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        }
+      }
+    },
+    "علوم وتقنية": {
+      "visibleCategory": "علوم وتقنية",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "محرّكات ومركبات": {
+      "visibleCategory": "محرّكات ومركبات",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "السيرة النبوية": {
+      "visibleCategory": "إسلاميات",
+      "kind": "text",
+      "target": 16,
+      "levels": {
+        "1": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "2": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "3": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "4": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "5": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "6": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        }
+      }
+    },
+    "القرآن الكريم": {
+      "visibleCategory": "إسلاميات",
+      "kind": "text",
+      "target": 32,
+      "levels": {
+        "1": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "2": {
+          "current": 22,
+          "target": 22,
+          "gap": 0
+        },
+        "3": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "4": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "5": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "6": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        }
+      }
+    },
+    "فتوحات المسلمين": {
+      "visibleCategory": "إسلاميات",
+      "kind": "text",
+      "target": 16,
+      "levels": {
+        "1": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "2": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "3": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "4": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "5": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "6": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        }
+      }
+    },
+    "ألغاز وتحدّي ذكاء": {
+      "visibleCategory": "ألغاز وتحدّي ذكاء",
+      "kind": "text",
+      "target": 187,
+      "levels": {
+        "1": {
+          "current": 32,
+          "target": 32,
+          "gap": 0
+        },
+        "2": {
+          "current": 31,
+          "target": 31,
+          "gap": 0
+        },
+        "3": {
+          "current": 31,
+          "target": 31,
+          "gap": 0
+        },
+        "4": {
+          "current": 31,
+          "target": 31,
+          "gap": 0
+        },
+        "5": {
+          "current": 31,
+          "target": 31,
+          "gap": 0
+        },
+        "6": {
+          "current": 31,
+          "target": 31,
+          "gap": 0
+        }
+      }
+    },
+    "الصحابة": {
+      "visibleCategory": "إسلاميات",
+      "kind": "text",
+      "target": 15,
+      "levels": {
+        "1": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "2": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "3": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "4": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "5": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "6": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        }
+      }
+    },
+    "الشعر العربي": {
+      "visibleCategory": "الشعر العربي",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "الفضاء والكون": {
+      "visibleCategory": "الفضاء والكون",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "حيوانات وطبيعة": {
+      "visibleCategory": "حيوانات وطبيعة",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "حضارات قديمة": {
+      "visibleCategory": "حضارات قديمة",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "جسم الإنسان": {
+      "visibleCategory": "جسم الإنسان",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "كأس العالم": {
+      "visibleCategory": "كأس العالم",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "أعلام الدول": {
+      "visibleCategory": "أعلام الدول",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "خرائط دول": {
+      "visibleCategory": "خرائط دول",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "إجابة سريعة": {
+      "visibleCategory": "إجابة سريعة",
+      "kind": "text",
+      "target": 188,
+      "levels": {
+        "1": {
+          "current": 32,
+          "target": 32,
+          "gap": 0
+        },
+        "2": {
+          "current": 32,
+          "target": 32,
+          "gap": 0
+        },
+        "3": {
+          "current": 31,
+          "target": 31,
+          "gap": 0
+        },
+        "4": {
+          "current": 31,
+          "target": 31,
+          "gap": 0
+        },
+        "5": {
+          "current": 31,
+          "target": 31,
+          "gap": 0
+        },
+        "6": {
+          "current": 31,
+          "target": 31,
+          "gap": 0
+        }
+      }
+    },
+    "دوري أبطال أوروبا": {
+      "visibleCategory": "دوري أبطال أوروبا",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "أنمي": {
+      "visibleCategory": "أنمي",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "كأس الخليج": {
+      "visibleCategory": "كأس الخليج",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "مسلسلات خليجية": {
+      "visibleCategory": "مسلسلات خليجية",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "أفلام عربية": {
+      "visibleCategory": "أفلام عربية",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "الألعاب الأولمبية": {
+      "visibleCategory": "الألعاب الأولمبية",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "أغاني خليجية": {
+      "visibleCategory": "أغاني خليجية",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "الخلفاء الراشدون": {
+      "visibleCategory": "إسلاميات",
+      "kind": "text",
+      "target": 15,
+      "levels": {
+        "1": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "2": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "3": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "4": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "5": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "6": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        }
+      }
+    },
+    "الأنبياء والرسل": {
+      "visibleCategory": "إسلاميات",
+      "kind": "text",
+      "target": 15,
+      "levels": {
+        "1": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "2": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "3": {
+          "current": 3,
+          "target": 3,
+          "gap": 0
+        },
+        "4": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "5": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        },
+        "6": {
+          "current": 2,
+          "target": 2,
+          "gap": 0
+        }
+      }
+    },
+    "ألعاب الفيديو": {
+      "visibleCategory": "ألعاب الفيديو",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "اللغة العربية": {
+      "visibleCategory": "اللغة العربية",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "كتب وروايات": {
+      "visibleCategory": "كتب وروايات",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "اختراعات واكتشافات": {
+      "visibleCategory": "اختراعات واكتشافات",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "مطابخ العالم": {
+      "visibleCategory": "مطابخ العالم",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "وش الرابط؟": {
+      "visibleCategory": "وش الرابط؟",
+      "kind": "text",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "تعرف على الصورة": {
+      "visibleCategory": "تعرف على الصورة",
+      "kind": "image",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "أعلام منو؟": {
+      "visibleCategory": "أعلام منو؟",
+      "kind": "image",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "وين هالمعلم؟": {
+      "visibleCategory": "وين هالمعلم؟",
+      "kind": "image",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "شنو هالحيوان؟": {
+      "visibleCategory": "شنو هالحيوان؟",
+      "kind": "image",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "شنو بالفضاء؟": {
+      "visibleCategory": "شنو بالفضاء؟",
+      "kind": "image",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "شنو هالشي؟": {
+      "visibleCategory": "شنو هالشي؟",
+      "kind": "image",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    },
+    "كنوز الحضارات": {
+      "visibleCategory": "كنوز الحضارات",
+      "kind": "image",
+      "target": 125,
+      "levels": {
+        "1": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "2": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "3": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "4": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "5": {
+          "current": 21,
+          "target": 21,
+          "gap": 0
+        },
+        "6": {
+          "current": 20,
+          "target": 20,
+          "gap": 0
+        }
+      }
+    }
+  }
+}

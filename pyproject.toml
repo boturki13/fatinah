@@ -5,7 +5,7 @@ description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
     "cbor2>=5.7.1",
-    "cryptography>=49.0.0",
+    "cryptography>=50.0.0",
     "firebase-admin>=7.5.0",
     "stripe>=15.3.1",
 ]

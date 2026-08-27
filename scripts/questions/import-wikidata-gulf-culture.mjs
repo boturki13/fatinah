@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+import crypto from 'node:crypto';import path from 'node:path';import{CONTENT_DIR,writeJsonAtomic}from'./lib.mjs';
+const write=process.argv.includes('--write'),endpoint='https://query.wikidata.org/sparql',retrievedAt=new Date().toISOString(),gcc='wd:Q817 wd:Q851 wd:Q878 wd:Q846 wd:Q398 wd:Q842';
+const specs=[
+ {category:'مسلسلات خليجية',relation:'director',property:'P57',where:`VALUES ?country { ${gcc} } ?item wdt:P31 wd:Q5398426; wdt:P495 ?country; wdt:P57 ?answer.`},
+ {category:'أغاني خليجية',relation:'performer',property:'P175',where:`VALUES ?country { ${gcc} } ?item wdt:P175 ?answer. ?answer wdt:P27 ?country.`},
+ {category:'ثقافة خليجية',relation:'country',property:'P17',where:`VALUES ?answer { ${gcc} } ?item wdt:P17 ?answer; wdt:P1435 ?designation.`},
+ {category:'ثقافة خليجية',relation:'heritage-designation',property:'P1435',where:`VALUES ?country { ${gcc} } ?item wdt:P17 ?country; wdt:P1435 ?answer.`},
+];
+async function run(spec){const q=`SELECT DISTINCT ?item ?itemLabel ?answer ?answerLabel WHERE { ${spec.where} SERVICE wikibase:label { bd:serviceParam wikibase:language "ar". ?item rdfs:label ?itemLabel. ?answer rdfs:label ?answerLabel. } FILTER(LANG(?itemLabel)="ar"&&LANG(?answerLabel)="ar") } LIMIT 240`;
+ const u=new URL(endpoint);u.searchParams.set('format','json');u.searchParams.set('query',q);const r=await fetch(u,{headers:{Accept:'application/sparql-results+json','User-Agent':'FatinahQuestionBank/1.3 (https://ata20.com)'},signal:AbortSignal.timeout(90_000)});if(!r.ok)throw new Error(`${spec.category}: HTTP ${r.status}`);return(await r.json()).results.bindings;}
+const records=[];for(const spec of specs){for(const b of await run(spec)){const itemId=String(b.item?.value||'').split('/').pop(),answerId=String(b.answer?.value||'').split('/').pop(),itemLabel=String(b.itemLabel?.value||'').trim(),answerLabel=String(b.answerLabel?.value||'').trim();if(!/^Q\d+$/.test(itemId)||!/^Q\d+$/.test(answerId)||!itemLabel||!answerLabel)continue;const canonical={category:spec.category,relation:spec.relation,property:spec.property,itemId,itemLabel,answerId,answerLabel};records.push({sourceRecordId:`wikidata-${itemId}-${spec.property}-${answerId}`,...canonical,sourceUrl:`https://www.wikidata.org/wiki/${itemId}`,sourcePublisher:'Wikidata',retrievedAt,sourcePayloadHash:crypto.createHash('sha256').update(JSON.stringify(canonical)).digest('hex')});}}
+const unique=[...new Map(records.map(r=>[r.sourceRecordId,r])).values()];for(const c of ['مسلسلات خليجية','أغاني خليجية','ثقافة خليجية'])if(unique.filter(r=>r.category===c).length<150)throw new Error(`${c}: سجلات غير كافية`);
+const document={schemaVersion:1,sourceProfile:'wikidata_entities_v1',endpoint,retrievedAt,records:unique};const output=path.join(CONTENT_DIR,'structured-sources','wikidata-gulf-culture.json');if(write)writeJsonAtomic(output,document);
+console.log(JSON.stringify({mode:write?'write':'dry-run',byCategory:Object.fromEntries(['مسلسلات خليجية','أغاني خليجية','ثقافة خليجية'].map(c=>[c,unique.filter(r=>r.category===c).length])),output:write?path.relative(process.cwd(),output):null,aiCalls:0,estimatedAiCostUsd:0},null,2));

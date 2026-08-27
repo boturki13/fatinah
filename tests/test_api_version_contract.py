@@ -220,7 +220,7 @@ try:
     contract_paths = (
         '/api/account/delete', '/api/account/profile',
         '/api/free-round/status', '/api/free-round/complete',
-        '/api/questions/seen', '/api/questions/report',
+        '/api/questions/seen', '/api/questions/round', '/api/questions/report',
         '/api/metrics/event', '/api/ios-diagnostics',
         '/api/revenuecat/identity', '/api/revenuecat/webhook',
         '/api/subscription/status', '/api/generate',

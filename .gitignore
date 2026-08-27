@@ -1,6 +1,8 @@
 node_modules/
 .DS_Store
 subscriptions.db
+subscriptions.db-shm
+subscriptions.db-wal
 firebase-debug.log
 .env.local
 __pycache__/
@@ -36,3 +38,12 @@ xcuserdata/
 *service-account*.json
 *service_account*.json
 firebase-adminsdk-*.json
+
+# Production media is distributed from the verified asset host, not Git history.
+# The release manifest and provenance stay tracked so every binary can be fetched
+# and verified by size and SHA-256 on a clean checkout.
+server-assets/question-images/**/*.avif
+server-assets/question-images/**/*.webp
+server-assets/question-images/**/*.jpg
+server-assets/question-images/**/*.jpeg
+server-assets/question-images/**/*.png

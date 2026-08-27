@@ -70,6 +70,12 @@ Replit بيئة سحابية للويب فقط. **بناء تطبيق iOS الف
 ## الجولة المجانية والبلاغات والقياسات في 1.3
 
 - Firestore هو مصدر الحقيقة الدائم للحسابات والاشتراكات والجولة المجانية وسجل الأسئلة والبلاغات والقياسات. SQLite كاش محلي للتوافق والاستجابة السريعة فقط؛ يضبط نشر Replit `FATINAH_DURABLE_STORAGE=required` حتى لا يعلن نجاح كتابة غير دائمة.
+- حدود طلبات الكتابة والتوليد موزعة أيضاً: تحفظ نافذة صغيرة في
+  `distributed_rate_limits` وتستخدم Firestore `updateTime` كـCAS بين نسخ
+  Autoscale. لا تحفظ UID خاماً، وتفشل مغلقاً في الإنتاج إذا غاب Firestore.
+  فعّل TTL على `expire_at` للمجموعة نفسها، ثم اضبط العلمين
+  `FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED=true` و
+  `FATINAH_DISTRIBUTED_RATE_LIMIT_TTL_CONFIGURED=true`.
 - الجولة التعريفية تُستهلك مرة واحدة للتثبيت والجهاز: يسجّل الخادم مفتاح Apple App Attest بعد التحقق من سلسلة Apple، ثم يربط كل طلب بتحدٍ قصير العمر و`assertion` وعداد متزايد، ويستخدم DeviceCheck كحاجز الجهاز النهائي. لا يُخزَّن Firebase UID داخل سجل مفتاح App Attest؛ مطالبة التثبيت تستخدم بصمة مالك أحادية الاتجاه. قفل Firestore موزّع يسلّسل المطالبات بين نسخ خادم autoscale، مع فشل مغلق إذا تعذّر التحقق.
 - أكواد الأصدقاء لا تُخزّن ولا تُتحقق داخل فطنة؛ زر العرض يفتح `presentCodeRedemptionSheet` الرسمي من StoreKit/RevenueCat. أنشئ العرض والأكواد من App Store Connect.
 - بلاغ السؤال يُحفظ أولاً في `question_reports` ثم يُرسل إلى `ata@ata20.com`. لإرسال البريد فعلياً أضف أسرار الخادم: `SMTP_HOST` و`SMTP_PORT` و`SMTP_FROM`، وعند الحاجة `SMTP_USERNAME` و`SMTP_PASSWORD` و`SMTP_USE_TLS`/`SMTP_USE_SSL`. يمكن تغيير المستلم فقط عبر `REPORT_EMAIL_TO`.
@@ -112,3 +118,10 @@ staging/production موجودة في [API_VERSIONING.md](API_VERSIONING.md).
 
 ## نشر خادم Firebase من هنا
 `functions/index.js` كود مرجعي فقط — نشره الفعلي (`firebase deploy`) يحتاج Firebase CLI، تقدر تشغّله من طرفية Replit نفسها إذا ثبّتّه (`npm install -g firebase-tools`).
+
+## إدارة الإصدارات
+
+- الإصدار المعتمد وحالة App Store محفوظان في `release/current.json` وتتحقق الاختبارات من مطابقتهما لـ`package.json` ومشروع Xcode.
+- خطوات الفروع، المراجعة، TestFlight، Replit، والرجوع موثقة في `docs/RELEASE_PROCESS.md`.
+- قائمة التحقق العملية موجودة في `docs/RELEASE_CHECKLIST.md`، وخطة التحديث التالي في `docs/NEXT_RELEASE.md`.
+- ملفات صور الإنتاج الثنائية لا تدخل سجل Git. يبقى manifest وبصمات SHA-256 في المستودع، ويمكن استعادتها والتحقق منها عبر `npm run images:fetch-release-assets`.

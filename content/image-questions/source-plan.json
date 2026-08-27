@@ -1,0 +1,15 @@
+{
+  "policyVersion": 1,
+  "runtimeRule": "لا تظهر الفئة في التطبيق حتى يوجد سؤالان معتمدان لكل مستوى وتكون أصولها منشورة على ata20.com",
+  "licenseAllowlist": ["CC0", "Public Domain", "PDM", "CC BY 4.0", "CC BY-SA 4.0", "CC BY 3.0", "CC BY-SA 3.0", "CC BY 2.5", "CC BY-SA 2.5", "CC BY 2.0", "CC BY-SA 2.0"],
+  "categories": [
+    {"order":1,"name":"أعلام منو؟","status":"ready_for_upload_not_published","target":125,"sources":["Wikimedia Commons","Wikidata"]},
+    {"order":2,"name":"وين هالمعلم؟","status":"ready_for_upload_not_published","target":125,"sources":["Wikimedia Commons","Wikidata","UNESCO"]},
+    {"order":3,"name":"شنو هالحيوان؟","status":"ready_for_upload_not_published","target":125,"sources":["Wikimedia Commons","Wikidata","iNaturalist"]},
+    {"order":4,"name":"شنو بالفضاء؟","status":"ready_for_upload_not_published","target":125,"sources":["Wikimedia Commons","Wikidata","NASA Science"]},
+    {"order":5,"name":"شنو هالشي؟","status":"ready_for_upload_not_published","target":125,"sources":["Wikimedia Commons","Wikidata","Met Museum Open Access — Public Domain"]},
+    {"order":6,"name":"كنوز الحضارات","status":"ready_for_upload_not_published","target":125,"sources":["Wikimedia Commons","Wikidata","Met Museum Open Access — Public Domain"]},
+    {"order":7,"name":"منو هاللاعب؟","status":"personality_rights_review_required","target":125,"sources":["FIFPRO commercial licence","Reuters Connect app/game licence","Wikimedia Commons after individual personality-rights review"],"activationBlocker":"يلزم توثيق حق استخدام اسم وصورة وشبه اللاعب داخل لعبة تجارية، إضافة إلى رخصة المصور"},
+    {"order":8,"name":"تعرف على الصورة","status":"ready_for_upload_not_published","target":125,"sources":["صور فطنة الأصلية","Wikimedia Commons","Wikidata"]}
+  ]
+}
