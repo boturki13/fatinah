@@ -63,8 +63,17 @@ jobs:
       - name: Run deterministic source tests
         run: npm run test:deterministic-sources
 
-      - name: Run web application tests
-        run: npm run test:web:core
+      - name: Run content pipeline tests
+        run: npm run test:web:content
+
+      - name: Run account and purchase tests
+        run: npm run test:web:account
+
+      - name: Run gameplay tests
+        run: npm run test:web:gameplay
+
+      - name: Run responsive UI and accessibility tests
+        run: npm run test:web:ui
 
       - name: Run server and Cloud Functions tests
         run: npm run test:server
