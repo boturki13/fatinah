@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "targetBankSize": 5000,
+  "currentQuestionCount": 5000,
+  "questionsToGenerate": 0,
+  "generationModel": "deterministic-structured-template-v1",
+  "generalVerificationModel": "schema-source-and-duplicate-v1",
+  "religiousVerificationModel": "tanzil-1.1+quran-foundation-v4",
+  "paidAiGenerationEnabled": false,
+  "jobs": []
+}

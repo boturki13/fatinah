@@ -12,6 +12,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://siarchives.si.edu/history/featured-topics/stories/wright-brothers-pioneers-aviation",
         "publisher": "أرشيفات مؤسسة سميثسونيان"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -33,6 +34,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://epn.epo.org/sites/default/files/2022-11/IGE_Annual_Report_2020_21_bf.pdf",
         "publisher": "الشبكة الأوروبية للبراءات"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -54,6 +56,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://invention.si.edu/invention-stories/thomas-edisons-inventive-life",
         "publisher": "مؤسسة سميثسونيان"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -75,6 +78,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://siarchives.si.edu/blog/forgotten-history-alfred-vail-and-samuel-morse",
         "publisher": "أرشيفات مؤسسة سميثسونيان"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -96,6 +100,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://invention.si.edu/invention-stories/thomas-edisons-inventive-life",
         "publisher": "مؤسسة سميثسونيان"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -117,6 +122,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://science.nasa.gov/mission/hubble/overview/the-history-of-hubble/",
         "publisher": "ناسا"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -138,6 +144,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://epn.epo.org/sites/default/files/2022-11/IGE_Annual_Report_2020_21_bf.pdf",
         "publisher": "الشبكة الأوروبية للبراءات"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -159,6 +166,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://invention.si.edu/invention-stories/thomas-edisons-inventive-life",
         "publisher": "مؤسسة سميثسونيان"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -180,6 +188,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://science.nasa.gov/uranus/facts/",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -201,6 +210,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://science.nasa.gov/mission/hubble/overview/the-history-of-hubble/",
         "publisher": "ناسا"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -222,6 +232,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nasa.gov/history/hubble/index.html",
         "publisher": "ناسا"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -243,6 +254,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://siarchives.si.edu/collections/siris_sic_12464",
         "publisher": "أرشيفات مؤسسة سميثسونيان"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -264,6 +276,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/physics/1901/speedread/",
         "publisher": "موقع جائزة نوبل"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -285,6 +298,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/laureate/41",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -306,6 +320,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.computerhistory.org/babbage/engines/?pStoreID=hp_education%5C",
         "publisher": "Computer History Museum"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -327,6 +342,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/themes/the-nobel-prize-in-physics-1901-2000/",
         "publisher": "موقع جائزة نوبل"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -348,6 +364,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/chemistry/1911/marie-curie/lecture/",
         "publisher": "موقع جائزة نوبل"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -369,6 +386,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/physics/1901/speedread/",
         "publisher": "موقع جائزة نوبل"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -390,6 +408,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/chemistry/1911/marie-curie/lecture/",
         "publisher": "موقع جائزة نوبل"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -411,6 +430,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/themes/the-nobel-prize-in-physics-1901-2000/",
         "publisher": "موقع جائزة نوبل"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -432,6 +452,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.loc.gov/nls/services-and-resources/informational-publications/about-braille/",
         "publisher": "Library of Congress"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -453,6 +474,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.uspto.gov/learning-and-resources/journeys-innovation/historical-stories/ill-do-it-myself",
         "publisher": "United States Patent and Trademark Office"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -474,6 +496,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/chemistry/1911/marie-curie/lecture/",
         "publisher": "موقع جائزة نوبل"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -495,6 +518,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nasa.gov/history/95-years-ago-goddards-first-liquid-fueled-rocket/",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -518,6 +542,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://careers.nintendo.com/our-history/",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -539,6 +564,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://atari.com/collections/pong-collection",
         "publisher": "Atari"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -560,6 +586,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://careers.nintendo.com/our-history/",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -581,6 +608,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://atari.com/pages/history",
         "publisher": "Atari"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -602,6 +630,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://careers.nintendo.com/our-history/",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -623,6 +652,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nintendo.com/en-gb/Hardware/Nintendo-History/Nintendo-History-625945.html",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -644,6 +674,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.playstation.com/en-us/playstation-history/1994-ps-one/",
         "publisher": "PlayStation"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -665,6 +696,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://careers.nintendo.com/our-history/",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -686,6 +718,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://careers.nintendo.com/our-history/",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -707,6 +740,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nintendo.com/en-gb/Hardware/Nintendo-History/Nintendo-Entertainment-System/Nintendo-Entertainment-System-627024.html",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -728,6 +762,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://atari.com/pages/history",
         "publisher": "Atari"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -749,6 +784,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://careers.nintendo.com/our-history/",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -770,6 +806,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nintendo.com/en-gb/Hardware/Nintendo-History/Nintendo-History-625945.html",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -791,6 +828,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.playstation.com/en-us/playstation-history/2000-ps2-psp/",
         "publisher": "PlayStation"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -812,6 +850,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nintendo.com/en-gb/Hardware/Nintendo-History/Nintendo-History-625945.html",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -833,6 +872,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.playstation.com/en-us/playstation-history/2000-ps2-psp/",
         "publisher": "PlayStation"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -854,6 +894,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nintendo.com/en-gb/Hardware/Nintendo-History/Nintendo-History-625945.html",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -875,6 +916,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.playstation.com/en-us/playstation-history/1994-ps-one/?sf275620891=1",
         "publisher": "PlayStation"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -896,6 +938,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.computerhistory.org/timeline/graphics-games/",
         "publisher": "Computer History Museum"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -917,6 +960,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://atari.com/pages/history",
         "publisher": "Atari"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -938,6 +982,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.playstation.com/en-us/playstation-history/2000-ps2-psp/",
         "publisher": "PlayStation"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -959,6 +1004,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://atari.com/pages/history",
         "publisher": "Atari"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -980,6 +1026,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.playstation.com/en-us/playstation-history/1994-ps-one/?sf275620891=1",
         "publisher": "PlayStation"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1001,6 +1048,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.playstation.com/en-us/playstation-history/1994-ps-one/?sf275620891=1",
         "publisher": "PlayStation"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1024,6 +1072,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/al-bay%C4%81n",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1045,6 +1094,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D9%81%D8%B1%D9%90%D8%AD?exact_search=true",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1066,6 +1116,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/search_engine/roots/%D8%AC%D8%A8%D9%86",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1087,6 +1138,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/search_engine/roots/%D8%AC%D8%A8%D9%86",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1108,6 +1160,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D9%85%D8%B9%D8%AC%D9%85/dic-19/%D9%82%D8%B9%D8%AF-%D8%B9%D8%AF%D9%84",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1129,6 +1182,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D9%85%D8%B9%D8%AC%D9%85/dic-19/%D9%83%D8%B1%D9%85",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1150,6 +1204,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://almustashar.ksaa.gov.sa/bank/5771",
         "publisher": "مجمع الملك سلمان العالمي للغة العربية"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1171,6 +1226,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D9%85%D8%B9%D8%AC%D9%85/dic-19/%D8%A7%D8%B3%D8%AA%D8%AE%D8%B1%D8%AC",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1192,6 +1248,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/search_engine/roots/%D8%B4%D8%AC%D8%B9",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1213,6 +1270,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://library.ksaa.gov.sa/links/epubs/tiqniaat_allughat_alearabiat_alhasubia.pdf",
         "publisher": "مجمع الملك سلمان العالمي للغة العربية"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1234,6 +1292,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://library.ksaa.gov.sa/links/epubs/tiqniaat_allughat_alearabiat_alhasubia.pdf",
         "publisher": "مجمع الملك سلمان العالمي للغة العربية"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1255,6 +1314,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D8%A7%D9%84%D9%82%D9%8E%D9%84%D9%8E%D9%85%D9%8F?exact_search=true",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1276,6 +1336,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/items/%D9%85%D9%81%D8%B1%D8%AF_%D8%A7%D8%AD%D9%81%D8%A7%D8%AF__%D9%88%D8%AC%D9%85%D8%B9_%D8%B9%D8%B2%D9%85_",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1297,6 +1358,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://almustashar.ksaa.gov.sa/bank/3892",
         "publisher": "مجمع الملك سلمان العالمي للغة العربية"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1318,6 +1380,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://library.ksaa.gov.sa/links/epubs/aliimla_fi_nizam_alkitabat_alearabia.pdf",
         "publisher": "مجمع الملك سلمان العالمي للغة العربية"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1339,6 +1402,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D8%B6%D9%8E%D8%AF%D9%91%D9%8E?exact_search=true",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1360,6 +1424,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D9%85%D8%B9%D8%AC%D9%85/dic-19/%D8%A7%D8%B3%D8%AA%D8%AE%D8%B1%D8%AC",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1381,6 +1446,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D9%85%D8%B9%D8%AC%D9%85/dic-19/%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1%20%D8%A7%D9%84%D8%B5%D9%86%D8%A7%D8%B9%D9%8A",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1402,6 +1468,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D8%A7%D9%84%D8%B1%D9%91%D9%8F%D8%AC%D9%92%D8%AD%D8%A7%D9%86%D9%8F?exact_search=true",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1423,6 +1490,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://faculty.ksu.edu.sa/sites/default/files/slwb_lstfhm_.pdf",
         "publisher": "جامعة الملك سعود"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1444,6 +1512,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://almustashar.ksaa.gov.sa/bank/165",
         "publisher": "مجمع الملك سلمان العالمي للغة العربية"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1465,6 +1534,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D8%A7%D9%84%D9%85%D9%8F%D8%AC%D9%92%D8%AA%D9%8E%D9%87%D9%90%D8%AF%D9%8F?exact_search=true",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1486,6 +1556,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.arabicacademy.gov.eg/ar/%D9%85%D8%AD%D8%B1%D9%83-%D8%A7%D9%84%D8%A8%D8%AD%D8%AB/%D8%A7%D9%84%D8%AC%D9%87%D8%AF",
         "publisher": "مجمع اللغة العربية بالقاهرة"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1507,6 +1578,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://library.ksaa.gov.sa/links/epubs/aliimla_fi_nizam_alkitabat_alearabia.pdf",
         "publisher": "مجمع الملك سلمان العالمي للغة العربية"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1530,6 +1602,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.usgs.gov/programs/earthquake-hazards/science-earthquakes",
         "publisher": "U.S. Geological Survey"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1551,6 +1624,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://oceanservice.noaa.gov/facts/oceanwater.html?vm=r",
         "publisher": "NOAA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1574,6 +1648,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.gutenberg.org/ebooks/55",
         "publisher": "Project Gutenberg"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1595,6 +1670,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.gutenberg.org/ebooks/74",
         "publisher": "Project Gutenberg"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1616,6 +1692,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.gutenberg.org/ebooks/514",
         "publisher": "Project Gutenberg"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1637,6 +1714,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/literature/1907/kipling/bibliography/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1658,6 +1736,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/literature/1982/marquez/facts/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1679,6 +1758,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/literature/1957/camus/facts/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1700,6 +1780,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/literature/1993/morrison/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1721,6 +1802,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/literature/1988/mahfouz/biographical/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1742,6 +1824,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.gutenberg.org/ebooks/35",
         "publisher": "Project Gutenberg"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1763,6 +1846,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.loc.gov/item/2021667224/",
         "publisher": "مكتبة الكونغرس"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1784,6 +1868,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/literature/1954/ceremony-speech/",
         "publisher": "Nobel Prize Outreach"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1805,6 +1890,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.gutenberg.org/ebooks/45",
         "publisher": "Project Gutenberg"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1818,14 +1904,15 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
     {
       "id": "gq-221f37bfab5eaf43f74f",
       "d": 4,
-      "q": "ما اسم الشخصية الرئيسية التي يحمل عنوان رواية «صورة دوريان غراي» اسمها؟",
+      "q": "من الشخصية التي يرتبط مصيرها بصورة مرسومة تبقى شابة بينما تظهر عليها آثار العمر؟",
       "answer": "دوريان غراي",
-      "explanation": "يظهر اسم الشخصية صراحةً في عنوان العمل وسجل النسخة.",
+      "explanation": "دوريان غراي هو صاحب الصورة التي تحمل آثار عمره وأفعاله بدلاً منه.",
       "source": {
         "title": "The Picture of Dorian Gray",
         "url": "https://www.gutenberg.org/ebooks/174",
         "publisher": "Project Gutenberg"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1847,6 +1934,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.gutenberg.org/ebooks/164",
         "publisher": "Project Gutenberg"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1868,6 +1956,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.gutenberg.org/ebooks/43",
         "publisher": "Project Gutenberg"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1881,14 +1970,15 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
     {
       "id": "gq-ed4eca941b796a08b8e1",
       "d": 4,
-      "q": "ما اسم العالم الذي يحمل عنوان رواية «فرانكنشتاين» اسمه؟",
+      "q": "من العالم الشاب الذي صنع مخلوقاً حياً في رواية ماري شيلي؟",
       "answer": "فيكتور فرانكنشتاين",
-      "explanation": "اسم الشخصية مثبت في بيانات الكتاب بوصفه شخصية خيالية في الرواية.",
+      "explanation": "فيكتور فرانكنشتاين هو العالم الشاب الذي يصنع المخلوق في رواية ماري شيلي.",
       "source": {
         "title": "Frankenstein; or, the Modern Prometheus",
         "url": "https://www.gutenberg.org/ebooks/84",
         "publisher": "Project Gutenberg"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1910,6 +2000,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/literature/1957/camus/facts/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1931,6 +2022,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/literature/1907/kipling/bibliography/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1952,6 +2044,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/literature/1988/mahfouz/article/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1973,6 +2066,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/literature/1982/marquez/bibliography/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -1994,6 +2088,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://folgerpedia.folger.edu/List_of_settings_for_Shakespeare%27s_plays",
         "publisher": "Folger Shakespeare Library"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2015,6 +2110,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/literature/1988/mahfouz/biographical/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2036,6 +2132,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://folgerpedia.folger.edu/List_of_settings_for_Shakespeare%27s_plays",
         "publisher": "Folger Shakespeare Library"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2057,6 +2154,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://folgerpedia.folger.edu/List_of_settings_for_Shakespeare%27s_plays",
         "publisher": "Folger Shakespeare Library"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2080,6 +2178,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/ceebu-jen-a-culinary-art-of-senegal-01748",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2101,6 +2200,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/art-of-neapolitan-Pizzaiuolo-00722",
         "publisher": "اليونسكو"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2122,6 +2222,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/traditional-mexican-cuisine-ancestral-ongoing-community-culture-the-michoacn-paradigm-00400",
         "publisher": "اليونسكو"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2143,6 +2244,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/knowledge-know-how-and-practices-pertaining-to-the-production-and-consumption-of-couscous-01602",
         "publisher": "اليونسكو"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2164,6 +2266,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/washoku-traditional-dietary-cultures-of-the-japanese-notably-for-new-year-celebrations-00869",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2185,6 +2288,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/turkish-coffee-culture-and-tradition-00645",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2206,6 +2310,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/palov-culture-and-tradition-01166",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2227,6 +2332,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/kimjang-making-and-sharing-kimchi-in-the-republic-of-korea-00881",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2248,6 +2354,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/practices-and-meanings-associated-with-the-preparation-and-consumption-of-ceviche-an-expression-of-peruvian-traditional-cuisine-01952",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2269,6 +2376,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/ceebu-jen-a-culinary-art-of-senegal-01748",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2290,6 +2398,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/harissa-knowledge-skills-and-culinary-and-social-practices-01710",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2311,6 +2420,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/kimjang-making-and-sharing-kimchi-in-the-republic-of-korea-00881",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2332,6 +2442,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/turkish-coffee-culture-and-tradition-00645",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2353,6 +2464,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/washoku-traditional-dietary-cultures-of-the-japanese-notably-for-new-year-celebrations-00869",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2374,6 +2486,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/harees-dish-know-how-skills-and-practices-01744",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2395,6 +2508,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/palov-culture-and-tradition-01166",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2416,6 +2530,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/harissa-knowledge-skills-and-culinary-and-social-practices-01710",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2437,6 +2552,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/ceebu-jen-a-culinary-art-of-senegal-01748",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2458,6 +2574,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/kimjang-making-and-sharing-kimchi-in-the-republic-of-korea-00881",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2479,6 +2596,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/practices-and-meanings-associated-with-the-preparation-and-consumption-of-ceviche-an-expression-of-peruvian-traditional-cuisine-01952",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2500,6 +2618,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/palov-culture-and-tradition-01166",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2521,6 +2640,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/harees-dish-know-how-skills-and-practices-01744",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2542,6 +2662,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/washoku-traditional-dietary-cultures-of-the-japanese-notably-for-new-year-celebrations-00869",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2563,6 +2684,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://ich.unesco.org/en/RL/turkish-coffee-culture-and-tradition-00645",
         "publisher": "UNESCO"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2576,6 +2698,126 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
   ],
   "معلومات عامة": [
     {
+      "id": "gq-5c0da9897bdf97f982e7",
+      "d": 1,
+      "q": "في أي مدينة تقع الأكروبوليس الشهيرة؟",
+      "answer": "أثينا",
+      "explanation": "تقع الأكروبوليس ومعابدها التاريخية في مدينة أثينا عاصمة اليونان.",
+      "source": {
+        "title": "Acropolis, Athens",
+        "url": "https://whc.unesco.org/en/list/404",
+        "publisher": "UNESCO World Heritage Centre"
+      },
+      "sourcePacketId": null,
+      "review": {
+        "status": "approved",
+        "bankVersion": 3,
+        "reviewedAt": "2026-08-24T19:07:41.613Z",
+        "reviewer": "codex-assisted-source-check",
+        "religiousSourceAndIsnadConfirmed": false,
+        "religiousCanonicalSourceConfirmed": false,
+        "religiousNoDisputedMatterConfirmed": false,
+        "generationModel": "gpt-5.6-terra",
+        "verificationModel": "gpt-5.6-terra"
+      }
+    },
+    {
+      "id": "gq-6287c7b6cc8b76270444",
+      "d": 1,
+      "q": "ما المادة الأساسية التي شُيّد منها تاج محل؟",
+      "answer": "الرخام الأبيض",
+      "explanation": "شُيّد ضريح تاج محل من الرخام الأبيض، وهو أبرز مواد واجهته المعمارية.",
+      "source": {
+        "title": "Taj Mahal",
+        "url": "https://whc.unesco.org/en/list/252",
+        "publisher": "UNESCO World Heritage Centre"
+      },
+      "sourcePacketId": null,
+      "review": {
+        "status": "approved",
+        "bankVersion": 3,
+        "reviewedAt": "2026-08-24T19:07:35.833Z",
+        "reviewer": "codex-assisted-source-check",
+        "religiousSourceAndIsnadConfirmed": false,
+        "religiousCanonicalSourceConfirmed": false,
+        "religiousNoDisputedMatterConfirmed": false,
+        "generationModel": "gpt-5.6-terra",
+        "verificationModel": "gpt-5.6-terra"
+      }
+    },
+    {
+      "id": "gq-70166ceec5c373fb6b74",
+      "d": 1,
+      "q": "في أي دولة يمتد السور العظيم الذي بدأ توحيد أجزائه قرابة عام 220 قبل الميلاد؟",
+      "answer": "الصين",
+      "explanation": "يمتد سور الصين العظيم عبر مناطق شمال الصين، وقد بُني على مراحل تاريخية متعددة.",
+      "source": {
+        "title": "The Great Wall",
+        "url": "https://whc.unesco.org/en/list/438",
+        "publisher": "UNESCO World Heritage Centre"
+      },
+      "sourcePacketId": null,
+      "review": {
+        "status": "approved",
+        "bankVersion": 3,
+        "reviewedAt": "2026-08-24T19:07:38.613Z",
+        "reviewer": "codex-assisted-source-check",
+        "religiousSourceAndIsnadConfirmed": false,
+        "religiousCanonicalSourceConfirmed": false,
+        "religiousNoDisputedMatterConfirmed": false,
+        "generationModel": "gpt-5.6-terra",
+        "verificationModel": "gpt-5.6-terra"
+      }
+    },
+    {
+      "id": "gq-958354d934712bc7615a",
+      "d": 1,
+      "q": "ما أكبر حيوان فقاري عاش على الأرض؟",
+      "answer": "الحوت الأزرق",
+      "explanation": "الحوت الأزرق هو أكبر حيوان فقاري معروف عاش على الأرض.",
+      "source": {
+        "title": "Only Recently Did Whales Become Giant",
+        "url": "https://www.si.edu/stories/only-recently-did-whales-become-giant",
+        "publisher": "Smithsonian Institution"
+      },
+      "sourcePacketId": null,
+      "review": {
+        "status": "approved",
+        "bankVersion": 3,
+        "reviewedAt": "2026-08-24T19:07:44.478Z",
+        "reviewer": "codex-assisted-source-check",
+        "religiousSourceAndIsnadConfirmed": false,
+        "religiousCanonicalSourceConfirmed": false,
+        "religiousNoDisputedMatterConfirmed": false,
+        "generationModel": "gpt-5.6-terra",
+        "verificationModel": "gpt-5.6-terra"
+      }
+    },
+    {
+      "id": "gq-b323bc676c730bf82922",
+      "d": 1,
+      "q": "في أي دولة يقع الحاجز المرجاني العظيم؟",
+      "answer": "أستراليا",
+      "explanation": "يقع الحاجز المرجاني العظيم قبالة الساحل الشمالي الشرقي لأستراليا.",
+      "source": {
+        "title": "Great Barrier Reef",
+        "url": "https://whc.unesco.org/en/list/154",
+        "publisher": "مركز التراث العالمي لليونسكو"
+      },
+      "sourcePacketId": null,
+      "review": {
+        "status": "approved",
+        "bankVersion": 3,
+        "reviewedAt": "2026-08-24T18:54:41.518Z",
+        "reviewer": "codex-assisted-source-check",
+        "religiousSourceAndIsnadConfirmed": false,
+        "religiousCanonicalSourceConfirmed": false,
+        "religiousNoDisputedMatterConfirmed": false,
+        "generationModel": "gpt-5.6-terra",
+        "verificationModel": "gpt-5.6-terra"
+      }
+    },
+    {
       "id": "gq-6cdbafa1b07cca088788",
       "d": 2,
       "q": "أيّ الأخوين رايت كان يقود طائرة «فلاير 1903» في أول رحلة ناجحة لها؟",
@@ -2586,6 +2828,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://airandspace.si.edu/collection-objects/wright-1903-flyer/nasm_A19610048000",
         "publisher": "المتحف الوطني للطيران والفضاء، مؤسسة سميثسونيان"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2607,6 +2850,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://whc.unesco.org/en/list/326/",
         "publisher": "مركز التراث العالمي، اليونسكو"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2628,6 +2872,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://whc.unesco.org/en/list/700/",
         "publisher": "مركز التراث العالمي، اليونسكو"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2649,6 +2894,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://whc.unesco.org/en/list/366",
         "publisher": "مركز التراث العالمي، اليونسكو"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2670,6 +2916,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://whc.unesco.org/en/list/364/",
         "publisher": "مركز التراث العالمي، اليونسكو"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2693,6 +2940,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://science.nasa.gov/jupiter/",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2714,6 +2962,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://science.nasa.gov/earth/facts/",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2735,6 +2984,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://play.nintendo.com/news-tips/news/learn-more-mushroom-kingdom-friends/",
         "publisher": "Nintendo"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2756,6 +3006,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://atari.com/collections/pong-collection",
         "publisher": "Atari"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2777,6 +3028,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/physics/1921/einstein/facts/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2798,6 +3050,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/physics/1903/marie-curie/facts/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2819,6 +3072,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://science.nasa.gov/solar-system/planets/",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2840,6 +3094,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://whc.unesco.org/en/list/252/",
         "publisher": "UNESCO World Heritage Centre"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2861,6 +3116,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://whc.unesco.org/en/list/154/",
         "publisher": "UNESCO World Heritage Centre"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2882,6 +3138,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://tcm.computerhistory.org/reports/TCMReportFall1984.pdf",
         "publisher": "Computer History Museum"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2903,6 +3160,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://science.nasa.gov/neptune/moons/triton/",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2924,6 +3182,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nasa.gov/missions/apollo/apollo-11/apollo-11-mission-overview/",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2945,6 +3204,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.folger.edu/explore/shakespeares-works/hamlet/read/",
         "publisher": "Folger Shakespeare Library"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2966,6 +3226,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://science.nasa.gov/solar-system/planets/",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -2987,6 +3248,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nasa.gov/wp-content/uploads/2023/05/saturn-lithograph-h.pdf?emrc=bda8d0",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -3008,6 +3270,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.computerhistory.org/babbage/adalovelace",
         "publisher": "Computer History Museum"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -3029,6 +3292,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.computerhistory.org/siliconengine/invention-of-the-point-contact-transistor/",
         "publisher": "Computer History Museum"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -3050,6 +3314,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://science.nasa.gov/jupiter/jupiter-moons/ganymede/",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -3071,6 +3336,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.folger.edu/explore/shakespeares-works/macbeth/read/",
         "publisher": "Folger Shakespeare Library"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -3092,6 +3358,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://www.nobelprize.org/prizes/chemistry/1935/joliot-curie/facts/",
         "publisher": "Nobel Prize"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -3113,6 +3380,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://whc.unesco.org/en/list/274",
         "publisher": "UNESCO World Heritage Centre"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -3134,6 +3402,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://science.nasa.gov/uranus/facts/",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -3155,6 +3424,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://whc.unesco.org/en/list/483/",
         "publisher": "UNESCO World Heritage Centre"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,
@@ -3176,6 +3446,7 @@ window.__APPROVED_QUESTION_BANK_DATA__ = {
         "url": "https://science.nasa.gov/mission/voyager/golden-record-contents/",
         "publisher": "NASA"
       },
+      "sourcePacketId": null,
       "review": {
         "status": "approved",
         "bankVersion": 3,

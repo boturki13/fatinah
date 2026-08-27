@@ -1,0 +1,1014 @@
+{
+  "schemaVersion": 1,
+  "description": "لا تُضاف هنا إلا حزم اجتازت بصمة المصدر والتحقق المستقل ومراجعة الحقوق آلياً. لا تُستخدم لتوليد AI ديني حر؛ القوالب الحتمية فقط. الحديث محصور في المتفق عليه مع إثبات صحة الإسناد من الدرر السنية.",
+  "packets": [
+    {
+      "id": "quran-pilot-2-255",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 2:255",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 2,
+        "ayah": 255,
+        "surahName": "البقرة"
+      },
+      "arabicText": "ٱللَّهُ لَآ إِلَٰهَ إِلَّا هُوَ ٱلْحَىُّ ٱلْقَيُّومُ لَا تَأْخُذُهُۥ سِنَةٌ وَلَا نَوْمٌ لَّهُۥ مَا فِى ٱلسَّمَٰوَٰتِ وَمَا فِى ٱلْأَرْضِ مَن ذَا ٱلَّذِى يَشْفَعُ عِندَهُۥٓ إِلَّا بِإِذْنِهِۦ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ وَلَا يُحِيطُونَ بِشَىْءٍ مِّنْ عِلْمِهِۦٓ إِلَّا بِمَا شَآءَ وَسِعَ كُرْسِيُّهُ ٱلسَّمَٰوَٰتِ وَٱلْأَرْضَ وَلَا يَـُٔودُهُۥ حِفْظُهُمَا وَهُوَ ٱلْعَلِىُّ ٱلْعَظِيمُ",
+      "textSha256": "cdf04bda6db38541c5d84d515be92968fc30e60051165a9aa14da016470ca4fe",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 2:255",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:20:51.104Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:20:51.104Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:20:51.104Z",
+          "environment": "prelive",
+          "evidenceSha256": "f1f9b8cd879ba4b078e1dada34552c927339009c5b2551ec287c7ee261d17e3a"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-1-5",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 1:5",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 1,
+        "ayah": 5,
+        "surahName": "الفاتحة"
+      },
+      "arabicText": "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ",
+      "textSha256": "c44ba775d0ba7689a0d97e83a27cd9b5d917cb569f98013518018b591b42c015",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 1:5",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:21:27.187Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:21:27.187Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:21:27.187Z",
+          "environment": "prelive",
+          "evidenceSha256": "c44ba775d0ba7689a0d97e83a27cd9b5d917cb569f98013518018b591b42c015"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-2-286",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 2:286",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 2,
+        "ayah": 286,
+        "surahName": "البقرة"
+      },
+      "arabicText": "لَا يُكَلِّفُ ٱللَّهُ نَفْسًا إِلَّا وُسْعَهَا لَهَا مَا كَسَبَتْ وَعَلَيْهَا مَا ٱكْتَسَبَتْ رَبَّنَا لَا تُؤَاخِذْنَآ إِن نَّسِينَآ أَوْ أَخْطَأْنَا رَبَّنَا وَلَا تَحْمِلْ عَلَيْنَآ إِصْرًا كَمَا حَمَلْتَهُۥ عَلَى ٱلَّذِينَ مِن قَبْلِنَا رَبَّنَا وَلَا تُحَمِّلْنَا مَا لَا طَاقَةَ لَنَا بِهِۦ وَٱعْفُ عَنَّا وَٱغْفِرْ لَنَا وَٱرْحَمْنَآ أَنتَ مَوْلَىٰنَا فَٱنصُرْنَا عَلَى ٱلْقَوْمِ ٱلْكَٰفِرِينَ",
+      "textSha256": "6390338cde40a23217a3342d07dcb64dc546650b5a7a2cb9aa050157edb33f51",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 2:286",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:21:28.487Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:21:28.487Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:21:28.487Z",
+          "environment": "prelive",
+          "evidenceSha256": "7c05269f8e0e98a6b2a2f3ee43745b895ed4ae225a1ed6d2e567c0c3c6d88ec1"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-3-8",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 3:8",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 3,
+        "ayah": 8,
+        "surahName": "آل عمران"
+      },
+      "arabicText": "رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِن لَّدُنكَ رَحْمَةً إِنَّكَ أَنتَ ٱلْوَهَّابُ",
+      "textSha256": "6afb710d8b67ebf013892ad17fdfab213af279065e33757c82da3bc45a9e83f2",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 3:8",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:14.456Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:14.456Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:14.456Z",
+          "environment": "production",
+          "evidenceSha256": "60a479af452ebb768c2edc10ac409be5e5e7e2efc312a4e6f279be640be89747"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-3-26",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 3:26",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 3,
+        "ayah": 26,
+        "surahName": "آل عمران"
+      },
+      "arabicText": "قُلِ ٱللَّهُمَّ مَٰلِكَ ٱلْمُلْكِ تُؤْتِى ٱلْمُلْكَ مَن تَشَآءُ وَتَنزِعُ ٱلْمُلْكَ مِمَّن تَشَآءُ وَتُعِزُّ مَن تَشَآءُ وَتُذِلُّ مَن تَشَآءُ بِيَدِكَ ٱلْخَيْرُ إِنَّكَ عَلَىٰ كُلِّ شَىْءٍ قَدِيرٌ",
+      "textSha256": "54428c1b33b1e81845a63cd71ae51c8a160367f0f6eab0ab7f09a70296998a2f",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 3:26",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:28.024Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:28.024Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:28.024Z",
+          "environment": "production",
+          "evidenceSha256": "490bebf8c2b7568bb1b766307e378eaf5ecea1bb1c6cf08082c9c13b35978558"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-3-159",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 3:159",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 3,
+        "ayah": 159,
+        "surahName": "آل عمران"
+      },
+      "arabicText": "فَبِمَا رَحْمَةٍ مِّنَ ٱللَّهِ لِنتَ لَهُمْ وَلَوْ كُنتَ فَظًّا غَلِيظَ ٱلْقَلْبِ لَٱنفَضُّوا۟ مِنْ حَوْلِكَ فَٱعْفُ عَنْهُمْ وَٱسْتَغْفِرْ لَهُمْ وَشَاوِرْهُمْ فِى ٱلْأَمْرِ فَإِذَا عَزَمْتَ فَتَوَكَّلْ عَلَى ٱللَّهِ إِنَّ ٱللَّهَ يُحِبُّ ٱلْمُتَوَكِّلِينَ",
+      "textSha256": "c22dc7b1d38f6debc61822aea22b5876934a527298bfc519eda979b90d6fa78f",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 3:159",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:28.793Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:28.793Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:28.793Z",
+          "environment": "production",
+          "evidenceSha256": "ee8242de033279250083431f82e4b63da8a00066a723e409574404f6e64dfa27"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-4-36",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 4:36",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 4,
+        "ayah": 36,
+        "surahName": "النساء"
+      },
+      "arabicText": "وَٱعْبُدُوا۟ ٱللَّهَ وَلَا تُشْرِكُوا۟ بِهِۦ شَيْـًٔا وَبِٱلْوَٰلِدَيْنِ إِحْسَٰنًا وَبِذِى ٱلْقُرْبَىٰ وَٱلْيَتَٰمَىٰ وَٱلْمَسَٰكِينِ وَٱلْجَارِ ذِى ٱلْقُرْبَىٰ وَٱلْجَارِ ٱلْجُنُبِ وَٱلصَّاحِبِ بِٱلْجَنۢبِ وَٱبْنِ ٱلسَّبِيلِ وَمَا مَلَكَتْ أَيْمَٰنُكُمْ إِنَّ ٱللَّهَ لَا يُحِبُّ مَن كَانَ مُخْتَالًا فَخُورًا",
+      "textSha256": "a47a0fae2ec653429daa17f2b0bd40438660b435ae224f527604185b15e9ffa9",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 4:36",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:29.586Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:29.586Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:29.586Z",
+          "environment": "production",
+          "evidenceSha256": "a24db46caca953424801fab8970be10482eab5b6130e687b718cd72699362a98"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-5-8",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 5:8",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 5,
+        "ayah": 8,
+        "surahName": "المائدة"
+      },
+      "arabicText": "يَٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ كُونُوا۟ قَوَّٰمِينَ لِلَّهِ شُهَدَآءَ بِٱلْقِسْطِ وَلَا يَجْرِمَنَّكُمْ شَنَـَٔانُ قَوْمٍ عَلَىٰٓ أَلَّا تَعْدِلُوا۟ ٱعْدِلُوا۟ هُوَ أَقْرَبُ لِلتَّقْوَىٰ وَٱتَّقُوا۟ ٱللَّهَ إِنَّ ٱللَّهَ خَبِيرٌۢ بِمَا تَعْمَلُونَ",
+      "textSha256": "3f7059cb64115c4a5efade8f8b0429a44457a4cddaa9bda38f022bc058c772f0",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 5:8",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:30.357Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:30.357Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:30.357Z",
+          "environment": "production",
+          "evidenceSha256": "22610fbf6cc792f9eb16a4bac4a7f4dcc68ab9ea0a45460ea58c3074346d4af8"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-6-162",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 6:162",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 6,
+        "ayah": 162,
+        "surahName": "الأنعام"
+      },
+      "arabicText": "قُلْ إِنَّ صَلَاتِى وَنُسُكِى وَمَحْيَاىَ وَمَمَاتِى لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ",
+      "textSha256": "48b2a11c2b09d3ef63a71e1a9addddf469afb58d29fab8d6d8c691d9e47f044d",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 6:162",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:31.146Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:31.146Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:31.146Z",
+          "environment": "production",
+          "evidenceSha256": "64d5643f93d0cc78be1b17ec299a45d819bc1e28ddfda2afc3a6a675bb83c5c3"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-7-56",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 7:56",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 7,
+        "ayah": 56,
+        "surahName": "الأعراف"
+      },
+      "arabicText": "وَلَا تُفْسِدُوا۟ فِى ٱلْأَرْضِ بَعْدَ إِصْلَٰحِهَا وَٱدْعُوهُ خَوْفًا وَطَمَعًا إِنَّ رَحْمَتَ ٱللَّهِ قَرِيبٌ مِّنَ ٱلْمُحْسِنِينَ",
+      "textSha256": "d023dbeadcb9ac74e0959b71c11e3dcdf9727f6280028fdbc23e4406421f3754",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 7:56",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:31.911Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:31.911Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:31.911Z",
+          "environment": "production",
+          "evidenceSha256": "de50eb0982f475a878cb2aa4dc3e31b094513288a29b0e683a084e0a2b47e099"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-9-40",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 9:40",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 9,
+        "ayah": 40,
+        "surahName": "التوبة"
+      },
+      "arabicText": "إِلَّا تَنصُرُوهُ فَقَدْ نَصَرَهُ ٱللَّهُ إِذْ أَخْرَجَهُ ٱلَّذِينَ كَفَرُوا۟ ثَانِىَ ٱثْنَيْنِ إِذْ هُمَا فِى ٱلْغَارِ إِذْ يَقُولُ لِصَٰحِبِهِۦ لَا تَحْزَنْ إِنَّ ٱللَّهَ مَعَنَا فَأَنزَلَ ٱللَّهُ سَكِينَتَهُۥ عَلَيْهِ وَأَيَّدَهُۥ بِجُنُودٍ لَّمْ تَرَوْهَا وَجَعَلَ كَلِمَةَ ٱلَّذِينَ كَفَرُوا۟ ٱلسُّفْلَىٰ وَكَلِمَةُ ٱللَّهِ هِىَ ٱلْعُلْيَا وَٱللَّهُ عَزِيزٌ حَكِيمٌ",
+      "textSha256": "05530a82bf92e0fdff657b40dec5134d34ca8f0fb306c11bf2081e0a59357880",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 9:40",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:32.680Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:32.680Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:32.680Z",
+          "environment": "production",
+          "evidenceSha256": "ba9f1916c5855565db40346c0ea4ef1a883e9542c2e91168bcc3fd166dc69357"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-12-4",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 12:4",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 12,
+        "ayah": 4,
+        "surahName": "يوسف"
+      },
+      "arabicText": "إِذْ قَالَ يُوسُفُ لِأَبِيهِ يَٰٓأَبَتِ إِنِّى رَأَيْتُ أَحَدَ عَشَرَ كَوْكَبًا وَٱلشَّمْسَ وَٱلْقَمَرَ رَأَيْتُهُمْ لِى سَٰجِدِينَ",
+      "textSha256": "4bba0cbda7d0fe01c3f28af75febde5b6b3e145e183fd0bf2dea24eca80a3cba",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 12:4",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:33.500Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:33.500Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:33.500Z",
+          "environment": "production",
+          "evidenceSha256": "1807741d9a393c62062d7cf315b9b6cfe3e979604a9de22dd7b512ab853f9118"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-13-28",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 13:28",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 13,
+        "ayah": 28,
+        "surahName": "الرعد"
+      },
+      "arabicText": "ٱلَّذِينَ ءَامَنُوا۟ وَتَطْمَئِنُّ قُلُوبُهُم بِذِكْرِ ٱللَّهِ أَلَا بِذِكْرِ ٱللَّهِ تَطْمَئِنُّ ٱلْقُلُوبُ",
+      "textSha256": "5e9ab559567ed8be17de1d60f1030dbea169edc7f833ab6e9c8add559f47d35e",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 13:28",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:34.303Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:34.303Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:34.303Z",
+          "environment": "production",
+          "evidenceSha256": "20aacc0eaaf3ca321a74f0e8fb28f18d32c351281e0f89af711a6807fa825906"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-16-90",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 16:90",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 16,
+        "ayah": 90,
+        "surahName": "النحل"
+      },
+      "arabicText": "إِنَّ ٱللَّهَ يَأْمُرُ بِٱلْعَدْلِ وَٱلْإِحْسَٰنِ وَإِيتَآئِ ذِى ٱلْقُرْبَىٰ وَيَنْهَىٰ عَنِ ٱلْفَحْشَآءِ وَٱلْمُنكَرِ وَٱلْبَغْىِ يَعِظُكُمْ لَعَلَّكُمْ تَذَكَّرُونَ",
+      "textSha256": "a057abbcf0b8a1b5d78cf211060f6d94616d769c93d3e62b8339fa5d41bc68c4",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 16:90",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:35.133Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:35.133Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:35.133Z",
+          "environment": "production",
+          "evidenceSha256": "439d9492d3aee215dac950a2c20924a1ebc97036f63f0ee07a4b474575e0766d"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-17-23",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 17:23",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 17,
+        "ayah": 23,
+        "surahName": "الإسراء"
+      },
+      "arabicText": "وَقَضَىٰ رَبُّكَ أَلَّا تَعْبُدُوٓا۟ إِلَّآ إِيَّاهُ وَبِٱلْوَٰلِدَيْنِ إِحْسَٰنًا إِمَّا يَبْلُغَنَّ عِندَكَ ٱلْكِبَرَ أَحَدُهُمَآ أَوْ كِلَاهُمَا فَلَا تَقُل لَّهُمَآ أُفٍّ وَلَا تَنْهَرْهُمَا وَقُل لَّهُمَا قَوْلًا كَرِيمًا",
+      "textSha256": "06f04bfcd05ad18dcc4b39b80f74531ab461a362cd598cb072f67472aea2cf8e",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 17:23",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:36.211Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:36.211Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:36.211Z",
+          "environment": "production",
+          "evidenceSha256": "92a3158afc5407dc953ebe666262de906a317b8e5e1a5de2e052ed7fc16fdae1"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-18-10",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 18:10",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 18,
+        "ayah": 10,
+        "surahName": "الكهف"
+      },
+      "arabicText": "إِذْ أَوَى ٱلْفِتْيَةُ إِلَى ٱلْكَهْفِ فَقَالُوا۟ رَبَّنَآ ءَاتِنَا مِن لَّدُنكَ رَحْمَةً وَهَيِّئْ لَنَا مِنْ أَمْرِنَا رَشَدًا",
+      "textSha256": "f6e1578eabf2561cb0be2265243cdc9c207f78347190ae9c9f1cff22c5a17baf",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 18:10",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:37.064Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:37.064Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:37.064Z",
+          "environment": "production",
+          "evidenceSha256": "f6e1578eabf2561cb0be2265243cdc9c207f78347190ae9c9f1cff22c5a17baf"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-20-25",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 20:25",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 20,
+        "ayah": 25,
+        "surahName": "طه"
+      },
+      "arabicText": "قَالَ رَبِّ ٱشْرَحْ لِى صَدْرِى",
+      "textSha256": "638e7c1cab464a0b98eca54d8bb80062e90b94fad8517674769fbc177fb12551",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 20:25",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:37.840Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:37.840Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:37.840Z",
+          "environment": "production",
+          "evidenceSha256": "638e7c1cab464a0b98eca54d8bb80062e90b94fad8517674769fbc177fb12551"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-21-87",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 21:87",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 21,
+        "ayah": 87,
+        "surahName": "الأنبياء"
+      },
+      "arabicText": "وَذَا ٱلنُّونِ إِذ ذَّهَبَ مُغَٰضِبًا فَظَنَّ أَن لَّن نَّقْدِرَ عَلَيْهِ فَنَادَىٰ فِى ٱلظُّلُمَٰتِ أَن لَّآ إِلَٰهَ إِلَّآ أَنتَ سُبْحَٰنَكَ إِنِّى كُنتُ مِنَ ٱلظَّٰلِمِينَ",
+      "textSha256": "2c80e9d22caa53a59f79ad1a0943705845c73ad84597464575948e01a3c8a497",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 21:87",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:38.724Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:38.724Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:38.724Z",
+          "environment": "production",
+          "evidenceSha256": "c38a286f5cbb56dfd2a95492a40db9ccbb6e0aee9f242a3c1a9485cf486eaf28"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-24-35",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 24:35",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 24,
+        "ayah": 35,
+        "surahName": "النور"
+      },
+      "arabicText": "ٱللَّهُ نُورُ ٱلسَّمَٰوَٰتِ وَٱلْأَرْضِ مَثَلُ نُورِهِۦ كَمِشْكَوٰةٍ فِيهَا مِصْبَاحٌ ٱلْمِصْبَاحُ فِى زُجَاجَةٍ ٱلزُّجَاجَةُ كَأَنَّهَا كَوْكَبٌ دُرِّىٌّ يُوقَدُ مِن شَجَرَةٍ مُّبَٰرَكَةٍ زَيْتُونَةٍ لَّا شَرْقِيَّةٍ وَلَا غَرْبِيَّةٍ يَكَادُ زَيْتُهَا يُضِىٓءُ وَلَوْ لَمْ تَمْسَسْهُ نَارٌ نُّورٌ عَلَىٰ نُورٍ يَهْدِى ٱللَّهُ لِنُورِهِۦ مَن يَشَآءُ وَيَضْرِبُ ٱللَّهُ ٱلْأَمْثَٰلَ لِلنَّاسِ وَٱللَّهُ بِكُلِّ شَىْءٍ عَلِيمٌ",
+      "textSha256": "d99641a762fb4391dd2b173db5030fce09692b8b88bd501d6d0ed5899cf01147",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 24:35",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:39.549Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:39.549Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:39.549Z",
+          "environment": "production",
+          "evidenceSha256": "e3c3981fe58dd508974db071e8b258782c54272e43714d73a3aa6ec72f12c62a"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-39-53",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 39:53",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 39,
+        "ayah": 53,
+        "surahName": "الزمر"
+      },
+      "arabicText": "قُلْ يَٰعِبَادِىَ ٱلَّذِينَ أَسْرَفُوا۟ عَلَىٰٓ أَنفُسِهِمْ لَا تَقْنَطُوا۟ مِن رَّحْمَةِ ٱللَّهِ إِنَّ ٱللَّهَ يَغْفِرُ ٱلذُّنُوبَ جَمِيعًا إِنَّهُۥ هُوَ ٱلْغَفُورُ ٱلرَّحِيمُ",
+      "textSha256": "e073806d2585cffbd962f85052a138e0be0c7c8d4c54a85e60b10805315c242b",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 39:53",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:28:40.360Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:28:40.360Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:28:40.360Z",
+          "environment": "production",
+          "evidenceSha256": "bcd510ea7aaf66c1356e0eddd1ac3371c55fa3bee332c8df2e54e6fd4490ac6f"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-55-13",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 55:13",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 55,
+        "ayah": 13,
+        "surahName": "الرحمن"
+      },
+      "arabicText": "فَبِأَىِّ ءَالَآءِ رَبِّكُمَا تُكَذِّبَانِ",
+      "textSha256": "6a4d6feb5ed9ccbbd17766c24a404af9e25b6d80e8f3b0739f1349bcdd894ccc",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 55:13",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:30:23.204Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:30:23.204Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:30:23.204Z",
+          "environment": "production",
+          "evidenceSha256": "6a4d6feb5ed9ccbbd17766c24a404af9e25b6d80e8f3b0739f1349bcdd894ccc"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-94-5",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 94:5",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 94,
+        "ayah": 5,
+        "surahName": "الشرح"
+      },
+      "arabicText": "فَإِنَّ مَعَ ٱلْعُسْرِ يُسْرًا",
+      "textSha256": "46d6e18e05512d5f0fcb4c35e4af2aaece5db115e0a1a3681510ceeb6f09724e",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 94:5",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:30:24.032Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:30:24.032Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:30:24.032Z",
+          "environment": "production",
+          "evidenceSha256": "46d6e18e05512d5f0fcb4c35e4af2aaece5db115e0a1a3681510ceeb6f09724e"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-49-13",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 49:13",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 49,
+        "ayah": 13,
+        "surahName": "الحجرات"
+      },
+      "arabicText": "يَٰٓأَيُّهَا ٱلنَّاسُ إِنَّا خَلَقْنَٰكُم مِّن ذَكَرٍ وَأُنثَىٰ وَجَعَلْنَٰكُمْ شُعُوبًا وَقَبَآئِلَ لِتَعَارَفُوٓا۟ إِنَّ أَكْرَمَكُمْ عِندَ ٱللَّهِ أَتْقَىٰكُمْ إِنَّ ٱللَّهَ عَلِيمٌ خَبِيرٌ",
+      "textSha256": "714e0522b14f351bf87b019eb00903764f423b54c10e89e5d354690c098f8fbc",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 49:13",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:31:24.105Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:31:24.105Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:31:24.105Z",
+          "environment": "production",
+          "evidenceSha256": "f2bac1388976aea218d38975297ee34955efd3785ddd0bb6d761c2b37710eb13"
+        }
+      }
+    },
+    {
+      "id": "quran-pilot-57-20",
+      "work": "القرآن الكريم",
+      "reference": "القرآن الكريم، 57:20",
+      "canonicalReference": {
+        "type": "quran",
+        "surah": 57,
+        "ayah": 20,
+        "surahName": "الحديد"
+      },
+      "arabicText": "ٱعْلَمُوٓا۟ أَنَّمَا ٱلْحَيَوٰةُ ٱلدُّنْيَا لَعِبٌ وَلَهْوٌ وَزِينَةٌ وَتَفَاخُرٌۢ بَيْنَكُمْ وَتَكَاثُرٌ فِى ٱلْأَمْوَٰلِ وَٱلْأَوْلَٰدِ كَمَثَلِ غَيْثٍ أَعْجَبَ ٱلْكُفَّارَ نَبَاتُهُۥ ثُمَّ يَهِيجُ فَتَرَىٰهُ مُصْفَرًّا ثُمَّ يَكُونُ حُطَٰمًا وَفِى ٱلْـَٔاخِرَةِ عَذَابٌ شَدِيدٌ وَمَغْفِرَةٌ مِّنَ ٱللَّهِ وَرِضْوَٰنٌ وَمَا ٱلْحَيَوٰةُ ٱلدُّنْيَآ إِلَّا مَتَٰعُ ٱلْغُرُورِ",
+      "textSha256": "7474951c62cd879acfaaa828feee8a689f050523dc5e9be2782f77bf9a3d0bf3",
+      "source": {
+        "title": "Tanzil Quran Text (Uthmani 1.1) — 57:20",
+        "url": "https://tanzil.net/download/",
+        "publisher": "Tanzil Project"
+      },
+      "provenance": {
+        "primarySourceId": "tanzil-quran-uthmani-1.1"
+      },
+      "approvalMode": "deterministic_double_verified",
+      "rightsReview": {
+        "approved": true,
+        "basis": "CC BY 3.0; attribution required; verbatim text only",
+        "reviewedAt": "2026-08-24T20:31:24.944Z"
+      },
+      "automatedVerification": {
+        "primary": {
+          "status": "passed",
+          "verifier": "local-tanzil-exact-match",
+          "verifiedAt": "2026-08-24T20:31:24.944Z",
+          "corpusSha256": "bf4f57b968d03f4131c070b1e285da9be0e0a108a21c910e872801ca273312c8"
+        },
+        "secondary": {
+          "status": "passed",
+          "verifier": "quran-foundation-content-v4",
+          "verifiedAt": "2026-08-24T20:31:24.944Z",
+          "environment": "production",
+          "evidenceSha256": "2aefdeedfb9c0494a2509cc1c2c04353397c37473c3663cd0646daaf385e4c48"
+        }
+      }
+    }
+  ]
+}

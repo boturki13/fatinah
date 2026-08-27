@@ -1,5 +1,101 @@
 {
   "targetQuestionsPerLevel": 4,
+  "targetBankSize": 5000,
+  "futureTargetBankSize": 15000,
+  "generationStrategy": {
+    "defaultMode": "deterministic_structured_source",
+    "paidAiGenerationEnabled": false,
+    "paidAiAuditSampleRate": 0,
+    "requiredFields": [
+      "sourceRecordId",
+      "sourceUrl",
+      "sourcePublisher",
+      "retrievedAt",
+      "templateId"
+    ],
+    "allowedSourceProfiles": [
+      "wikidata_entities_v1",
+      "official_dataset_v1",
+      "curated_trusted_records_v1"
+    ]
+  },
+  "familyContentPolicy": {
+    "schemaVersion": 1,
+    "blockedQuestionIds": [
+      "gq-49031dbfebee1813bbbe",
+      "gq-a5f2e33a7bfb6c23a409",
+      "gq-a84700354ef2cd82f207",
+      "gq-54f7658266c72b8133ee",
+      "gq-71ea5ce5a4141257f1cd",
+      "gq-17b55cddb25e13081063",
+      "gq-41fc7c456ca7502424e5"
+    ],
+    "blockedSourceRecordIds": [
+      "wikidata-Q5918683-P50-Q400",
+      "nci-human-organ-c12407",
+      "nci-human-organ-c12409",
+      "nci-human-organ-c25177",
+      "wikisource-proverb-18-ba3914c408",
+      "wikisource-proverb-19-269a6da6be",
+      "wikisource-proverb-101-926dc51a96"
+    ],
+    "blockedSourceRecordFingerprints": [
+      "ba3914c408",
+      "269a6da6be",
+      "926dc51a96"
+    ],
+    "explicitAdultTokens": [
+      "إباحي",
+      "إباحية",
+      "porn",
+      "porno",
+      "pornographic",
+      "pornography"
+    ],
+    "explicitAdultPhrases": [
+      "ممارسة الجنس",
+      "يمارس الجنس",
+      "علاقة جنسية",
+      "علاقات جنسية",
+      "sexual intercourse",
+      "sexual act",
+      "sex position"
+    ],
+    "severeProfanityTokens": [
+      "ظراط",
+      "ظراطه",
+      "زنية",
+      "الزنية",
+      "قحبة",
+      "شرموطة"
+    ],
+    "severeProfanityPhrases": [
+      "ولد لزنية",
+      "ابن الزنية"
+    ],
+    "directSexualAnatomyCategories": [
+      "جسم الإنسان"
+    ],
+    "directSexualAnatomyTerms": [
+      "مهبل",
+      "قضيب",
+      "عضو جنسي",
+      "vagina",
+      "penis",
+      "genitalia"
+    ]
+  },
+  "legacyReviewedDirectFileSources": [
+    { "id": "gq-33176b02222e702104e4", "url": "https://library.ksaa.gov.sa/links/epubs/tiqniaat_allughat_alearabiat_alhasubia.pdf" },
+    { "id": "gq-34a7f8e96d408db24e55", "url": "https://library.ksaa.gov.sa/links/epubs/tiqniaat_allughat_alearabiat_alhasubia.pdf" },
+    { "id": "gq-a73abc0b49572e55ce0a", "url": "https://faculty.ksu.edu.sa/sites/default/files/slwb_lstfhm_.pdf" },
+    { "id": "gq-be05caf7cbb21c66f56f", "url": "https://epn.epo.org/sites/default/files/2022-11/IGE_Annual_Report_2020_21_bf.pdf" },
+    { "id": "gq-691048c9068d39b73a5c", "url": "https://epn.epo.org/sites/default/files/2022-11/IGE_Annual_Report_2020_21_bf.pdf" },
+    { "id": "gq-7bfd3a035b20693b529f", "url": "https://library.ksaa.gov.sa/links/epubs/aliimla_fi_nizam_alkitabat_alearabia.pdf" },
+    { "id": "gq-b283cc6ff923b6878f62", "url": "https://library.ksaa.gov.sa/links/epubs/aliimla_fi_nizam_alkitabat_alearabia.pdf" },
+    { "id": "gq-3ad13e29d44ee6f2b51c", "url": "https://tcm.computerhistory.org/reports/TCMReportFall1984.pdf" },
+    { "id": "gq-ad99e9cdd15bdd4e7219", "url": "https://www.nasa.gov/wp-content/uploads/2023/05/saturn-lithograph-h.pdf?emrc=bda8d0" }
+  ],
   "generalTrustedHosts": [
     "agcff.com",
     "arabicacademy.gov.eg",
@@ -14,10 +110,12 @@
     "folger.edu",
     "gutenberg.org",
     "jacc-kw.com",
+    "inaturalist.org",
     "ksu.edu.sa",
     "ksaa.gov.sa",
     "loc.gov",
     "nasa.gov",
+    "exoplanetarchive.ipac.caltech.edu",
     "nationalgeographic.com",
     "nih.gov",
     "noaa.gov",
@@ -36,6 +134,8 @@
     "usgs.gov",
     "who.int",
     "worldbank.org",
+    "wikidata.org",
+    "ar.wikisource.org",
     "xbox.com"
   ],
   "categoryTrustedHosts": {
@@ -56,7 +156,8 @@
       "bl.uk",
       "britannica.com",
       "loc.gov",
-      "unesco.org"
+      "unesco.org",
+      "wikidata.org"
     ],
     "جغرافيا": [
       "britannica.com",
@@ -68,14 +169,17 @@
     ],
     "أمثال": [
       "arabicacademy.gov.eg",
-      "ksaa.gov.sa"
+      "ksaa.gov.sa",
+      "ar.wikisource.org"
     ],
     "ثقافة خليجية": [
       "jacc-kw.com",
-      "unesco.org"
+      "unesco.org",
+      "wikidata.org"
     ],
     "علوم وتقنية": [
       "britannica.com",
+      "exoplanetarchive.ipac.caltech.edu",
       "nasa.gov",
       "nih.gov",
       "noaa.gov",
@@ -88,7 +192,8 @@
       "britannica.com",
       "computerhistory.org",
       "epo.org",
-      "uspto.gov"
+      "uspto.gov",
+      "wikidata.org"
     ],
     "ألغاز وتحدّي ذكاء": [
       "arabicacademy.gov.eg",
@@ -100,14 +205,17 @@
       "bl.uk",
       "folger.edu",
       "ksaa.gov.sa",
-      "loc.gov"
+      "loc.gov",
+      "wikidata.org"
     ],
     "الفضاء والكون": [
+      "exoplanetarchive.ipac.caltech.edu",
       "nasa.gov",
       "si.edu"
     ],
     "حيوانات وطبيعة": [
       "britannica.com",
+      "inaturalist.org",
       "nationalgeographic.com",
       "noaa.gov",
       "si.edu"
@@ -127,42 +235,51 @@
       "fifa.com"
     ],
     "أعلام الدول": [
-      "un.org"
+      "un.org",
+      "worldbank.org"
     ],
     "خرائط دول": [
       "un.org",
-      "usgs.gov"
+      "usgs.gov",
+      "worldbank.org"
     ],
     "إجابة سريعة": [
       "britannica.com"
     ],
     "دوري أبطال أوروبا": [
-      "uefa.com"
+      "uefa.com",
+      "wikidata.org"
     ],
     "أنمي": [
       "bafta.org",
-      "britannica.com"
+      "britannica.com",
+      "wikidata.org"
     ],
     "كأس الخليج": [
       "agcff.com",
-      "fifa.com"
+      "fifa.com",
+      "wikidata.org"
     ],
     "مسلسلات خليجية": [
       "jacc-kw.com",
-      "redseafilmfest.com"
+      "redseafilmfest.com",
+      "wikidata.org"
     ],
     "أفلام عربية": [
       "bafta.org",
       "oscars.org",
-      "redseafilmfest.com"
+      "redseafilmfest.com",
+      "wikidata.org"
     ],
     "الألعاب الأولمبية": [
-      "olympics.com"
+      "olympics.com",
+      "wikidata.org"
     ],
     "أغاني خليجية": [
       "jacc-kw.com",
       "loc.gov",
-      "unesco.org"
+      "unesco.org",
+      "wikidata.org"
     ],
     "ألعاب الفيديو": [
       "atari.com",
@@ -171,12 +288,14 @@
       "nintendo.com",
       "playstation.com",
       "thegameawards.com",
-      "xbox.com"
+      "xbox.com",
+      "wikidata.org"
     ],
     "اللغة العربية": [
       "arabicacademy.gov.eg",
       "ksu.edu.sa",
-      "ksaa.gov.sa"
+      "ksaa.gov.sa",
+      "wikidata.org"
     ],
     "كتب وروايات": [
       "arabicacademy.gov.eg",
@@ -184,7 +303,8 @@
       "folger.edu",
       "gutenberg.org",
       "loc.gov",
-      "nobelprize.org"
+      "nobelprize.org",
+      "wikidata.org"
     ],
     "اختراعات واكتشافات": [
       "computerhistory.org",
@@ -193,13 +313,15 @@
       "nasa.gov",
       "nobelprize.org",
       "si.edu",
-      "uspto.gov"
+      "uspto.gov",
+      "wikidata.org"
     ],
     "مطابخ العالم": [
       "britannica.com",
       "fao.org",
       "nationalgeographic.com",
-      "unesco.org"
+      "unesco.org",
+      "wikidata.org"
     ],
     "وش الرابط؟": [
       "atari.com",
@@ -210,14 +332,20 @@
       "nobelprize.org",
       "playstation.com",
       "si.edu",
-      "unesco.org"
+      "unesco.org",
+      "worldbank.org"
     ]
   },
   "religiousTrustedHosts": [
-    "dorar.net",
     "quran.ksu.edu.sa",
-    "shamela.ws",
-    "sunnah.com"
+    "dorar.net",
+    "sunnah.com",
+    "tanzil.net"
+  ],
+  "religiousVerificationHosts": [
+    "apis.quran.foundation",
+    "oauth2.quran.foundation",
+    "dorar.net"
   ],
   "religiousCategories": [
     "دين وسيرة",
@@ -254,18 +382,28 @@
   "religiousRules": {
     "allowedPrimaryWorks": [
       "القرآن الكريم",
-      "صحيح البخاري",
-      "صحيح مسلم"
+      "صحيح البخاري"
     ],
-    "allowedSecondaryWorksWithHumanReview": [
-      "تفسير ابن كثير",
-      "البداية والنهاية لابن كثير",
-      "تاريخ الطبري"
+    "allowedSecondaryWorksWithHumanReview": [],
+    "sourcePacketRequired": true,
+    "sourcePacketHumanReviewRequired": false,
+    "questionHumanReviewRequired": false,
+    "religiousAiGenerationAllowed": false,
+    "deterministicTemplatesOnly": true,
+    "hadithMustBeMuttafaqAlayh": true,
+    "hadithSahihIsnadRequired": true,
+    "hadithQuestionTemplates": [
+      "narrator_only"
     ],
+    "primaryTextFingerprintRequired": true,
+    "independentVerificationRequired": true,
+    "commercialRightsReviewRequired": true,
+    "disputedMattersForbidden": true,
     "notes": [
-      "روايات تاريخ الطبري لا تُعد صحيحة تلقائياً لمجرد وجودها في الكتاب.",
-      "كل سؤال ديني أو تاريخي إسلامي يحتاج مراجعة بشرية قبل النشر.",
-      "لا يُنسب حديث إلى النبي ﷺ إلا إذا كان في الصحيحين أو ثبتت صحته صراحة في المرجع المعتمد."
+      "يُنشأ السؤال حصراً من نص ثابت مراجع من القرآن الكريم أو صحيح البخاري.",
+      "لا يُستخدم البحث المفتوح ولا ذاكرة النموذج مصدراً للأسئلة الدينية.",
+      "لا تُستخدم صياغة AI حرة للأسئلة الدينية؛ يسمح فقط بقوالب حتمية من نص طابق مصدرين مستقلين.",
+      "لا يحتاج كل سؤال لمراجعة بشرية فردية، لكن أي مسألة تفسيرية أو فقهية أو خلافية محظورة آلياً."
     ]
   }
 }

@@ -2,15 +2,24 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { fileURLToPath } from 'node:url';
+import {
+  loadReligiousSourceRegistry,
+  validateReligiousPacketGovernance,
+} from './religious-source-lib.mjs';
 
-export const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
+export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const CONTENT_DIR = path.join(ROOT, 'content', 'questions');
 export const CANDIDATES_PATH = path.join(CONTENT_DIR, 'candidates.json');
 export const PUBLISHED_PATH = path.join(CONTENT_DIR, 'published.json');
 export const POLICY_PATH = path.join(CONTENT_DIR, 'source-policy.json');
+export const RELIGIOUS_SOURCE_PACKETS_PATH = path.join(CONTENT_DIR, 'religious-source-packets.json');
 export const APPROVED_BANK_PATH = path.join(ROOT, 'www', 'approved-question-bank.js');
 export const BASE_BANK_PATH = path.join(ROOT, 'www', 'question-bank.js');
+export const REVIEWED_SOURCES_PATH = path.join(ROOT, 'www', 'reviewed-question-sources.js');
 export const APP_SOURCE_PATH = path.join(ROOT, 'www', 'app.js');
+export const IMAGE_BANK_PATH = path.join(ROOT, 'www', 'image-question-bank.js');
+export const COMMONS_IMAGE_BANK_PATH = path.join(ROOT, 'www', 'image-question-bank-commons.js');
 
 export function readJson(file, fallback) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
@@ -79,6 +88,8 @@ export function loadRuntimeQuestionBank() {
     APPROVED_BANK_PATH, /window\.__APPROVED_QUESTION_BANK_DATA__\s*=/, '__APPROVED_QUESTION_BANK_DATA__');
   const overrides = readJavaScriptDataObject(
     APP_SOURCE_PATH, /const\s+QUESTION_OVERRIDES\s*=/, 'QUESTION_OVERRIDES');
+  const reviewedSources = readJavaScriptDataObject(
+    REVIEWED_SOURCES_PATH, /window\.__REVIEWED_QUESTION_SOURCES__\s*=/, '__REVIEWED_QUESTION_SOURCES__');
   const additions = readJavaScriptDataObject(
     APP_SOURCE_PATH, /const\s+QUESTION_ADDITIONS\s*=/, 'QUESTION_ADDITIONS');
   const runtimeCategories = [...new Set([...Object.keys(base), ...Object.keys(approved)])];
@@ -102,6 +113,10 @@ export function loadRuntimeQuestionBank() {
       }
       return effective;
     });
+    effectiveOriginals.forEach((question, index) => {
+      const reviewedSource = reviewedSources[category]?.[question.d];
+      if (reviewedSource && question.review?.status !== 'approved') question.source = { ...reviewedSource };
+    });
     const categoryAdditions = Array.isArray(additions[category]) ? additions[category] : [];
     appliedAdditions[category] = categoryAdditions;
     bank[category] = [
@@ -119,6 +134,63 @@ export function loadRuntimeQuestionBank() {
     },
     orphanAdditionCategories,
   };
+}
+
+export function loadImageQuestionBank() {
+  const context = { window: {} };
+  vm.runInNewContext(fs.readFileSync(IMAGE_BANK_PATH, 'utf8'), context, {
+    timeout: 1_000, filename: path.basename(IMAGE_BANK_PATH),
+  });
+  vm.runInNewContext(fs.readFileSync(COMMONS_IMAGE_BANK_PATH, 'utf8'), context, {
+    timeout: 1_000, filename: path.basename(COMMONS_IMAGE_BANK_PATH),
+  });
+  const bank = JSON.parse(JSON.stringify(context.window.__IMAGE_QUESTION_BANK_DATA__ || {}));
+  const ids = new Set();
+  for (const [category, questions] of Object.entries(bank)) {
+    if (!Array.isArray(questions) || !questions.length) {
+      throw new Error(`فئة الصور «${category}» مفقودة أو فارغة.`);
+    }
+    for (const question of questions) {
+      const id = String(question?.id || '').trim();
+      if (!id || ids.has(id)) throw new Error(`معرف سؤال صورة مفقود أو مكرر: ${id || category}.`);
+      ids.add(id);
+    }
+  }
+  return bank;
+}
+
+export const RELEASE_EXCLUDED_IMAGE_CATEGORIES = new Set(['منو هاللاعب؟']);
+
+export function loadReleaseImageQuestionBank() {
+  const bank = loadImageQuestionBank();
+  return Object.fromEntries(Object.entries(bank).flatMap(([category, questions]) => {
+    if (RELEASE_EXCLUDED_IMAGE_CATEGORIES.has(category)) return [];
+    const approved = questions.filter(question => question?.review?.status === 'approved');
+    return approved.length ? [[category, approved]] : [];
+  }));
+}
+
+export function structuredRelationKey(record) {
+  if (record?.itemId && (record?.property || record?.relation)) {
+    return `${record.category || ''}|${record.itemId}|${record.property || record.relation}`;
+  }
+  const match = String(record?.sourceRecordId || '').match(/^(wikidata-Q\d+-P\d+)-Q\d+(?:-|$)/i);
+  return match ? match[1].toLowerCase() : '';
+}
+
+export function excludeAmbiguousStructuredRecords(records) {
+  const answersByRelation = new Map();
+  for (const record of records || []) {
+    const key = structuredRelationKey(record);
+    if (!key) continue;
+    const answer = String(record.answerId || record.answerLabel || record.answer || '').trim();
+    if (!answer) continue;
+    if (!answersByRelation.has(key)) answersByRelation.set(key, new Set());
+    answersByRelation.get(key).add(normalizeArabic(answer));
+  }
+  const ambiguous = new Set([...answersByRelation]
+    .filter(([, answers]) => answers.size > 1).map(([key]) => key));
+  return (records || []).filter(record => !ambiguous.has(structuredRelationKey(record)));
 }
 
 export function buildRuntimeQuestionPlan({ targetPerLevel = 4, categories = null } = {}) {
@@ -188,7 +260,11 @@ export function loadLocalEnv() {
 }
 
 export function normalizeArabic(value) {
-  return String(value || '')
+  const withFlagCodes = String(value || '').replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, flag => {
+    const letters = [...flag].map(symbol => String.fromCharCode(symbol.codePointAt(0) - 127397)).join('');
+    return ` flag ${letters} `;
+  });
+  return withFlagCodes
     .normalize('NFKD')
     .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
     .replace(/[أإآٱ]/g, 'ا')
@@ -200,6 +276,76 @@ export function normalizeArabic(value) {
     .trim()
     .replace(/\s+/g, ' ')
     .toLowerCase();
+}
+
+function normalizedPolicyValues(values) {
+  return (Array.isArray(values) ? values : [])
+    .map(value => normalizeArabic(value))
+    .filter(Boolean);
+}
+
+function containsNormalizedPhrase(text, phrase) {
+  return ` ${text} `.includes(` ${phrase} `);
+}
+
+function normalizedTokenVariants(word) {
+  const variants = new Set([word]);
+  for (const value of [...variants]) {
+    if (value.startsWith('ال') && value.length > 4) variants.add(value.slice(2));
+  }
+  return variants;
+}
+
+/**
+ * بوابة المحتوى العائلي المشتركة بين الاستيراد والتوليد وتصدير بنك التشغيل.
+ *
+ * المطابقة تعتمد كلمات/عبارات كاملة بعد التطبيع، لا substrings قصيرة؛ لذلك لا
+ * تخلط مثلاً بين «جنسية» و«جنس»، أو بين أسماء مثل «إسحاق» وكلمة بذيئة. كما أن
+ * المصطلحات الطبية العامة (Breast/الثدي/الرحم/الحمل) تبقى مسموحة. الحظر
+ * التشريحي الضيق يخص أسئلة تسمية الأعضاء الجنسية المباشرة في جسم الإنسان.
+ */
+export function familyContentViolations(item, policy = loadPolicy()) {
+  const config = policy?.familyContentPolicy;
+  if (!config || config.schemaVersion !== 1) return ['family_content_policy_missing'];
+
+  const violations = [];
+  const id = String(item?.id || '').trim();
+  const sourceRecordId = String(item?.sourceRecordId || '').trim();
+  if ((config.blockedQuestionIds || []).includes(id)) violations.push('blocked_question_id');
+  if ((config.blockedSourceRecordIds || []).includes(sourceRecordId) ||
+      (config.blockedSourceRecordFingerprints || []).some(fingerprint =>
+        fingerprint && sourceRecordId.endsWith(`-${fingerprint}`))) {
+    violations.push('blocked_source_record');
+  }
+
+  const source = item?.source && typeof item.source === 'object' ? item.source : {};
+  const normalized = normalizeArabic([
+    item?.question, item?.q, item?.answer, item?.explanation,
+    source.title, source.evidence,
+    item?.itemLabel, item?.answerLabel, item?.proverb, item?.meaning,
+    item?.nameAr, item?.officialNameEn,
+  ].filter(Boolean).join(' '));
+  const words = new Set(normalized.split(' ').filter(Boolean));
+  const wordVariants = new Set([...words].flatMap(word => [...normalizedTokenVariants(word)]));
+  const hasConfiguredToken = values => normalizedPolicyValues(values)
+    .some(token => !token.includes(' ') && wordVariants.has(token));
+  const hasConfiguredPhrase = values =>
+    normalizedPolicyValues(values).some(phrase => containsNormalizedPhrase(normalized, phrase));
+
+  if (hasConfiguredToken(config.explicitAdultTokens) ||
+      hasConfiguredPhrase(config.explicitAdultPhrases)) {
+    violations.push('explicit_adult_content');
+  }
+  if (hasConfiguredToken(config.severeProfanityTokens) ||
+      hasConfiguredPhrase(config.severeProfanityPhrases)) {
+    violations.push('severe_profanity');
+  }
+  const category = canonicalCategory(item?.category, policy);
+  if ((config.directSexualAnatomyCategories || []).includes(category) &&
+      hasConfiguredPhrase(config.directSexualAnatomyTerms)) {
+    violations.push('direct_sexual_anatomy');
+  }
+  return [...new Set(violations)];
 }
 
 function tokens(value) {
@@ -223,12 +369,42 @@ export function isNearDuplicate(question, existingQuestions, threshold = 0.82) {
   });
 }
 
+export function createNearDuplicateIndex(existingQuestions = [], threshold = 0.82) {
+  const entries = [];
+  const add = question => {
+    const normalized = normalizeArabic(question);
+    entries.push({ normalized, words: tokens(normalized) });
+  };
+  for (const question of existingQuestions) add(question);
+  return {
+    add,
+    has(question) {
+      const normalized = normalizeArabic(question);
+      const words = tokens(normalized);
+      return entries.some(entry => {
+        if (normalized === entry.normalized) return true;
+        if (!words.size || !entry.words.size) return false;
+        let intersection = 0;
+        for (const token of words) if (entry.words.has(token)) intersection += 1;
+        return intersection / (words.size + entry.words.size - intersection) >= threshold;
+      });
+    },
+  };
+}
+
 export function hostAllowed(urlValue, allowedHosts) {
   try {
     const url = new URL(String(urlValue || ''));
     if (url.protocol !== 'https:' || url.username || url.password) return false;
     const host = url.hostname.toLowerCase().replace(/^www\./, '');
     return allowedHosts.some(domain => host === domain || host.endsWith(`.${domain}`));
+  } catch { return false; }
+}
+
+export function isDirectFileSource(urlValue) {
+  try {
+    const url = new URL(String(urlValue || ''));
+    return /\.(?:pdf|docx?|xlsx?|pptx?|zip|jpe?g|png|webp|avif)$/i.test(url.pathname);
   } catch { return false; }
 }
 
@@ -267,6 +443,52 @@ export async function reachableTrustedSource(urlValue, allowedHosts) {
 }
 
 export function loadPolicy() { return readJson(POLICY_PATH, {}); }
+
+export function loadReligiousSourcePackets(file = RELIGIOUS_SOURCE_PACKETS_PATH, policy = loadPolicy()) {
+  const document = readJson(file, null);
+  if (!document || Array.isArray(document) || typeof document !== 'object' || document.schemaVersion !== 1) {
+    throw new Error('ملف حزم المصادر الدينية مفقود أو لا يستخدم schemaVersion=1.');
+  }
+  if (!Array.isArray(document.packets)) throw new Error('religious-source-packets.json يحتاج مصفوفة packets.');
+  const allowedWorks = new Set(policy.religiousRules?.allowedPrimaryWorks || []);
+  const allowedHosts = normalizedHosts(policy.religiousTrustedHosts);
+  const registry = loadReligiousSourceRegistry();
+  const ids = new Set();
+  return document.packets.map((packet, index) => {
+    const prefix = `حزمة المصدر الديني رقم ${index + 1}`;
+    if (!packet || Array.isArray(packet) || typeof packet !== 'object') throw new Error(`${prefix} غير صالحة.`);
+    const id = String(packet.id || '').trim();
+    const work = String(packet.work || '').trim();
+    const reference = String(packet.reference || '').trim();
+    const arabicText = String(packet.arabicText || '').trim();
+    const source = packet.source;
+    if (!/^[a-z0-9][a-z0-9._-]{2,127}$/i.test(id) || ids.has(id)) throw new Error(`${prefix}: id مفقود أو مكرر.`);
+    if (!allowedWorks.has(work)) throw new Error(`${prefix}: الكتاب «${work}» غير مسموح.`);
+    if (!reference || arabicText.length < 10 || arabicText.length > 8000) throw new Error(`${prefix}: المرجع أو النص الثابت ناقص.`);
+    if (!source || !hostAllowed(source.url, allowedHosts) || !String(source.title || '').trim() ||
+        !String(source.publisher || '').trim()) throw new Error(`${prefix}: بيانات المصدر الموثوق ناقصة.`);
+    try {
+      validateReligiousPacketGovernance(packet, registry);
+    } catch (error) {
+      throw new Error(`${prefix}: ${error.message}`);
+    }
+    ids.add(id);
+    return {
+      id, work, reference, arabicText,
+      canonicalReference: { ...packet.canonicalReference },
+      textSha256: String(packet.textSha256),
+      provenance: { ...packet.provenance },
+      rightsReview: { ...packet.rightsReview },
+      automatedVerification: JSON.parse(JSON.stringify(packet.automatedVerification)),
+      approvalMode: String(packet.approvalMode),
+      source: {
+        title: String(source.title).trim(),
+        url: String(source.url).trim(),
+        publisher: String(source.publisher).trim(),
+      },
+    };
+  });
+}
 
 export function loadBaseCategories() {
   const source = fs.readFileSync(path.join(ROOT, 'www', 'question-bank.js'), 'utf8').trim();
@@ -312,7 +534,9 @@ export function difficultyTier(level) {
   return 'hard';
 }
 
-export function validateCandidate(candidate, { policy = loadPolicy(), existingQuestions = [] } = {}) {
+export function validateCandidate(candidate, {
+  policy = loadPolicy(), existingQuestions = [], religiousSourcePackets = [],
+} = {}) {
   const errors = [];
   const religious = isReligiousCategory(candidate.category, policy) || candidate.religious === true;
   const allowedHosts = religious
@@ -320,21 +544,60 @@ export function validateCandidate(candidate, { policy = loadPolicy(), existingQu
     : trustedHostsForCategory(candidate.category, policy);
   const question = String(candidate.question || '').trim();
   const answer = String(candidate.answer || '').trim();
+  const explanation = String(candidate.explanation || '').trim();
+  const legacyDirectFileSource = (policy.legacyReviewedDirectFileSources || []).some(item =>
+    item?.id === candidate.id && item?.url === candidate.source?.url && candidate.review?.decision === 'approve'
+  );
   const level = Number(candidate.difficultyLevel);
+  if (familyContentViolations(candidate, policy).length) errors.push('family_content_blocked');
   if (!loadBaseCategories().includes(candidate.category)) errors.push('unknown_category');
   if (question.length < 12 || question.length > 220) errors.push('question_length');
   if (!/[؟?]$/.test(question)) errors.push('question_mark');
   if (answer.length < 1 || answer.length > 140) errors.push('answer_length');
+  const normalizedQuestion = normalizeArabic(question);
+  const normalizedAnswer = normalizeArabic(answer);
+  if (/(?:unesco|اليونسكو).*(?:المكون|المعرف)\s*\d/u.test(normalizedQuestion)) {
+    errors.push('opaque_source_identifier');
+  }
+  const intentionalLanguageAnswerDisplay = candidate.category === 'اللغة العربية' &&
+    /^(?:كيف تكتب|اي الكلمتين|اي الكتابتين|ما المصدر|اي اداة|ما الجذر|ما الرسم القياسي)/.test(normalizedQuestion);
+  if (normalizedAnswer.length >= 3 && normalizedQuestion.includes(normalizedAnswer) &&
+      !intentionalLanguageAnswerDisplay) {
+    errors.push('answer_leaked_in_question');
+  }
+  if (/يحمل عنوان رواية/.test(normalizedQuestion)) errors.push('answer_leaked_in_question');
+  if (explanation.length < 12 || explanation.length > 420) errors.push('explanation_length');
+  if (/^(?:سؤال|اختبر|تعرّف|تعرف|معلومة (?:مشهورة|عامة))/i.test(explanation)) {
+    errors.push('generic_explanation');
+  }
   if (!Number.isInteger(level) || level < 1 || level > 6) errors.push('difficulty_level');
   if (candidate.difficulty !== difficultyTier(level)) errors.push('difficulty_tier_mismatch');
   if (!candidate.source || !hostAllowed(candidate.source.url, allowedHosts || [])) errors.push('untrusted_source');
+  // ملفات PDF قد تكون ممسوحة ضوئياً أو لا تحتوي نصاً قابلاً للتحقق؛ لا نسمح
+  // للتوليد العام بالاعتماد عليها تلقائياً. المصادر الدينية تطابق حزمة بشرية ثابتة.
+  if (!religious && isDirectFileSource(candidate.source?.url) && !legacyDirectFileSource) {
+    errors.push('direct_file_source');
+  }
   if (!String(candidate.source?.title || '').trim()) errors.push('source_title');
   if (!String(candidate.source?.publisher || '').trim()) errors.push('source_publisher');
   if (!String(candidate.source?.evidence || '').trim()) errors.push('source_evidence');
-  if (/حالياً|حتى الآن|هذا العام|الأحدث|آخر إصدار|202[0-9]/.test(`${question} ${answer}`)) errors.push('volatile_fact');
+  const fixedHistoricalYear = /^unesco-inscription-year-v1-l[1-6]$/.test(String(candidate.templateId || ''));
+  if (/حالياً|حتى الآن|هذا العام|الأحدث|آخر إصدار/.test(`${question} ${answer}`) ||
+      (!fixedHistoricalYear && /202[0-9]/.test(`${question} ${answer}`))) errors.push('volatile_fact');
   if (/قد يكون|ربما|على الأرجح|يُقال|قيل/.test(`${question} ${answer}`)) errors.push('ambiguous_claim');
   if (isNearDuplicate(question, existingQuestions)) errors.push('duplicate_or_near_duplicate');
   if (religious && !candidate.religious) errors.push('religious_flag_missing');
+  if (religious) {
+    const packetId = String(candidate.sourcePacketId || '').trim();
+    const packet = religiousSourcePackets.find(item => item.id === packetId);
+    if (!packetId) errors.push('religious_source_packet_missing');
+    else if (!packet) errors.push('religious_source_packet_unknown');
+    else {
+      if (candidate.source?.url !== packet.source.url) errors.push('religious_source_url_mismatch');
+      if (candidate.source?.title !== packet.source.title) errors.push('religious_source_title_mismatch');
+      if (candidate.source?.publisher !== packet.source.publisher) errors.push('religious_source_publisher_mismatch');
+    }
+  }
   return { valid: errors.length === 0, errors, religious };
 }
 
@@ -393,7 +656,7 @@ export const generatedQuestionsSchema = {
       type: 'array', minItems: 1, maxItems: 25,
       items: {
         type: 'object', additionalProperties: false,
-        required: ['question', 'answer', 'explanation', 'difficulty', 'difficultyLevel', 'religious', 'source'],
+        required: ['question', 'answer', 'explanation', 'difficulty', 'difficultyLevel', 'religious', 'sourcePacketId', 'source'],
         properties: {
           question: { type: 'string', minLength: 12, maxLength: 220 },
           answer: { type: 'string', minLength: 1, maxLength: 140 },
@@ -401,6 +664,7 @@ export const generatedQuestionsSchema = {
           difficulty: { type: 'string', enum: ['easy', 'normal', 'hard'] },
           difficultyLevel: { type: 'integer', minimum: 1, maximum: 6 },
           religious: { type: 'boolean' },
+          sourcePacketId: { type: ['string', 'null'], maxLength: 128 },
           source: {
             type: 'object', additionalProperties: false,
             required: ['title', 'url', 'publisher', 'evidence'],
@@ -424,12 +688,13 @@ export const verificationSchema = {
       type: 'array', minItems: 1, maxItems: 25,
       items: {
         type: 'object', additionalProperties: false,
-        required: ['index', 'verdict', 'factCorrect', 'answerExact', 'sourceSupportsClaim', 'clearArabic', 'reason'],
+        required: ['index', 'verdict', 'factCorrect', 'answerExact', 'answerNotRevealed', 'sourceSupportsClaim', 'clearArabic', 'reason'],
         properties: {
           index: { type: 'integer', minimum: 0, maximum: 24 },
           verdict: { type: 'string', enum: ['pass', 'fail', 'needs_human_review'] },
           factCorrect: { type: 'boolean' },
           answerExact: { type: 'boolean' },
+          answerNotRevealed: { type: 'boolean' },
           sourceSupportsClaim: { type: 'boolean' },
           clearArabic: { type: 'boolean' },
           reason: { type: 'string', minLength: 2, maxLength: 360 },

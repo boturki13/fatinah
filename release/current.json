@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "product": "Fatinah",
+  "packageVersion": "1.3.0",
+  "iosMarketingVersion": "1.3",
+  "iosBuild": 9,
+  "bundleIdentifier": "com.fatinah.game",
+  "releaseBranch": "codex/release-1.3.0",
+  "releaseTag": "v1.3.0-build.9",
+  "appStoreState": "waiting_for_review",
+  "replitEnvironment": "production",
+  "replitUrl": "https://fatinah-next-1-3-security-review.replit.app"
+}

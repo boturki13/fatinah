@@ -4,6 +4,7 @@ import {
   PUBLISHED_PATH,
   isNearDuplicate,
   loadPolicy,
+  loadReligiousSourcePackets,
   readJson,
   validateCandidate,
 } from './lib.mjs';
@@ -11,6 +12,7 @@ import {
 const candidates = readJson(CANDIDATES_PATH, []);
 const published = readJson(PUBLISHED_PATH, []);
 const policy = loadPolicy();
+const religiousSourcePackets = loadReligiousSourcePackets();
 const errors = [];
 const ids = new Set();
 const texts = [];
@@ -20,7 +22,11 @@ for (const candidate of candidates) {
   if (isNearDuplicate(candidate.question, texts)) errors.push(`${candidate.id}: duplicate_or_near_duplicate`);
   texts.push(candidate.question);
   if (candidate.status === 'approved') {
-    const check = validateCandidate(candidate, { policy, existingQuestions: texts.slice(0, -1) });
+    const check = validateCandidate(candidate, {
+      policy,
+      existingQuestions: texts.slice(0, -1),
+      religiousSourcePackets: candidate.religious ? religiousSourcePackets : [],
+    });
     if (!check.valid) errors.push(`${candidate.id}: ${check.errors.join(',')}`);
     if (candidate.religious && !candidate.review?.religiousSourceAndIsnadConfirmed) errors.push(`${candidate.id}: religious_review_missing`);
   }

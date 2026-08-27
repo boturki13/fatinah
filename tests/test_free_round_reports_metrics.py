@@ -19,6 +19,10 @@ os.environ['FIREBASE_PROJECT_ID'] = 'test-project'
 os.environ['GOOGLE_API_KEY'] = ''
 os.environ['ADMIN_SECRET'] = 'TEST_ADMIN_SECRET'
 os.environ['FATINAH_ENVIRONMENT'] = 'local'
+os.environ['FATINAH_DURABLE_STORAGE'] = 'off'
+os.environ['FATINAH_V2_APP_CHECK_ENFORCE'] = 'false'
+os.environ['FATINAH_V2_APP_ATTEST_ENFORCE'] = 'false'
+os.environ['FATINAH_V2_DEVICECHECK_ENFORCE'] = 'false'
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import server as srv
 
@@ -89,6 +93,27 @@ try:
     assert etag
     status, _, body = static_asset('/app.js', {'If-None-Match': etag})
     assert status == 304 and body == b''
+    for image_bank_asset in (
+            '/image-question-bank.js', '/image-question-bank-commons.js'):
+        status, headers, body = static_asset(image_bank_asset)
+        assert status == 200
+        assert headers.get('Content-Type', '').startswith('application/javascript')
+        assert body
+    status, headers, body = static_asset(
+        '/assets/question-images/v1/fire-extinguisher.avif',
+        {'Origin': 'capacitor://localhost'},
+    )
+    assert status == 200 and body
+    assert headers.get('Access-Control-Allow-Origin') == 'capacitor://localhost'
+    assert headers.get('Cross-Origin-Resource-Policy') == 'cross-origin'
+    assert headers.get('Vary') == 'Origin'
+    status, headers, _ = static_asset(
+        '/assets/question-images/v1/fire-extinguisher.avif',
+        {'Origin': 'https://evil.example'},
+    )
+    assert status == 200
+    assert 'Access-Control-Allow-Origin' not in headers
+    assert headers.get('Cross-Origin-Resource-Policy') == 'same-site'
 
     # لا يوزع الخادم كود اللعبة أو بنكها للمتصفح العام إلا إذا كانت البيئة
     # local/staging صريحة. الغياب والخطأ يجب أن يفشلا مغلقاً مثل production.
@@ -103,14 +128,16 @@ try:
         assert b'<script' not in body
         for protected_asset in (
             '/app.js', '/app.css', '/question-bank.js',
-            '/approved-question-bank.js', '/download/index.html',
+            '/approved-question-bank.js', '/image-question-bank.js',
+            '/image-question-bank-commons.js', '/download/index.html',
             '/www/app.js', '/fatinah_updated.zip',
         ):
             status, _, body = static_asset(protected_asset)
             assert status == 404
             if protected_asset in {
                     '/app.js', '/app.css', '/question-bank.js',
-                    '/approved-question-bank.js', '/download/index.html'}:
+                    '/approved-question-bank.js', '/image-question-bank.js',
+                    '/image-question-bank-commons.js', '/download/index.html'}:
                 assert json.loads(body)['code'] == 'ios_app_only'
         status, _, _ = static_asset('/privacy-policy.html')
         assert status == 200
@@ -311,12 +338,12 @@ try:
     assert data['events']['game_completed'] == 1
     assert data['questionReports']['sent'] == 1
 
-    os.environ['FIREBASE_APP_CHECK_ENFORCE'] = 'true'
+    os.environ['FATINAH_V2_APP_CHECK_ENFORCE'] = 'true'
     status, data = request('GET', f'/api/free-round/status?uid={uid}')
     assert status == 404 and data.get('code') == 'v2_route_required'
     status, data = request('GET', f'/api/v2/free-round/status?uid={uid}')
     assert status == 401 and data.get('code') == 'app_check_failed'
-    os.environ['FIREBASE_APP_CHECK_ENFORCE'] = 'false'
+    os.environ['FATINAH_V2_APP_CHECK_ENFORCE'] = 'false'
     print('free round, secure reports, email delivery state, and metrics: passed')
 finally:
     httpd.shutdown()

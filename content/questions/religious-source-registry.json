@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "description": "سجل مغلق لمصادر الإسلاميات. وجود المصدر هنا لا يعني السماح بالنشر؛ القرآن والحديث يمران بمطابقة آلية مزدوجة، ولا يسمح بصياغة AI حرة أو أسئلة تفسيرية وفقهية.",
+  "primarySources": [
+    {
+      "id": "tanzil-quran-uthmani-1.1",
+      "work": "القرآن الكريم",
+      "role": "canonical_verbatim_text",
+      "version": "1.1",
+      "downloadUrl": "https://tanzil.net/pub/download/index.php?quranType=uthmani&outType=txt-2&agree=true",
+      "landingUrl": "https://tanzil.net/download/",
+      "publisher": "Tanzil Project",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://tanzil.net/docs/Text_License",
+      "immutable": true,
+      "expectedVerseCount": 6236,
+      "localCorpusPath": "content/questions/religious-sources/tanzil-quran-uthmani-1.1.txt",
+      "localManifestPath": "content/questions/religious-sources/tanzil-quran-uthmani-1.1.manifest.json",
+      "metadataUrl": "https://tanzil.net/res/text/metadata/quran-data.xml",
+      "localMetadataPath": "content/questions/religious-sources/tanzil-quran-data-1.0.xml",
+      "productionUseStatus": "allowed_with_attribution"
+    },
+    {
+      "id": "sunnah-com-sahih-bukhari",
+      "work": "صحيح البخاري",
+      "role": "candidate_primary_text",
+      "landingUrl": "https://sunnah.com/bukhari",
+      "publisher": "Sunnah.com",
+      "apiDocsUrl": "https://sunnah.stoplight.io/docs/api/",
+      "productionUseStatus": "allowed_reference_only_owner_authorized",
+      "projectOwnerAuthorization": {
+        "authorizedAt": "2026-08-24",
+        "scope": "مرجع صحيح البخاري فقط للأحاديث المتفق عليها؛ لا نسخ جماعي ولا تخزين ردود الموقع"
+      },
+      "externalRightsHolderPermissionConfirmed": false,
+      "bulkIngestionAllowed": false
+    }
+  ],
+  "verificationServices": [
+    {
+      "id": "quran-foundation-content-v4",
+      "work": "القرآن الكريم",
+      "role": "secondary_exact_verse_check",
+      "defaultEnvironment": "prelive",
+      "environments": {
+        "prelive": {
+          "baseUrl": "https://apis-prelive.quran.foundation/content/api/v4",
+          "authUrl": "https://prelive-oauth2.quran.foundation/oauth2/token"
+        },
+        "production": {
+          "baseUrl": "https://apis.quran.foundation/content/api/v4",
+          "authUrl": "https://oauth2.quran.foundation/oauth2/token"
+        }
+      },
+      "documentationUrl": "https://api-docs.quran.com/docs/quickstart/",
+      "credentialEnvironment": [
+        "QF_CLIENT_ID",
+        "QF_CLIENT_SECRET",
+        "QF_ENV"
+      ],
+      "bulkIngestionAllowed": false,
+      "storeResponseBody": false,
+      "productionUseStatus": "verification_only"
+    },
+    {
+      "id": "dorar-hadith-search",
+      "work": "صحيح البخاري",
+      "role": "secondary_hadith_grade_and_reference_check",
+      "baseUrl": "https://dorar.net/dorar_api.json",
+      "documentationUrl": "https://dorar.net/article/389/خدمة-واجهة-الموسوعة-الحديثية-API",
+      "bulkIngestionAllowed": false,
+      "storeResponseBody": false,
+      "productionUseStatus": "verification_only",
+      "projectOwnerAuthorization": {
+        "authorizedAt": "2026-08-24",
+        "scope": "تحقق واحد-بواحد فقط؛ الحديث يجب أن يكون متفقاً عليه وصحيح الإسناد"
+      },
+      "externalRightsHolderPermissionConfirmed": false,
+      "lastConnectivityProbe": {
+        "checkedAt": "2026-08-24",
+        "status": "http_403_from_automation"
+      },
+      "accessRequest": {
+        "submittedAt": "2026-08-24",
+        "channel": "https://dorar.net/feedback/contact",
+        "scope": "السماح لـ ata20.com بالتحقق الفردي من الأحاديث المتفق عليها بلا نسخ جماعي أو تخزين للاستجابات",
+        "status": "pending_response"
+      }
+    }
+  ],
+  "prohibitedProductionDatasets": [
+    {
+      "id": "AhmedBaset/hadith-json",
+      "reason": "ترخيص النصوص الأصلية وإعادة توزيع البيانات غير واضحين."
+    },
+    {
+      "id": "mhashim6/Open-Hadith-Data",
+      "reason": "لا يُعتمد قبل توثيق ترخيص كل طبقة من البيانات الأصلية."
+    },
+    {
+      "id": "fawazahmed0/hadith-api",
+      "reason": "رخصة المستودع لا تحسم حقوق النصوص والترجمات المجمعة داخله."
+    }
+  ]
+}

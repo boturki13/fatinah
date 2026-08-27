@@ -1,0 +1,24 @@
+name: طلب ميزة
+description: اقتراح واضح للتحديث القادم
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: المشكلة أو الحاجة
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: النتيجة المطلوبة
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: معايير القبول
+      description: نقاط قابلة للاختبار تثبت اكتمال الميزة.
+    validations:
+      required: true

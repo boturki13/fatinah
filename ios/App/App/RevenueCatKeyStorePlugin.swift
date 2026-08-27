@@ -1,5 +1,6 @@
 import Capacitor
 import Security
+import WebKit
 
 struct FatinahKeychainError: Error, Equatable {
     let status: OSStatus
@@ -202,8 +203,68 @@ final class FatinahTelemetryIdentityPlugin: CAPPlugin, CAPBridgedPlugin {
 @objc(FatinahBridgeViewController)
 final class FatinahBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
+        #if DEBUG
+        if CommandLine.arguments.contains("-FatinahGameFlowUITests") {
+            var source = "Object.defineProperty(window, '__FATINAH_GAME_FLOW_UI_TEST__', { value: true });"
+            if CommandLine.arguments.contains("-FatinahImageFlowUITests") {
+                source += "Object.defineProperty(window, '__FATINAH_IMAGE_FLOW_UI_TEST__', { value: true });"
+            }
+            if CommandLine.arguments.contains("-FatinahDynamicTypeUITests") {
+                source += "Object.defineProperty(window, '__FATINAH_DYNAMIC_TYPE_UI_TEST__', { value: true });"
+            }
+            webView?.configuration.userContentController.addUserScript(
+                WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+            )
+        }
+        #endif
+        installDynamicTypeBridge()
         bridge?.registerPluginInstance(RevenueCatKeyStorePlugin())
         bridge?.registerPluginInstance(FatinahTelemetryIdentityPlugin())
         bridge?.registerPluginInstance(FatinahDeviceIntegrityPlugin())
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory else { return }
+        applyDynamicTypeAdjustment()
+    }
+
+    private func installDynamicTypeBridge() {
+        let percent = dynamicTypeAdjustmentPercent
+        let source = """
+        (() => {
+          window.__setFatinahTextSizeAdjustment = (percent) => {
+            document.documentElement.style.setProperty('--fatinah-text-size-adjust', `${percent}%`);
+            document.documentElement.dataset.fatinahTextScale = String(percent);
+          };
+          window.__setFatinahTextSizeAdjustment(\(percent));
+        })();
+        """
+        webView?.configuration.userContentController.addUserScript(
+            WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        )
+        applyDynamicTypeAdjustment()
+    }
+
+    private func applyDynamicTypeAdjustment() {
+        let percent = dynamicTypeAdjustmentPercent
+        webView?.evaluateJavaScript("window.__setFatinahTextSizeAdjustment && window.__setFatinahTextSizeAdjustment(\(percent));")
+    }
+
+    private var dynamicTypeAdjustmentPercent: Int {
+        switch traitCollection.preferredContentSizeCategory {
+        case .extraSmall: return 90
+        case .small: return 95
+        case .medium, .large: return 100
+        case .extraLarge: return 110
+        case .extraExtraLarge: return 120
+        case .extraExtraExtraLarge: return 130
+        case .accessibilityMedium: return 140
+        case .accessibilityLarge: return 150
+        case .accessibilityExtraLarge: return 160
+        case .accessibilityExtraExtraLarge: return 170
+        case .accessibilityExtraExtraExtraLarge: return 180
+        default: return 100
+        }
     }
 }

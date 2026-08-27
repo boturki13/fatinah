@@ -1,6 +1,33 @@
 let QUESTION_BANK = null;
 let ALL_CATS = [];
 let _questionBankReady = null;
+const ISLAMIC_CATEGORY='إسلاميات';
+const ISLAMIC_SOURCE_CATEGORIES=[
+  'السيرة النبوية','فتوحات المسلمين','القرآن الكريم','الصحابة',
+  'الخلفاء الراشدون','دين وسيرة','الأنبياء والرسل',
+];
+function installMergedRuntimeCategory(bank){
+  const questions=ISLAMIC_SOURCE_CATEGORIES.flatMap(originCategory=>(bank[originCategory]||[])
+    .map(question=>({...question,originCategory})));
+  // غير قابلة للتعداد عمداً: أدوات التدقيق تراجع السجلات الأصلية مرة واحدة،
+  // بينما اللعبة تقدر تطلب الفئة المدمجة مباشرة من غير مضاعفة العد أو المعرّفات.
+  Object.defineProperty(bank,ISLAMIC_CATEGORY,{value:questions,enumerable:false,configurable:false});
+  return bank;
+}
+function selectableRuntimeCategories(categories){
+  const hidden=new Set(ISLAMIC_SOURCE_CATEGORIES);
+  const visible=[];
+  let inserted=false;
+  categories.forEach(category=>{
+    if(hidden.has(category)){
+      if(!inserted){ visible.push(ISLAMIC_CATEGORY); inserted=true; }
+      return;
+    }
+    visible.push(category);
+  });
+  if(!inserted&&ISLAMIC_SOURCE_CATEGORIES.some(category=>QUESTION_BANK?.[category])) visible.push(ISLAMIC_CATEGORY);
+  return visible;
+}
 function ensureQuestionBank(){
   if(QUESTION_BANK) return Promise.resolve(QUESTION_BANK);
   if(_questionBankReady) return _questionBankReady;
@@ -17,15 +44,19 @@ function ensureQuestionBank(){
       // لا يدخل هذا البنك إلا من مسار النشر الإداري بعد التحقق والمراجعة.
       // ملفه مستقل حتى يبقى البنك الأصلي متاحاً بالكامل عند عدم وجود اتصال.
       const approved=window.__APPROVED_QUESTION_BANK_DATA__||{};
+      const imageBank=window.__IMAGE_QUESTION_BANK_DATA__||{};
       const combined={};
-      new Set([...Object.keys(bank),...Object.keys(approved)]).forEach(category=>{
+      new Set([...Object.keys(bank),...Object.keys(approved),...Object.keys(imageBank)]).forEach(category=>{
         combined[category]=[
           ...(Array.isArray(bank[category])?bank[category]:[]),
           ...(Array.isArray(approved[category])?approved[category]:[]),
+          ...(Array.isArray(imageBank[category])?imageBank[category]:[]),
         ];
       });
-      QUESTION_BANK=normalizeQuestionBank(combined);
-      ALL_CATS=Object.keys(combined);
+      QUESTION_BANK=installMergedRuntimeCategory(normalizeQuestionBank(combined));
+      const releasedImages=new Set(window.__RELEASED_IMAGE_CATEGORIES__||[]);
+      ALL_CATS=selectableRuntimeCategories(Object.keys(combined))
+        .filter(category=>!(QUESTION_BANK[category]||[]).some(question=>question.image)||releasedImages.has(category));
       delete window.__QUESTION_BANK_DATA__;
       delete window.__APPROVED_QUESTION_BANK_DATA__;
       resolve(QUESTION_BANK);
@@ -131,30 +162,62 @@ const FIRE=[null,
   {bg:"linear-gradient(145deg,#D63BC4,#C026A8)", tx:"#fff"},
 ];
 const POINTS=[0,100,200,300,400,500,600];
-const CAT_ICONS={
-  "معلومات عامة":"🧠","رياضة":"⚽","تاريخ":"🏛️","جغرافيا":"🗺️",
-  "أمثال":"💬","ثقافة خليجية":"🐪","دين وسيرة":"🕋","علوم وتقنية":"🔬",
-  "محرّكات ومركبات":"🏎️","السيرة النبوية":"🕌","القرآن الكريم":"📖","فتوحات المسلمين":"⚔️",
-  "ألغاز وتحدّي ذكاء":"🧩","الصحابة":"👳","الشعر العربي":"📜",
-  "الفضاء والكون":"🪐","حيوانات وطبيعة":"🦁","حضارات قديمة":"🏺","جسم الإنسان":"🫀",
-  "كأس العالم":"🏆","أعلام الدول":"🚩","خرائط دول":"🧭","إجابة سريعة":"⚡",
-  "دوري أبطال أوروبا":"⭐","أنمي":"🦸","كأس الخليج":"🥇","مسلسلات خليجية":"📺",
-  "أفلام عربية":"🎬","الألعاب الأولمبية":"🔥","أغاني خليجية":"🎤",
-  "الخلفاء الراشدون":"☪️","الأنبياء والرسل":"🕊️",
-  "اختراعات واكتشافات":"💡","ألعاب الفيديو":"🎮","اللغة العربية":"🔤",
-  "كتب وروايات":"📚","مطابخ العالم":"🍽️","وش الرابط؟":"🔗",
+const CATEGORY_TONES={
+  gold:{accent:'#FFD24B',tint:'rgba(255,210,75,.15)',border:'rgba(255,210,75,.42)'},
+  orange:{accent:'#FF9E4A',tint:'rgba(255,158,74,.15)',border:'rgba(255,158,74,.42)'},
+  coral:{accent:'#FF756B',tint:'rgba(255,117,107,.15)',border:'rgba(255,117,107,.42)'},
+  pink:{accent:'#FF5C93',tint:'rgba(255,92,147,.15)',border:'rgba(255,92,147,.42)'},
+  purple:{accent:'#B794FF',tint:'rgba(183,148,255,.15)',border:'rgba(183,148,255,.42)'},
+  indigo:{accent:'#8AA4FF',tint:'rgba(138,164,255,.15)',border:'rgba(138,164,255,.42)'},
+  blue:{accent:'#54B8FF',tint:'rgba(84,184,255,.15)',border:'rgba(84,184,255,.42)'},
+  cyan:{accent:'#4FE3E3',tint:'rgba(79,227,227,.15)',border:'rgba(79,227,227,.42)'},
+  teal:{accent:'#4FE3C4',tint:'rgba(79,227,196,.15)',border:'rgba(79,227,196,.42)'},
+  green:{accent:'#75E68A',tint:'rgba(117,230,138,.15)',border:'rgba(117,230,138,.42)'},
+  lime:{accent:'#B7E65C',tint:'rgba(183,230,92,.15)',border:'rgba(183,230,92,.42)'},
+  sand:{accent:'#E8BD82',tint:'rgba(232,189,130,.15)',border:'rgba(232,189,130,.42)'},
 };
+const CAT_VISUALS={
+  "إسلاميات":{icon:"🕌",tone:"teal"},
+  "معلومات عامة":{icon:"💡",tone:"gold"},"رياضة":{icon:"⚽",tone:"green"},
+  "تاريخ":{icon:"📚",tone:"gold"},"جغرافيا":{icon:"🌍",tone:"blue"},
+  "أمثال":{icon:"🗣️",tone:"purple"},"ثقافة خليجية":{icon:"🐪",tone:"sand"},
+  "دين وسيرة":{icon:"🕋",tone:"teal"},"علوم وتقنية":{icon:"🧪",tone:"cyan"},
+  "محرّكات ومركبات":{icon:"🚗",tone:"coral"},"السيرة النبوية":{icon:"🌙",tone:"teal"},
+  "القرآن الكريم":{icon:"📖",tone:"green"},"فتوحات المسلمين":{icon:"🛡️",tone:"sand"},
+  "ألغاز وتحدّي ذكاء":{icon:"🧩",tone:"purple"},"الصحابة":{icon:"🤝",tone:"teal"},
+  "الشعر العربي":{icon:"🪶",tone:"sand"},"الفضاء والكون":{icon:"🪐",tone:"indigo"},
+  "حيوانات وطبيعة":{icon:"🦁",tone:"green"},"حضارات قديمة":{icon:"🏺",tone:"orange"},
+  "جسم الإنسان":{icon:"🫀",tone:"pink"},"كأس العالم":{icon:"🏆",tone:"gold"},
+  "أعلام الدول":{icon:"🌐",tone:"blue"},"خرائط دول":{icon:"🧭",tone:"cyan"},
+  "إجابة سريعة":{icon:"⚡",tone:"lime"},"دوري أبطال أوروبا":{icon:"⭐",tone:"indigo"},
+  "أنمي":{icon:"🦸",tone:"pink"},"كأس الخليج":{icon:"🥇",tone:"orange"},
+  "مسلسلات خليجية":{icon:"📺",tone:"purple"},"أفلام عربية":{icon:"🎬",tone:"coral"},
+  "الألعاب الأولمبية":{icon:"🔥",tone:"orange"},"أغاني خليجية":{icon:"🎤",tone:"pink"},
+  "الخلفاء الراشدون":{icon:"☪️",tone:"teal"},"الأنبياء والرسل":{icon:"🕊️",tone:"cyan"},
+  "اختراعات واكتشافات":{icon:"⚙️",tone:"gold"},"ألعاب الفيديو":{icon:"🎮",tone:"indigo"},
+  "اللغة العربية":{icon:"🔤",tone:"purple"},"كتب وروايات":{icon:"📕",tone:"coral"},
+  "مطابخ العالم":{icon:"🍲",tone:"orange"},"وش الرابط؟":{icon:"🔗",tone:"lime"},
+  "تعرف على الصورة":{icon:"🖼️",tone:"pink"},"أعلام منو؟":{icon:"🚩",tone:"blue"},
+  "وين هالمعلم؟":{icon:"📍",tone:"coral"},"شنو هالحيوان؟":{icon:"🐾",tone:"green"},
+  "شنو بالفضاء؟":{icon:"🔭",tone:"indigo"},"شنو هالشي؟":{icon:"🔎",tone:"cyan"},
+  "كنوز الحضارات":{icon:"🗿",tone:"sand"},"منو هاللاعب؟":{icon:"👟",tone:"lime"},
+};
+const CAT_ICONS=Object.fromEntries(Object.entries(CAT_VISUALS).map(([category,visual])=>[category,visual.icon]));
+function categoryVisual(category){
+  const visual=CAT_VISUALS[category]||{icon:'👨‍👩‍👧‍👦',tone:'purple'};
+  return {...visual,...(CATEGORY_TONES[visual.tone]||CATEGORY_TONES.purple)};
+}
 // تصنيف الفئات إلى مجموعات للفلترة
 const CAT_GROUPS={
-  "إسلاميات":["السيرة النبوية","القرآن الكريم","فتوحات المسلمين","الصحابة","دين وسيرة","الخلفاء الراشدون","الأنبياء والرسل"],
-  "معرفة وعلوم":["معلومات عامة","علوم وتقنية","الفضاء والكون","جسم الإنسان","اختراعات واكتشافات"],
-  "تاريخ وجغرافيا":["تاريخ","جغرافيا","حضارات قديمة","أعلام الدول","خرائط دول"],
-  "رياضة":["رياضة","كأس العالم","دوري أبطال أوروبا","كأس الخليج","الألعاب الأولمبية"],
+  "إسلاميات":[ISLAMIC_CATEGORY],
+  "معرفة وعلوم":["معلومات عامة","علوم وتقنية","الفضاء والكون","جسم الإنسان","اختراعات واكتشافات","تعرف على الصورة","شنو بالفضاء؟","شنو هالشي؟"],
+  "تاريخ وجغرافيا":["تاريخ","جغرافيا","حضارات قديمة","أعلام الدول","خرائط دول","أعلام منو؟","وين هالمعلم؟","كنوز الحضارات"],
+  "رياضة":["رياضة","كأس العالم","دوري أبطال أوروبا","كأس الخليج","الألعاب الأولمبية","منو هاللاعب؟"],
   "محرّكات":["محرّكات ومركبات"],
   "ثقافة وتراث":["ثقافة خليجية","أمثال","مسلسلات خليجية","أغاني خليجية","مطابخ العالم"],
   "ألغاز وذكاء":["ألغاز وتحدّي ذكاء","إجابة سريعة","وش الرابط؟"],
   "فنون وأدب":["الشعر العربي","أنمي","أفلام عربية","ألعاب الفيديو","اللغة العربية","كتب وروايات"],
-  "طبيعة وحيوانات":["حيوانات وطبيعة"],
+  "طبيعة وحيوانات":["حيوانات وطبيعة","شنو هالحيوان؟"],
 };
 const GROUP_ICONS={"إسلاميات":"🕌","معرفة وعلوم":"🧠","تاريخ وجغرافيا":"🏛️","رياضة":"⚽","محرّكات":"🏎️","ثقافة وتراث":"🐪","ألغاز وذكاء":"🧩","فنون وأدب":"📜","طبيعة وحيوانات":"🦁"};
 
@@ -214,7 +277,7 @@ function displayQuestionText(question){
 }
 
 let state={teamCount:2, catCount:6, difficulty:'normal', teams:[], cats:[], turn:0, cells:{}, answered:0, cur:null,
-  timer:null, timeLeft:60, paused:false, searchTimer:null, answering:true};
+  timer:null, timeLeft:60, paused:false, searchTimer:null, searchTimeLeft:0, answering:true, roundActive:false};
 
 // ────────── التخزين الدائم
 // أولوية: Capacitor Preferences (تخزين أصلي داخل تطبيق iOS) إن توفّر، وإلا localStorage (يعمل في المتصفح وداخل WKWebView أيضاً).
@@ -222,6 +285,10 @@ let state={teamCount:2, catCount:6, difficulty:'normal', teams:[], cats:[], turn
 const STORAGE_PREFIX='fatinah_';
 // ────────── XSS sanitizer
 function esc(str){ const d=document.createElement('div'); d.textContent=String(str||''); return d.innerHTML; }
+function isHttpsUrl(value){
+  try{ return new URL(String(value||'')).protocol==='https:'; }
+  catch(_){ return false; }
+}
 function storeGet(key, fallback){
   try{
     const raw=localStorage.getItem(STORAGE_PREFIX+key);
@@ -237,6 +304,240 @@ function storeSet(key, value){
     if(P) P.set({key:STORAGE_PREFIX+key, value:JSON.stringify(value)});
   }catch(e){}
 }
+function storeRemove(key){
+  try{ localStorage.removeItem(STORAGE_PREFIX+key); }catch(e){}
+  try{
+    const P=window.Capacitor?.Plugins?.Preferences;
+    if(P) void P.remove({key:STORAGE_PREFIX+key});
+  }catch(e){}
+}
+
+// ────────── استكمال الجولة النشطة
+// اللقطة مربوطة بالحساب ولا تحتوي عناصر DOM أو مؤقّتات. كل Set يتحول إلى
+// مصفوفة، ثم يعاد بناؤه عند الاستعادة. الكتابة المحلية كل ثانية تحفظ العداد،
+// بينما Preferences الأصلي يُحدّث عند الانتقالات المهمة وعند مغادرة التطبيق.
+const ACTIVE_ROUND_SCHEMA_VERSION=1;
+const ACTIVE_ROUND_MAX_AGE_MS=30*24*60*60*1000;
+function activeRoundStorageKey(uid=window._currentUid||storeGet('authUid','')){
+  return scopedAccessKey('active_round',uid);
+}
+function serializableCurrentQuestion(){
+  const c=state.cur;
+  if(!c||!c.q) return null;
+  return {
+    col:c.col,r:c.r,key:c.key,cat:c.cat,d:c.d,q:c.q,points:c.points,
+    isBomb:Boolean(c.isBomb),bombThrower:c.bombThrower??null,bombTarget:c.bombTarget??null,
+    phase:c.phase||'owner',doubledForTeam:c.doubledForTeam??null,
+    searchedForTeam:c.searchedForTeam??null,owner:c.owner??null,
+    stealQueue:Array.isArray(c.stealQueue)?c.stealQueue:[],stealPos:Number.isInteger(c.stealPos)?c.stealPos:-1,
+    eligibleTeams:[...(c.eligibleTeams||[])],passedToOpp:Boolean(c.passedToOpp),
+    revealed:Boolean(c.revealed),searching:Boolean(c.searching),resolved:Boolean(c.resolved),
+  };
+}
+function activeRoundSnapshot(){
+  const uid=String(window._currentUid||storeGet('authUid','')||'');
+  if(!uid||!state.roundActive||!state.startedAt||!state.teams.length||!state.cats.length) return null;
+  return {
+    schemaVersion:ACTIVE_ROUND_SCHEMA_VERSION,appVersion:APP_VERSION,ownerUid:uid,savedAt:Date.now(),
+    elapsedSeconds:Math.max(0,Math.round((Date.now()-state.startedAt)/1000)),
+    teamCount:state.teamCount,catCount:state.catCount,difficulty:state.difficulty,
+    teams:state.teams.map(team=>({
+      name:team.name,score:team.score,ll:team.ll,used:[...(team.used||[])],idx:team.idx,bombUsed:Boolean(team.bombUsed),
+    })),
+    cats:[...state.cats],familyRoundName:state.familyRound?.name||null,
+    turn:state.turn,cells:Object.fromEntries(Object.entries(state.cells).map(([key,value])=>[key,{used:Boolean(value?.used)}])),
+    answered:state.answered,totalQuestions:state.totalQuestions,
+    roundCorrect:state.roundCorrect||0,roundIncorrect:state.roundIncorrect||0,
+    isFreeRound:Boolean(state.isFreeRound),completedFreeRound:Boolean(state.completedFreeRound),
+    usedQuestions:[...(state.usedQ||[])],usedQuestionIds:[...(state.usedQuestionIds||[])],
+    roundQuestionBank:Object.fromEntries(Object.entries(roundQuestionBank).map(([category,questions])=>[category,questions])),
+    current:serializableCurrentQuestion(),timeLeft:state.timeLeft,maxTime:state.maxTime,
+    paused:Boolean(state.paused),searchTimeLeft:state.searchTimeLeft||0,
+  };
+}
+function persistActiveRound(syncNative=true){
+  const snapshot=activeRoundSnapshot();
+  if(!snapshot) return false;
+  const key=activeRoundStorageKey(snapshot.ownerUid);
+  const serialized=JSON.stringify(snapshot);
+  let saved=false;
+  try{
+    localStorage.setItem(STORAGE_PREFIX+key,serialized);
+    saved=true;
+  }catch(error){ recordNonFatal(error,'game.persist.local'); }
+  if(syncNative){
+    try{
+      const P=window.Capacitor?.Plugins?.Preferences;
+      if(P){
+        const write=P.set({key:STORAGE_PREFIX+key,value:serialized});
+        saved=true;
+        if(write?.catch) void write.catch(error=>recordNonFatal(error,'game.persist.native'));
+      }
+    }catch(error){ recordNonFatal(error,'game.persist.native'); }
+  }
+  return saved;
+}
+function clearActiveRound(uid=window._currentUid||storeGet('authUid','')){
+  if(uid) storeRemove(activeRoundStorageKey(uid));
+}
+function validSavedRound(snapshot,uid){
+  if(!snapshot||snapshot.schemaVersion!==ACTIVE_ROUND_SCHEMA_VERSION||snapshot.ownerUid!==String(uid||'')) return false;
+  const age=Date.now()-Number(snapshot.savedAt);
+  if(!Number.isFinite(age)||age< -5*60*1000||age>ACTIVE_ROUND_MAX_AGE_MS) return false;
+  if(!['easy','normal','hard'].includes(snapshot.difficulty)) return false;
+  if(!Array.isArray(snapshot.teams)||snapshot.teams.length<2||snapshot.teams.length>3) return false;
+  if(!Array.isArray(snapshot.cats)||snapshot.cats.length<1||snapshot.cats.length>8) return false;
+  if(!Number.isInteger(snapshot.turn)||snapshot.turn<0||snapshot.turn>=snapshot.teams.length) return false;
+  if(!Number.isInteger(snapshot.answered)||snapshot.answered<0) return false;
+  return snapshot.teams.every(team=>typeof team?.name==='string'&&Number.isFinite(team.score)
+    &&Number.isInteger(team.ll)&&team.ll>=0&&Array.isArray(team.used)&&Number.isInteger(team.idx));
+}
+function findRestoredQuestion(current){
+  if(!current?.q) return null;
+  if(current.q.id){
+    return questionsForRoundCategory(current.cat).find(question=>question.id===current.q.id)||null;
+  }
+  const family=state.familyRound||(familyCats||[]).find(category=>category.name===current.cat);
+  return family?.questions?.find(question=>question.q===current.q.q)||null;
+}
+function applySavedBoardCells(savedCells){
+  const buttons=[...document.querySelectorAll('#board .cell')];
+  Object.entries(savedCells||{}).forEach(([key,value])=>{
+    if(!state.cells[key]||value?.used!==true) return;
+    const [col,level]=key.split('-').map(Number);
+    const button=buttons[(level-1)*state.cats.length+col];
+    if(button) markBoardCellUsed(button,key);
+  });
+}
+async function renderRestoredQuestion(snapshot){
+  const c=state.cur;
+  const badge=document.getElementById('q-badge');
+  if(c.isBomb){
+    badge.textContent='💣 '+(isFamilyCat(c.cat)?c.cat:displayCategoryName(c.cat));
+    badge.style.background='#8b1a3d'; badge.style.color='#fff';
+    document.getElementById('q-points').textContent='±1200 نقطة';
+  }else{
+    badge.textContent=isFamilyCat(c.cat)?c.cat:displayCategoryName(c.cat);
+    badge.style.background=FIRE[c.r].bg; badge.style.color=FIRE[c.r].tx;
+  }
+  setQuestionPrompt(c.q);
+  await renderQuestionImage(c.q,{allowFallback:true});
+  setQuestionAnswer(c.q);
+  setAnswerRevealed(c.phase==='reveal');
+  document.getElementById('search-timer').classList.remove('show');
+  const pauseButton=document.getElementById('pause-btn');
+  pauseButton.disabled=false; pauseButton.style.opacity='1';
+  if(c.isBomb){
+    setPhasePill(c.phase==='reveal'?-1:c.bombTarget,c.phase==='reveal'?'شنو النتيجة؟':'💣 قنبلة! دور فريق '+state.teams[c.bombTarget].name+' — يجاوب شفهياً');
+  }else if(c.phase==='owner'){
+    setPhasePill(c.owner,'دور فريق '+state.teams[c.owner].name+' — يجاوب شفهياً');
+    updateQuestionPoints(c.owner);
+  }else if(c.phase==='steal'){
+    const teamIndex=c.stealQueue[c.stealPos];
+    setPhasePill(teamIndex,'سرقة! دور فريق '+state.teams[teamIndex].name+' — '+Math.max(1,Number(snapshot.timeLeft)||1)+' ثانية');
+    updateQuestionPoints(teamIndex);
+  }else{
+    setPhasePill(-1,'منو جاوب صح؟ اختار الفريق');
+  }
+  setQuestionPhaseLayout(c.phase);
+  renderFlow(); renderLifelines(); keepAwakeOn(); showQuestionScreen();
+  if(c.phase==='reveal'){
+    clearInterval(state.timer); state.paused=false; setQuestionHidden(false); focusRevealedAnswer();
+  }else{
+    showTimer(Math.max(1,Number(snapshot.timeLeft)||1),{
+      maxTime:Math.max(1,Number(snapshot.maxTime)||Number(snapshot.timeLeft)||1),
+      paused:Boolean(snapshot.paused),
+    });
+    if(c.searching) startSearchCountdown(Math.max(1,Number(snapshot.searchTimeLeft)||1));
+    else setQuestionHidden(Boolean(snapshot.paused));
+  }
+}
+async function restoreActiveRound(uid){
+  const key=activeRoundStorageKey(uid);
+  const snapshot=storeGet(key,null);
+  if(!validSavedRound(snapshot,uid)){
+    if(snapshot) clearActiveRound(uid);
+    return false;
+  }
+  let skippedMissingQuestion=false;
+  try{
+    await ensureQuestionBank();
+    const familyRound=snapshot.familyRoundName
+      ? (familyCats||[]).find(category=>category.name===snapshot.familyRoundName)
+      : null;
+    if(snapshot.familyRoundName&&!familyRound) throw new Error('saved family category is missing');
+    if(snapshot.cats.some(category=>!QUESTION_BANK?.[category]&&!(familyCats||[]).some(item=>item.name===category))){
+      throw new Error('saved category is missing');
+    }
+    state.teamCount=snapshot.teams.length;
+    state.catCount=snapshot.cats.length;
+    state.difficulty=snapshot.difficulty;
+    state.teams=snapshot.teams.map(team=>({...team,used:new Set(team.used)}));
+    state.cats=[...snapshot.cats]; state.familyRound=familyRound||null;
+    state.turn=snapshot.turn; state.answered=snapshot.answered;
+    state.startedAt=Date.now()-Math.max(0,Number(snapshot.elapsedSeconds)||0)*1000;
+    state.roundCorrect=Number(snapshot.roundCorrect)||0; state.roundIncorrect=Number(snapshot.roundIncorrect)||0;
+    state.isFreeRound=Boolean(snapshot.isFreeRound); state.completedFreeRound=Boolean(snapshot.completedFreeRound);
+    state.usedQ=new Set(snapshot.usedQuestions||[]); state.usedQuestionIds=new Set(snapshot.usedQuestionIds||[]);
+    const savedRemoteBank=snapshot.roundQuestionBank;
+    const savedRemoteCategories=savedRemoteBank&&typeof savedRemoteBank==='object'&&!Array.isArray(savedRemoteBank)
+      ?Object.keys(savedRemoteBank):[];
+    if(savedRemoteCategories.length&&!validRemoteRoundBank(savedRemoteBank,savedRemoteCategories)){
+      throw new Error('saved remote question bank is invalid');
+    }
+    roundQuestionBank=Object.assign(Object.create(null),savedRemoteBank||{});
+    state.cur=null; state.cells={}; state.roundActive=true;
+    if(!(await prepareSelectedImageCategories())){
+      const error=new Error('saved round images are unavailable');
+      error.code='saved_round_images_unavailable';
+      throw error;
+    }
+    buildBoard(); applySavedBoardCells(snapshot.cells); renderTeamsBar(); renderTurn(); go('s-board');
+    if(snapshot.current){
+      const question=findRestoredQuestion(snapshot.current);
+      if(!state.cells[snapshot.current.key]||state.cells[snapshot.current.key].used){
+        throw new Error('saved question no longer matches the board');
+      }
+      if(!question){
+        skippedMissingQuestion=true;
+        state.cur=null;
+      }else{
+        const [col,level]=snapshot.current.key.split('-').map(Number);
+        const cell=document.querySelectorAll('#board .cell')[(level-1)*state.cats.length+col];
+        state.cur={...snapshot.current,q:question,cell,eligibleTeams:new Set(snapshot.current.eligibleTeams||[]),token:0,resolved:false};
+        state.timeLeft=Math.max(1,Number(snapshot.timeLeft)||1);
+        state.maxTime=Math.max(1,Number(snapshot.maxTime)||state.timeLeft);
+        state.paused=Boolean(snapshot.paused); state.searchTimeLeft=Math.max(0,Number(snapshot.searchTimeLeft)||0);
+        await renderRestoredQuestion(snapshot);
+      }
+    }
+    persistActiveRound(true);
+    void trackMetric('game_resumed',{questionsAnswered:state.answered,questionOpen:Boolean(state.cur),freeRound:state.isFreeRound});
+    showToast('↩️',skippedMissingQuestion?'حدّثنا السؤال':'رجّعنا جولتك',
+      skippedMissingQuestion?'رجّعناك للوحة وحفظنا تقدمكم. اختاروا خانة وكملوا الجولة.':'كمّلوا من نفس المكان',false);
+    return true;
+  }catch(error){
+    clearInterval(state.timer); clearInterval(state.searchTimer);
+    state.roundActive=false; state.cur=null;
+    if(error?.code==='saved_round_images_unavailable'){
+      showToast('🖼️','ما قدرنا نرجّع صور الجولة','اتصل بالإنترنت وجرّب تفتح التطبيق مرة ثانية. حفظنا جولتك وما راح تضيع.',false);
+    }else{
+      clearActiveRound(uid);
+      recordNonFatal(error,'game.restore');
+    }
+    return false;
+  }
+}
+async function routeAfterAccessCheck(uid){
+  updateFreeRoundUi(); hideSplash();
+  if(await restoreActiveRound(uid)) return;
+  go('s-home');
+}
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden') persistActiveRound(true);
+});
+window.addEventListener('pagehide',()=>persistActiveRound(true));
 
 async function hydrateNativePreferences(){
   const P=window.Capacitor?.Plugins?.Preferences;
@@ -706,7 +1007,7 @@ const QUESTION_OVERRIDES={
     5:{q:'ما المدينة البوليفية التي تضم مقر الحكومة وتقع على ارتفاع شاهق؟',answer:'لاباز',source:{title:'الموسوعة البريطانية — لاباز',url:'https://www.britannica.com/place/La-Paz-Bolivia'}},
   },
   'ثقافة خليجية':{
-    1:{q:'ما اسم طبق الأرز باللحم أو الدجاج المعروف في السعودية ودول الخليج باسم الكبسة أو المكبوس؟',answer:'الكبسة',source:{title:'سعوديبيديا — الكبسة السعودية',url:'https://saudipedia.com/الكبسة-السعودية'}},
+    1:{q:'ما اسم طبق خليجي يُطهى من الأرز المتبّل مع اللحم أو الدجاج؟',answer:'الكبسة',source:{title:'سعوديبيديا — الكبسة السعودية',url:'https://saudipedia.com/الكبسة-السعودية'}},
     3:{q:'كم إمارة تضم دولة الإمارات العربية المتحدة اليوم؟',answer:'سبع إمارات',source:{title:'المنصة الرسمية لحكومة الإمارات — الإمارات السبع',url:'https://u.ae/ar/about-the-uae/the-seven-emirates'}},
   },
   'محرّكات ومركبات':{
@@ -741,6 +1042,8 @@ const QUESTION_OVERRIDES={
     4:{q:'ما اسم خلايا الجهاز العصبي المتخصصة في إرسال الإشارات واستقبالها؟',answer:'الخلايا العصبية (العصبونات)',source:{title:'المعهد الوطني للاضطرابات العصبية — الخلايا العصبية',url:'https://www.ninds.nih.gov/es/node/8172'}},
   },
   'الشعر العربي':{
+    2:{q:'شنو جنسية الشاعر العربي «سليم بركات» حسب السجل؟',answer:'سوريا',source:{title:'Wikidata — سليم بركات',url:'https://www.wikidata.org/wiki/Q621086'}},
+    4:{q:'شنو جنسية الشاعر العربي «سركون بولص» حسب السجل؟',answer:'العراق',source:{title:'Wikidata — سركون بولص',url:'https://www.wikidata.org/wiki/Q954315'}},
     5:{q:'من الشاعر العباسي صاحب البيت «واحر قلباه ممن قلبه شبم»؟',answer:'المتنبي',source:{title:'مؤسسة هنداوي — ديوان المتنبي',url:'https://www.hindawi.org/books/85919750/'}},
   },
   'خرائط دول':{
@@ -750,8 +1053,11 @@ const QUESTION_OVERRIDES={
     5:{q:'حتى نهاية كأس العالم 2022، من صاحب أسرع هدف في تاريخ البطولة بعد نحو 11 ثانية؟',answer:'هاكان شوكور (تركيا)',source:{title:'FIFA — أسرع أهداف كأس العالم',url:'https://www.fifa.com/tournaments/mens/worldcup'}},
     6:{q:'حتى نهاية كأس العالم 2022، أي منتخبين يملكان أربعة ألقاب لكل منهما؟',answer:'ألمانيا وإيطاليا',source:{title:'FIFA — سجل أبطال كأس العالم',url:'https://www.fifa.com/tournaments/mens/worldcup'}},
   },
+  'كأس الخليج':{
+    6:{q:'كم هدفاً سُجّل في مباريات كأس الخليج السابعة عام 1984؟',answer:'51 هدفاً',source:{title:'اتحاد كأس الخليج — إحصاءات خليجي 7',url:'https://agcff.com/en/1551/'}},
+  },
   'دوري أبطال أوروبا':{
-    2:{q:'حتى نهاية موسم 2024-2025، من صاحب ثاني أكبر عدد من الأهداف في تاريخ دوري أبطال أوروبا؟',answer:'ليونيل ميسي',source:{title:'UEFA — هدافو دوري أبطال أوروبا عبر التاريخ',url:'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals/'}},
+    2:{q:'حتى نهاية موسم 2024-2025، من صاحب ثاني أكبر عدد من الأهداف في تاريخ دوري أبطال أوروبا؟',answer:'ليونيل ميسي',source:{title:'UEFA — هدافو دوري أبطال أوروبا عبر التاريخ',url:'https://www.uefa.com/uefachampionsleague/history/rankings/players/goals_scored/'}},
     4:{q:'في أي موسم بدأ نظام مرحلة الدوري بمشاركة 36 فريقاً في دوري أبطال أوروبا؟',answer:'موسم 2024-2025',source:{title:'UEFA — شرح النظام الجديد',url:'https://www.uefa.com/uefachampionsleague/news/0290-1bae124dbd1a-4a9fc08cd25c-1000/'}},
     6:{q:'أي نادٍ فاز بأول خمس نسخ من كأس أوروبا من 1956 إلى 1960؟',answer:'ريال مدريد',source:{title:'UEFA — تاريخ البطولة',url:'https://www.uefa.com/uefachampionsleague/history/'}},
   },
@@ -761,6 +1067,7 @@ const QUESTION_OVERRIDES={
     5:{q:'أي مدينة استضافت الألعاب الأولمبية الصيفية عام 2016؟',answer:'ريو دي جانيرو',source:{title:'الألعاب الأولمبية — ريو 2016',url:'https://olympics.com/en/olympic-games/rio-2016'}},
   },
   'أنمي':{
+    1:{q:'في أي دولة ظهر فن الأنمي بصورته الحديثة؟',answer:'اليابان',source:{title:'Web Japan — تطور الأنمي في اليابان',url:'https://web-japan.org/nipponia/nipponia27/en/feature/index.html'}},
     6:{q:'ما الاسم الذي كانت فاكهة لوفي في «ون بيس» تُعرف به قبل كشف اسمها الحقيقي؟',answer:'غومو غومو نو مي (فاكهة المطاط)',source:{title:'الموقع الرسمي لـONE PIECE — لوفي',url:'https://one-piece.com/character/luffy/index.html'}},
   },
   'مسلسلات خليجية':{
@@ -791,7 +1098,7 @@ const QUESTION_OVERRIDES={
     3:{q:'في اليوم المعتاد من غير صلاة الجمعة، كم مجموع ركعات الصلوات الخمس المفروضة؟',answer:'17 ركعة',source:{title:'الموسوعة الحديثية — الصلوات الخمس المفروضة',url:'https://dorar.net/hadith/search?q=%D8%A7%D9%84%D8%B5%D9%84%D9%88%D8%A7%D8%AA+%D8%A7%D9%84%D8%AE%D9%85%D8%B3'}},
     4:{q:'إلى أي بيت يتجه المسلمون في صلاتهم؟',answer:'الكعبة المشرفة',source:{title:'القرآن الكريم — البقرة 144',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya144.html'}},
     5:{source:{title:'حديث «الحج عرفة»',url:'https://dorar.net/hadith/sharh/85664'}},
-    6:{q:'كم عدد أيام التشريق: الحادي عشر والثاني عشر والثالث عشر من ذي الحجة؟',answer:'ثلاثة أيام',source:{title:'تفسير ابن كثير — البقرة 203',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya203.html'}},
+    6:{q:'كم عدد أيام التشريق؟',answer:'ثلاثة أيام',source:{title:'تفسير ابن كثير — البقرة 203',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya203.html'}},
   },
   'السيرة النبوية':{
     1:{source:{title:'تاريخ الطبري — ذكر مولد رسول الله ﷺ',url:'https://shamela.ws/book/9783'}},
@@ -810,7 +1117,7 @@ const QUESTION_OVERRIDES={
     6:{q:'في أي سورة ورد قوله تعالى «محمد رسول الله»؟',answer:'سورة الفتح',source:{title:'تفسير ابن كثير — الفتح 29',url:'https://quran.ksu.edu.sa/tafseer/katheer/sura48-aya29.html'}},
   },
   'فتوحات المسلمين':{
-    1:{q:'من القائد الذي قال عنه النبي ﷺ إنه سيف من سيوف الله؟',answer:'خالد بن الوليد',source:{title:'الموسوعة الحديثية — خالد بن الوليد سيف من سيوف الله',url:'https://dorar.net/hadith/search?q=%D8%B3%D9%8A%D9%81+%D9%85%D9%86+%D8%B3%D9%8A%D9%88%D9%81+%D8%A7%D9%84%D9%84%D9%87+%D8%AE%D8%A7%D9%84%D8%AF'}},
+    1:{q:'في عهد أي خليفة وقعت معركة القادسية؟',answer:'عمر بن الخطاب',source:{title:'تاريخ الطبري — وقعة القادسية في خلافة عمر',url:'https://shamela.ws/book/9783'}},
     2:{source:{title:'تاريخ الطبري — القادسية',url:'https://shamela.ws/book/9783'}},
     3:{q:'في عهد أي خليفة فُتحت دمشق؟',answer:'عمر بن الخطاب',source:{title:'تاريخ الطبري — فتوح الشام',url:'https://shamela.ws/book/9783'}},
     4:{q:'ما المدينة التي تسلّم الخليفة عمر بن الخطاب مفاتيحها خلال فتوح الشام؟',answer:'بيت المقدس',source:{title:'تاريخ الطبري — فتح بيت المقدس',url:'https://shamela.ws/book/9783'}},
@@ -922,6 +1229,8 @@ function normalizeQuestionBank(bank){
       const isPublishedQuestion=question.review?.status==='approved';
       const override=index<originals.length&&!isPublishedQuestion&&QUESTION_OVERRIDES[cat]&&QUESTION_OVERRIDES[cat][question.d];
       const q={...question,...(override||{})};
+      const reviewedSource=window.__REVIEWED_QUESTION_SOURCES__?.[cat]?.[question.d];
+      if(index<originals.length&&!isPublishedQuestion&&reviewedSource) q.source={...reviewedSource};
       // بعض الأسئلة القديمة كانت اختياراً من متعدد. عند استبدال نص السؤال
       // وإجابته نحذف خياراته القديمة حتى لا تصبح بياناتها مخالفة للإجابة الجديدة.
       if(override&&override.q){ delete q.o; delete q.a; }
@@ -935,6 +1244,8 @@ function normalizeQuestionBank(bank){
       q.previousIds=q.id===legacyId?[]:[legacyId];
       const fallbackSource=QUESTION_SOURCE_BY_CATEGORY[cat]||null;
       q.source=q.source||(fallbackSource?{...fallbackSource,scope:'category_fallback'}:null);
+      const auditedReview=window.__LEGACY_QUESTION_REVIEWS__?.[q.id];
+      if(auditedReview) q.review={...auditedReview};
       const religious=['دين وسيرة','السيرة النبوية','القرآن الكريم','فتوحات المسلمين','الصحابة','الخلفاء الراشدون','الأنبياء والرسل'].includes(cat);
       const hasExplicitApproval=q.review?.status==='approved'
         &&typeof q.review.reviewer==='string'&&q.review.reviewer.trim()
@@ -961,8 +1272,11 @@ function questionHistoryKey(){ return `question_history_${questionHistoryOwner()
 function loadQuestionHistory(){ return storeGet(questionHistoryKey(),{}); }
 function saveQuestionHistory(history){ storeSet(questionHistoryKey(),history); }
 function questionWasSeen(history,cat,question){
-  const seen=history[cat]||[];
   if(!question) return false;
+  const seen=[
+    ...(history[cat]||[]),
+    ...(question.originCategory&&question.originCategory!==cat?(history[question.originCategory]||[]):[]),
+  ];
   return [question.id,...(question.previousIds||[])].some(id=>id&&seen.includes(id));
 }
 function questionSeenOutboxKey(){ return `question_seen_outbox_${questionHistoryOwner()}`; }
@@ -1149,10 +1463,39 @@ function toggleSound(){
 }
 
 // ────────── تنقّل
+function screenAccessibilityTitle(screen){
+  if(!screen) return null;
+  const onboardingTitle=screen.querySelector('.onb-card.active [data-screen-title]');
+  return onboardingTitle||screen.querySelector('[data-screen-title],h1,h2,[role="heading"]');
+}
+function focusScreenAccessibilityTitle(screen){
+  const title=screenAccessibilityTitle(screen);
+  if(!title) return;
+  title.setAttribute('tabindex','-1');
+  try{ title.focus({preventScroll:true}); }
+  catch(error){ try{ title.focus(); }catch(focusError){} }
+}
 function go(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0,0);
+  const focused=document.activeElement;
+  if(focused && typeof focused.blur==='function') focused.blur();
+  const destination=document.getElementById(id);
+  if(!destination) return;
+  document.querySelectorAll('.screen').forEach(screen=>{
+    const active=screen===destination;
+    screen.classList.toggle('active',active);
+    screen.setAttribute('aria-hidden',active?'false':'true');
+  });
+  const resetScroll=()=>{
+    window.scrollTo(0,0);
+    document.documentElement.scrollTop=0;
+    document.body.scrollTop=0;
+    if(document.scrollingElement) document.scrollingElement.scrollTop=0;
+  };
+  resetScroll();
+  window.requestAnimationFrame(resetScroll);
+  window.setTimeout(resetScroll,0);
+  window.setTimeout(resetScroll,450);
+  window.requestAnimationFrame(()=>focusScreenAccessibilityTitle(destination));
   // لا تبدأ أسعار RevenueCat قبل وجود جلسة Firebase وهوية RevenueCat؛
   // هذا يسمح بعرض شاشة الاشتراك فوراً عند الإقلاع من دون طلبات فاشلة.
   if(id==='s-paywall' && typeof loadPaywallPrices==='function'){
@@ -1162,6 +1505,78 @@ function go(id){
     loadPaywallPrices().catch(()=>logClientEvent('error','paywall.prices'));
   }
 }
+
+const modalFocusOrigins=new Map();
+function modalFocusableElements(modal){
+  return [...modal.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+    .filter(element=>element.getClientRects().length>0&&getComputedStyle(element).visibility!=='hidden'
+      &&!element.closest('[aria-hidden="true"],[inert]'));
+}
+function trapTabWithin(event,container){
+  const focusable=modalFocusableElements(container);
+  if(!focusable.length){ event.preventDefault(); return; }
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(!container.contains(document.activeElement)){
+    event.preventDefault();
+    (event.shiftKey?last:first).focus();
+  }else if(event.shiftKey&&document.activeElement===first){
+    event.preventDefault(); last.focus();
+  }else if(!event.shiftKey&&document.activeElement===last){
+    event.preventDefault(); first.focus();
+  }
+}
+function openAccessibleModal(id,preferredSelector=''){
+  const modal=document.getElementById(id);
+  if(!modal) return;
+  if(!modal.classList.contains('show')) modalFocusOrigins.set(id,document.activeElement);
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+  const preferred=preferredSelector?modal.querySelector(preferredSelector):null;
+  const target=preferred||modalFocusableElements(modal)[0]||modal.querySelector('.modal');
+  if(target){
+    if(!target.matches('button,a,input,select,textarea,[tabindex]')) target.setAttribute('tabindex','-1');
+    try{ target.focus({preventScroll:true}); }catch(error){ try{ target.focus(); }catch(focusError){} }
+  }
+}
+function closeAccessibleModal(id,{restoreFocus=true}={}){
+  const modal=document.getElementById(id);
+  if(!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+  const origin=modalFocusOrigins.get(id);
+  modalFocusOrigins.delete(id);
+  if(restoreFocus&&origin&&origin.isConnected&&typeof origin.focus==='function'){
+    const restore=()=>{
+      try{ origin.focus({preventScroll:true}); }catch(error){ try{ origin.focus(); }catch(focusError){} }
+    };
+    restore();
+    // انتقال الشاشة قد يركّز عنوانها بشكل مؤجل؛ أعد التركيز بعد إطارين
+    // حتى يبقى VoiceOver عند الزر الذي فتح النافذة بثبات.
+    requestAnimationFrame(()=>requestAnimationFrame(restore));
+  }
+}
+document.addEventListener('keydown',event=>{
+  const modal=document.querySelector('.modal-wrap.show[role="dialog"]');
+  if(modal){
+    if(event.key==='Escape'){
+      const cancel=modal.querySelector('[data-modal-cancel]');
+      if(cancel){ event.preventDefault(); cancel.click(); }
+      return;
+    }
+    if(event.key==='Tab') trapTabWithin(event,modal);
+    return;
+  }
+  const question=document.querySelector('#q-wrap.show[role="dialog"]');
+  if(question&&event.key==='Tab') trapTabWithin(event,question);
+});
+(function initializeAccessibilityState(){
+  document.querySelectorAll('.screen').forEach(screen=>{
+    screen.setAttribute('aria-hidden',screen.classList.contains('active')?'false':'true');
+  });
+  document.querySelectorAll('.modal-wrap[role="dialog"]').forEach(modal=>{
+    modal.setAttribute('aria-hidden',modal.classList.contains('show')?'false':'true');
+  });
+})();
 function closePaywall(){
   const uid=window._currentUid||storeGet('authUid','');
   if(uid){ updateFreeRoundUi(); go('s-home'); }
@@ -1171,19 +1586,21 @@ function closePaywall(){
 // ────────── الخروج من الجولة
 function confirmExit(){
   sfx('tap'); vibrate(15);
-  document.getElementById('exit-modal').classList.add('show');
+  openAccessibleModal('exit-modal');
 }
 function closeExitModal(){
   sfx('tap');
-  document.getElementById('exit-modal').classList.remove('show');
+  closeAccessibleModal('exit-modal');
 }
 function doExit(){
   sfx('tap'); vibrate(20);
   // أوقف أي مؤقّتات جارية وأغلق السؤال إن كان مفتوحاً
   clearInterval(state.timer); clearInterval(state.searchTimer);
   keepAwakeOff();
-  const qw=document.getElementById('q-wrap'); if(qw) qw.classList.remove('show');
-  document.getElementById('exit-modal').classList.remove('show');
+  hideQuestionScreen(false);
+  state.roundActive=false; state.cur=null;
+  clearActiveRound();
+  closeAccessibleModal('exit-modal',{restoreFocus:false});
   go('s-home');
 }
 
@@ -2587,10 +3004,15 @@ function _onbSetStep(step){
   // تحريك البطاقات
   for(let i=0; i<_ONB_TOTAL; i++){
     const c = document.getElementById('onb-card-'+i);
+    const active=i===step;
     c.classList.remove('active','out');
-    if(i===step) c.classList.add('active');
+    if(active) c.classList.add('active');
     else if(i<step) c.classList.add('out');
+    c.setAttribute('aria-hidden',active?'false':'true');
+    c.inert=!active;
   }
+  const screen=document.getElementById('s-onb');
+  if(screen?.classList.contains('active')) requestAnimationFrame(()=>focusScreenAccessibilityTitle(screen));
 }
 function onbNext(){
   sfx('tap');
@@ -3033,23 +3455,23 @@ async function checkSubscriptionAndRoute(uid, {showLoading=true} = {}){
     const data = await resp.json();
     if(data.active === true || await rcIsActive() === true){
       _hasActiveSubscription=true; setFreeRoundAvailability(false); _subscriptionResolved=true;
-      updateFreeRoundUi(); hideSplash(); go('s-home'); return;
+      await routeAfterAccessCheck(uid); return;
     }
     _hasActiveSubscription=false;
     setFreeRoundAvailability(await freeRoundIsAvailable(uid));
     _subscriptionResolved=true;
     // لا نفاجئ المستخدم بشاشة الاشتراك عند كل تشغيل. بعد استهلاك الجولة
     // المجانية يبقى في الرئيسية، وتظهر شاشة الاشتراك عندما يطلب جولة جديدة.
-    updateFreeRoundUi(); hideSplash(); go('s-home');
+    await routeAfterAccessCheck(uid);
   }catch(e){
     if(await rcIsActive() === true){
       _hasActiveSubscription=true; setFreeRoundAvailability(false); _subscriptionResolved=true;
-      updateFreeRoundUi(); hideSplash(); go('s-home'); return;
+      await routeAfterAccessCheck(uid); return;
     }
     _hasActiveSubscription=false;
     setFreeRoundAvailability(localFreeRoundCompleted(uid)?false:null);
     _subscriptionResolved=true;
-    updateFreeRoundUi(); hideSplash(); go('s-home');
+    await routeAfterAccessCheck(uid);
   }
 }
 
@@ -3158,7 +3580,11 @@ async function startCheckout(){
 const DIFF_TIMES={easy:{normal:45,speed:25,steal:18,bomb:45},normal:{normal:30,speed:15,steal:30,bomb:30},hard:{normal:20,speed:10,steal:20,bomb:20}};
 function setDifficulty(d){
   sfx('tap'); state.difficulty=d;
-  document.querySelectorAll('#seg-diff button').forEach(b=>b.classList.toggle('on',b.dataset.d===d));
+  document.querySelectorAll('#seg-diff button').forEach(button=>{
+    const selected=button.dataset.d===d;
+    button.classList.toggle('on',selected);
+    button.setAttribute('aria-pressed',selected?'true':'false');
+  });
   const labels={easy:'⏱ وقت الإجابة: 45 ثانية',normal:'⏱ وقت الإجابة: 30 ثانية',hard:'⏱ وقت الإجابة: 20 ثانية'};
   document.getElementById('diff-hint').textContent=labels[d]||'';
 }
@@ -3166,7 +3592,11 @@ function setDifficulty(d){
 // ────────── إعداد الفرق
 function setTeamCount(n){
   sfx('tap'); state.teamCount=n;
-  document.querySelectorAll('#seg-teams button').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
+  document.querySelectorAll('#seg-teams button').forEach(button=>{
+    const selected=+button.dataset.n===n;
+    button.classList.toggle('on',selected);
+    button.setAttribute('aria-pressed',selected?'true':'false');
+  });
   renderTeamNames();
   updateCatSplitPreview();
 }
@@ -3174,7 +3604,11 @@ function updateCatCount(v){
   sfx('tap');
   state.catCount=+v;
   document.getElementById('catcount-lbl').textContent=v;
-  document.querySelectorAll('#seg-catcount button').forEach(b=>b.classList.toggle('on', +b.dataset.n===+v));
+  document.querySelectorAll('#seg-catcount button').forEach(button=>{
+    const selected=+button.dataset.n===+v;
+    button.classList.toggle('on',selected);
+    button.setAttribute('aria-pressed',selected?'true':'false');
+  });
   updateCatSplitPreview();
 }
 // حساب توزيع الفئات على الفرق بالتناوب، والزائد للأوائل
@@ -3202,7 +3636,7 @@ function renderTeamNames(){
     const st=TEAM_STYLES[i];
     const row=document.createElement('div'); row.className='team-row';
     row.innerHTML=`<div class="dot" style="background:${st.dot}; color:${st.dot}"></div>
-      <input class="team-input" id="tn-${i}" value="${st.name}" maxlength="16" oninput="updateCatSplitPreview()">`;
+      <input class="team-input" id="tn-${i}" aria-label="اسم الفريق ${i+1}" value="${st.name}" maxlength="16" oninput="updateCatSplitPreview()">`;
     box.appendChild(row);
   }
 }
@@ -3257,8 +3691,13 @@ function updatePickTurn(){
   }
   const line=document.getElementById('pick-count-line');
   line.innerHTML=`اختاروا <b>${state.cats.length}</b> من ${total}`;
-  document.getElementById('start-btn').disabled = !done;
-  document.getElementById('start-btn').style.display = done?'flex':'none';
+  const startButton=document.getElementById('start-btn');
+  const categoryWord=total===2?'فئتين':`${total} فئات`;
+  startButton.disabled=!done;
+  startButton.textContent=`يلا نبدأ — ${categoryWord}`;
+  startButton.classList.toggle('show',done);
+  startButton.setAttribute('aria-hidden',done?'false':'true');
+  document.getElementById('s-cats').classList.toggle('start-ready',done);
 }
 function buildFilterBar(){
   const bar=document.getElementById('filter-bar');
@@ -3269,6 +3708,7 @@ function buildFilterBar(){
   groups.forEach(g=>{
     const b=document.createElement('button');
     b.className='fbtn'+(g===activeFilter?' on':'');
+    b.setAttribute('aria-pressed',g===activeFilter?'true':'false');
     b.textContent=(g==='الكل'?'🗂️ الكل':(g==='عائلية'?'👨‍👩‍👧‍👦 عائلية':(GROUP_ICONS[g]||'')+' '+g));
     b.onclick=()=>{ sfx('tap'); activeFilter=g; document.getElementById('cat-search').value=''; buildFilterBar(); renderCatGrid(); };
     bar.appendChild(b);
@@ -3309,8 +3749,10 @@ function catsForFilter(){
 function familyNames(){ return (familyCats||[]).filter(f=>f.questions.length>0).map(f=>f.name); }
 function isFamilyCat(name){ return (familyCats||[]).some(f=>f.name===name); }
 
-function renderCatGrid(){
+function renderCatGrid({focusCategory='',preserveFocus=true}={}){
   const grid=document.getElementById('cat-grid');
+  const activeCategory=preserveFocus?(document.activeElement?.closest?.('.cat-pick')?.dataset.category||''):'';
+  const categoryToRefocus=focusCategory||activeCategory;
   const search=(document.getElementById('cat-search').value||'').trim();
   grid.innerHTML='';
   let list=catsForFilter();
@@ -3321,11 +3763,18 @@ function renderCatGrid(){
     // فلا يقدر مستخدم VoiceOver يكتشفها أو يستخدمها إطلاقاً
     const el=document.createElement('button');
     el.type='button';
+    el.dataset.category=cat;
     const picked=state.cats.includes(cat);
     el.className='cat-pick'+(picked?' on':'');
     el.setAttribute('aria-pressed', picked?'true':'false');
-    const icon = isFamilyCat(cat)?'👨‍👩‍👧‍👦':(CAT_ICONS[cat]||'❓');
+    const visual=categoryVisual(cat);
+    const icon=visual.icon;
     const shownCategory=isFamilyCat(cat)?cat:displayCategoryName(cat);
+    el.style.setProperty('--cat-accent',visual.accent);
+    el.style.setProperty('--cat-tint',visual.tint);
+    el.style.setProperty('--cat-border',visual.border);
+    el.dataset.icon=icon;
+    el.dataset.tone=visual.tone;
     // إن اختارها فريق، أظهر لون الفريق
     let ownerBadge='', ownerLabel='';
     if(picked && state.catOwner[cat]!=null){
@@ -3335,29 +3784,43 @@ function renderCatGrid(){
       ownerBadge=`<span style="position:absolute;bottom:6px;left:8px;font-size:10px;font-weight:800;color:${ost.color}">${esc(ownerName)}</span>`;
       ownerLabel=` — اختارتها ${ownerName}`;
     }
-    el.innerHTML=`<span class="ci" aria-hidden="true">${icon}</span>${esc(shownCategory)}${ownerBadge}`;
+    el.innerHTML=`<span class="ci" aria-hidden="true">${icon}</span><span class="cat-name">${esc(shownCategory)}</span>${ownerBadge}`;
     el.setAttribute('aria-label', shownCategory+(picked?' — مختارة'+ownerLabel:''));
-    el.onclick=()=>toggleCat(cat,el);
+    // click.detail يساوي صفر عند التفعيل بالكيبورد أو VoiceOver، وأكبر من صفر
+    // عند اللمس. نحفظ التركيز للتقنيات المساعدة فقط حتى لا يحاول WebView
+    // تكبير/تمرير البطاقة بعد كل ضغطة لمس سريعة.
+    el.onclick=event=>toggleCat(cat,el,{preserveFocus:event.detail===0});
     grid.appendChild(el);
   });
+  if(categoryToRefocus){
+    const target=[...grid.querySelectorAll('.cat-pick')].find(button=>button.dataset.category===categoryToRefocus);
+    if(target) requestAnimationFrame(()=>{
+      try{ target.focus({preventScroll:true}); }catch(error){ try{ target.focus(); }catch(focusError){} }
+    });
+  }
 }
 function filterCats(){ renderCatGrid(); }
 
-function toggleCat(cat,el){
+function toggleCat(cat,el,{preserveFocus=true}={}){
   const already=state.cats.indexOf(cat);
   // إلغاء اختيار: فقط الفريق الذي اختارها يقدر يلغيها، وترجع الأدوار
   if(already>=0){
     const owner=state.catOwner[cat];
+    if(owner!==state.pickTurn){
+      const ownerName=state.teams[owner]?.name||'الفريق الثاني';
+      showToast('🔒','هذي الفئة مو لفريقكم',`فريق ${ownerName} هو اللي اختارها، وما يقدر يلغيها إلا بدوره.`,false);
+      return false;
+    }
     sfx('tap');
     state.cats.splice(already,1);
     delete state.catOwner[cat];
     state.pickedByTeam[owner]--;
     state.pickTurn=owner; // يرجع الدور لمن ألغى
-    renderCatGrid(); updatePickTurn();
-    return;
+    renderCatGrid({focusCategory:preserveFocus?cat:'',preserveFocus}); updatePickTurn();
+    return true;
   }
   // اختيار جديد
-  if(state.cats.length>=state.catCount) return;
+  if(state.cats.length>=state.catCount) return false;
   const ti=state.pickTurn;
   state.cats.push(cat);
   state.catOwner[cat]=ti;
@@ -3365,7 +3828,8 @@ function toggleCat(cat,el){
   sfx('tap'); vibrate(12);
   // هل انتهى نصيب هذا الفريق؟ انتقل للتالي الذي لم يكمل
   advancePickTurn();
-  renderCatGrid(); updatePickTurn();
+  renderCatGrid({focusCategory:preserveFocus?cat:'',preserveFocus}); updatePickTurn();
+  return true;
 }
 function advancePickTurn(){
   const n=state.teamCount;
@@ -3382,6 +3846,111 @@ function advancePickTurn(){
 // ────────── بدء
 let roundQuestionBank=Object.create(null);
 let roundQuestionToken=0;
+let roundImageQuestionIds=new Set();
+function questionsForRoundCategory(category){
+  return Object.prototype.hasOwnProperty.call(roundQuestionBank,category)
+    ? roundQuestionBank[category]
+    : (QUESTION_BANK?.[category]||[]);
+}
+function validRemoteRoundBank(bank,categories){
+  if(!bank||Array.isArray(bank)||typeof bank!=='object') return false;
+  return categories.every(category=>{
+    const questions=bank[category];
+    if(!Array.isArray(questions)||questions.length!==6) return false;
+    const levels=new Set(); const ids=new Set();
+    for(const question of questions){
+      if(!question||typeof question!=='object'||!/^gq-[a-f0-9]{20}$/.test(String(question.id||''))) return false;
+      if(!Number.isInteger(question.d)||question.d<1||question.d>6||levels.has(question.d)) return false;
+      if(typeof question.q!=='string'||question.q.length<12||question.q.length>220) return false;
+      if(typeof question.answer!=='string'||!question.answer.trim()||question.answer.length>140) return false;
+      if(question.source?.url&&!isHttpsUrl(question.source.url)) return false;
+      if(question.review?.status!=='approved'||ids.has(question.id)) return false;
+      levels.add(question.d); ids.add(question.id);
+    }
+    return levels.size===6;
+  });
+}
+function remoteRoundCacheKey(uid,categories){
+  return scopedAccessKey(`remote_round_${[...categories].sort().join('|')}`,uid);
+}
+async function prepareRemoteRoundQuestionBank(uid){
+  roundQuestionBank=Object.create(null);
+  if(!_hasActiveSubscription||state.familyRound) return true;
+  const remoteCategories=state.cats.filter(category=>
+    !(QUESTION_BANK?.[category]||[]).some(question=>question.image));
+  if(!remoteCategories.length) return true;
+  const cacheKey=remoteRoundCacheKey(uid,remoteCategories);
+  const cached=storeGet(cacheKey,null);
+  const useCache=()=>{
+    const age=Date.now()-Number(cached?.savedAt||0);
+    if(age<0||age>30*24*60*60*1000||!validRemoteRoundBank(cached?.questions,remoteCategories)) return false;
+    roundQuestionBank=Object.assign(Object.create(null),cached.questions);
+    return true;
+  };
+  const idToken=await getCurrentIdToken();
+  if(!idToken) return useCache()||!storeGet('remote_question_bank_required',false);
+  const history=loadQuestionHistory();
+  const excludeQuestionIds=[...new Set(Object.values(history).flat().filter(id=>typeof id==='string'))].slice(-2000);
+  try{
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),10000);
+    let response;
+    try{
+      response=await apiFetch('/api/questions/round',{
+        method:'POST',signal:controller.signal,
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+        body:JSON.stringify({uid,idToken,categories:remoteCategories,excludeQuestionIds}),
+      });
+    }finally{ clearTimeout(timeout); }
+    const payload=await response.json().catch(()=>({}));
+    if(response.ok&&payload.schemaVersion===1&&validRemoteRoundBank(payload.questions,remoteCategories)){
+      roundQuestionBank=Object.assign(Object.create(null),payload.questions);
+      storeSet(cacheKey,{savedAt:Date.now(),bankVersion:payload.bankVersion||'',questions:payload.questions});
+      storeSet('remote_question_bank_required',true);
+      return true;
+    }
+    if(useCache()) return true;
+    if(['question_bank_not_ready','feature_disabled','unsupported_v2_route','v2_route_required','question_bank_v2_only'].includes(payload.code)) return true;
+  }catch(_){ if(useCache()) return true; }
+  return !storeGet('remote_question_bank_required',false);
+}
+async function prepareSelectedImageCategories(){
+  roundImageQuestionIds=new Set();
+  const categories=state.cats.filter(category=>(QUESTION_BANK?.[category]||[]).some(question=>question.image));
+  for(const category of categories){
+    const questions=QUESTION_BANK[category];
+    try{
+      questions.forEach(question=>window.FatinahImageAssets.validateQuestion(question));
+      const ready=await window.FatinahImageAssets.prepareCategory(questions);
+      for(let difficulty=1;difficulty<=6;difficulty++){
+        const ids=ready.get(difficulty);
+        if(!ids?.size) return false;
+        ids.forEach(id=>roundImageQuestionIds.add(id));
+      }
+    }catch(_){ return false; }
+  }
+  return true;
+}
+function findRoundStockIssue(){
+  const history=loadQuestionHistory();
+  for(const category of state.cats){
+    const familyCategory=(familyCats||[]).find(item=>item.name===category);
+    if(familyCategory){
+      if(new Set(familyCategory.questions.map(question=>question.q)).size<6){
+        return {category,difficulty:null};
+      }
+      continue;
+    }
+    const questions=questionsForRoundCategory(category);
+    for(let difficulty=1;difficulty<=6;difficulty++){
+      const hasUnseenQuestion=questions.some(question=>question.d===difficulty
+        &&!questionWasSeen(history,category,question)
+        &&(!question.image||roundImageQuestionIds.has(question.id)||window.FatinahImageAssets?.isReady(question)));
+      if(!hasUnseenQuestion) return {category,difficulty};
+    }
+  }
+  return null;
+}
 function canStartRound(){
   if(_hasActiveSubscription) return true;
   if(_freeRoundAvailable) return true;
@@ -3408,6 +3977,26 @@ async function startGame(){
       showToast('⚠️','ما قدرنا نزامن أسئلتك','تأكد من الإنترنت وجرّب مرة ثانية حتى ما نكرر عليك سؤالاً',false);
       return false;
     }
+    if(!(await prepareRemoteRoundQuestionBank(uid))){
+      showToast('⚠️','ما قدرنا نجهّز أسئلة الجولة','تأكد من الإنترنت وجرّب مرة ثانية. إذا سبق وحمّلنا جولة محفوظة راح نستخدمها تلقائياً.',false);
+      return false;
+    }
+    if(!(await prepareSelectedImageCategories())){
+      showToast('🖼️','الصورة مو جاهزة','تأكد من الإنترنت وجرّب مرة ثانية. ما راح نبدأ سؤال مصوّر من غير صورة محفوظة وآمنة.',false);
+      return false;
+    }
+    const stockIssue=findRoundStockIssue();
+    if(stockIssue){
+      const level=Number.isInteger(stockIssue.difficulty)?` بالمستوى ${stockIssue.difficulty}`:'';
+      showToast('📚','اختار فئة ثانية',
+        `ما بقى سؤال يديد بفئة «${displayCategoryName(stockIssue.category)}»${level}. اختار فئة ثانية عشان نضمن إن الجولة تكتمل.`,false);
+      state.pickSplit=computeSplit(state.catCount,state.teamCount);
+      state.pickTurn=0;
+      state.pickedByTeam=state.teams.map(()=>0);
+      renderCats();
+      go('s-cats');
+      return false;
+    }
     // لا نستهلك bit العرض في DeviceCheck إلا بعد اكتمال كل فحوص بدء
     // الجولة؛ حتى لا يفقد اللاعب عرضه بسبب فشل مزامنة سجل الأسئلة.
     if(startsAsFreeRound){
@@ -3419,13 +4008,15 @@ async function startGame(){
       }
     }
   state.familyRound=null; state.usedQ=new Set(); state.usedQuestionIds=new Set();
-  roundQuestionBank=Object.create(null);
+  // لا نمسح بنك الجولة الذي جُلب وتحققنا منه قبل بناء اللوحة.
   roundQuestionToken++;
   vibrate(30); state.turn=0; state.answered=0; state.cells={};
   state.startedAt=Date.now(); state.roundCorrect=0; state.roundIncorrect=0;
   state.isFreeRound=startsAsFreeRound;
   state.completedFreeRound=false;
+  state.roundActive=true; state.cur=null; state.searchTimeLeft=0;
   buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
+  persistActiveRound(true);
   void trackMetric('game_started',{
     difficulty:state.difficulty,teams:state.teams.length,
     categoryCount:state.cats.length,freeRound:state.isFreeRound,
@@ -3435,6 +4026,16 @@ async function startGame(){
 }
 function buildBoard(){
   const n=state.cats.length;
+  const boardScroll=document.getElementById('board-scroll');
+  const boardGrid=document.getElementById('board-grid');
+  const needsHorizontalScroll=n>6;
+  boardScroll.classList.toggle('is-scrollable',needsHorizontalScroll);
+  boardGrid.style.minWidth=needsHorizontalScroll?`${n*52+(n-1)*5}px`:'0';
+  boardScroll.scrollLeft=0;
+  const boardHint=document.getElementById('board-hint');
+  boardHint.textContent=needsHorizontalScroll
+    ?'↔️ اسحب اللوحة يمين ويسار لباقي الفئات · كل خانة فيها سؤال بقيمة نقاطها'
+    :'اختار خانة من اللوحة · كل خانة فيها سؤال بقيمة نقاطها';
   const head=document.getElementById('cats-head'); head.innerHTML='';
   head.style.gridTemplateColumns=`repeat(${n},1fr)`;
   state.cats.forEach(c=>{ const h=document.createElement('div'); h.className='cat-h'; h.textContent=isFamilyCat(c)?c:displayCategoryName(c); head.appendChild(h); });
@@ -3455,6 +4056,7 @@ function buildBoard(){
 }
 function renderTeamsBar(){
   const bar=document.getElementById('teams-bar'); bar.innerHTML='';
+  bar.classList.toggle('three-teams',state.teams.length===3);
   const max=Math.max(...state.teams.map(t=>t.score));
   state.teams.forEach((t,i)=>{
     const st=TEAM_STYLES[t.idx];
@@ -3477,6 +4079,7 @@ function adjustScore(i,delta){
   sfx('tap'); vibrate(15);
   state.teams[i].score+=delta;
   renderTeamsBar();
+  persistActiveRound(true);
 }
 function renderTurn(){
   const st=TEAM_STYLES[state.teams[state.turn].idx];
@@ -3497,6 +4100,7 @@ function updateBombButton(){
   box.classList.toggle('show', canBomb);
 }
 function startBomb(){
+  if(questionOpenPending||state.cur) return false;
   sfx('tap'); vibrate(15);
   if(state.teams.length===2){
     fireBomb((state.turn+1)%2);
@@ -3511,13 +4115,14 @@ function startBomb(){
       b.onclick=()=>{ closeBombTargetPicker(); fireBomb(i); };
       list.appendChild(b);
     });
-    document.getElementById('bomb-target-modal').classList.add('show');
+    openAccessibleModal('bomb-target-modal');
   }
 }
 function closeBombTargetPicker(){
-  document.getElementById('bomb-target-modal').classList.remove('show');
+  closeAccessibleModal('bomb-target-modal');
 }
-function fireBomb(targetIdx){
+async function fireBomb(targetIdx){
+  if(questionOpenPending||state.cur) return false;
   clearInterval(state.searchTimer); // احتياط: لا يبقى مؤقّت بحث من سؤال سابق يلوّث القنبلة
   const n=state.cats.length;
   let col=-1, r=-1;
@@ -3526,7 +4131,7 @@ function fireBomb(targetIdx){
     for(let c=0;c<n;c++){ const key=c+'-'+lvl; if(state.cells[key] && !state.cells[key].used) candidates.push(c); }
     if(candidates.length){ col=candidates[Math.floor(Math.random()*candidates.length)]; r=lvl; }
   }
-  if(col===-1){ state.teams[state.turn].bombUsed=true; return; } // لا خانات متبقية — سجّل القنبلة مستخدمة
+  if(col===-1){ state.teams[state.turn].bombUsed=true; persistActiveRound(true); return; } // لا خانات متبقية — سجّل القنبلة مستخدمة
   const key=col+'-'+r;
   const cellEls=document.querySelectorAll('#board .cell');
   const cell=cellEls[(r-1)*n+col];
@@ -3537,9 +4142,19 @@ function fireBomb(targetIdx){
   const badge=document.getElementById('q-badge');
   badge.textContent='💣 '+(isFamilyCat(cat)?cat:displayCategoryName(cat)); badge.style.background='#8b1a3d'; badge.style.color='#fff';
   document.getElementById('q-points').textContent='±1200 نقطة';
-  document.getElementById('q-text').textContent=displayQuestionText(q);
+  setQuestionPrompt(q);
+  const openingQuestion=state.cur;
+  questionOpenPending=true;
+  const imageReady=await renderQuestionImage(q);
+  questionOpenPending=false;
+  if(state.cur!==openingQuestion) return false;
+  if(!imageReady){
+    state.cur=null;
+    showToast('🖼️','الصورة مو جاهزة','ما بدأنا السؤال ولا شغّلنا العداد. تأكد من الإنترنت وجرّب مرة ثانية.',false);
+    return false;
+  }
   setQuestionAnswer(q);
-  document.getElementById('answer-box').classList.remove('show');
+  setAnswerRevealed(false);
   document.getElementById('search-timer').classList.remove('show');
   document.getElementById('pause-btn').textContent='⏸';
   document.getElementById('pause-btn').disabled=false;
@@ -3548,7 +4163,8 @@ function fireBomb(targetIdx){
   startPhase('bomb');
   renderLifelines();
   keepAwakeOn();
-  document.getElementById('q-wrap').classList.add('show');
+  showQuestionScreen();
+  persistActiveRound(true);
 }
 function awardBomb(correct){
   const c=state.cur;
@@ -3563,20 +4179,167 @@ function awardBomb(correct){
     sfx('wrong'); vibrate([40,30,40]); state.roundIncorrect=(state.roundIncorrect||0)+1;
     state.teams[c.bombTarget].score-=1200;
   }
-  c.cell.classList.add('used'); state.cells[c.key].used=true;
+  markBoardCellUsed(c.cell,c.key);
   state.answered++; renderTeamsBar();
   closeQuestion();
 }
 
 // ────────── الأسئلة
+let questionFocusOrigin=null;
+function setQuestionBackgroundInert(inert){
+  const app=document.getElementById('app');
+  if(!app) return;
+  app.inert=inert;
+  if(inert) app.setAttribute('aria-hidden','true');
+  else app.removeAttribute('aria-hidden');
+}
+function showQuestionScreen(){
+  const wrap=document.getElementById('q-wrap');
+  if(!wrap) return;
+  if(!wrap.classList.contains('show')){
+    const cell=state.cur?.cell;
+    questionFocusOrigin=cell?.isConnected?cell:document.activeElement;
+  }
+  const sheet=wrap.querySelector('.q-sheet');
+  if(sheet) sheet.scrollTop=0;
+  setQuestionBackgroundInert(true);
+  wrap.classList.add('show');
+  wrap.setAttribute('aria-hidden','false');
+  document.body.classList.add('question-open');
+  requestAnimationFrame(()=>document.getElementById('q-question-card')?.focus({preventScroll:true}));
+}
+function hideQuestionScreen(restoreBoardFocus=true){
+  const wrap=document.getElementById('q-wrap');
+  if(wrap){
+    wrap.classList.remove('show');
+    wrap.setAttribute('aria-hidden','true');
+  }
+  document.body.classList.remove('question-open');
+  setQuestionBackgroundInert(false);
+  if(restoreBoardFocus){
+    const origin=questionFocusOrigin?.isConnected?questionFocusOrigin:(state.cur&&state.cur.cell);
+    requestAnimationFrame(()=>origin?.focus({preventScroll:true}));
+  }
+  questionFocusOrigin=null;
+}
+function setAnswerRevealed(revealed){
+  const answer=document.getElementById('answer-box');
+  if(!answer) return;
+  answer.classList.toggle('show',revealed);
+  answer.setAttribute('aria-hidden',revealed?'false':'true');
+}
+function focusRevealedAnswer(){
+  requestAnimationFrame(()=>{
+    const wrap=document.getElementById('q-wrap');
+    const sheet=wrap?.querySelector('.q-sheet');
+    const answer=document.getElementById('answer-box');
+    const controls=document.getElementById('q-controls');
+    if(!wrap?.classList.contains('show')||!sheet||!answer?.classList.contains('show')||!controls) return;
+    try{ answer.focus({preventScroll:true}); }catch(error){ try{ answer.focus(); }catch(focusError){} }
+    const sheetRect=sheet.getBoundingClientRect();
+    const answerRect=answer.getBoundingClientRect();
+    const controlsRect=controls.getBoundingClientRect();
+    const contentTop=sheet.scrollTop+(answerRect.top-sheetRect.top);
+    const contentBottom=sheet.scrollTop+(controlsRect.bottom-sheetRect.top);
+    const padding=12;
+    let target=sheet.scrollTop;
+    if(contentBottom>target+sheet.clientHeight-padding) target=contentBottom-sheet.clientHeight+padding;
+    if(contentTop<target+padding) target=Math.max(0,contentTop-padding);
+    const reduceMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
+    sheet.scrollTo({top:Math.max(0,target),behavior:reduceMotion?'auto':'smooth'});
+  });
+}
+function setAdaptiveCopy(element,text){
+  const value=String(text||'');
+  element.textContent=value;
+  const length=[...value].length;
+  element.classList.toggle('text-long',length>75&&length<=125);
+  element.classList.toggle('text-very-long',length>125);
+}
+function setQuestionPrompt(q){
+  setAdaptiveCopy(document.getElementById('q-text'),displayQuestionText(q));
+}
+function setQuestionPhaseLayout(phase){
+  const wrap=document.getElementById('q-wrap');
+  if(wrap) wrap.dataset.phase=phase||'owner';
+}
+let activeQuestionImageUrl='';
+let questionImageRequestToken=0;
+function revokeQuestionImageUrl(url){
+  if(!url) return;
+  try{ URL.revokeObjectURL(url); }catch(_){ }
+}
+async function renderQuestionImage(q,{allowFallback=false}={}){
+  const requestToken=++questionImageRequestToken;
+  const wrap=document.getElementById('q-image-wrap');
+  const image=document.getElementById('q-image');
+  const fallback=document.getElementById('q-image-fallback');
+  if(activeQuestionImageUrl){ revokeQuestionImageUrl(activeQuestionImageUrl); activeQuestionImageUrl=''; }
+  image.removeAttribute('src'); image.alt=''; fallback.hidden=true; wrap.hidden=true;
+  wrap.setAttribute('aria-hidden','true');
+  if(!q?.image) return true;
+  const contentHidden=state.paused===true;
+  wrap.hidden=contentHidden;
+  wrap.setAttribute('aria-hidden',contentHidden?'true':'false');
+  image.alt=q.image.alt;
+  try{
+    const pendingImage=new Image();
+    const loadedUrl=await window.FatinahImageAssets.loadInto(q,pendingImage);
+    if(requestToken!==questionImageRequestToken){
+      revokeQuestionImageUrl(loadedUrl);
+      return false;
+    }
+    image.src=loadedUrl;
+    if(typeof image.decode==='function') await image.decode();
+    if(requestToken!==questionImageRequestToken){
+      image.removeAttribute('src');
+      revokeQuestionImageUrl(loadedUrl);
+      return false;
+    }
+    activeQuestionImageUrl=loadedUrl;
+    return true;
+  }catch(_){
+    if(requestToken!==questionImageRequestToken) return false;
+    image.removeAttribute('src');
+    fallback.textContent='الصورة مو متوفرة الحين. الوصف: '+q.image.alt;
+    fallback.hidden=false;
+    return allowFallback;
+  }
+}
 function setQuestionAnswer(q){
-  document.getElementById('ans-text').textContent=q.answer || (q.o && typeof q.a==='number' ? q.o[q.a] : '');
+  setAdaptiveCopy(document.getElementById('ans-text'),q.answer || (q.o && typeof q.a==='number' ? q.o[q.a] : ''));
   const source=document.getElementById('q-source');
-  const validSource=q && q.source && /^https:\/\//.test(q.source.url||'');
-  source.style.display=validSource?'inline-block':'none';
+  const validSource=q && q.source && isHttpsUrl(q.source.url);
+  source.hidden=true;
+  source.style.display='none';
   if(validSource){
     source.href=q.source.url;
     source.textContent='المصدر: '+(q.source.title||'مرجع موثوق');
+  }
+  const rights=document.getElementById('q-image-rights');
+  const imageRights=q?.image?.rights;
+  const validRights=imageRights?.owner&&imageRights.credit&&imageRights.provider&&imageRights.license
+    &&isHttpsUrl(imageRights.sourcePage)&&isHttpsUrl(imageRights.licenseUrl)&&imageRights.modifications;
+  rights.hidden=true;
+  const credit=document.getElementById('q-image-credit');
+  const sourcePage=document.getElementById('q-image-source-page');
+  const license=document.getElementById('q-image-license');
+  const modifications=document.getElementById('q-image-modifications');
+  if(validRights){
+    const attribution=imageRights.credit===imageRights.owner
+      ?imageRights.owner:`${imageRights.owner} — ${imageRights.credit}`;
+    credit.textContent=`حقوق الصورة: ${attribution} — عبر ${imageRights.provider}`;
+    sourcePage.href=imageRights.sourcePage;
+    sourcePage.hidden=false;
+    license.href=imageRights.licenseUrl;
+    license.textContent=`الرخصة: ${imageRights.license}`;
+    license.hidden=false;
+    modifications.textContent=`معالجة الصورة: ${imageRights.modifications}`;
+  }else{
+    credit.textContent='';
+    sourcePage.removeAttribute('href'); sourcePage.hidden=true;
+    license.removeAttribute('href'); license.hidden=true;
+    modifications.textContent='';
   }
   const reportButton=document.getElementById('q-report-btn');
   if(reportButton) reportButton.style.display=q&&q.id&&!state.familyRound?'inline-flex':'none';
@@ -3592,11 +4355,11 @@ function openQuestionReport(){
   const reason=document.getElementById('question-report-reason');
   if(details) details.value='';
   if(reason) reason.value='incorrect_answer';
-  document.getElementById('question-report-modal')?.classList.add('show');
+  openAccessibleModal('question-report-modal','#question-report-reason');
 }
 function closeQuestionReport(){
   sfx('tap');
-  document.getElementById('question-report-modal')?.classList.remove('show');
+  closeAccessibleModal('question-report-modal');
 }
 let _questionReportPending=false;
 async function submitQuestionReport(){
@@ -3680,11 +4443,14 @@ function pickQuestion(cat,d){
   // الفئات الأساسية: صف اللوحة وقيمة النقاط يحددان مستوى الصعوبة، لذلك لا
   // نخلط المستويات عند نفاد البدائل. لا نمسح سجل الحساب ولا نرجع إلى سؤال
   // شاهده سابقاً؛ عند نفاد المستوى تتعامل الواجهة مع الحالة الصريحة.
-  const local=QUESTION_BANK[cat]||[];
+  const local=questionsForRoundCategory(cat);
   const sessionIds=state.usedQuestionIds||(state.usedQuestionIds=new Set());
   const history=loadQuestionHistory();
-  const exact=local.filter(q=>q.d===d&&!sessionIds.has(q.id)&&!state.usedQ.has(q.q));
-  const pool=exact.filter(q=>!questionWasSeen(history,cat,q));
+  const exact=local.filter(q=>q.d===d&&!sessionIds.has(q.id)&&!state.usedQ.has(q.q)
+    &&(!q.image||roundImageQuestionIds.has(q.id)||window.FatinahImageAssets?.isReady(q)));
+  const pool=window.__FATINAH_IMAGE_FLOW_UI_TEST__===true
+    ? exact
+    : exact.filter(q=>!questionWasSeen(history,cat,q));
   if(!pool.length) return questionExhausted(cat,d);
   const q=pool[Math.floor(Math.random()*pool.length)];
   state.usedQ.add(q.q);
@@ -3692,7 +4458,9 @@ function pickQuestion(cat,d){
   rememberQuestion(cat,q);
   return q;
 }
+let questionOpenPending=false;
 function openQuestion(col,r,key,cell){
+  if(questionOpenPending||state.cur) return false;
   if(state.cells[key].used) return;
   sfx('tap'); vibrate(15);
   clearInterval(state.searchTimer); // احتياط: لا يبقى مؤقّت بحث من سؤال سابق يلوّث هذا السؤال
@@ -3709,23 +4477,38 @@ function openQuestion(col,r,key,cell){
   const badge=document.getElementById('q-badge');
   badge.textContent=isFamilyCat(cat)?cat:displayCategoryName(cat); badge.style.background=FIRE[r].bg; badge.style.color=FIRE[r].tx;
   document.getElementById('q-points').textContent='+'+POINTS[r]+' نقطة';
-  document.getElementById('q-text').textContent=displayQuestionText(q);
-  setQuestionAnswer(q);
-  document.getElementById('answer-box').classList.remove('show');
-  document.getElementById('search-timer').classList.remove('show');
-  document.getElementById('pause-btn').textContent='⏸';
-  document.getElementById('pause-btn').disabled=false;
-  document.getElementById('pause-btn').style.opacity='1';
-  setQuestionHidden(false);
-  startPhase('owner');
-  renderLifelines();
-  keepAwakeOn();
-  document.getElementById('q-wrap').classList.add('show');
+  setQuestionPrompt(q);
+  const begin=()=>{
+    setQuestionAnswer(q);
+    setAnswerRevealed(false);
+    document.getElementById('search-timer').classList.remove('show');
+    document.getElementById('pause-btn').textContent='⏸';
+    document.getElementById('pause-btn').disabled=false;
+    document.getElementById('pause-btn').style.opacity='1';
+    setQuestionHidden(false);
+    startPhase('owner');
+    renderLifelines();
+    keepAwakeOn();
+    showQuestionScreen();
+    persistActiveRound(true);
+    return true;
+  };
+  if(!q.image){ void renderQuestionImage(q); return begin(); }
+  const openingQuestion=state.cur;
+  questionOpenPending=true;
+  return renderQuestionImage(q).then(ready=>{
+    if(state.cur!==openingQuestion) return false;
+    if(ready) return begin();
+    state.cur=null;
+    showToast('🖼️','الصورة مو جاهزة','ما بدأنا السؤال ولا شغّلنا العداد. تأكد من الإنترنت وجرّب مرة ثانية.',false);
+    return false;
+  }).finally(()=>{ questionOpenPending=false; });
 }
 
 // ────────── مراحل السؤال
 function startPhase(phase){
   state.cur.phase=phase;
+  setQuestionPhaseLayout(phase);
   const c=state.cur;
   c.token=(c.token||0)+1; // يميّز هذه المرحلة تحديداً عن أي مشغّل (مؤقّت/زر) تابع لمرحلة سابقة
   const dt=DIFF_TIMES[state.difficulty]||DIFF_TIMES.normal;
@@ -3735,13 +4518,16 @@ function startPhase(phase){
       showTimer(dt.bomb);
       renderFlow();
       renderLifelines();
+      persistActiveRound(true);
     } else if(phase==='reveal'){
       clearInterval(state.timer);
-      document.getElementById('answer-box').classList.add('show');
+      setAnswerRevealed(true);
       sfx('correct');
       setPhasePill(-1, 'شنو النتيجة؟');
       renderFlow();
       renderLifelines();
+      focusRevealedAnswer();
+      persistActiveRound(true);
     }
     return;
   }
@@ -3753,6 +4539,7 @@ function startPhase(phase){
     showTimer(t);
     renderFlow();
     renderLifelines();
+    persistActiveRound(true);
   } else if(phase==='steal'){
     const ti=c.stealQueue[c.stealPos];
     c.eligibleTeams.add(ti);
@@ -3762,13 +4549,16 @@ function startPhase(phase){
     showTimer(t);
     renderFlow();
     renderLifelines();
+    persistActiveRound(true);
   } else if(phase==='reveal'){
     clearInterval(state.timer);
-    document.getElementById('answer-box').classList.add('show');
+    setAnswerRevealed(true);
     sfx('correct');
     setPhasePill(-1, 'منو جاوب صح؟ اختار الفريق');
     renderFlow();
     renderLifelines();
+    focusRevealedAnswer();
+    persistActiveRound(true);
   }
 }
 function updateQuestionPoints(teamIdx){
@@ -3870,6 +4660,12 @@ function renderVerdict(box){
   none.textContent='❌ محد جاوب صح'; none.onclick=()=>awardTo(-1);
   box.appendChild(none);
 }
+function markBoardCellUsed(cell,key){
+  cell.classList.add('used');
+  cell.disabled=true;
+  cell.setAttribute('aria-disabled','true');
+  state.cells[key].used=true;
+}
 function awardTo(teamIdx){
   const c=state.cur;
   if(!c || c.resolved) return; // حارس ضد نقر مزدوج على أزرار الحكم
@@ -3882,22 +4678,23 @@ function awardTo(teamIdx){
     if(c.searchedForTeam===teamIdx) pts=Math.round(pts/2);
     state.teams[teamIdx].score+=pts; stats.correct++; state.roundCorrect=(state.roundCorrect||0)+1;
   } else { sfx('wrong'); vibrate([40,30,40]); state.roundIncorrect=(state.roundIncorrect||0)+1; }
-  c.cell.classList.add('used'); state.cells[c.key].used=true;
+  markBoardCellUsed(c.cell,c.key);
   state.answered++; renderTeamsBar();
   closeQuestion();
 }
 
 // ────────── المؤقّت
-function showTimer(sec){
-  clearInterval(state.timer); state.timeLeft=sec; state.maxTime=sec; state.paused=false;
+function showTimer(sec,options={}){
+  clearInterval(state.timer); state.timeLeft=sec; state.maxTime=options.maxTime||sec; state.paused=Boolean(options.paused);
   const myToken = state.cur ? state.cur.token : 0;
   const pauseButton=document.getElementById('pause-btn');
-  pauseButton.textContent='⏸'; pauseButton.setAttribute('aria-label','وقّف العداد مؤقتًا');
-  document.getElementById('countdown-timer').classList.remove('paused');
+  pauseButton.textContent=state.paused?'▶':'⏸';
+  pauseButton.setAttribute('aria-label',state.paused?'كمّل العداد':'وقّف العداد مؤقتًا');
+  document.getElementById('countdown-timer').classList.toggle('paused',state.paused);
   updateTimerUI();
   state.timer=setInterval(()=>{
     if(state.paused) return;
-    state.timeLeft--; updateTimerUI();
+    state.timeLeft--; updateTimerUI(); persistActiveRound(false);
     if(state.timeLeft<=5&&state.timeLeft>0) sfx('tick');
     if(state.timeLeft<=0){ clearInterval(state.timer); timeUp(myToken); }
   },1000);
@@ -3918,16 +4715,25 @@ function togglePause(){
   pauseButton.setAttribute('aria-label',state.paused?'كمّل العداد':'وقّف العداد مؤقتًا');
   document.getElementById('countdown-timer').classList.toggle('paused',state.paused);
   setQuestionHidden(state.paused);
+  persistActiveRound(true);
 }
 function setQuestionHidden(hide){
   const qt=document.getElementById('q-text');
   const pv=document.getElementById('q-paused');
+  const imageWrap=document.getElementById('q-image-wrap');
+  const questionDialog=document.getElementById('q-wrap');
   const ll=document.getElementById('lifelines');
   const fl=document.getElementById('q-flow');
   qt.classList.toggle('blurred',hide);
+  qt.setAttribute('aria-hidden',hide?'true':'false');
+  const hasImage=Boolean(state.cur?.q?.image);
+  imageWrap.hidden=hide||!hasImage;
+  imageWrap.setAttribute('aria-hidden',hide||!hasImage?'true':'false');
   pv.classList.toggle('show',hide);
-  ll.style.display=hide?'none':'flex';
-  fl.style.display=hide?'none':'flex';
+  pv.setAttribute('aria-hidden',hide?'false':'true');
+  questionDialog.setAttribute('aria-labelledby',hide?'q-paused-title':'q-text');
+  ll.style.display=hide?'none':'';
+  fl.style.display=hide?'none':'';
 }
 function timeUp(token){
   // انتهى وقت المرحلة الحالية — ننتقل تلقائياً للفريق التالي في طابور السرقة، أو للكشف
@@ -3944,23 +4750,27 @@ function timeUp(token){
 }
 
 function closeQuestion(){
-  document.getElementById('q-wrap').classList.remove('show');
+  hideQuestionScreen(true);
   keepAwakeOff();
   // مؤقّت وسيلة "بحث بالجوال" مستقل عن state.timer — إن أُغلق السؤال قبل
-  // انتهائه (60 ثانية) يبقى شغّالاً ويكتب state.paused=false على سؤال لاحق
+  // انتهائه (45 ثانية) يبقى شغّالاً ويكتب state.paused=false على سؤال لاحق
   // غير مرتبط عند انتهائه لاحقاً
   clearInterval(state.searchTimer);
-  if(state.answered>=(state.totalQuestions||36)){ setTimeout(endGame,300); return; }
+  state.searchTimeLeft=0;
+  state.cur=null;
+  if(state.answered>=(state.totalQuestions||36)){ persistActiveRound(true); setTimeout(endGame,300); return; }
   state.turn=(state.turn+1)%state.teams.length; renderTeamsBar(); renderTurn();
+  persistActiveRound(true);
 }
 
 // ────────── وسائل المساعدة
 const LIFELINES=[
   {id:'search', label:'بحث بالجوال', icon:'🔍'},
-  {id:'pass', label:'مرّرها للخصم', icon:'🔀'},
+  {id:'pass', label:'مرّرها للخصم', icon:'⚔️'},
   {id:'skip', label:'تغيير السؤال', icon:'🔄'},
   {id:'double', label:'مضاعفة السؤال', icon:'✖️2'},
 ];
+const SEARCH_LIFELINE_SECONDS=45;
 function renderLifelines(){
   const box=document.getElementById('lifelines'); box.innerHTML='';
   const c=state.cur; if(!c) return;
@@ -3978,7 +4788,7 @@ function renderLifelines(){
     b.innerHTML=`<span class="lli">${ll.icon}</span>${ll.label}`;
     b.setAttribute('aria-label',`${ll.label} — فريق ${team.name}`);
     const noBudget=team.ll<=0&&!team.used.has(ll.id);
-    b.disabled=team.used.has(ll.id)||noBudget||!inActionPhase;
+    b.disabled=team.used.has(ll.id)||noBudget||!inActionPhase||c.replacingQuestion===true||c.searching===true;
     b.onclick=()=>useLifeline(ll.id,activeTeamIdx); box.appendChild(b);
   });
   const note=document.createElement('div'); note.className='ll-note';
@@ -3986,7 +4796,10 @@ function renderLifelines(){
   box.appendChild(note);
 }
 function useLifeline(id, teamIdx){
-  const team=state.teams[teamIdx]; const c=state.cur;
+  const c=state.cur;
+  if(!c||c.searching===true||c.replacingQuestion===true) return false;
+  const team=state.teams[teamIdx];
+  if(!team) return false;
   if(team.used.has(id)||team.ll<=0) return;
   sfx('tap'); vibrate(15); team.used.add(id); team.ll--;
   if(id==='pass'){
@@ -4005,41 +4818,96 @@ function useLifeline(id, teamIdx){
       renderLifelines();
       return nq;
     }
-    c.q=nq;
-    // السؤال البديل لم يُطرح على الفرق التي أجابت النسخة السابقة. يبدأ حق
-    // الحكم من الفريق الذي استهلك وسيلة التغيير، ثم تُضاف الفرق اللاحقة فقط.
-    c.eligibleTeams=new Set([teamIdx]);
-    document.getElementById('q-text').textContent=displayQuestionText(nq);
-    setQuestionAnswer(nq);
-    const dt2=DIFF_TIMES[state.difficulty]||DIFF_TIMES.normal;
-    const isSpd=c.cat==='إجابة سريعة';
-    showTimer(c.phase==='steal'?(isSpd?Math.round(dt2.speed*0.5):dt2.steal):(isSpd?dt2.speed:dt2.normal));
+    const applyReplacement=()=>{
+      c.q=nq;
+      // السؤال البديل لم يُطرح على الفرق التي أجابت النسخة السابقة. يبدأ حق
+      // الحكم من الفريق الذي استهلك وسيلة التغيير، ثم تُضاف الفرق اللاحقة فقط.
+      c.eligibleTeams=new Set([teamIdx]);
+      setQuestionPrompt(nq);
+      setQuestionAnswer(nq);
+      const dt2=DIFF_TIMES[state.difficulty]||DIFF_TIMES.normal;
+      const isSpd=c.cat==='إجابة سريعة';
+      showTimer(c.phase==='steal'?(isSpd?Math.round(dt2.speed*0.5):dt2.steal):(isSpd?dt2.speed:dt2.normal));
+    };
+    if(nq.image){
+      c.replacingQuestion=true;
+      renderLifelines();
+      void renderQuestionImage(nq).then(ready=>{
+        if(state.cur!==c) return;
+        c.replacingQuestion=false;
+        if(!ready){
+          team.used.delete(id); team.ll++;
+          void renderQuestionImage(c.q,{allowFallback:true});
+          showToast('🖼️','الصورة البديلة مو جاهزة','خلّينا السؤال الحالي وما استهلكنا وسيلة التغيير.',false);
+          renderLifelines();
+          persistActiveRound(true);
+          return;
+        }
+        applyReplacement();
+        renderLifelines();
+        persistActiveRound(true);
+      });
+      return nq;
+    }
+    void renderQuestionImage(nq);
+    applyReplacement();
   } else if(id==='double'){
     c.doubledForTeam=teamIdx;
     updateQuestionPoints(teamIdx);
   } else if(id==='search'){
     c.searchedForTeam=teamIdx; c.searching=true; state.paused=true;
     updateQuestionPoints(teamIdx);
-    document.getElementById('pause-btn').disabled=true;
-    document.getElementById('pause-btn').style.opacity='.4';
-    document.querySelectorAll('#q-flow button').forEach(button=>{ button.disabled=true; });
-    let s=60; const el=document.getElementById('search-timer'); el.classList.add('show');
-    el.textContent='🔍 باقي للبحث: '+s;
-    clearInterval(state.searchTimer);
-    state.searchTimer=setInterval(()=>{ s--; el.textContent='🔍 باقي للبحث: '+s;
-      if(s<=0){
-        clearInterval(state.searchTimer); el.classList.remove('show'); state.paused=false; c.searching=false;
-        const pb=document.getElementById('pause-btn'); pb.disabled=false; pb.style.opacity='1'; pb.textContent='⏸';
-        renderFlow(); renderLifelines();
-      }
-    },1000);
+    startSearchCountdown(SEARCH_LIFELINE_SECONDS);
   }
   renderLifelines();
+  persistActiveRound(true);
+}
+function startSearchCountdown(seconds){
+  const c=state.cur;
+  if(!c) return;
+  state.searchTimeLeft=Math.min(SEARCH_LIFELINE_SECONDS,Math.max(1,Number(seconds)||1));
+  state.paused=true; c.searching=true;
+  const pauseButton=document.getElementById('pause-btn');
+  pauseButton.disabled=true; pauseButton.style.opacity='.4';
+  document.getElementById('countdown-timer').classList.add('paused');
+  document.querySelectorAll('#q-flow button').forEach(button=>{ button.disabled=true; });
+  const el=document.getElementById('search-timer'); el.classList.add('show');
+  const label=document.getElementById('search-timer-label');
+  label.textContent='🔍 باقي للبحث: '+state.searchTimeLeft;
+  clearInterval(state.searchTimer);
+  state.searchTimer=setInterval(()=>{
+    state.searchTimeLeft--;
+    label.textContent='🔍 باقي للبحث: '+Math.max(0,state.searchTimeLeft);
+    persistActiveRound(false);
+    if(state.searchTimeLeft<=0) finishSearchCountdown(c);
+  },1000);
+  persistActiveRound(true);
+}
+function finishSearchCountdown(expectedQuestion=state.cur){
+  const c=state.cur;
+  if(!c||c!==expectedQuestion||c.searching!==true) return false;
+  clearInterval(state.searchTimer);
+  state.searchTimer=null; state.searchTimeLeft=0; state.paused=false; c.searching=false;
+  document.getElementById('search-timer').classList.remove('show');
+  document.getElementById('search-timer-label').textContent='';
+  const pauseButton=document.getElementById('pause-btn');
+  pauseButton.disabled=false; pauseButton.style.opacity='1'; pauseButton.textContent='⏸';
+  pauseButton.setAttribute('aria-label','وقّف العداد مؤقتًا');
+  document.getElementById('countdown-timer').classList.remove('paused');
+  renderFlow(); renderLifelines(); persistActiveRound(true);
+  return true;
+}
+function finishSearchEarly(){
+  if(!state.cur?.searching) return false;
+  sfx('tap'); vibrate(12);
+  return finishSearchCountdown(state.cur);
 }
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
 
 // ────────── النهاية
 function endGame(){
+  state.roundActive=false; state.cur=null;
+  clearActiveRound();
   const sorted=[...state.teams].sort((a,b)=>b.score-a.score);
   const win=sorted[0]; const tie=sorted.length>1&&sorted[1].score===win.score;
   // تحديث الإحصاءات
@@ -4084,6 +4952,7 @@ function showResult(sorted,win,tie){
 }
 function restart(){
   state.teams.forEach(t=>{ t.score=0; t.ll=3; t.used=new Set(); t.bombUsed=false; });
+  state.turn=0;
   startGame();
 }
 function afterResultPrimary(){
@@ -4336,7 +5205,7 @@ function renderManualOpts(){
   for(let i=0;i<4;i++){
     const row=document.createElement('div'); row.className='fm-opt-row';
     row.innerHTML=`<div class="fm-radio ${i===manualDraft.correct?'on':''}" role="radio" tabindex="0" aria-checked="${i===manualDraft.correct}" aria-label="خل الخيار ${i+1} هو الإجابة الصح" onclick="setManualCorrect(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setManualCorrect(${i})}"></div>
-      <input class="team-input" id="fm-o-${i}" placeholder="خيار ${i+1}" maxlength="60" style="flex:1;">`;
+      <input class="team-input" id="fm-o-${i}" aria-label="الخيار ${i+1}" placeholder="خيار ${i+1}" maxlength="60" style="flex:1;">`;
     box.appendChild(row);
   }
 }
@@ -4407,19 +5276,19 @@ function deleteFamily(i){
   const cat=familyCats[i];
   document.getElementById('delete-family-sub').textContent=
     `راح تنحذف "${cat.name}" وكل أسئلتها (${cat.questions.length}) نهائياً، وما تقدر تتراجع.`;
-  document.getElementById('delete-family-modal').classList.add('show');
+  openAccessibleModal('delete-family-modal');
 }
 function closeDeleteFamilyModal(){
   sfx('tap');
   _pendingDeleteFamilyIdx=-1;
-  document.getElementById('delete-family-modal').classList.remove('show');
+  closeAccessibleModal('delete-family-modal');
 }
 function doDeleteFamily(){
   if(_pendingDeleteFamilyIdx<0) return;
   sfx('tap'); vibrate(20);
   familyCats.splice(_pendingDeleteFamilyIdx,1); saveFamily(); renderSavedFamily();
   _pendingDeleteFamilyIdx=-1;
-  document.getElementById('delete-family-modal').classList.remove('show');
+  closeAccessibleModal('delete-family-modal');
 }
 
 // جولة سريعة منفصلة بفئة عائلية واحدة
@@ -4465,7 +5334,9 @@ async function playFamilyRound(i){
   state.startedAt=Date.now(); state.roundCorrect=0; state.roundIncorrect=0;
   state.isFreeRound=startsAsFreeRound;
   state.completedFreeRound=false;
+  state.roundActive=true; state.cur=null; state.searchTimeLeft=0;
   buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
+  persistActiveRound(true);
   void trackMetric('game_started',{
     difficulty:state.difficulty,teams:state.teams.length,
     categoryCount:1,freeRound:state.isFreeRound,familyRound:true,
@@ -4484,10 +5355,31 @@ function shakeField(id){
 // ---- مؤشر وضع دون اتصال ----
 (function initConnectivity(){
   const bar = document.getElementById('offline-bar');
+  const message = document.getElementById('connectivity-message');
   if(!bar) return;
+  let lastOffline=null;
+  let hideTimer=0;
 
   function setOffline(offline){
-    bar.classList.toggle('show', offline);
+    if(offline===lastOffline) return;
+    clearTimeout(hideTimer);
+    const wasOffline=lastOffline===true;
+    lastOffline=offline;
+    bar.classList.toggle('online',!offline);
+    if(message) message.textContent=offline?'ماكو اتصال بالإنترنت':'رجع الاتصال بالإنترنت';
+    if(!offline&&!wasOffline){
+      bar.classList.remove('show');
+      bar.setAttribute('aria-hidden','true');
+      return;
+    }
+    bar.setAttribute('aria-hidden','false');
+    bar.classList.add('show');
+    if(!offline){
+      hideTimer=setTimeout(()=>{
+        bar.classList.remove('show','online');
+        bar.setAttribute('aria-hidden','true');
+      },1800);
+    }
   }
 
   // الحالة الأولية
@@ -4506,6 +5398,55 @@ function shakeField(id){
 })();
 
 // ---- تهيئة ----
+async function startGameFlowUITest(){
+  await ensureQuestionBank();
+  const uid='ui-test-player';
+  window._currentUid=uid;
+  storeSet('authUid',uid);
+  storeSet('authProvider','local');
+  saveQuestionHistory({});
+  _hasActiveSubscription=true;
+  _subscriptionResolved=true;
+  _freeRoundAvailable=false;
+  state.teamCount=2;
+  state.teams=TEAM_STYLES.slice(0,2).map((style,idx)=>({
+    name:style.name,score:0,ll:3,used:new Set(),idx,bombUsed:false,
+  }));
+  state.catCount=2;
+  const imageCategories=ALL_CATS.filter(category=>(QUESTION_BANK[category]||[]).some(question=>question.image));
+  if(window.__FATINAH_IMAGE_FLOW_UI_TEST__===true){
+    const primary=imageCategories.includes('تعرف على الصورة')?'تعرف على الصورة':imageCategories[0];
+    state.cats=[primary,...imageCategories.filter(category=>category!==primary)].slice(0,2);
+    roundImageQuestionIds=new Set();
+    const ready=await window.FatinahImageAssets.prepareCategory(QUESTION_BANK[primary]||[]);
+    for(const ids of ready.values()) ids.forEach(id=>roundImageQuestionIds.add(id));
+  }else{
+    state.cats=ALL_CATS.slice(0,2);
+  }
+  state.difficulty='normal';
+  state.familyRound=null;
+  state.usedQ=new Set();
+  state.usedQuestionIds=new Set();
+  state.turn=0;
+  state.answered=0;
+  state.cells={};
+  state.startedAt=Date.now();
+  state.roundCorrect=0;
+  state.roundIncorrect=0;
+  state.isFreeRound=false;
+  state.completedFreeRound=false;
+  buildBoard();
+  renderTeamsBar();
+  renderTurn();
+  go('s-board');
+  hideSplash();
+  document.body.dataset.gameFlowUiTest='ready';
+  if(window.__FATINAH_DYNAMIC_TYPE_UI_TEST__===true||window.__FATINAH_IMAGE_FLOW_UI_TEST__===true){
+    const firstCell=document.querySelector('#board .cell');
+    if(firstCell) firstCell.click();
+  }
+}
+
 (async function startApplication(){
 const restoredPreferences=await hydrateNativePreferences();
 if(restoredPreferences>0 && sessionStorage.getItem('fatinah_preferences_hydrated')!=='1'){
@@ -4523,6 +5464,11 @@ renderTeamNames();
   const userNameEl=document.getElementById('user-name');
   if(saved && userNameEl) userNameEl.textContent=saved;
 })();
+
+if(window.__FATINAH_GAME_FLOW_UI_TEST__===true){
+  await startGameFlowUITest();
+  return;
+}
 
 // على iOS نستخدم مكوّن Firebase الأصلي. لا نحمّل SDK الويب من الشبكة عند
 // الإقلاع لأنه ينافس طلبات المصادقة والاشتراك؛ يُحمّل فقط كاحتياط عند الحاجة.

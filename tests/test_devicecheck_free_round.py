@@ -16,6 +16,7 @@ os.environ['FATINAH_ENVIRONMENT'] = 'local'
 os.environ['FATINAH_V2_DEVICECHECK_ENFORCE'] = 'true'
 os.environ['FATINAH_V2_FEATURE_FREE_ROUND_ENABLED'] = 'true'
 os.environ['FATINAH_V2_APP_CHECK_ENFORCE'] = 'false'
+os.environ['FATINAH_DURABLE_STORAGE'] = 'off'
 sys.path.insert(0, str(ROOT))
 import server as srv
 

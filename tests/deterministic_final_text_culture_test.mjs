@@ -1,0 +1,3 @@
+import assert from'node:assert/strict';import fs from'node:fs';const c=JSON.parse(fs.readFileSync(new URL('../content/questions/candidates.json',import.meta.url),'utf8'));
+const g=c.filter(x=>x.generation?.model==='deterministic-final-text-culture-v1');assert.equal(g.length,476);for(const category of ['أمثال','ثقافة خليجية','مسلسلات خليجية','أغاني خليجية'])assert.equal(g.filter(x=>x.category===category).length,119);
+assert.ok(g.every(x=>x.status==='approved'&&x.cost.runEstimatedUsd===0));assert.equal(new Set(g.map(x=>x.id)).size,476);console.log('✓ 476 سؤال أمثال وثقافة خليجية من سجلات موثقة وتكلفة AI صفر');

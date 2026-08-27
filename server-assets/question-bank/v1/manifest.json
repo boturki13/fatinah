@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "bankVersion": "v1-55d5dd766fa93884",
+  "generatedAt": "2026-08-26T23:14:45.581Z",
+  "sha256": "55d5dd766fa938847fb04649955265b235dcad0fb169d791419facc3cdafb65f",
+  "questionCount": 4125,
+  "categoryCount": 38,
+  "excludedCount": 0,
+  "religiousExcludedPendingFullReview": 0,
+  "targetBankSize": 4125,
+  "ready": true
+}

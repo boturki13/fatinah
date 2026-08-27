@@ -4,16 +4,22 @@ import {
   buildRuntimeQuestionPlan,
   canonicalCategory,
   difficultyTier,
+  excludeAmbiguousStructuredRecords,
   hostAllowed,
   isNearDuplicate,
   loadBaseCategories,
   loadExistingQuestionTexts,
+  loadImageQuestionBank,
+  loadReleaseImageQuestionBank,
   loadPolicy,
   loadRuntimeQuestionBank,
   stableQuestionId,
   trustedHostsForCategory,
   validateCandidate,
+  verificationSchema,
 } from '../scripts/questions/lib.mjs';
+import { buildExactBankPlan } from '../scripts/questions/plan-bank.mjs';
+import { buildGenerationQueue } from '../scripts/questions/build-generation-queue.mjs';
 
 const policy = loadPolicy();
 const publishedCount = JSON.parse(fs.readFileSync(new URL('../content/questions/published.json', import.meta.url), 'utf8')).length;
@@ -26,6 +32,15 @@ assert.equal(hostAllowed('https://www.fifa.com/example', scienceHosts), false, '
 assert.equal(hostAllowed('http://nasa.gov/example', scienceHosts), false);
 assert.equal(hostAllowed('https://nasa.gov.evil.example/test', scienceHosts), false);
 assert.equal(isNearDuplicate('ما أكبر كوكب في المجموعة الشمسية؟', ['ما هو أكبر كوكب في المجموعة الشمسية؟']), true);
+assert.equal(isNearDuplicate('هالعلم 🇰🇼 يرجع لأي دولة؟', ['هالعلم 🇯🇵 يرجع لأي دولة؟']), false,
+  'أعلام الدول المختلفة لا تُعامل كأسئلة مكررة بعد التطبيع.');
+const ambiguousSourceRecords = [
+  { category: 'اختبار', itemId: 'Q1', property: 'P57', answerId: 'Q2' },
+  { category: 'اختبار', itemId: 'Q1', property: 'P57', answerId: 'Q3' },
+  { category: 'اختبار', itemId: 'Q4', property: 'P57', answerId: 'Q5' },
+];
+assert.deepEqual(excludeAmbiguousStructuredRecords(ambiguousSourceRecords), [ambiguousSourceRecords[2]],
+  'أي علاقة منظمة لها أكثر من جواب تُحجب بالكامل قبل توليد السؤال.');
 
 for (const category of loadBaseCategories()) {
   const hosts = trustedHostsForCategory(category, policy);
@@ -54,13 +69,21 @@ assert.deepEqual(runtimePlan.components, { base: 192, approved: publishedCount, 
 assert.equal(runtimePlan.componentTotal, 234 + publishedCount);
 assert.equal(runtimePlan.runtimeTotal, 234 + publishedCount, 'حسبة runtime يجب أن تشمل base + approved + QUESTION_ADDITIONS.');
 assert.equal(runtimePlan.runtimeCategoryCount, 38);
-assert.equal(runtimePlan.totalGap, (4 * 6 * 38) - runtimePlan.runtimeTotal,
-  'الفجوة هي هدف أربعة أسئلة لكل مستوى ناقص بنك runtime الحالي.');
+const summedRuntimeGap = Object.values(runtimePlan.categories).reduce((categorySum, category) =>
+  categorySum + Object.values(category.levels).reduce((levelSum, level) => levelSum + level.gap, 0), 0);
+assert.equal(runtimePlan.totalGap, summedRuntimeGap,
+  'الفجوة تجمع النقص الفعلي لكل مستوى ولا تخفيه زيادة مستوى آخر فوق هدفه.');
 assert.equal(runtimePlan.invalidDifficultyCount, 0);
 assert.deepEqual(runtimePlan.orphanAdditionCategories, []);
-assert.deepEqual(runtimePlan.categories['معلومات عامة'].levels[1], { count: 1, target: 4, gap: 3 });
+const generalLevelOneCount = runtimeBank['معلومات عامة'].filter(question => question.d === 1).length;
+assert.deepEqual(runtimePlan.categories['معلومات عامة'].levels[1], {
+  count: generalLevelOneCount, target: 4, gap: Math.max(0, 4 - generalLevelOneCount),
+});
 assert.deepEqual(runtimePlan.categories['القرآن الكريم'].levels[1], { count: 2, target: 4, gap: 2 });
-assert.deepEqual(runtimePlan.categories['ألعاب الفيديو'].levels[1], { count: 4, target: 4, gap: 0 });
+const videoLevelOneCount = runtimeBank['ألعاب الفيديو'].filter(question => question.d === 1).length;
+assert.deepEqual(runtimePlan.categories['ألعاب الفيديو'].levels[1], {
+  count: videoLevelOneCount, target: 4, gap: Math.max(0, 4 - videoLevelOneCount),
+});
 assert.equal(
   runtimeBank['تاريخ'].find(question => question.d === 1)?.q,
   'أي حضارة بنت أهرامات الجيزة في مصر القديمة؟',
@@ -96,6 +119,18 @@ const general = {
 };
 assert.equal(general.category, 'علوم وتقنية');
 assert.deepEqual(validateCandidate(general, { policy, existingQuestions: [] }).errors, []);
+assert.ok(validateCandidate({ ...general, question: 'أي كوكب يُعرف باسم المشتري؟' }, {
+  policy, existingQuestions: [],
+}).errors.includes('answer_leaked_in_question'));
+assert.ok(validateCandidate({ ...general, explanation: 'اختبر معلوماتك العامة.' }, {
+  policy, existingQuestions: [],
+}).errors.includes('generic_explanation'));
+assert.ok(validateCandidate({ ...general, source: {
+  ...general.source, url: 'https://www.loc.gov/example/source.pdf', publisher: 'Library of Congress',
+} }, { policy, existingQuestions: [] }).errors.includes('direct_file_source'));
+assert.ok(validateCandidate({ ...general, source: {
+  ...general.source, url: 'https://www.nasa.gov/example/answer.png', publisher: 'NASA',
+} }, { policy, existingQuestions: [] }).errors.includes('direct_file_source'));
 assert.ok(validateCandidate({ ...general, source: {
   ...general.source, url: 'https://www.fifa.com/tournaments', publisher: 'FIFA',
 } }, { policy, existingQuestions: [] }).errors.includes('untrusted_source'));
@@ -109,6 +144,7 @@ for (const category of policy.plannedCategories) {
 
 const religious = {
   category: 'القرآن الكريم', difficulty: 'normal', difficultyLevel: 3, religious: true,
+  sourcePacketId: 'quran-2-255-reviewed',
   question: 'في أي سورة وردت آية الكرسي؟', answer: 'سورة البقرة',
   explanation: 'آية الكرسي هي الآية 255 من سورة البقرة.',
   source: {
@@ -118,14 +154,81 @@ const religious = {
     evidence: 'تعرض الصفحة الآية 255 من سورة البقرة وتفسيرها.',
   },
 };
-assert.deepEqual(validateCandidate(religious, { policy, existingQuestions: [] }).errors, []);
+const religiousSourcePackets = [{
+  id: 'quran-2-255-reviewed', work: 'القرآن الكريم', reference: 'سورة البقرة، الآية 255',
+  arabicText: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ',
+  source: {
+    title: 'تفسير سورة البقرة آية 255',
+    url: 'https://quran.ksu.edu.sa/tafseer/katheer/sura2-aya255.html',
+    publisher: 'مشروع المصحف الإلكتروني بجامعة الملك سعود',
+  },
+  humanReview: { approved: true, reviewer: 'مراجع بشري', reviewedAt: '2026-08-24T00:00:00.000Z' },
+}];
+assert.deepEqual(validateCandidate(religious, { policy, existingQuestions: [], religiousSourcePackets }).errors, []);
 assert.ok(validateCandidate({ ...religious, source: general.source }, { policy, existingQuestions: [] }).errors.includes('untrusted_source'));
+assert.ok(validateCandidate({ ...religious, sourcePacketId: '' }, {
+  policy, existingQuestions: [], religiousSourcePackets,
+}).errors.includes('religious_source_packet_missing'));
+assert.deepEqual(policy.religiousRules.allowedPrimaryWorks, ['القرآن الكريم', 'صحيح البخاري']);
+assert.deepEqual(policy.religiousRules.allowedSecondaryWorksWithHumanReview, []);
+assert.equal(policy.legacyReviewedDirectFileSources.length, 9);
+assert.equal(new Set(policy.legacyReviewedDirectFileSources.map(item => `${item.id}|${item.url}`)).size, 9);
+
+const bankPlan = buildExactBankPlan({ targetBankSize: 5000, policy });
+const imageQuestionCount = Object.values(loadReleaseImageQuestionBank()).flat().length;
+const candidates = JSON.parse(fs.readFileSync(
+  new URL('../content/questions/candidates.json', import.meta.url), 'utf8'));
+const publishedIds = new Set(JSON.parse(fs.readFileSync(
+  new URL('../content/questions/published.json', import.meta.url), 'utf8')).map(item => item.id));
+const stagedApprovedCount = candidates.filter(
+  item => item.status === 'approved' && !publishedIds.has(item.id)).length;
+assert.equal(bankPlan.targetBankSize, 5000);
+assert.deepEqual(bankPlan.components, {
+  runtimeText: runtimePlan.runtimeTotal,
+  runtimeImages: imageQuestionCount,
+  stagedApproved: stagedApprovedCount,
+});
+assert.equal(bankPlan.currentTotal, runtimePlan.runtimeTotal + imageQuestionCount + stagedApprovedCount);
+assert.equal(Object.values(bankPlan.visibleTargets).reduce((sum, count) => sum + count, 0), 5000);
+assert.equal(Object.values(bankPlan.categories).reduce((sum, category) => sum + category.target, 0), 5000);
+assert.ok(bankPlan.visibleTargets['إسلاميات'] > 0);
+assert.equal(bankPlan.visibleCategoryCount, 39);
+assert.equal(Object.values(bankPlan.categories).filter(category => category.kind === 'image').length, 7);
+assert.equal(bankPlan.categories['منو هاللاعب؟'], undefined);
+for (const category of Object.values(bankPlan.categories)) {
+  for (const level of Object.values(category.levels)) assert.ok(level.target >= level.current);
+}
+const generationQueue = buildGenerationQueue(bankPlan, policy);
+assert.equal(generationQueue.questionsToGenerate, bankPlan.gapTotal);
+assert.equal(generationQueue.currentQuestionCount + generationQueue.questionsToGenerate, 5000);
+assert.ok(generationQueue.jobs.every(job => job.count >= 1 && job.count <= 25));
+assert.equal(policy.generationStrategy.defaultMode, 'deterministic_structured_source');
+assert.equal(policy.generationStrategy.paidAiGenerationEnabled, false);
+assert.equal(generationQueue.paidAiGenerationEnabled, false);
+assert.ok(generationQueue.jobs.filter(job => job.sourceMode === 'structured_dataset_template')
+  .every(job => job.generationModel === 'deterministic-structured-template-v1' &&
+    job.verificationModel === 'schema-source-and-duplicate-v1' &&
+    job.status === 'blocked_until_structured_source_records'));
+assert.equal(generationQueue.jobs.some(job => /gpt|openai/i.test(
+  `${job.generationModel} ${job.verificationModel}`)), false,
+  'طابور بنك 5000 لا يحتوي أي نموذج AI مدفوع.');
+assert.ok(generationQueue.jobs.filter(job => job.sourceMode === 'double_verified_deterministic_packet')
+  .every(job => job.generationModel === 'deterministic-religious-template-v1' &&
+    job.verificationModel === 'canonical-source-double-verification-v1' &&
+    job.status === 'blocked_until_double_verified_source_packets'));
+assert.ok(generationQueue.jobs.filter(job => job.sourceMode === 'curated_image_with_rights')
+  .every(job => job.generationModel === 'deterministic-curated-image-v1' &&
+    job.verificationModel === 'image-rights-and-asset-v1' &&
+    job.status === 'blocked_until_curated_image_assets'));
 assert.ok(validateCandidate({ ...general, question: 'ما أكبر كوكب في المجموعة الشمسية؟' }, {
   policy, existingQuestions: ['ما هو أكبر كوكب في المجموعة الشمسية؟'],
 }).errors.includes('duplicate_or_near_duplicate'));
 
 const approvedBank = fs.readFileSync(new URL('../www/approved-question-bank.js', import.meta.url), 'utf8');
 assert.match(approvedBank, /__APPROVED_QUESTION_BANK_DATA__/);
+const packageJson = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+assert.match(packageJson.scripts['questions:plan-bank'], /--write/);
+assert.match(packageJson.scripts['questions:build-generation-queue'], /--write/);
 const generator = fs.readFileSync(new URL('../scripts/questions/generate.mjs', import.meta.url), 'utf8');
 assert.match(generator, /gpt-5\.6-terra/);
 assert.match(generator, /gpt-5\.6-sol/);
@@ -134,9 +237,14 @@ assert.match(generator, /web_search/);
 assert.match(generator, /balanced/);
 assert.match(generator, /requestedLevel/);
 assert.match(generator, /trustedHostsForCategory/);
+assert.match(generator, /loadReligiousSourcePackets/);
+assert.match(generator, /ممنوع البحث المفتوح/);
+assert.match(generator, /توليد AI الحر للأسئلة الدينية متوقف دائماً/);
+assert.match(generator, /answerNotRevealed/);
+assert.ok(verificationSchema.properties.results.items.required.includes('answerNotRevealed'));
 assert.match(generator, /buildRuntimeQuestionPlan/);
 assert.match(generator, /allow-oversample/);
 assert.doesNotMatch(generator, /console\.log\([^\n]*OPENAI_API_KEY/);
 console.log('✓ خطة runtime تحسب base + approved + QUESTION_ADDITIONS وفجوات كل مستوى');
 console.log('✓ مسار التوليد يستخدم مصادر الفئة المقيدة ومخرجات منظمة وتحققاً مستقلاً');
-console.log('✓ الأسئلة الدينية لا تُنشر قبل تأكيد المراجعة البشرية للمصدر والإسناد');
+console.log('✓ الأسئلة الدينية تستخدم قوالب حتمية مزدوجة التحقق بلا توليد AI حر');

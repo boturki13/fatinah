@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "mode": "deterministic_structured_source",
+  "estimatedAiCostUsd": 0,
+  "rules": {
+    "aiGenerationForbidden": true,
+    "oneSourceRecordPerQuestion": true,
+    "finalFactSourceRequired": true,
+    "wikidataIsIndexOnly": true,
+    "duplicateAnswerPerLevelForbidden": true,
+    "templatesMustNotRevealAnswer": true
+  },
+  "profiles": [
+    {
+      "id": "wikidata_entities_v1",
+      "description": "كيانات وخصائص ثابتة من Wikidata، مع اشتراط مرجع نهائي من نطاق الفئة الموثوق وعدم اعتماد Wikidata وحده كمصدر للحقيقة.",
+      "ingestion": "wikidata_sparql_plus_referenced_claim",
+      "categories": [
+        "معلومات عامة",
+        "تاريخ",
+        "جغرافيا",
+        "علوم وتقنية",
+        "محرّكات ومركبات",
+        "الفضاء والكون",
+        "حيوانات وطبيعة",
+        "حضارات قديمة",
+        "جسم الإنسان",
+        "أنمي",
+        "ألعاب الفيديو",
+        "كتب وروايات",
+        "اختراعات واكتشافات"
+      ]
+    },
+    {
+      "id": "official_dataset_v1",
+      "description": "سجلات ونتائج وقوائم رسمية تُحوّل مباشرة بقوالب ثابتة بلا إعادة صياغة AI.",
+      "ingestion": "official_json_csv_or_curated_extract",
+      "categories": [
+        "رياضة",
+        "كأس العالم",
+        "أعلام الدول",
+        "خرائط دول",
+        "دوري أبطال أوروبا",
+        "كأس الخليج",
+        "الألعاب الأولمبية"
+      ]
+    },
+    {
+      "id": "curated_trusted_records_v1",
+      "description": "سجلات JSON/CSV قصيرة مستخرجة من نطاقات الفئة الموثوقة ومراجعة آلياً قبل تطبيق القالب.",
+      "ingestion": "curated_record_manifest",
+      "categories": [
+        "أمثال",
+        "ثقافة خليجية",
+        "ألغاز وتحدّي ذكاء",
+        "الشعر العربي",
+        "إجابة سريعة",
+        "مسلسلات خليجية",
+        "أفلام عربية",
+        "أغاني خليجية",
+        "اللغة العربية",
+        "مطابخ العالم",
+        "وش الرابط؟"
+      ]
+    }
+  ]
+}

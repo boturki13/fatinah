@@ -30,17 +30,10 @@ waitForPort = 5000
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 5055
-externalPort = 3000
-
-[[ports]]
-localPort = 5056
-externalPort = 3001
-
 [userenv]
 
 [userenv.shared]
+FATINAH_ENVIRONMENT = "staging"
 FIREBASE_APP_ID = "1:508338410340:web:72f2f45f3499a6c0a52071"
 FIREBASE_AUTH_DOMAIN = "fatinah-game.firebaseapp.com"
 FIREBASE_MESSAGING_SENDER_ID = "508338410340"
@@ -50,6 +43,8 @@ REVENUECAT_IOS_API_KEY = "appl_uqcDNORwLPcxPWRUDjmPPpoMeNM"
 FIRESTORE_DATABASE_ID = "fatinah-native"
 FATINAH_DURABLE_STORAGE = "required"
 FIREBASE_APP_CHECK_ENFORCE = "false"
+FATINAH_V1_APP_CHECK_ENFORCE = "false"
+FATINAH_V2_APP_CHECK_ENFORCE = "true"
 
 [nix]
 channel = "stable-25_05"

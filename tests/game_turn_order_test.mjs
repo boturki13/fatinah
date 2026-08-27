@@ -113,6 +113,11 @@ async function testTwoTeamAlternation(browser) {
         );
         assert.equal(palettes.length, 4, 'تظهر وسائل المساعدة الأربع');
         assert.equal(new Set(palettes).size, 4, 'كل وسيلة مساعدة لها لون مستقل');
+        assert.deepEqual(
+          await page.locator('.ll .lli').allTextContents(),
+          ['🔍', '⚔️', '🔄', '✖️2'],
+          'تبقى رموز وسائل المساعدة المعتمدة ثابتة',
+        );
         assert.equal(
           await page.locator('#timer-hourglass').evaluate(element => element.classList.contains('is-flipped')),
           false,
@@ -188,16 +193,41 @@ async function testLifelineOwnership(browser) {
     try {
       await openQuestion(page);
       await page.getByRole('button', { name: 'بحث بالجوال — فريق اللاعب الأول' }).click();
+      assert.match(await page.locator('#search-timer-label').textContent(),/45/,'مهلة البحث تبدأ من 45 ثانية.');
+      const finishSearch=page.getByRole('button',{name:'حصلنا الإجابة، وقف البحث وكمّل السؤال'});
+      assert.equal(await finishSearch.isEnabled(),true,'يقدر اللاعب ينهي البحث قبل انتهاء المهلة.');
+      const finishRect=await finishSearch.boundingBox();
+      assert.ok(finishRect&&finishRect.width>=44&&finishRect.height>=44,`زر إنهاء البحث يحافظ على هدف لمس 44×44: ${JSON.stringify(finishRect)}`);
       assert.equal(
         await page.locator('#q-flow button:not([disabled])').count(),
         0,
-        'لا يمكن نقل السؤال أثناء دقيقة البحث',
+        'لا يمكن نقل السؤال أثناء مهلة البحث',
+      );
+      assert.equal(
+        await page.locator('#lifelines .ll:not([disabled])').count(),
+        0,
+        'كل وسائل المساعدة تتعطل أثناء مهلة البحث',
       );
       assert.equal(await page.evaluate(() => state.paused), true);
+      const blockedLifeline=await page.evaluate(()=>{
+        const before={phase:state.cur.phase,remaining:state.teams[0].ll,used:[...state.teams[0].used]};
+        const result=useLifeline('pass',0);
+        return {
+          before,result,
+          after:{phase:state.cur.phase,remaining:state.teams[0].ll,used:[...state.teams[0].used]},
+          searching:state.cur.searching,
+        };
+      });
+      assert.equal(blockedLifeline.result,false,'الحارس المنطقي يرفض الوسيلة حتى لو استُدعيت مباشرة.');
+      assert.deepEqual(blockedLifeline.after,blockedLifeline.before,'محاولة الوسيلة أثناء البحث لا تغيّر المرحلة أو الرصيد.');
+      assert.equal(blockedLifeline.searching,true,'مؤقت البحث يبقى في حالته الصحيحة بعد المحاولة المرفوضة.');
+      await finishSearch.click();
+      const finishedEarly=await page.evaluate(()=>({
+        searching:state.cur.searching,paused:state.paused,searchTimeLeft:state.searchTimeLeft,
+        flowEnabled:[...document.querySelectorAll('#q-flow button')].some(button=>!button.disabled),
+      }));
+      assert.deepEqual(finishedEarly,{searching:false,paused:false,searchTimeLeft:0,flowEnabled:true},'إنهاء البحث المبكر يرجع السؤال والعداد والأزرار فوراً.');
       await page.evaluate(() => {
-        clearInterval(state.searchTimer);
-        state.cur.searching = false;
-        state.paused = false;
         advanceSteal(state.cur.token);
       });
       await revealAndResolve(page, 'اللاعب الثاني');

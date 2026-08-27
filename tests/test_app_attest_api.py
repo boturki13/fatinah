@@ -25,6 +25,7 @@ os.environ.update({
     'APPLE_APP_ATTEST_BUNDLE_ID': 'com.fatinah.game',
     'APPLE_DEVICECHECK_ENVIRONMENT': 'development',
     'FIREBASE_PROJECT_ID': 'test-project',
+    'FATINAH_DURABLE_STORAGE': 'off',
 })
 sys.path.insert(0, str(ROOT))
 import server as srv

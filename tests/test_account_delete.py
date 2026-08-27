@@ -15,6 +15,7 @@ os.environ['FIREBASE_PROJECT_ID'] = 'test-project'
 os.environ['GOOGLE_API_KEY'] = ''
 os.environ['FIREBASE_SERVICE_ACCOUNT_JSON'] = ''
 os.environ['FIREBASE_SERVICE_ACCOUNT'] = ''
+os.environ['FATINAH_DURABLE_STORAGE'] = 'off'
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import server as srv

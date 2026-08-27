@@ -22,6 +22,7 @@ os.environ['REVENUECAT_WEBHOOK_SECRET'] = 'TEST_SECRET_XYZ'
 os.environ['FIREBASE_PROJECT_ID']       = ''   # تعطيل Firestore
 os.environ['FIREBASE_SERVICE_ACCOUNT_JSON'] = ''
 os.environ['GOOGLE_API_KEY']            = ''
+os.environ['FATINAH_DURABLE_STORAGE']   = 'off'
 
 # قاعدة بيانات مؤقتة معزولة عن قاعدة الإنتاج
 tmp_db = tempfile.NamedTemporaryFile(suffix='.db', delete=False)

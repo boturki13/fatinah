@@ -47,7 +47,7 @@
 - تتطلب `FATINAH_V1_APP_CHECK_ENFORCE=false` طوال وجود تطبيق 1.2 المنشور، كي
   لا ينقطع عميل لا يرسل App Check.
 - تتطلب تفعيل كل مسارات v2 المخطط طرحها: App Attest، الجولة المجانية، تاريخ الأسئلة،
-  البلاغات، القياسات، تشخيصات iOS، وRevenueCat webhook.
+  بنك الأسئلة المراجع، البلاغات، القياسات، تشخيصات iOS، وRevenueCat webhook.
 
 ### Firebase والتخزين الدائم
 
@@ -94,9 +94,14 @@
 - تتحقق من وجود مفتاح iOS العام بصيغة RevenueCat ومن سر webhook غير تجريبي.
 - تتطلب `ADMIN_SECRET` قوياً كي تبقى نقاط القياسات الإدارية قابلة للإدارة
   وآمنة.
-- لأن النشر autoscale، يجب تفعيل حد طلبات موزع في بوابة/حافة موثوقة أمام
-  مسارات الكتابة ثم ضبط `FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED=true`؛
-  حدود الذاكرة داخل نسخة خادم واحدة ليست ضماناً كافياً في الإنتاج.
+- لأن النشر autoscale، تستخدم مسارات الكتابة والتوليد مجموعة Firestore
+  `distributed_rate_limits` في قاعدة `fatinah-native`. كل عداد sliding-window
+  يُحدّث ذرياً بشرط `updateTime`، واسم الوثيقة بصمة لا تحتوي UID خاماً. فعّل
+  Firestore TTL على الحقل `expire_at` لهذه المجموعة، ثم فقط اضبط العلمين
+  `FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED=true` و
+  `FATINAH_DISTRIBUTED_RATE_LIMIT_TTL_CONFIGURED=true`. في
+  production/Replit لا يوجد رجوع إلى ذاكرة نسخة واحدة: غياب أي علم أو
+  Firestore يفشل مغلقاً.
 - عند تفعيل بلاغات الأسئلة تتطلب مضيف SMTP وعناوين صحيحة ومنفذاً صالحاً،
   وتمنع SMTP النصي: يجب أن يكون STARTTLS أو SSL فعالاً. كما تمنع وجود اسم
   مستخدم بلا كلمة مرور أو العكس.
@@ -120,9 +125,11 @@ FATINAH_V2_DEVICECHECK_ENFORCE
 FATINAH_APP_ATTEST_TTL_CONFIGURED
 FATINAH_IOS_DIAGNOSTICS_TTL_CONFIGURED
 FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED
+FATINAH_DISTRIBUTED_RATE_LIMIT_TTL_CONFIGURED
 FATINAH_V2_FEATURE_APP_ATTEST_ENABLED
 FATINAH_V2_FEATURE_FREE_ROUND_ENABLED
 FATINAH_V2_FEATURE_QUESTION_HISTORY_ENABLED
+FATINAH_V2_FEATURE_QUESTION_BANK_ENABLED
 FATINAH_V2_FEATURE_QUESTION_REPORTS_ENABLED
 FATINAH_V2_FEATURE_METRICS_ENABLED
 FATINAH_V2_FEATURE_IOS_DIAGNOSTICS_ENABLED

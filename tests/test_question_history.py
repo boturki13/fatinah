@@ -14,6 +14,10 @@ from http.server import HTTPServer
 os.environ['FIREBASE_PROJECT_ID'] = 'test-project'
 os.environ['GOOGLE_API_KEY'] = ''
 os.environ['FATINAH_ENVIRONMENT'] = 'local'
+os.environ['FATINAH_DURABLE_STORAGE'] = 'off'
+os.environ['FATINAH_V2_APP_CHECK_ENFORCE'] = 'false'
+os.environ['FATINAH_V2_APP_ATTEST_ENFORCE'] = 'false'
+os.environ['FATINAH_V2_DEVICECHECK_ENFORCE'] = 'false'
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import server as srv
 

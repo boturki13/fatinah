@@ -1,10 +1,10 @@
-export const PRICING_AS_OF = '2026-08-21';
+export const PRICING_AS_OF = '2026-08-24';
 export const WEB_SEARCH_USD_PER_CALL = 0.01;
 export const WEB_SEARCH_CONTEXT_TOKEN_RESERVE_PER_CALL = 8_000;
 
 export const BUILTIN_MODEL_PRICING = Object.freeze({
   'gpt-5.6-terra': Object.freeze({ inputUsdPerMillion: 2, outputUsdPerMillion: 12 }),
-  'gpt-5.6-sol': Object.freeze({ inputUsdPerMillion: 5, outputUsdPerMillion: 30 }),
+  'gpt-5.6-sol': Object.freeze({ inputUsdPerMillion: 4, outputUsdPerMillion: 20 }),
   'gpt-5.6-luna': Object.freeze({ inputUsdPerMillion: 0.20, outputUsdPerMillion: 1.20 }),
 });
 

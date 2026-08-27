@@ -3702,9 +3702,9 @@
     "category": "كتب وروايات",
     "difficulty": "normal",
     "difficultyLevel": 4,
-    "question": "ما اسم الشخصية الرئيسية التي يحمل عنوان رواية «صورة دوريان غراي» اسمها؟",
+    "question": "من الشخصية التي يرتبط مصيرها بصورة مرسومة تبقى شابة بينما تظهر عليها آثار العمر؟",
     "answer": "دوريان غراي",
-    "explanation": "يظهر اسم الشخصية صراحةً في عنوان العمل وسجل النسخة.",
+    "explanation": "دوريان غراي هو صاحب الصورة التي تحمل آثار عمره وأفعاله بدلاً منه.",
     "religious": false,
     "source": {
       "title": "The Picture of Dorian Gray",
@@ -3831,9 +3831,9 @@
     "category": "كتب وروايات",
     "difficulty": "normal",
     "difficultyLevel": 4,
-    "question": "ما اسم العالم الذي يحمل عنوان رواية «فرانكنشتاين» اسمه؟",
+    "question": "من العالم الشاب الذي صنع مخلوقاً حياً في رواية ماري شيلي؟",
     "answer": "فيكتور فرانكنشتاين",
-    "explanation": "اسم الشخصية مثبت في بيانات الكتاب بوصفه شخصية خيالية في الرواية.",
+    "explanation": "فيكتور فرانكنشتاين هو العالم الشاب الذي يصنع المخلوق في رواية ماري شيلي.",
     "religious": false,
     "source": {
       "title": "Frankenstein; or, the Modern Prometheus",
@@ -5243,6 +5243,416 @@
       "notes": "اجتاز التحقق المستقل واختير ضمن دفعة 1.3 المتوازنة مع مراجعة التنوع والمصدر.",
       "religiousSourceAndIsnadConfirmed": false,
       "reviewedAt": "2026-08-20T11:07:14.538Z"
+    }
+  },
+  {
+    "id": "gq-5c0da9897bdf97f982e7",
+    "category": "معلومات عامة",
+    "difficulty": "easy",
+    "difficultyLevel": 1,
+    "question": "في أي مدينة تقع الأكروبوليس الشهيرة؟",
+    "answer": "أثينا",
+    "explanation": "تقع الأكروبوليس ومعابدها التاريخية في مدينة أثينا عاصمة اليونان.",
+    "religious": false,
+    "source": {
+      "title": "Acropolis, Athens",
+      "url": "https://whc.unesco.org/en/list/404",
+      "publisher": "UNESCO World Heritage Centre",
+      "evidence": "عنوان الصفحة يحدد الموقع بوضوح: أكروبوليس أثينا."
+    },
+    "status": "approved",
+    "generation": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_07b01569812581ba016a8c9536b63487d2ba8ab7677e1b1fc5",
+      "generatedAt": "2026-08-24T19:04:25.824Z",
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-24",
+        "inputTokens": 64121,
+        "outputTokens": 6335,
+        "webSearchCalls": 10,
+        "inputCostUsd": 0.128242,
+        "outputCostUsd": 0.07602,
+        "webSearchCostUsd": 0.1,
+        "estimatedUsd": 0.30426200000000003,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 70456,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 3470
+      }
+    },
+    "verification": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_090f60ff8d9ade0e016a8c95a87af087d2bbf1cffadd1bd8c6",
+      "checkedAt": "2026-08-24T19:04:25.824Z",
+      "result": {
+        "index": 2,
+        "verdict": "pass",
+        "factCorrect": true,
+        "answerExact": true,
+        "sourceSupportsClaim": true,
+        "clearArabic": true,
+        "reason": "عنوان صفحة اليونسكو الرسمية هو «Acropolis, Athens» ويحدد المدينة مباشرة."
+      },
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-24",
+        "inputTokens": 22154,
+        "outputTokens": 931,
+        "webSearchCalls": 2,
+        "inputCostUsd": 0.044308,
+        "outputCostUsd": 0.011172,
+        "webSearchCostUsd": 0.02,
+        "estimatedUsd": 0.07548,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 23085,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 454
+      }
+    },
+    "cost": {
+      "pricingAsOf": "2026-08-24",
+      "budgetUsd": 1.15,
+      "runEstimatedUsd": 0.379742
+    },
+    "review": {
+      "reviewer": "codex-assisted-source-check",
+      "decision": "approve",
+      "notes": "عنوان صفحة اليونسكو يحدد أثينا والسؤال واضح للمستوى الأول.",
+      "religiousSourceAndIsnadConfirmed": false,
+      "religiousCanonicalSourceConfirmed": false,
+      "religiousNoDisputedMatterConfirmed": false,
+      "reviewedAt": "2026-08-24T19:07:41.613Z"
+    }
+  },
+  {
+    "id": "gq-6287c7b6cc8b76270444",
+    "category": "معلومات عامة",
+    "difficulty": "easy",
+    "difficultyLevel": 1,
+    "question": "ما المادة الأساسية التي شُيّد منها تاج محل؟",
+    "answer": "الرخام الأبيض",
+    "explanation": "شُيّد ضريح تاج محل من الرخام الأبيض، وهو أبرز مواد واجهته المعمارية.",
+    "religious": false,
+    "source": {
+      "title": "Taj Mahal",
+      "url": "https://whc.unesco.org/en/list/252",
+      "publisher": "UNESCO World Heritage Centre",
+      "evidence": "تصف الصفحة تاج محل بأنه ضريح هائل شُيّد من الرخام الأبيض."
+    },
+    "status": "approved",
+    "generation": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_07b01569812581ba016a8c9536b63487d2ba8ab7677e1b1fc5",
+      "generatedAt": "2026-08-24T19:04:25.824Z",
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-24",
+        "inputTokens": 64121,
+        "outputTokens": 6335,
+        "webSearchCalls": 10,
+        "inputCostUsd": 0.128242,
+        "outputCostUsd": 0.07602,
+        "webSearchCostUsd": 0.1,
+        "estimatedUsd": 0.30426200000000003,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 70456,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 3470
+      }
+    },
+    "verification": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_090f60ff8d9ade0e016a8c95a87af087d2bbf1cffadd1bd8c6",
+      "checkedAt": "2026-08-24T19:04:25.824Z",
+      "result": {
+        "index": 0,
+        "verdict": "pass",
+        "factCorrect": true,
+        "answerExact": true,
+        "sourceSupportsClaim": true,
+        "clearArabic": true,
+        "reason": "صفحة اليونسكو الرسمية تذكر أن تاج محل شُيّد من الرخام الأبيض."
+      },
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-24",
+        "inputTokens": 22154,
+        "outputTokens": 931,
+        "webSearchCalls": 2,
+        "inputCostUsd": 0.044308,
+        "outputCostUsd": 0.011172,
+        "webSearchCostUsd": 0.02,
+        "estimatedUsd": 0.07548,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 23085,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 454
+      }
+    },
+    "cost": {
+      "pricingAsOf": "2026-08-24",
+      "budgetUsd": 1.15,
+      "runEstimatedUsd": 0.379742
+    },
+    "review": {
+      "reviewer": "codex-assisted-source-check",
+      "decision": "approve",
+      "notes": "مطابق لصفحة اليونسكو العربية ومناسب للمستوى الأول بعد تصحيح الشرح.",
+      "religiousSourceAndIsnadConfirmed": false,
+      "religiousCanonicalSourceConfirmed": false,
+      "religiousNoDisputedMatterConfirmed": false,
+      "reviewedAt": "2026-08-24T19:07:35.833Z"
+    }
+  },
+  {
+    "id": "gq-70166ceec5c373fb6b74",
+    "category": "معلومات عامة",
+    "difficulty": "easy",
+    "difficultyLevel": 1,
+    "question": "في أي دولة يمتد السور العظيم الذي بدأ توحيد أجزائه قرابة عام 220 قبل الميلاد؟",
+    "answer": "الصين",
+    "explanation": "يمتد سور الصين العظيم عبر مناطق شمال الصين، وقد بُني على مراحل تاريخية متعددة.",
+    "religious": false,
+    "source": {
+      "title": "The Great Wall",
+      "url": "https://whc.unesco.org/en/list/438",
+      "publisher": "UNESCO World Heritage Centre",
+      "evidence": "تذكر الصفحة أن سور الصين العظيم يقع في الصين."
+    },
+    "status": "approved",
+    "generation": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_07b01569812581ba016a8c9536b63487d2ba8ab7677e1b1fc5",
+      "generatedAt": "2026-08-24T19:04:25.824Z",
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-24",
+        "inputTokens": 64121,
+        "outputTokens": 6335,
+        "webSearchCalls": 10,
+        "inputCostUsd": 0.128242,
+        "outputCostUsd": 0.07602,
+        "webSearchCostUsd": 0.1,
+        "estimatedUsd": 0.30426200000000003,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 70456,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 3470
+      }
+    },
+    "verification": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_090f60ff8d9ade0e016a8c95a87af087d2bbf1cffadd1bd8c6",
+      "checkedAt": "2026-08-24T19:04:25.824Z",
+      "result": {
+        "index": 1,
+        "verdict": "pass",
+        "factCorrect": true,
+        "answerExact": true,
+        "sourceSupportsClaim": true,
+        "clearArabic": true,
+        "reason": "صفحة اليونسكو الرسمية تعرض الموقع بوصفه «السور العظيم» في الصين."
+      },
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-24",
+        "inputTokens": 22154,
+        "outputTokens": 931,
+        "webSearchCalls": 2,
+        "inputCostUsd": 0.044308,
+        "outputCostUsd": 0.011172,
+        "webSearchCostUsd": 0.02,
+        "estimatedUsd": 0.07548,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 23085,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 454
+      }
+    },
+    "cost": {
+      "pricingAsOf": "2026-08-24",
+      "budgetUsd": 1.15,
+      "runEstimatedUsd": 0.379742
+    },
+    "review": {
+      "reviewer": "codex-assisted-source-check",
+      "decision": "approve",
+      "notes": "الموقع مؤكد من اليونسكو والسؤال مباشر ومناسب للمستوى الأول.",
+      "religiousSourceAndIsnadConfirmed": false,
+      "religiousCanonicalSourceConfirmed": false,
+      "religiousNoDisputedMatterConfirmed": false,
+      "reviewedAt": "2026-08-24T19:07:38.613Z"
+    }
+  },
+  {
+    "id": "gq-958354d934712bc7615a",
+    "category": "معلومات عامة",
+    "difficulty": "easy",
+    "difficultyLevel": 1,
+    "question": "ما أكبر حيوان فقاري عاش على الأرض؟",
+    "answer": "الحوت الأزرق",
+    "explanation": "الحوت الأزرق هو أكبر حيوان فقاري معروف عاش على الأرض.",
+    "religious": false,
+    "source": {
+      "title": "Only Recently Did Whales Become Giant",
+      "url": "https://www.si.edu/stories/only-recently-did-whales-become-giant",
+      "publisher": "Smithsonian Institution",
+      "evidence": "تصف الصفحة الحوت الأزرق بأنه أكبر حيوان فقاري عاش على الإطلاق."
+    },
+    "status": "approved",
+    "generation": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_07b01569812581ba016a8c9536b63487d2ba8ab7677e1b1fc5",
+      "generatedAt": "2026-08-24T19:04:25.824Z",
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-24",
+        "inputTokens": 64121,
+        "outputTokens": 6335,
+        "webSearchCalls": 10,
+        "inputCostUsd": 0.128242,
+        "outputCostUsd": 0.07602,
+        "webSearchCostUsd": 0.1,
+        "estimatedUsd": 0.30426200000000003,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 70456,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 3470
+      }
+    },
+    "verification": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_090f60ff8d9ade0e016a8c95a87af087d2bbf1cffadd1bd8c6",
+      "checkedAt": "2026-08-24T19:04:25.824Z",
+      "result": {
+        "index": 3,
+        "verdict": "pass",
+        "factCorrect": true,
+        "answerExact": true,
+        "sourceSupportsClaim": true,
+        "clearArabic": true,
+        "reason": "صفحة سميثسونيان تنص مباشرة على أن الحوت الأزرق أكبر حيوان فقاري عاش على الإطلاق."
+      },
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-24",
+        "inputTokens": 22154,
+        "outputTokens": 931,
+        "webSearchCalls": 2,
+        "inputCostUsd": 0.044308,
+        "outputCostUsd": 0.011172,
+        "webSearchCostUsd": 0.02,
+        "estimatedUsd": 0.07548,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 23085,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 454
+      }
+    },
+    "cost": {
+      "pricingAsOf": "2026-08-24",
+      "budgetUsd": 1.15,
+      "runEstimatedUsd": 0.379742
+    },
+    "review": {
+      "reviewer": "codex-assisted-source-check",
+      "decision": "approve",
+      "notes": "سميثسونيان يذكر أن الحوت الأزرق أكبر حيوان فقاري عاش، والسؤال مناسب.",
+      "religiousSourceAndIsnadConfirmed": false,
+      "religiousCanonicalSourceConfirmed": false,
+      "religiousNoDisputedMatterConfirmed": false,
+      "reviewedAt": "2026-08-24T19:07:44.478Z"
+    }
+  },
+  {
+    "id": "gq-b323bc676c730bf82922",
+    "category": "معلومات عامة",
+    "difficulty": "easy",
+    "difficultyLevel": 1,
+    "question": "في أي دولة يقع الحاجز المرجاني العظيم؟",
+    "answer": "أستراليا",
+    "explanation": "يقع الحاجز المرجاني العظيم قبالة الساحل الشمالي الشرقي لأستراليا.",
+    "religious": false,
+    "source": {
+      "title": "Great Barrier Reef",
+      "url": "https://whc.unesco.org/en/list/154",
+      "publisher": "مركز التراث العالمي لليونسكو",
+      "evidence": "تحدد الصفحة موقع الحاجز المرجاني العظيم على الساحل الشمالي الشرقي لأستراليا."
+    },
+    "status": "approved",
+    "generation": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_06a9214c74086ce1016a8c9277cd0887d2bc62a8b8f73b366d",
+      "generatedAt": "2026-08-24T18:51:18.335Z",
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-24",
+        "inputTokens": 28685,
+        "outputTokens": 1719,
+        "webSearchCalls": 6,
+        "inputCostUsd": 0.05737,
+        "outputCostUsd": 0.020628,
+        "webSearchCostUsd": 0.06,
+        "estimatedUsd": 0.137998,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 30404,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 1329
+      }
+    },
+    "verification": {
+      "model": "gpt-5.6-terra",
+      "responseId": "resp_07b886a28d824679016a8c929ebac087d28c8dc923c251f79b",
+      "checkedAt": "2026-08-24T18:51:18.335Z",
+      "result": {
+        "index": 0,
+        "verdict": "pass",
+        "factCorrect": true,
+        "answerExact": true,
+        "sourceSupportsClaim": true,
+        "clearArabic": true,
+        "reason": "الإجابة صحيحة ومحددة، والمصدر الرسمي لليونسكو يذكر أن الحاجز المرجاني العظيم يقع على الساحل الشمالي الشرقي لأستراليا."
+      },
+      "usage": {
+        "model": "gpt-5.6-terra",
+        "pricingSource": "builtin",
+        "pricingAsOf": "2026-08-24",
+        "inputTokens": 17487,
+        "outputTokens": 361,
+        "webSearchCalls": 2,
+        "inputCostUsd": 0.034974,
+        "outputCostUsd": 0.004332,
+        "webSearchCostUsd": 0.02,
+        "estimatedUsd": 0.059306,
+        "kind": "actual_usage_estimate",
+        "totalTokens": 17848,
+        "cachedInputTokens": 0,
+        "reasoningOutputTokens": 209
+      }
+    },
+    "cost": {
+      "pricingAsOf": "2026-08-24",
+      "budgetUsd": 0.5,
+      "runEstimatedUsd": 0.197304
+    },
+    "review": {
+      "reviewer": "codex-assisted-source-check",
+      "decision": "approve",
+      "notes": "تمت مطابقة السؤال والإجابة مع صفحة اليونسكو الرسمية، والنص العربي يحدد الساحل الأسترالي.",
+      "religiousSourceAndIsnadConfirmed": false,
+      "religiousCanonicalSourceConfirmed": false,
+      "religiousNoDisputedMatterConfirmed": false,
+      "reviewedAt": "2026-08-24T18:54:41.518Z"
     }
   },
   {
