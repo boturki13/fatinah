@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const url = `file://${path.join(root, 'www/index.html')}`;
+const url = `file://${path.join(root, 'www/index.html')}?preview=1`;
 const sizes = [
   ['iPhone portrait', 390, 844], ['iPhone landscape', 844, 390],
   ['iPad portrait', 820, 1180], ['iPad landscape', 1180, 820],
@@ -125,6 +125,13 @@ try {
   }
   {
     const page=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
+    await page.addInitScript(()=>{
+      window.__FATINAH_GAME_FLOW_UI_TEST__=true;
+      const names=['شخصيات تاريخية','من أنا؟'];
+      window.__FATINAH_GAME_FLOW_UI_TEST_FIXTURE__={catalog:{schemaVersion:1,questionSchemaVersion:1,
+        releaseReady:true,bankVersion:'responsive-test-bank',questionCount:180,
+        categories:names.map(name=>({name,questionCount:90,levels:{'1':15,'2':15,'3':15,'4':15,'5':15,'6':15}}))}};
+    });
     await page.goto(url);
     const categoryVisuals=await page.evaluate(async()=>{
       await ensureQuestionBank();
@@ -133,8 +140,8 @@ try {
       state.catCount=2; state.pickSplit=[1,1]; state.pickTurn=0; state.pickedByTeam=[0,0];
       go('s-cats'); renderCats();
       const cards=[...document.querySelectorAll('#cat-grid .cat-pick')];
-      const visuals=Object.entries(CAT_VISUALS).map(([category,visual])=>({category,...visual,...categoryVisual(category)}));
-      const history=cards.find(card=>card.dataset.category==='تاريخ');
+      const visuals=ALL_CATS.map(category=>({category,...categoryVisual(category)}));
+      const history=cards.find(card=>card.dataset.category==='شخصيات تاريخية');
       const islamic=cards.find(card=>card.dataset.category==='إسلاميات');
       const hiddenIslamicSources=ISLAMIC_SOURCE_CATEGORIES.filter(category=>cards.some(card=>card.dataset.category===category));
       const iconRect=history.querySelector('.ci').getBoundingClientRect();
@@ -151,6 +158,8 @@ try {
       homeTitle.setAttribute('tabindex','-1'); homeTitle.focus();
       return {
         defined:visuals.length,
+        expected:ALL_CATS.length,
+        releasedImageCategories:releasedRuntimeImageCategories(),
         uniqueIcons:new Set(visuals.map(visual=>visual.icon)).size,
         invalidTones:visuals.filter(visual=>!CATEGORY_TONES[visual.tone]).map(visual=>visual.category),
         rendered:cards.length,
@@ -166,13 +175,14 @@ try {
         titleOutline:getComputedStyle(homeTitle).outlineStyle,
       };
     });
-    assert.equal(categoryVisuals.defined,47,'كل الفئات الداخلية وفئة إسلاميات المدمجة لها هوية بصرية صريحة.');
-    assert.equal(categoryVisuals.uniqueIcons,categoryVisuals.defined,'كل فئة لها أيقونة مختلفة عن الثانية.');
+    assert.equal(categoryVisuals.defined,categoryVisuals.expected,'كل فئات الإصدار المنشورة لها هوية بصرية صريحة.');
+    assert.deepEqual(categoryVisuals.releasedImageCategories,[],
+      'الفئات غير الموجودة في كتالوج الخادم لا تُضاف من نسخة محلية.');
     assert.deepEqual(categoryVisuals.invalidTones,[],'كل فئة مرتبطة بلون معتمد.');
     assert.equal(categoryVisuals.rendered,categoryVisuals.selectableCount,'كل الفئات المنشورة تظهر ببطاقاتها الملونة.');
     assert.deepEqual(categoryVisuals.missingStyle,[],'كل بطاقة معروضة تستلم أيقونتها ولونها.');
-    assert.deepEqual(categoryVisuals.history,{icon:'📚',tone:'gold',accent:'#FFD24B',iconWidth:46,iconHeight:46},'التاريخ يظهر بكتب ذهبية داخل هدف بصري واضح.');
-    assert.deepEqual(categoryVisuals.islamic,{exists:true,icon:'🕌',questionCount:categoryVisuals.islamic.sourceCount,sourceCount:categoryVisuals.islamic.sourceCount},'إسلاميات تظهر وحدها وتجمع كل أسئلة الفئات السبع.');
+    assert.deepEqual(categoryVisuals.history,{icon:'👤',tone:'gold',accent:'#FFD24B',iconWidth:46,iconHeight:46},'الشخصيات التاريخية تظهر بهوية ذهبية داخل هدف بصري واضح.');
+    assert.equal(categoryVisuals.islamic.exists,false,'الفئات غير الموجودة في نطاق الإصدار الجديد لا تظهر للاعب.');
     assert.deepEqual(categoryVisuals.hiddenIslamicSources,[],'الفئات الإسلامية السبع القديمة ما تظهر منفصلة للاعب.');
     assert.equal(categoryVisuals.cardsInsideViewport,true,'كل بطاقات الفئات تبقى داخل حدود شاشة الآيفون.');
     assert.equal(categoryVisuals.scaledTextContained,true,'أسماء الفئات تبقى كاملة داخل البطاقات حتى مع تكبير الخط إلى 200٪.');

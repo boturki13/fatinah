@@ -2,19 +2,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadImageQuestionBank } from '../questions/lib.mjs';
 import { familySafetyDecision } from './family-safety-policy.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const output = path.join(root, 'server-assets', 'question-images', 'release-manifest.json');
-const excludedCategories = new Set(['منو هاللاعب؟']);
 const published = process.argv.includes('--published');
-const bank = loadImageQuestionBank();
+const curatedBankPath = path.join(root, 'server-assets', 'question-images', 'curated-question-bank.json');
+const curatedDocument = JSON.parse(fs.readFileSync(curatedBankPath, 'utf8'));
+if (curatedDocument.releaseReady !== true || curatedDocument.questionCount !== 300) {
+  throw new Error('بنك الصور القابل للعب غير جاهز أو لا يحتوي 300 سؤال.');
+}
+const bank = curatedDocument.categories;
 const items = [];
 
 for (const [category, questions] of Object.entries(bank)) {
-  if (excludedCategories.has(category)) continue;
-  if (questions.length !== 125) throw new Error(`${category}: العدد ${questions.length}/125.`);
   for (const question of questions) {
     const safety = familySafetyDecision(category, question);
     if (!safety.allowed) throw new Error(`${question.id}: مرفوض حسب سياسة المحتوى العائلي (${safety.reason}).`);
@@ -54,9 +55,12 @@ const manifest = {
   status: published ? 'published' : 'ready_for_upload_not_published',
   ...(published ? { publishedAt: new Date().toISOString() } : {}),
   activationRule: 'لا تُفعّل الفئة في التطبيق قبل رفع كل الملفات والتحقق من استجابة HTTPS والبصمة.',
-  excludedCategories: [...excludedCategories],
+  scope: 'playable_curated_bank_only',
+  bankVersion: curatedDocument.bankVersion,
+  bankSha256: curatedDocument.sha256,
+  excludedCategories: ['منو هاللاعب؟'],
   categoryCount: categories.length,
-  questionCount: categories.reduce((sum, category) => sum + bank[category].length, 0),
+  questionCount: Object.values(bank).flat().length,
   assetCount: items.length,
   totalBytes: items.reduce((sum, item) => sum + item.bytes, 0),
   categories,

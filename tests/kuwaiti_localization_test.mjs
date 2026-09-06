@@ -9,6 +9,13 @@ const browser = await chromium.launch();
 
 try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await page.addInitScript(()=>{
+    window.__FATINAH_GAME_FLOW_UI_TEST__=true;
+    window.__FATINAH_GAME_FLOW_UI_TEST_FIXTURE__={catalog:{
+      schemaVersion:1,questionSchemaVersion:1,releaseReady:true,bankVersion:'localization-test',questionCount:90,
+      categories:[{name:'من أنا؟',questionCount:90,levels:{'1':15,'2':15,'3':15,'4':15,'5':15,'6':15}}],
+    }};
+  });
   await page.route('**/*', route => {
     if (route.request().url().startsWith('file://')) return route.continue();
     return route.abort();
@@ -34,8 +41,6 @@ try {
       ...document.querySelectorAll('section:not(#s-privacy):not(#s-terms), .q-wrap, .modal-wrap, .offline-bar'),
     ].map(element => element.textContent || '').join(' ');
     const nonKuwaitiUi = /(وش|مين|أهلاً|كم فريق|كم عدد|اختر|جاري|لا أحد|استئناف|توقّف مؤقّت)/u;
-    const original = questions.find(question => /^(وش|مين)\s/u.test(question.q));
-
     return {
       lang: document.documentElement.lang,
       samples,
@@ -43,8 +48,7 @@ try {
       invalidUi: uiText.match(nonKuwaitiUi)?.[0] || '',
       category: displayCategoryName('وش الرابط؟'),
       userQuestion: displayQuestionText({ q: 'وش اسم جدّي؟' }),
-      originalQuestionStillStored: original?.q || '',
-      displayedOriginal: original ? displayQuestionText(original) : '',
+      localQuestionCount:questions.length,
       legalPrivacy: document.querySelector('#s-privacy')?.textContent || '',
       legalTerms: document.querySelector('#s-terms')?.textContent || '',
     };
@@ -58,8 +62,7 @@ try {
   assert.equal(audit.invalidUi, '', `بقي لفظ غير كويتي في الواجهة: ${audit.invalidUi}`);
   assert.equal(audit.category, 'شنو الرابط؟');
   assert.equal(audit.userQuestion, 'وش اسم جدّي؟', 'لا تغيّر النص الذي كتبه المستخدم بنفسه.');
-  assert.match(audit.originalQuestionStillStored, /^(وش|مين)\s/u, 'نص البنك المراجع يبقى محفوظاً كما نُشر.');
-  assert.doesNotMatch(audit.displayedOriginal, /^(وش|مين)\s/u, 'طبقة العرض وحدها تحوّل نص البنك.');
+  assert.equal(audit.localQuestionCount,0,'لا يجب أن توجد أسئلة محلية في تطبيق 1.4.');
   assert.match(audit.legalPrivacy, /تطبيق فطنة يحترم خصوصيتك/u, 'سياسة الخصوصية تبقى عربية رسمية.');
   assert.match(audit.legalTerms, /التطبيق مقدَّم "كما هو" بدون ضمانات/u, 'شروط الاستخدام تبقى عربية رسمية.');
 

@@ -10,8 +10,10 @@ const accountA = 'firebase-account-a';
 const accountB = 'firebase-account-b';
 const accountC = 'firebase-account-c';
 const rcA = '11111111-1111-4111-8111-111111111111';
+const rcCanonicalA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const rcB = '22222222-2222-4222-8222-222222222222';
 const rcC = '33333333-3333-4333-8333-333333333333';
+const canonicalByUid = { [accountA]: rcCanonicalA, [accountB]: rcB, [accountC]: rcC };
 
 function installRevenueCatHarness({ accountA, rcA, rcB, rcC }) {
   localStorage.setItem('fatinah_authProvider', JSON.stringify('firebase'));
@@ -85,11 +87,18 @@ function installRevenueCatHarness({ accountA, rcA, rcB, rcC }) {
 const browser = await chromium.launch();
 try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const identityRequests=[];
   await page.addInitScript(installRevenueCatHarness, { accountA, rcA, rcB, rcC });
   await page.route('**/*', route => {
     if(route.request().url().startsWith('file://')) return route.continue();
     if(route.request().url().includes('/api/v2/revenuecat/identity')) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+      const payload=JSON.parse(route.request().postData()||'{}');
+      identityRequests.push(payload);
+      return route.fulfill({
+        status:200,
+        contentType:'application/json',
+        body:JSON.stringify({rcAppUserId:canonicalByUid[payload.uid]}),
+      });
     }
     if(route.request().url().includes('/api/v2/subscription/status')) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{"active":false}' });
@@ -100,11 +109,22 @@ try {
   await page.goto(url);
   await page.locator('#s-home.active').waitFor({ state: 'visible', timeout: 8000 });
   assert.equal(await page.evaluate(() => rcIsActive()), true);
+  assert.deepEqual(identityRequests[0],{
+    uid:accountA,
+    idToken:`token-${accountA}`,
+    legacyRcAppUserId:rcA,
+  },'العميل يرسل UUID القديم كتلميح ترحيل فقط، ويستهلك الهوية الخادمية.');
+  const canonicalState=await page.evaluate(()=>({
+    stored:JSON.parse(localStorage.getItem('fatinah_rcAppUserIds'))?.['firebase-account-a'],
+    configured:window.__rcCalls.configure[0],
+  }));
+  assert.deepEqual(canonicalState,{stored:rcCanonicalA,configured:rcCanonicalA},
+    'الهوية canonical المختلفة عن legacy هي التي تُحفظ وتُمرر لـ RevenueCat.');
 
   const cacheA = await page.evaluate(() => JSON.parse(localStorage.getItem('fatinah_rcSubCache')));
   assert.deepEqual(
     { uid: cacheA.uid, rcAppUserId: cacheA.rcAppUserId, active: cacheA.active },
-    { uid: accountA, rcAppUserId: rcA, active: true },
+    { uid: accountA, rcAppUserId: rcCanonicalA, active: true },
     'يجب ربط كاش الاشتراك بالحساب أ وهويته المؤكدة داخل RevenueCat',
   );
 

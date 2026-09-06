@@ -13,7 +13,7 @@ from http.server import HTTPServer
 
 os.environ['FIREBASE_PROJECT_ID'] = 'test-project'
 os.environ['GOOGLE_API_KEY'] = ''
-os.environ['FIREBASE_SERVICE_ACCOUNT_JSON'] = ''
+os.environ['FIREBASE_SERVICE_ACCOUNT_JSON'] = '{"project_id":"test-project"}'
 os.environ['FIREBASE_SERVICE_ACCOUNT'] = ''
 os.environ['FATINAH_DURABLE_STORAGE'] = 'off'
 
@@ -64,9 +64,26 @@ with sqlite3.connect(tmp_db.name) as schema_conn:
         );
     """)
 
-srv.uid_matches_token = lambda uid, token: (
-    uid == 'uid-delete-test' and token == 'TEST_ID_TOKEN'
-)
+def fake_verify_id_token(token):
+    claims = {
+        'TEST_ID_TOKEN': {
+            'localId': 'uid-delete-test',
+            'authTime': int(time.time()),
+            'signInProvider': 'password',
+        },
+        'OLD_ID_TOKEN': {
+            'localId': 'uid-delete-test',
+            'authTime': int(time.time()) - 3600,
+            'signInProvider': 'apple.com',
+        },
+        'MISSING_AUTH_TIME_TOKEN': {
+            'localId': 'uid-delete-test',
+            'signInProvider': 'google.com',
+        },
+    }
+    return claims.get(token)
+
+srv.verify_firebase_id_token = fake_verify_id_token
 
 firestore_calls = []
 firestore_should_fail = False
@@ -139,11 +156,25 @@ def seed_user():
     conn.commit()
     conn.close()
 
-def post_delete():
-    payload = json.dumps({'uid': uid, 'idToken': 'TEST_ID_TOKEN'}).encode()
+def post_delete(token='TEST_ID_TOKEN'):
+    payload = json.dumps({'uid': uid, 'idToken': token}).encode()
     req = urllib.request.Request(
         base + '/api/account/delete',
         data=payload,
+        method='POST',
+        headers={'Content-Type': 'application/json'},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5) as response:
+            return response.status, json.loads(response.read())
+    except urllib.error.HTTPError as error:
+        return error.code, json.loads(error.read())
+
+
+def post_json(path, payload):
+    req = urllib.request.Request(
+        base + path,
+        data=json.dumps(payload).encode(),
         method='POST',
         headers={'Content-Type': 'application/json'},
     )
@@ -178,6 +209,18 @@ def user_rows():
 
 try:
     seed_user()
+    status, body = post_delete('OLD_ID_TOKEN')
+    assert status == 401 and body.get('code') == 'recent_auth_required', body
+    assert all(value == 1 for value in user_rows().values()), user_rows()
+
+    status, body = post_delete('MISSING_AUTH_TIME_TOKEN')
+    assert status == 401 and body.get('code') == 'recent_auth_required', body
+    assert all(value == 1 for value in user_rows().values()), user_rows()
+
+    status, body = post_delete('')
+    assert status == 401 and body.get('code') == 'invalid_auth_token', body
+    assert all(value == 1 for value in user_rows().values()), user_rows()
+
     firestore_should_fail = True
     status, body = post_delete()
     assert status == 503 and body.get('ok') is not True
@@ -188,7 +231,65 @@ try:
     assert status == 200 and body.get('ok') is True
     assert all(value == 0 for value in user_rows().values()), user_rows()
     assert firestore_calls == [uid, uid], firestore_calls
-    print('account delete: Firestore failure rolls back; success removes all user rows')
+
+    canonical_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    legacy_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    identity_calls = []
+    srv.local_revenuecat_identity = lambda _uid: None
+    srv.claim_firestore_revenuecat_identity = lambda bound_uid, **kwargs: (
+        identity_calls.append(('v2', bound_uid, kwargs)) or canonical_id)
+    def fake_v1_claim(bound_uid, claimed_id, *, allow_bootstrap):
+        identity_calls.append(
+            ('v1', bound_uid, claimed_id, allow_bootstrap))
+        if not allow_bootstrap:
+            raise srv.RevenueCatV1BootstrapDisabledError('upgrade required')
+        return claimed_id
+    srv.claim_v1_firestore_revenuecat_identity = fake_v1_claim
+    cache_calls = []
+    def failing_identity_cache(bound_uid, claimed_id, **kwargs):
+        cache_calls.append((bound_uid, claimed_id, kwargs))
+        raise sqlite3.OperationalError('simulated stale cache lock')
+    srv.cache_revenuecat_identity = failing_identity_cache
+    srv.replay_pending_revenuecat_events = lambda _rc_id: 2
+
+    status, response = post_json('/api/v2/revenuecat/identity', {
+        'uid': uid,
+        'idToken': 'TEST_ID_TOKEN',
+        'legacyRcAppUserId': legacy_id,
+    })
+    assert status == 200 and response == {
+        'ok': True, 'rcAppUserId': canonical_id, 'replayed': 2,
+    }, response
+    assert identity_calls[-1] == (
+        'v2', uid, {'legacy_hint': legacy_id, 'trusted_local_id': ''})
+    assert cache_calls[-1] == (
+        uid, canonical_id, {'authoritative': True})
+
+    # Keep this HTTP integration isolated from production's distributed rate
+    # limiter; the unit test above separately proves production defaults false.
+    os.environ['FATINAH_ENVIRONMENT'] = 'staging'
+    os.environ['FATINAH_V1_REVENUECAT_BOOTSTRAP_ENABLED'] = 'false'
+    status, response = post_json('/api/revenuecat/identity', {
+        'uid': uid,
+        'idToken': 'TEST_ID_TOKEN',
+        'rcAppUserId': legacy_id,
+    })
+    assert status == 426, response
+    assert response.get('code') == 'revenuecat_v2_upgrade_required', response
+    assert identity_calls[-1] == ('v1', uid, legacy_id, False)
+
+    os.environ['FATINAH_V1_REVENUECAT_BOOTSTRAP_ENABLED'] = 'true'
+    status, response = post_json('/api/revenuecat/identity', {
+        'uid': uid,
+        'idToken': 'TEST_ID_TOKEN',
+        'rcAppUserId': legacy_id,
+    })
+    assert status == 200 and response == {
+        'ok': True, 'rcAppUserId': legacy_id, 'replayed': 2,
+    }, response
+    assert identity_calls[-1] == ('v1', uid, legacy_id, True)
+    assert cache_calls[-1] == (uid, legacy_id, {'authoritative': True})
+    print('account delete: fresh auth required; Firestore failure rolls back; success removes all rows')
 finally:
     httpd.shutdown()
     os.unlink(tmp_db.name)

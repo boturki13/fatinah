@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; object-src 'none'; form-action 'none';">
 <meta name="description" content="سياسة الخصوصية للعبة فطنة (Fatinah) لأجهزة iOS — ما البيانات التي نجمعها وكيف نحميها وحقوقك. Privacy Policy for the Fatinah iOS game.">
 <title>سياسة الخصوصية — فطنة | Privacy Policy — Fatinah</title>
 <link rel="stylesheet" href="/legal/styles.css">
@@ -15,8 +16,8 @@
 </head>
 <body>
 <div class="langbar">
-  <button id="btn-ar" class="on" onclick="setLang('ar')">العربية</button>
-  <button id="btn-en" onclick="setLang('en')">English</button>
+  <button id="btn-ar" class="on" type="button" data-language="ar" aria-pressed="true">العربية</button>
+  <button id="btn-en" type="button" data-language="en" aria-pressed="false">English</button>
 </div>
 
 <!-- ═══════════════ ARABIC ═══════════════ -->
@@ -257,15 +258,6 @@ Email: <a href="mailto:fatinahgame@gmail.com">fatinahgame@gmail.com</a></p>
 <footer>© 2026 the independent individual developer of Fatinah · <a href="mailto:fatinahgame@gmail.com">fatinahgame@gmail.com</a> · <a href="/terms">Terms of Use</a> <a href="/legal/">Home</a></footer>
 </div>
 
-<script>
-function setLang(l){
-  document.getElementById('lang-ar').hidden = (l!=='ar');
-  document.getElementById('lang-en').hidden = (l!=='en');
-  document.getElementById('btn-ar').classList.toggle('on', l==='ar');
-  document.getElementById('btn-en').classList.toggle('on', l==='en');
-  document.documentElement.lang = l;
-  document.documentElement.dir  = (l==='ar'?'rtl':'ltr');
-}
-</script>
+<script src="/legal/language-toggle.js"></script>
 </body>
 </html>

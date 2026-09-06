@@ -1,6 +1,6 @@
 {
   "name": "fatinah",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "فطنة — لعبة الذكاء والفطنة الجماعية",
   "private": true,
   "scripts": {
@@ -15,6 +15,8 @@
     "questions:validate-generation-queue": "node scripts/questions/validate-generation-queue.mjs",
     "questions:validate-deterministic-sources": "node scripts/questions/validate-deterministic-source-plan.mjs",
     "questions:import-worldbank-countries": "node scripts/questions/import-worldbank-country-records.mjs --write",
+    "questions:import-bipm-si-units": "node scripts/questions/import-bipm-si-units.mjs --write",
+    "questions:import-chemical-elements": "node scripts/questions/import-chemical-elements.mjs --write",
     "questions:generate-countries-deterministic": "node scripts/questions/generate-country-deterministic.mjs --write",
     "questions:import-nasa-exoplanets": "node scripts/questions/import-nasa-exoplanet-records.mjs --write",
     "questions:generate-space-deterministic": "node scripts/questions/generate-space-deterministic.mjs --write",
@@ -37,6 +39,7 @@
     "questions:generate-tournaments-deterministic": "node scripts/questions/generate-tournaments-deterministic.mjs --write",
     "questions:import-wikisource-proverbs": "node scripts/questions/import-wikisource-proverbs.mjs --write",
     "questions:import-wikidata-gulf-culture": "node scripts/questions/import-wikidata-gulf-culture.mjs --write",
+    "questions:import-mintaka-ar": "node scripts/questions/import-mintaka-ar.mjs",
     "questions:generate-final-text-culture": "node scripts/questions/generate-final-text-culture.mjs --write",
     "questions:sanitize-family-content": "node scripts/questions/sanitize-family-content.mjs --write",
     "questions:sanitize-ambiguous-structured": "node scripts/questions/sanitize-ambiguous-structured-candidates.mjs --write",
@@ -55,6 +58,11 @@
     "questions:select-v13": "node scripts/questions/select-v13.mjs",
     "questions:publish": "node scripts/questions/publish.mjs",
     "questions:export-server-bank": "node scripts/questions/export-server-bank.mjs",
+    "questions:replace-server-bank-curated": "node scripts/questions/replace-server-bank-curated.mjs",
+    "questions:build-next-release-bank": "node scripts/questions/build-next-release-bank.mjs",
+    "questions:audit-next-release-bank": "node scripts/questions/audit-next-release-bank.mjs",
+    "questions:next-release-audit": "node scripts/questions/next-release-gate.mjs",
+    "questions:next-release-gate": "node scripts/questions/next-release-gate.mjs --release",
     "questions:audit": "node scripts/questions/audit.mjs",
     "questions:runtime-audit": "node scripts/questions/runtime-release-gate.mjs",
     "questions:finalize-runtime-reviews": "node scripts/questions/finalize-runtime-reviews.mjs --source-confirmed --religious-confirmed && node scripts/questions/build-runtime-review-ledger.mjs && node scripts/questions/build-runtime-audit-manifest.mjs",
@@ -65,24 +73,28 @@
     "images:rebuild-nasa-space": "node scripts/images/rebuild-nasa-space-catalog.mjs",
     "images:rebalance-bank": "node scripts/images/rebalance-image-bank.mjs",
     "images:sanitize-playable-catalog": "node scripts/images/sanitize-playable-catalog.mjs",
+    "images:build-curated-300": "node scripts/images/build-curated-300.mjs",
     "images:build-release-manifest": "node scripts/images/build-release-manifest.mjs --write",
     "images:mark-release-published": "node scripts/images/build-release-manifest.mjs --write --published",
     "images:fetch-release-assets": "node scripts/images/fetch-release-assets.mjs",
     "images:verify-release-assets": "node scripts/images/fetch-release-assets.mjs --verify-only",
+    "images:verify-curated-remote-assets": "node scripts/images/verify-curated-remote-assets.mjs",
     "loadtest:plan": "node scripts/load-test.mjs --plan",
     "loadtest:staging": "node scripts/load-test.mjs",
+    "security:scan-history": "node scripts/scan-sensitive-history.mjs",
+    "security:scan-history:strict": "node scripts/scan-sensitive-history.mjs --strict-history",
     "test": "npm run test:static && npm run test:deterministic-sources && npm run test:web && npm run test:server",
     "test:ci": "npm run test:static && npm run test:deterministic-sources && npm run test:web:core && npm run test:server",
-    "test:static": "node tests/release_metadata_test.mjs && node tests/ios_privacy_config_test.mjs && node tests/messaging_config_test.mjs && node tests/subscription_routing_test.mjs && node tests/load_test_config_test.mjs",
-    "test:deterministic-sources": "node tests/deterministic_country_pipeline_test.mjs && node tests/deterministic_space_pipeline_test.mjs && node tests/deterministic_animal_pipeline_test.mjs && node tests/deterministic_civilizations_pipeline_test.mjs && node tests/deterministic_human_body_pipeline_test.mjs && node tests/deterministic_world_cup_pipeline_test.mjs && node tests/deterministic_foundation_batch_test.mjs && node tests/deterministic_sports_pipeline_test.mjs && node tests/deterministic_wikidata_entity_batch_test.mjs && node tests/deterministic_wikidata_cultural_batch_test.mjs && node tests/deterministic_language_links_test.mjs && node tests/deterministic_tournaments_test.mjs && node tests/deterministic_final_text_culture_test.mjs && node tests/deterministic_islamic_gaps_test.mjs",
+    "test:static": "node tests/release_metadata_test.mjs && node tests/legal_release_consistency_test.mjs && node tests/ios_privacy_config_test.mjs && node tests/messaging_config_test.mjs && node tests/subscription_routing_test.mjs && node tests/load_test_config_test.mjs",
+    "test:deterministic-sources": "node tests/deterministic_country_pipeline_test.mjs && node tests/deterministic_space_pipeline_test.mjs && node tests/deterministic_animal_pipeline_test.mjs && node tests/deterministic_civilizations_pipeline_test.mjs && node tests/deterministic_human_body_pipeline_test.mjs && node tests/deterministic_world_cup_pipeline_test.mjs && node tests/deterministic_foundation_batch_test.mjs && node tests/deterministic_sports_pipeline_test.mjs && node tests/deterministic_wikidata_entity_batch_test.mjs && node tests/deterministic_wikidata_cultural_batch_test.mjs && node tests/deterministic_language_links_test.mjs && node tests/deterministic_tournaments_test.mjs && node tests/deterministic_final_text_culture_test.mjs && node tests/deterministic_islamic_gaps_test.mjs && node tests/science_source_provenance_test.mjs",
     "test:web": "npm run test:web:core && npm run test:images",
     "test:web:core": "npm run test:web:content && npm run test:web:account && npm run test:web:gameplay && npm run test:web:ui",
-    "test:web:content": "node tests/question_pipeline_test.mjs && node tests/question_cost_guard_test.mjs && node tests/religious_source_packet_test.mjs && node tests/question_quality_test.mjs && node tests/question_family_content_test.mjs && node tests/question_runtime_test.mjs && node tests/question_runtime_release_gate_test.mjs && node tests/kuwaiti_localization_test.mjs",
-    "test:web:account": "node tests/paywall_prices_test.mjs && node tests/auth_flows_test.mjs && node tests/account_local_data_isolation_test.mjs && node tests/revenuecat_cache_identity_test.mjs",
-    "test:web:gameplay": "node tests/game_flow_test.mjs && node tests/game_turn_order_test.mjs && node tests/game_resume_test.mjs && node tests/free_round_flow_test.mjs && node tests/free_round_device_identity_test.mjs && node tests/crashlytics_privacy_test.mjs",
+    "test:web:content": "node tests/question_pipeline_test.mjs && node tests/question_cost_guard_test.mjs && node tests/religious_source_packet_test.mjs && node tests/question_quality_test.mjs && node tests/playable_content_curation_test.mjs && node tests/content_release_visibility_test.mjs && node tests/next_release_semantic_options_test.mjs && node tests/question_bank_factual_tamper_test.mjs && node tests/question_family_content_test.mjs && node tests/world_science_questions_test.mjs && node tests/question_runtime_release_gate_test.mjs && node tests/kuwaiti_localization_test.mjs",
+    "test:web:account": "node tests/paywall_prices_test.mjs && node tests/auth_flows_test.mjs && node tests/account_delete_security_test.mjs && node tests/api_timeout_test.mjs && node tests/account_local_data_isolation_test.mjs && node tests/revenuecat_cache_identity_test.mjs",
+    "test:web:gameplay": "node tests/game_flow_test.mjs && node tests/game_choice_flow_test.mjs && node tests/ios_game_flow_fixture_test.mjs && node tests/game_turn_order_test.mjs && node tests/game_resume_test.mjs && node tests/free_round_flow_test.mjs && node tests/free_round_device_identity_test.mjs && node tests/crashlytics_privacy_test.mjs",
     "test:web:ui": "node tests/responsive_accessibility_test.mjs && node tests/accessibility_semantics_test.mjs && node tests/image_question_layout_test.mjs && node tests/category_start_cta_test.mjs",
-    "test:images": "node tests/image_question_assets_test.mjs",
-    "test:server": "node scripts/run-server-tests.mjs"
+    "test:images": "node tests/image_question_assets_test.mjs && node tests/remote_image_question_flow_test.mjs",
+    "test:server": "node tests/run_server_tests_runner_test.mjs && node scripts/run-server-tests.mjs"
   },
   "dependencies": {
     "@capacitor-community/keep-awake": "^8.0.0",
@@ -106,6 +118,7 @@
     "sharp": "^0.35.3"
   },
   "overrides": {
+    "@xmldom/xmldom": "0.9.12",
     "brace-expansion": ">=5.0.9"
   }
 }

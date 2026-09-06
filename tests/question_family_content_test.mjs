@@ -71,6 +71,18 @@ assert.ok(familyContentViolations({
   answer: 'Vagina',
 }, policy).includes('direct_sexual_anatomy'));
 
+for (const blockedQuestion of [
+  { category: 'تاريخ', question: 'سؤال عن إسرائيل', answer: 'إجابة' },
+  { category: 'جغرافيا', question: 'أي مدينة هي الإجابة؟', answer: 'تل أبيب' },
+  { category: 'معلومات عامة', question: 'اختر الإجابة', answer: 'الكويت', o: ['الكويت', 'Israel', 'قطر', 'البحرين'] },
+  { category: 'كتب وروايات', question: 'من مؤلف هذا العمل؟', answer: 'مؤلف', options: ['مؤلف', 'كاتب إباحي', 'شاعر', 'مؤرخ'] },
+  { category: 'صور', question: 'ما هذا؟', answer: 'معلم', image: { alt: 'Tel Aviv skyline' } },
+]) {
+  const violations = familyContentViolations(blockedQuestion, policy);
+  assert.ok(violations.includes('blocked_topic') || violations.includes('explicit_adult_content'),
+    'الحظر يجب أن يشمل السؤال والإجابة والخيارات والصورة.');
+}
+
 const breastQuestion = candidates.find(candidate => candidate.id === 'gq-5d478a112b6f74ea353b');
 assert.ok(breastQuestion, 'سؤال Breast الطبي الطبيعي مفقود.');
 assert.deepEqual(familyContentViolations(breastQuestion, policy), [],

@@ -7,6 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const url = `file://${path.join(root, 'www/index.html')}`;
 
 function installNativeTestHarness() {
+  window.__FATINAH_LEGACY_SPOKEN_TEST__ = true;
   localStorage.setItem('fatinah_authUid', JSON.stringify('e2e-player'));
   localStorage.setItem('fatinah_onbDone', JSON.stringify(true));
   const ok = () => Promise.resolve({});
@@ -26,9 +27,26 @@ function installNativeTestHarness() {
   };
 }
 
+const testCategories=['من أنا؟','كرتون وأنمي'];
+function remoteRoundPayload(categories){
+  return {schemaVersion:1,bankVersion:'game-flow-test-bank',questions:Object.fromEntries(categories.map((category,categoryIndex)=>[
+    category,Array.from({length:6},(_,levelIndex)=>[1,2].map(variant=>{
+      const level=levelIndex+1;
+      const suffix=`${String(categoryIndex+1).padStart(2,'0')}${String(level).padStart(2,'0')}${String(variant).padStart(16,'0')}`;
+      const answer=`الإجابة ${categoryIndex+1}-${level}-${variant}`;
+      return {id:`gq-${suffix}`,d:level,q:`ما الإجابة الاختبارية للفئة ${category} في المستوى ${level} للنسخة ${variant}؟`,
+        o:[answer,`الخيار ب ${suffix}`,`الخيار ج ${suffix}`,`الخيار د ${suffix}`],
+        source:{title:'مصدر اختباري',url:'https://example.com/source'},
+        review:{status:'approved',reviewer:'Fatinah test gate',reviewedAt:'2026-09-05'}};
+    })).flat(),
+  ]))};
+}
+
 const browser = await chromium.launch();
 try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
   await page.addInitScript(installNativeTestHarness);
   await page.route('**/*', route => {
     const requestUrl = route.request().url();
@@ -37,11 +55,30 @@ try {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{"active":true}' });
     }
     if (requestUrl.includes('/api/v2/revenuecat/identity')) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '{"rcAppUserId":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}' });
     }
     if (requestUrl.includes('/api/v2/questions/seen')) {
       const body = route.request().method() === 'GET' ? '{"items":[]}' : '{"ok":true}';
       return route.fulfill({ status: 200, contentType: 'application/json', body });
+    }
+    if(requestUrl.includes('/api/v2/questions/catalog')){
+      const categories=testCategories.map(name=>({name,questionCount:90,
+        levels:{'1':15,'2':15,'3':15,'4':15,'5':15,'6':15}}));
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        schemaVersion:1,questionSchemaVersion:1,releaseReady:true,bankVersion:'game-flow-test-bank',questionCount:180,categories,
+      })});
+    }
+    if(requestUrl.includes('/api/v2/questions/round')){
+      const request=JSON.parse(route.request().postData()||'{}');
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(remoteRoundPayload(request.categories||[]))});
+    }
+    if(requestUrl.includes('/api/v2/questions/reveal')){
+      const request=JSON.parse(route.request().postData()||'{}');
+      const all=Object.values(remoteRoundPayload(testCategories).questions).flat();
+      const question=all.find(item=>item.id===request.questionId);
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+        questionId:request.questionId,a:0,answer:question?.o?.[0]||'',
+      })});
     }
     return route.abort();
   });
@@ -99,7 +136,11 @@ try {
   assert.equal(questionScreen.answerDisplay, 'none', 'الإجابة مخفية عند فتح السؤال');
   assert.equal(questionScreen.modal, 'true');
   assert.equal(questionScreen.hidden, 'false');
+  while (await page.getByRole('button', { name: /^⏭️ اطرح على/ }).count()) {
+    await page.getByRole('button', { name: /^⏭️ اطرح على/ }).click();
+  }
   await page.getByRole('button', { name: '👁️ اكشف الإجابة' }).click();
+  await page.locator('#answer-box.show').waitFor({state:'visible'});
   const revealed = await page.locator('#q-wrap').evaluate(element => ({
     answerVisible: getComputedStyle(element.querySelector('#answer-box')).display !== 'none',
     answerFont: Number.parseFloat(getComputedStyle(element.querySelector('#ans-text')).fontSize),
@@ -127,12 +168,16 @@ try {
     const questionText = (await page.locator('#q-text').textContent()).trim();
     assert.ok(!seenQuestions.has(questionText), `تكرر السؤال داخل الجولة: ${questionText}`);
     seenQuestions.add(questionText);
+    while (await page.getByRole('button', { name: /^⏭️ اطرح على/ }).count()) {
+      await page.getByRole('button', { name: /^⏭️ اطرح على/ }).click();
+    }
     await page.getByRole('button', { name: '👁️ اكشف الإجابة' }).click();
     await page.getByRole('button', { name: '❌ محد جاوب صح' }).click();
   }
   await page.locator('#s-result.active').waitFor({ state: 'visible', timeout: 5000 });
   assert.equal(seenQuestions.size, 12, 'يجب أن تكون أسئلة الجولة الاثنا عشر فريدة.');
   assert.match(await page.locator('#winner-line').textContent(), /الفريق الأول/);
+  assert.deepEqual(pageErrors, [], `أخطاء JavaScript صامتة خلال الجولة: ${pageErrors.join(' | ')}`);
   console.log('✓ مسار اللعب الكامل: الفرق، الفئات، 12 سؤالاً، النقاط والنتيجة');
 } finally {
   await browser.close();

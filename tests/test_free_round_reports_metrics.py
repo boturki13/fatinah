@@ -84,7 +84,24 @@ def static_asset(path, headers=None):
     connection.close()
     return result
 
+def csp_directives(policy):
+    directives = {}
+    for raw_directive in policy.split(';'):
+        parts = raw_directive.strip().split()
+        if parts:
+            directives[parts[0]] = parts[1:]
+    return directives
+
 try:
+    status, headers, body = static_asset('/')
+    assert status == 200
+    assert headers.get('Content-Security-Policy') == srv.WEB_CONTENT_SECURITY_POLICY
+    web_csp = csp_directives(headers['Content-Security-Policy'])
+    assert "'unsafe-inline'" not in web_csp['script-src']
+    assert "'unsafe-eval'" not in web_csp['script-src']
+    assert web_csp['script-src-attr'] == ["'none'"]
+    assert b'onclick=' not in body and b'oninput=' not in body and b'onsubmit=' not in body
+
     status, headers, body = static_asset('/app.js', {'Accept-Encoding': 'gzip'})
     assert status == 200
     assert headers.get('Content-Encoding') == 'gzip'
@@ -115,6 +132,27 @@ try:
     assert 'Access-Control-Allow-Origin' not in headers
     assert headers.get('Cross-Origin-Resource-Policy') == 'same-site'
 
+    # الملفات المحظورة لا تُخدم حتى لو بقيت نسخة قديمة منها على قرص الإنتاج.
+    blocked_asset = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        'server-assets', 'question-images', 'v2', 'treasurex-q145780.webp')
+    with open(blocked_asset, 'wb') as fixture_file:
+        fixture_file.write(b'blocked-fixture')
+    try:
+        status, headers, body = static_asset(
+            '/assets/question-images/v2/treasurex-q145780.webp')
+        assert status == 404 and body == b''
+        assert headers.get('Cache-Control') == 'no-store'
+        assert headers.get('X-Content-Type-Options') == 'nosniff'
+    finally:
+        try:
+            os.unlink(blocked_asset)
+        except FileNotFoundError:
+            pass
+    for blocked_id in srv._IMAGE_BLOCKED_CATALOG_IDS:
+        assert srv._is_blocked_image_asset_path(f'v2/{blocked_id}.avif')
+        assert srv._is_blocked_image_asset_path(f'v2/{blocked_id}.webp')
+
     # لا يوزع الخادم كود اللعبة أو بنكها للمتصفح العام إلا إذا كانت البيئة
     # local/staging صريحة. الغياب والخطأ يجب أن يفشلا مغلقاً مثل production.
     for configured_environment in ('production', None, 'prodution'):
@@ -122,8 +160,9 @@ try:
             os.environ.pop('FATINAH_ENVIRONMENT', None)
         else:
             os.environ['FATINAH_ENVIRONMENT'] = configured_environment
-        status, _, body = static_asset('/')
+        status, headers, body = static_asset('/')
         assert status == 200
+        assert headers.get('Content-Security-Policy') == srv.WEB_CONTENT_SECURITY_POLICY
         assert b'https://apps.apple.com/app/id6794660419' in body
         assert b'<script' not in body
         for protected_asset in (
@@ -145,6 +184,31 @@ try:
         assert status == 200
     os.environ['FATINAH_ENVIRONMENT'] = 'local'
 
+    for legal_path in (
+            '/privacy', '/terms', '/legal/',
+            '/privacy-policy.html', '/terms-of-service.html'):
+        status, headers, body = static_asset(legal_path)
+        assert status == 200
+        assert headers.get('Content-Security-Policy') == srv.LEGAL_CONTENT_SECURITY_POLICY
+        legal_csp = csp_directives(headers['Content-Security-Policy'])
+        assert "'unsafe-inline'" not in legal_csp['script-src']
+        assert "'unsafe-eval'" not in legal_csp['script-src']
+        assert legal_csp['script-src-attr'] == ["'none'"]
+        assert b'onclick=' not in body
+
+    status, headers, body = static_asset('/privacy')
+    legal_etag = headers.get('ETag')
+    assert status == 200 and legal_etag
+    status, cached_headers, body = static_asset(
+        '/privacy', {'If-None-Match': legal_etag})
+    assert status == 304 and body == b''
+    assert cached_headers.get('Content-Security-Policy') == srv.LEGAL_CONTENT_SECURITY_POLICY
+
+    status, headers, body = static_asset('/legal/language-toggle.js')
+    assert status == 200
+    assert headers.get('Content-Type', '').startswith('application/javascript')
+    assert b'addEventListener' in body
+
     uid = urllib.parse.quote('feature-user')
     status, data = request('GET', f'/api/v2/free-round/status?uid={uid}')
     assert status == 200 and data == {'eligible': True, 'completed': False}
@@ -160,17 +224,19 @@ try:
     status, data = request('GET', f'/api/v2/free-round/status?uid={uid}')
     assert status == 200 and data == {'eligible': False, 'completed': True}
 
+    canonical_category, canonical_question = next(
+        (category, question)
+        for category, questions in srv.load_combined_server_question_bank()['categories'].items()
+        for question in questions)
     report = {
         'uid': 'feature-user', 'idToken': 'TEST_ID_TOKEN',
-        'questionId': 'gq-abcdef1234567890abcd',
-        'category': 'القرآن الكريم',
-        'question': 'ما اسم السورة الأولى في المصحف؟',
-        'answer': 'الفاتحة',
-        'sourceTitle': 'تفسير ابن كثير — الفاتحة',
-        'sourceUrl': 'https://quran.ksu.edu.sa/tafseer/katheer/sura1.html',
+        'questionId': canonical_question['id'],
+        # حقول مزورة يجب أن يهملها الخادم ويستبدلها من البنك الموثق.
+        'category': 'فئة مزورة', 'question': 'نص مزور', 'answer': 'جواب مزور',
+        'sourceTitle': 'مصدر مزور', 'sourceUrl': 'http://example.com/insecure',
         'reason': 'source',
         'details': 'يرجى تدقيق رابط المصدر.',
-        'appVersion': '1.3',
+        'appVersion': '1.4',
     }
     status, data = request('POST', '/api/v2/questions/report', report)
     assert status == 201 and data['ok'] is True
@@ -184,12 +250,8 @@ try:
         ''', (data['reportId'],)).fetchone()
     finally:
         conn.close()
-    assert saved_source == (report['sourceTitle'], report['sourceUrl'])
-
-    status, _ = request('POST', '/api/v2/questions/report', {
-        **report, 'sourceUrl': 'http://example.com/insecure',
-    })
-    assert status == 400
+    assert saved_source == (canonical_question['source']['title'],
+                            canonical_question['source']['url'])
 
     # غياب SMTP ليس محاولة إرسال. وحتى سجل قديم بلغ الحد بسبب السلوك السابق
     # يجب أن يظل قابلاً للتسليم فور اكتمال الإعداد.

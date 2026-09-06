@@ -33,30 +33,30 @@ final class AppLaunchUITests: XCTestCase {
 
         XCUIDevice.shared.orientation = .portrait
         openNextQuestion(in: app)
-        let reveal = app.buttons["👁️ اكشف الإجابة"]
-        XCTAssertTrue(reveal.waitForExistence(timeout: 5), "يجب فتح السؤال في الوضع العمودي")
+        XCTAssertTrue(answerOption(for: "النجوم", in: app).waitForExistence(timeout: 5), "يجب أن يظهر السؤال مع أربعة خيارات")
+        XCTAssertEqual(answerOptions(for: "النجوم", in: app).count, 4, "يجب أن يظهر أربعة خيارات للفريق")
         keepScreenshot(named: "Question portrait — hidden answer", app: app)
 
         let pause = app.buttons["وقّف العداد مؤقتًا"]
         XCTAssertTrue(pause.isHittable, "زر إيقاف العداد يجب أن يكون قابلاً للمس")
         pause.tap()
-        let resume = app.buttons["▶ كمّل"]
-        XCTAssertTrue(resume.waitForExistence(timeout: 3), "يجب إخفاء السؤال عند إيقاف الوقت")
+        let resume = app.buttons["كمّل العداد وأظهر السؤال"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 3), "يجب إظهار زر استكمال واضح بعد إيقاف الوقت")
+        XCTAssertTrue(app.staticTexts["وقفنا الوقت"].exists, "يجب إعلان حالة الإيقاف للمستخدم")
+        XCTAssertFalse(answerOption(for: "النجوم", in: app).exists, "يجب إخفاء خيارات السؤال أثناء الإيقاف")
         resume.tap()
-        XCTAssertTrue(reveal.waitForExistence(timeout: 3), "يجب أن يعود السؤال بعد استئناف الوقت")
+        XCTAssertTrue(answerOption(for: "النجوم", in: app).waitForExistence(timeout: 3), "يجب أن يعود السؤال بعد استئناف الوقت")
 
         let double = app.buttons.matching(
             NSPredicate(format: "label BEGINSWITH %@", "مضاعفة السؤال")
         ).firstMatch
         XCTAssertTrue(makeHittable(double, in: app), "وسيلة مضاعفة السؤال يجب أن تكون قابلة للمس")
         double.tap()
-        reveal.tap()
+        answerCurrentQuestionForAllTeams(in: app)
         XCTAssertTrue(app.staticTexts["الإجابة الصحيحة"].waitForExistence(timeout: 3), "يجب ظهور الإجابة مع السؤال")
         keepScreenshot(named: "Question portrait — revealed answer", app: app)
-        app.buttons["✅ النجوم"].tap()
-        XCTAssertTrue(app.descendants(matching: .any).matching(
-            NSPredicate(format: "label == %@", "النجوم، 200 نقطة")
-        ).firstMatch.waitForExistence(timeout: 3), "يجب إضافة النقاط المضاعفة للفريق")
+        app.buttons["التالي"].tap()
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "سؤال ")).firstMatch.waitForExistence(timeout: 3), "يجب العودة للوحة بعد احتساب نتيجة السؤال")
 
         openNextQuestion(in: app)
         let skip = app.buttons.matching(
@@ -64,28 +64,30 @@ final class AppLaunchUITests: XCTestCase {
         ).firstMatch
         XCTAssertTrue(makeHittable(skip, in: app), "وسيلة تغيير السؤال يجب أن تكون قابلة للمس")
         skip.tap()
-        app.buttons["👁️ اكشف الإجابة"].tap()
-        app.buttons["❌ محد جاوب صح"].tap()
+        answerCurrentQuestionForAllTeams(in: app)
+        app.buttons["التالي"].tap()
 
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(waitForLandscapeLayout(in: app), "يجب أن تتمدد واجهة التطبيق فعليًا بعرض الوضع الأفقي")
         openNextQuestion(in: app)
-        XCTAssertTrue(app.buttons["👁️ اكشف الإجابة"].waitForExistence(timeout: 4), "يجب فتح السؤال في الوضع الأفقي")
+        XCTAssertTrue(answerOption(for: "النجوم", in: app).waitForExistence(timeout: 4), "يجب فتح السؤال في الوضع الأفقي")
         let pass = app.buttons.matching(
             NSPredicate(format: "label BEGINSWITH %@", "مرّرها للخصم")
         ).firstMatch
         XCTAssertTrue(makeHittable(pass, in: app), "وسيلة تمرير السؤال يجب أن تكون قابلة للمس")
         pass.tap()
         keepScreenshot(named: "Question landscape", app: app)
-        app.buttons["👁️ اكشف الإجابة"].tap()
-        app.buttons["❌ محد جاوب صح"].tap()
+        let passedOption = answerOption(for: "الصقور", in: app)
+        XCTAssertTrue(makeHittable(passedOption, in: app), "يجب أن يتسلم فريق الصقور الخيارات بعد التمرير")
+        passedOption.tap()
+        XCTAssertTrue(app.staticTexts["الإجابة الصحيحة"].waitForExistence(timeout: 3))
+        app.buttons["التالي"].tap()
 
         for _ in 0..<9 {
             openNextQuestion(in: app)
-            let revealNext = app.buttons["👁️ اكشف الإجابة"]
-            XCTAssertTrue(revealNext.waitForExistence(timeout: 3), "يجب فتح كل سؤال متبقٍ")
-            revealNext.tap()
-            app.buttons["❌ محد جاوب صح"].tap()
+            XCTAssertTrue(activeAnswerOptions(in: app).firstMatch.waitForExistence(timeout: 3), "يجب فتح كل سؤال متبقٍ للفريق صاحب الدور")
+            answerCurrentQuestionForAllTeams(in: app)
+            app.buttons["التالي"].tap()
         }
 
         XCTAssertTrue(app.staticTexts.matching(
@@ -112,8 +114,8 @@ final class AppLaunchUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 12), "يجب ظهور WKWebView")
-        let reveal = app.buttons["👁️ اكشف الإجابة"]
-        XCTAssertTrue(reveal.waitForExistence(timeout: 75), "يجب فتح السؤال المصوّر بعد تنزيل صورته")
+        let option = answerOption(for: "النجوم", in: app)
+        XCTAssertTrue(option.waitForExistence(timeout: 75), "يجب فتح السؤال المصوّر بعد تنزيل صورته")
         let questionImage = app.images.firstMatch
         XCTAssertTrue(questionImage.waitForExistence(timeout: 8), "يجب عرض صورة السؤال")
         XCTAssertFalse(questionImage.label.isEmpty, "يجب أن تحمل الصورة وصفاً صوتياً")
@@ -125,7 +127,7 @@ final class AppLaunchUITests: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(waitForLandscapeLayout(in: app), "يجب أن تتكيف واجهة الصورة مع الوضع الأفقي")
         XCTAssertTrue(questionImage.exists, "يجب أن تبقى صورة السؤال ظاهرة بعد التدوير")
-        XCTAssertTrue(reveal.exists, "يجب أن يبقى زر كشف الإجابة ظاهراً بعد التدوير")
+        XCTAssertTrue(option.exists, "يجب أن تبقى خيارات الإجابة ظاهرة بعد التدوير")
         keepScreenshot(named: "Image question — landscape", app: app)
     }
 
@@ -164,8 +166,9 @@ final class AppLaunchUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 12), "يجب ظهور WKWebView بالحجم الكبير")
 
-        let reveal = app.buttons["👁️ اكشف الإجابة"]
-        XCTAssertTrue(makeHittable(reveal, in: app), "زر كشف الإجابة يبقى قابلاً للمس مع أكبر Dynamic Type")
+        let option = answerOption(for: "النجوم", in: app)
+        XCTAssertTrue(option.waitForExistence(timeout: 45), "يجب انتظار اكتمال إقلاع محتوى WKWebView")
+        XCTAssertTrue(makeHittable(option, in: app), "خيارات الإجابة تبقى قابلة للمس مع أكبر Dynamic Type")
         let readableTexts = app.staticTexts.allElementsBoundByIndex.filter { $0.label.count >= 18 }
         XCTAssertFalse(readableTexts.isEmpty, "يجب أن يبقى نص السؤال الطويل ظاهراً في شجرة الوصول")
         let webFrame = app.webViews.firstMatch.frame
@@ -179,17 +182,21 @@ final class AppLaunchUITests: XCTestCase {
         app.launchArguments += ["-FatinahGameFlowUITests"]
         app.launch()
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 12), "يجب ظهور WKWebView")
+        let firstBoardCell = app.buttons.matching(
+            NSPredicate(format: "isEnabled == true AND label BEGINSWITH %@", "سؤال ")
+        ).firstMatch
+        XCTAssertTrue(firstBoardCell.waitForExistence(timeout: 45), "يجب انتظار اكتمال إقلاع لوحة الجولة")
         return app
     }
 
     private func openNextQuestion(in app: XCUIApplication) {
-        let reveal = app.buttons["👁️ اكشف الإجابة"]
-        if reveal.exists {
+        let existingOption = activeAnswerOptions(in: app).firstMatch
+        if existingOption.exists {
             let questionClosed = NSPredicate { object, _ in
                 guard let element = object as? XCUIElement else { return false }
                 return !element.exists
             }
-            let expectation = XCTNSPredicateExpectation(predicate: questionClosed, object: reveal)
+            let expectation = XCTNSPredicateExpectation(predicate: questionClosed, object: existingOption)
             XCTAssertEqual(
                 XCTWaiter.wait(for: [expectation], timeout: 4),
                 .completed,
@@ -219,14 +226,18 @@ final class AppLaunchUITests: XCTestCase {
                       !openedQuestionLabels.contains(element.label) else { continue }
                 let visibleFrame = frame.intersection(viewport)
                 guard visibleFrame.width >= 44, visibleFrame.height >= 44 else { continue }
-                openedQuestionLabels.insert(element.label)
+                let hitPoint = CGPoint(x: visibleFrame.midX, y: visibleFrame.midY)
                 let appFrame = app.frame
                 let point = CGVector(
-                    dx: visibleFrame.midX / appFrame.width,
-                    dy: visibleFrame.midY / appFrame.height
+                    dx: (hitPoint.x - appFrame.minX) / appFrame.width,
+                    dy: (hitPoint.y - appFrame.minY) / appFrame.height
                 )
+                let label = element.label
+                openedQuestionLabels.insert(label)
                 app.coordinate(withNormalizedOffset: point).tap()
-                return true
+                let opened = activeAnswerOptions(in: app).firstMatch.waitForExistence(timeout: 3)
+                if !opened { openedQuestionLabels.remove(label) }
+                return opened
             }
             return false
         }
@@ -242,6 +253,42 @@ final class AppLaunchUITests: XCTestCase {
         }
 
         XCTFail("يجب أن يكون أحد الأسئلة غير المستخدمة قابلاً للمس")
+    }
+
+    private func answerOptions(for team: String, in app: XCUIApplication) -> XCUIElementQuery {
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "اختيار فريق \(team)"))
+    }
+
+    private func answerOption(for team: String, in app: XCUIApplication) -> XCUIElement {
+        answerOptions(for: team, in: app).firstMatch
+    }
+
+    private func activeAnswerOptions(in app: XCUIApplication) -> XCUIElementQuery {
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "اختيار فريق "))
+    }
+
+    private func answerCurrentQuestionForAllTeams(in app: XCUIApplication) {
+        let ownerOptions = activeAnswerOptions(in: app)
+        XCTAssertTrue(ownerOptions.firstMatch.waitForExistence(timeout: 3), "يجب ظهور خيارات الفريق صاحب الدور")
+        XCTAssertEqual(ownerOptions.count, 4, "يجب إتاحة أربعة خيارات للفريق صاحب الدور")
+        let ownerOption = ownerOptions.firstMatch
+        XCTAssertTrue(makeHittable(ownerOption, in: app), "يجب أن يكون خيار الفريق صاحب الدور قابلاً للمس")
+
+        let ownerIsStars = ownerOption.label.contains("اختيار فريق النجوم")
+        let ownerIsFalcons = ownerOption.label.contains("اختيار فريق الصقور")
+        XCTAssertTrue(ownerIsStars || ownerIsFalcons, "يجب تحديد الفريق صاحب الدور من تسمية خيار الإجابة")
+        guard ownerIsStars || ownerIsFalcons else { return }
+        let secondTeam = ownerIsStars ? "الصقور" : "النجوم"
+        ownerOption.tap()
+
+        let secondOptions = answerOptions(for: secondTeam, in: app)
+        XCTAssertTrue(secondOptions.firstMatch.waitForExistence(timeout: 3), "يجب ظهور خيارات الفريق الثاني قبل كشف الحل")
+        XCTAssertEqual(secondOptions.count, 4, "يجب إعادة الخيارات للفريق الثاني")
+        let secondOption = secondOptions.firstMatch
+        XCTAssertTrue(makeHittable(secondOption, in: app), "يجب أن ينتقل السؤال للفريق الثاني قبل كشف الحل")
+        XCTAssertFalse(app.staticTexts["الإجابة الصحيحة"].exists, "يجب ألا تنكشف الإجابة قبل إجابة الفريق الثاني")
+        secondOption.tap()
+        XCTAssertTrue(app.staticTexts["الإجابة الصحيحة"].waitForExistence(timeout: 3), "يجب كشف الحل بعد إجابة الفريقين")
     }
 
     private func makeHittable(_ element: XCUIElement, in app: XCUIApplication) -> Bool {

@@ -42,9 +42,9 @@ function teamName(team) {
 const seasonsPayload = await fetchJson(seasonsUrl);
 const seasons = (seasonsPayload?.Results || []).filter(season => {
   const year = Number(String(season.StartDate || '').slice(0, 4));
-  return Number.isInteger(year) && year >= 1970 && year <= 2018;
+  return Number.isInteger(year) && year >= 1970 && year <= 2022;
 }).sort((a, b) => String(a.StartDate).localeCompare(String(b.StartDate)));
-if (seasons.length < 13) throw new Error(`عدد نسخ FIFA التاريخية غير كافٍ: ${seasons.length}.`);
+if (seasons.length < 14) throw new Error(`عدد نسخ FIFA التاريخية غير كافٍ: ${seasons.length}.`);
 
 const records = [];
 for (const season of seasons) {

@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import sharp from 'sharp';
-import {isFamilySafetyBlocked} from './family-safety-policy.mjs';
+import {familySafetyDecision,isFamilySafetyBlocked} from './family-safety-policy.mjs';
 import {rebalanceImageBankDifficulty} from './image-bank-difficulty.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -165,10 +165,14 @@ const existingProvenance=scopedImport
 const reusableProvenanceById=new Map(existingProvenance.map(item=>[item.id,item]));
 const bank=scopedImport?await readExistingBank():{};
 let provenance=scopedImport?[...existingProvenance]:[];
+let replacedScopedQuestionIds=new Set();
+let retainedScopedQuestionIds=new Set();
+const existingQuestionById=new Map();
 if(onlyCategory&&Array.isArray(bank[onlyCategory])){
   const replacedIds=new Set(bank[onlyCategory].map(question=>question.id));
+  for(const question of bank[onlyCategory]) existingQuestionById.set(question.id,question);
+  replacedScopedQuestionIds=replacedIds;
   bank[onlyCategory]=[];
-  provenance=provenance.filter(item=>!replacedIds.has(item.id));
 }
 let matchedScopedItem=false;
 for(const category of catalog.categories){
@@ -214,7 +218,11 @@ for(const category of catalog.categories){
     const prompt=item.prompt||prompts[itemIndex%prompts.length];
     if(!prompt) throw new Error(`${category.name}: missing prompt ${itemIndex+1}`);
     const playerRightsReviewRequired=category.name==='منو هاللاعب؟';
-    const question={id:`img-v2-${item.id}`,d:item.difficulty,q:prompt,answer:item.answer,source:{title:'بيانات العنصر ومصدر الصورة',url:item.factUrl},image:{alt:item.alt,version:String(catalog.version),factSource:{title:'بيانات العنصر',url:item.factUrl},rights:imageRights(info,provider),assets},review:{status:playerRightsReviewRequired?'rights_review_required':'approved',bankVersion:4,reviewer:playerRightsReviewRequired?'Codex — رخصة المصور موثقة؛ حق الاسم والصورة التجارية يحتاج اعتماداً':'Codex — تحقق آلي للمصدر والرخصة؛ مراجعة بصرية قبل النشر',reviewedAt:new Date().toISOString().slice(0,10),religiousSourceAndIsnadConfirmed:false,...(item.familySafety?.context?{familySafetyContext:item.familySafety.context}:{})}};
+    const questionId=`img-v2-${item.id}`;
+    const existingQuestion=existingQuestionById.get(questionId);
+    const question={id:questionId,d:item.difficulty,q:prompt,answer:item.answer,source:{title:'بيانات العنصر ومصدر الصورة',url:item.factUrl},image:{alt:item.alt,version:String(catalog.version),factSource:{title:'بيانات العنصر',url:item.factUrl},rights:imageRights(info,provider,existingQuestion?.image?.rights?.verifiedAt),assets},review:{status:playerRightsReviewRequired?'rights_review_required':'approved',bankVersion:4,reviewer:playerRightsReviewRequired?'Codex — رخصة المصور موثقة؛ حق الاسم والصورة التجارية يحتاج اعتماداً':'Codex — تحقق آلي للمصدر والرخصة؛ مراجعة بصرية قبل النشر',reviewedAt:existingQuestion?.review?.reviewedAt||new Date().toISOString().slice(0,10),religiousSourceAndIsnadConfirmed:false,...(item.familySafety?.context?{familySafetyContext:item.familySafety.context}:{})}};
+    const finalSafety=familySafetyDecision(category.name,question);
+    if(!finalSafety.allowed) throw new Error(`family_safety_${finalSafety.reason}`);
     const provenanceItem={id:question.id,provider,commonsFile:filename,nasaId:item.nasaId||null,objectId:item.objectId||null,...info};
     if(scopedImport){
       const questionIndex=bank[category.name]?.findIndex(existing=>existing.id===question.id)??-1;
@@ -229,6 +237,9 @@ for(const category of catalog.categories){
     }
     console.log(`✓ ${category.name}: ${item.answer} (${info.license})`);
     } catch (error) {
+      if(String(error?.message||'').startsWith('family_safety_')){
+        for(const format of ['avif','webp']) await fs.rm(path.join(outputDir,`${item.id}.${format}`),{force:true});
+      }
       if(onlyId) throw error;
       console.warn(`↷ ${category.name}: ${item.id} — ${error.message}`);
     }
@@ -241,6 +252,24 @@ if(scopedImport&&!matchedScopedItem) throw new Error(`${onlyId||onlyCategory}: c
 
 rebalanceImageBankDifficulty(bank);
 
+if(onlyCategory){
+  retainedScopedQuestionIds=new Set((bank[onlyCategory]||[]).map(question=>question.id));
+  provenance=provenance.filter(item=>!replacedScopedQuestionIds.has(item.id)||retainedScopedQuestionIds.has(item.id));
+}
+
 const js=`window.__IMAGE_QUESTION_COMMONS_DATA__=${JSON.stringify(bank)};\n(()=>{const target=window.__IMAGE_QUESTION_BANK_DATA__||(window.__IMAGE_QUESTION_BANK_DATA__={});for(const [category,questions] of Object.entries(window.__IMAGE_QUESTION_COMMONS_DATA__))target[category]=[...(Array.isArray(target[category])?target[category]:[]),...questions];})();\n`;
 await fs.writeFile(outputBank,js);
 await fs.writeFile(path.join(outputDir,'provenance.json'),JSON.stringify({generatedAt:new Date().toISOString(),items:provenance},null,2)+'\n');
+
+// عند إعادة بناء فئة كاملة، احذف أصول السجلات التي رفضتها السياسة بعد نجاح كتابة البنك والإسناد.
+if(onlyCategory){
+  for(const questionId of replacedScopedQuestionIds){
+    if(retainedScopedQuestionIds.has(questionId)) continue;
+    if(!/^img-v2-[a-z0-9_-]+$/i.test(questionId)) throw new Error(`unsafe_stale_asset_id_${questionId}`);
+    const basename=questionId.replace(/^img-v2-/,'');
+    for(const format of ['avif','webp']){
+      await fs.rm(path.join(outputDir,`${basename}.${format}`),{force:true});
+    }
+    console.log(`✓ حذفت الأصول المستبعدة: ${questionId}`);
+  }
+}

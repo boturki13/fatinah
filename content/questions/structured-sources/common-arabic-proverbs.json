@@ -1,0 +1,1189 @@
+{
+  "schemaVersion": 2,
+  "sourceProfile": "curated_immutable_revision_v2",
+  "sourceTitle": "أمثال عربية شائعة — نسخة ثابتة قابلة للتحقق",
+  "sourceUrl": "https://ar.wikiquote.org/w/index.php?title=%D8%A3%D9%85%D8%AB%D8%A7%D9%84%20%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9&oldid=269349",
+  "sourceRevisionId": 269349,
+  "sourceRevisionTimestamp": "2026-08-23T18:06:47Z",
+  "sourceRevisionWikitextSha256": "eb4ac0bff360d2c7bb583cef80c9c12fade2baf0acf57b1564963feda04b36ae",
+  "license": "CC BY-SA 4.0",
+  "selectionPolicy": "90 مثلاً واضحاً وآمناً، مرتبة تحريرياً من الأشهر إلى الأقل شيوعاً، ومطابقة آلياً مع نسخة المصدر الثابتة. لكل مثل ثلاثة مشتتات تحريرية تلائم تركيب الجملة ودلالتها العامة من دون أن تطابق الصيغة الموثقة.",
+  "distractorPolicy": {
+    "id": "editorial_contextual_completion_v1",
+    "rule": "ثلاثة إكمالات من الفئة النحوية/الصرفية نفسها تقريباً، سليمة في السياق، غير مطابقة أو شديدة الشبه، وليست كلمات وظيفية.",
+    "maximumGlobalDistractorFrequency": 2,
+    "uniqueTripletsRequired": true
+  },
+  "records": [
+    {
+      "sourceRecordId": "arabic-proverb-001",
+      "familiarityRank": 1,
+      "proverb": "رحلة الألف ميل تبدأ بخطوة",
+      "sourceExcerpt": "رحلة الألف ميل تبداْ بخطوة.",
+      "distractors": [
+        "بفكرة",
+        "بقرار",
+        "بمحاولة"
+      ],
+      "completionClass": "prepositional-action",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-002",
+      "familiarityRank": 2,
+      "proverb": "الوقت كالسيف إن لم تقطعه قطعك",
+      "sourceExcerpt": "الوقت كالسيف إن لم تقطعه قطعك",
+      "distractors": [
+        "سبقك",
+        "غلبك",
+        "فاتك"
+      ],
+      "completionClass": "past-verb-second-person",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-003",
+      "familiarityRank": 3,
+      "proverb": "دوام الحال من المحال",
+      "sourceExcerpt": "دوام الحال من المحال.",
+      "distractors": [
+        "الخيال",
+        "الزوال",
+        "الثبات"
+      ],
+      "completionClass": "abstract-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-004",
+      "familiarityRank": 4,
+      "proverb": "لكل مقام مقال",
+      "sourceExcerpt": "لكل مقام مقال",
+      "distractors": [
+        "جواب",
+        "أسلوب",
+        "قرار"
+      ],
+      "completionClass": "singular-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-005",
+      "familiarityRank": 5,
+      "proverb": "رب ضارة نافعة",
+      "sourceExcerpt": "رب ّ ضارة نافعة",
+      "distractors": [
+        "عابرة",
+        "خافية",
+        "قادمة"
+      ],
+      "completionClass": "feminine-adjective",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-006",
+      "familiarityRank": 6,
+      "proverb": "رب أخ لك لم تلده أمك",
+      "sourceExcerpt": "ربّ أخ لك لم تلده أمك",
+      "distractors": [
+        "خالتك",
+        "جارتك",
+        "مرضعتك"
+      ],
+      "completionClass": "female-kin-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-007",
+      "familiarityRank": 7,
+      "proverb": "الطيور على أشكالها تقع",
+      "sourceExcerpt": "الطيور على أشكالها تقع.",
+      "distractors": [
+        "تجتمع",
+        "تحلق",
+        "تعود"
+      ],
+      "completionClass": "present-verb-feminine",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-008",
+      "familiarityRank": 8,
+      "proverb": "عصفور باليد ولا عشرة على الشجرة",
+      "sourceExcerpt": "عصفور باليد ولا عشرة على الشجرة.",
+      "distractors": [
+        "السور",
+        "السطح",
+        "الطريق"
+      ],
+      "completionClass": "place-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-009",
+      "familiarityRank": 9,
+      "proverb": "القرد في عين أمه غزالة",
+      "sourceExcerpt": "القرد في عين أمه غزالة.",
+      "distractors": [
+        "كنز",
+        "بطل",
+        "جميل"
+      ],
+      "completionClass": "predicate-noun-or-adjective",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-010",
+      "familiarityRank": 10,
+      "proverb": "لا تؤجل عمل اليوم إلى الغد",
+      "sourceExcerpt": "لا تؤجل عمل اليوم إلى الغد.",
+      "distractors": [
+        "المساء",
+        "العطلة",
+        "الصباح"
+      ],
+      "completionClass": "time-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-011",
+      "familiarityRank": 11,
+      "proverb": "من طلب العلا سهر الليالي",
+      "sourceExcerpt": "من طلب العلا سهر الليالي.",
+      "distractors": [
+        "الأيام",
+        "الساعات",
+        "الشتاء"
+      ],
+      "completionClass": "time-duration",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-012",
+      "familiarityRank": 12,
+      "proverb": "إذا غاب القط العب يا فار",
+      "sourceExcerpt": "إذا غاب القط العب يا فار.",
+      "distractors": [
+        "ولد",
+        "صغير",
+        "شاطر"
+      ],
+      "completionClass": "vocative-masculine",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-013",
+      "familiarityRank": 13,
+      "proverb": "خير الكلام ما قل ودل",
+      "sourceExcerpt": "خير الكلام ما قل ودل.",
+      "distractors": [
+        "وأفاد",
+        "وأوجز",
+        "وأبان"
+      ],
+      "completionClass": "coordinated-past-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-014",
+      "familiarityRank": 14,
+      "proverb": "إرضاء الناس غاية لا تدرك",
+      "sourceExcerpt": "إرضاء الناس غاية لاتدرك",
+      "distractors": [
+        "تُشترى",
+        "تُفرض",
+        "تُضمن"
+      ],
+      "completionClass": "present-verb-feminine",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-015",
+      "familiarityRank": 15,
+      "proverb": "الكلاب تعوي والقافلة تسير",
+      "sourceExcerpt": "الكلاب تعوي والقافلة تسير",
+      "distractors": [
+        "تتوقف",
+        "ترجع",
+        "تضيع"
+      ],
+      "completionClass": "present-verb-feminine",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-016",
+      "familiarityRank": 16,
+      "proverb": "لسانك حصانك إن صنته صانك وإن خنته خانك",
+      "sourceExcerpt": "لِسانُكَ حصانكَ إن صنتهُ صانكَ وإن خنتهٌ خانكَ.",
+      "distractors": [
+        "أضرك",
+        "فضحك",
+        "أهلكك"
+      ],
+      "completionClass": "past-verb-object-pronoun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-017",
+      "familiarityRank": 17,
+      "proverb": "رجع بخفي حنين",
+      "sourceExcerpt": "رجع بخفي حنين.",
+      "distractors": [
+        "صاحبه",
+        "ضيفه",
+        "عدوه"
+      ],
+      "completionClass": "possessed-person-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-018",
+      "familiarityRank": 18,
+      "proverb": "سبق السيف العذل",
+      "sourceExcerpt": "سبق السيف العذل.",
+      "distractors": [
+        "الصلح",
+        "الحكم",
+        "الخبر"
+      ],
+      "completionClass": "abstract-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-019",
+      "familiarityRank": 19,
+      "proverb": "عذر أقبح من ذنب",
+      "sourceExcerpt": "عذر أقبح من ذنب.",
+      "distractors": [
+        "قول",
+        "صمت",
+        "تأخير"
+      ],
+      "completionClass": "indefinite-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-020",
+      "familiarityRank": 20,
+      "proverb": "فاقد الشيء لا يعطي",
+      "sourceExcerpt": "فاقد الشئ لا يعطي",
+      "distractors": [
+        "يملك",
+        "يتعلم",
+        "يطلب"
+      ],
+      "completionClass": "present-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-021",
+      "familiarityRank": 21,
+      "proverb": "في الصيف ضيعت اللبن",
+      "sourceExcerpt": "في الصيف ضيعت اللبن",
+      "distractors": [
+        "الثمر",
+        "الظل",
+        "الحصاد"
+      ],
+      "completionClass": "concrete-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-022",
+      "familiarityRank": 22,
+      "proverb": "يوم لك ويوم عليك",
+      "sourceExcerpt": "يوم لك ويوم عليك.",
+      "distractors": [
+        "لغيرك",
+        "ضدك",
+        "معك"
+      ],
+      "completionClass": "prepositional-pronoun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-023",
+      "familiarityRank": 23,
+      "proverb": "الباب اللي يجيلك منه الريح سده واستريح",
+      "sourceExcerpt": "الباب اللي يجيلك منه الريح، سدُهُ واستريح.",
+      "distractors": [
+        "وتراجع",
+        "وابتعد",
+        "وانصرف"
+      ],
+      "completionClass": "coordinated-imperative",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-024",
+      "familiarityRank": 24,
+      "proverb": "البعيد عن العين بعيد عن القلب",
+      "sourceExcerpt": "البعيد عن العين بعيد عن القلب.",
+      "distractors": [
+        "البيت",
+        "الحديث",
+        "اللقاء"
+      ],
+      "completionClass": "context-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-025",
+      "familiarityRank": 25,
+      "proverb": "العلم عند الصغر كالنقش على الحجر",
+      "sourceExcerpt": "العلم عند الصغر كالنقش على الحجر.",
+      "distractors": [
+        "الخشب",
+        "الورق",
+        "الجدار"
+      ],
+      "completionClass": "material-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-026",
+      "familiarityRank": 26,
+      "proverb": "عدو عاقل خير من صديق جاهل",
+      "sourceExcerpt": "عدو عاقل خير من صديق جاهل.",
+      "distractors": [
+        "كسول",
+        "متردد",
+        "ضعيف"
+      ],
+      "completionClass": "person-adjective",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-027",
+      "familiarityRank": 27,
+      "proverb": "من يطارد عصفورين يفقدهما معا",
+      "sourceExcerpt": "من يطارد عصفورين يفقدهما معاً",
+      "distractors": [
+        "تباعا",
+        "أخيرا",
+        "غالبا"
+      ],
+      "completionClass": "adverb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-028",
+      "familiarityRank": 28,
+      "proverb": "يا جبل ما يهزك ريح",
+      "sourceExcerpt": "يا جبل مايهزك ريح.",
+      "distractors": [
+        "مطر",
+        "صوت",
+        "عابر"
+      ],
+      "completionClass": "subject-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-029",
+      "familiarityRank": 29,
+      "proverb": "مصائب قوم عند قوم فوائد",
+      "sourceExcerpt": "مصائب قوم عند قوم فوائد",
+      "distractors": [
+        "خسائر",
+        "عبر",
+        "أخبار"
+      ],
+      "completionClass": "plural-result-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-030",
+      "familiarityRank": 30,
+      "proverb": "ما حك جلدك مثل ظفرك",
+      "sourceExcerpt": "ما حك جلدك مثل ظفرك",
+      "distractors": [
+        "طبيبك",
+        "صديقك",
+        "غيرك"
+      ],
+      "completionClass": "possessed-person-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-031",
+      "familiarityRank": 31,
+      "proverb": "إذا أردت أن تطاع فأمر بما يستطاع",
+      "sourceExcerpt": "إذا أردتْ أن تطاع فأمر بما يستطاع",
+      "distractors": [
+        "تعرف",
+        "تملك",
+        "تريد"
+      ],
+      "completionClass": "present-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-032",
+      "familiarityRank": 32,
+      "proverb": "كفى المرء فضلا أن تعد معايبه",
+      "sourceExcerpt": "كفى المرء فضلا أن تُعَدَّ معايبه",
+      "distractors": [
+        "مناقبه",
+        "خصاله",
+        "مآثره"
+      ],
+      "completionClass": "possessed-plural-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-033",
+      "familiarityRank": 33,
+      "proverb": "لا يلدغ المؤمن من جحر واحد مرتين",
+      "sourceExcerpt": "لا يلدغ المؤمن من جحرٍ واحدٍ مرتين",
+      "distractors": [
+        "أبدا",
+        "سهوا",
+        "سريعا"
+      ],
+      "completionClass": "adverb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-034",
+      "familiarityRank": 34,
+      "proverb": "لكل داء دواء يستطب به إلا الحماقة أعيت من يداويها",
+      "sourceExcerpt": "لكل داءٍ دواء يستطب به .. إلا الحماقة أعيت من يداويها",
+      "distractors": [
+        "يصاحبها",
+        "يجادلها",
+        "يتحملها"
+      ],
+      "completionClass": "present-verb-object-pronoun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-035",
+      "familiarityRank": 35,
+      "proverb": "إذا حضر الماء بطل التيمم",
+      "sourceExcerpt": "إذا حضر الماء بطل التيمم",
+      "distractors": [
+        "الكلام",
+        "الانتظار",
+        "الاجتهاد"
+      ],
+      "completionClass": "verbal-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-036",
+      "familiarityRank": 36,
+      "proverb": "إذا لم تستح فاصنع ما شئت",
+      "sourceExcerpt": "إذا لم تستح فاصنع ما شئت",
+      "distractors": [
+        "رأيت",
+        "سمعت",
+        "عرفت"
+      ],
+      "completionClass": "verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-037",
+      "familiarityRank": 37,
+      "proverb": "من اغتاب الناس عندك اغتابك عندهم",
+      "sourceExcerpt": "من اغتاب الناس عندك اغتابك عندهم",
+      "distractors": [
+        "غدا",
+        "سريعا",
+        "جهرا"
+      ],
+      "completionClass": "adverb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-038",
+      "familiarityRank": 38,
+      "proverb": "أفضل الجود العطاء قبل الموعد",
+      "sourceExcerpt": "أفضل الجود العطاء قبل الموعد",
+      "distractors": [
+        "الثناء",
+        "الرحيل",
+        "الندم"
+      ],
+      "completionClass": "event-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-039",
+      "familiarityRank": 39,
+      "proverb": "لا تشغل نفسك بما لا تستطيع أن تغيره",
+      "sourceExcerpt": "لا تشغل نفسك بما لا تستطيع أن تغيره",
+      "distractors": [
+        "تملكه",
+        "تدركه",
+        "تفهمه"
+      ],
+      "completionClass": "present-verb-object-pronoun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-040",
+      "familiarityRank": 40,
+      "proverb": "ليست العبرة بالكم ولكن بالكيف",
+      "sourceExcerpt": "ليست العبرة بالكم ولكن بالكيف.",
+      "distractors": [
+        "بالبداية",
+        "بالظاهر",
+        "بالثمن"
+      ],
+      "completionClass": "prepositional-abstract-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-041",
+      "familiarityRank": 41,
+      "proverb": "من طلب العلا من غير كد أضاع العمر في طلب المحال",
+      "sourceExcerpt": "ومن طلب العُلا من غير كدٍ اضاعَ العمر في طلب المحالِ",
+      "distractors": [
+        "النجاح",
+        "الثراء",
+        "الجاه"
+      ],
+      "completionClass": "goal-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-042",
+      "familiarityRank": 42,
+      "proverb": "لا تكن صلبا فتكسر ولا لينا فتعصر",
+      "sourceExcerpt": "لا تكن صلبا فتكسر ولا لينا فتعصر. (عمر بن الخطاب)",
+      "distractors": [
+        "فتنكسر",
+        "فتضعف",
+        "فتتعثر"
+      ],
+      "completionClass": "coordinated-result-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-043",
+      "familiarityRank": 43,
+      "proverb": "بعض الشك من حسن الفطن",
+      "sourceExcerpt": "بعض الشك من حسن الفطن",
+      "distractors": [
+        "التروي",
+        "التدبير",
+        "النظر"
+      ],
+      "completionClass": "abstract-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-044",
+      "familiarityRank": 44,
+      "proverb": "إن اللبيب من الإشارة يفهم والعبد يقرع بالعصا",
+      "sourceExcerpt": "إن اللبيب من الإشارة يفهم والعبد يقرع بالعصا",
+      "distractors": [
+        "بالسوط",
+        "بالتوبيخ",
+        "بالتهديد"
+      ],
+      "completionClass": "prepositional-instrument",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-045",
+      "familiarityRank": 45,
+      "proverb": "إنك لا تجني من الشوك العنب",
+      "sourceExcerpt": "إنك لا تجنى من الشوك العنب.",
+      "distractors": [
+        "الورد",
+        "الثمر",
+        "التفاح"
+      ],
+      "completionClass": "plant-product-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-046",
+      "familiarityRank": 46,
+      "proverb": "خادم القوم سيدهم",
+      "sourceExcerpt": "خادم القوم سيدهم.",
+      "distractors": [
+        "دليلهم",
+        "عونهم",
+        "حارسهم"
+      ],
+      "completionClass": "possessed-role-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-047",
+      "familiarityRank": 47,
+      "proverb": "خذ الحكمة من أفواه المجانين",
+      "sourceExcerpt": "خذ الحكمة من أفواه المجانين.",
+      "distractors": [
+        "الحكماء",
+        "الغرباء",
+        "البسطاء"
+      ],
+      "completionClass": "human-plural-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-048",
+      "familiarityRank": 48,
+      "proverb": "خير البر عاجله",
+      "sourceExcerpt": "خير البر عاجله.",
+      "distractors": [
+        "كثيره",
+        "خالصه",
+        "أيسره"
+      ],
+      "completionClass": "possessed-adjective",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-049",
+      "familiarityRank": 49,
+      "proverb": "ذاب الثلج وبان المرج",
+      "sourceExcerpt": "ذاب الثلج وبان المرج.",
+      "distractors": [
+        "الطريق",
+        "العشب",
+        "الوجه"
+      ],
+      "completionClass": "revealed-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-050",
+      "familiarityRank": 50,
+      "proverb": "رب صدفة خير من ألف ميعاد",
+      "sourceExcerpt": "رُبَّ صدفة خير من ألف ميعاد.",
+      "distractors": [
+        "تفكير",
+        "تخطيط",
+        "اختيار"
+      ],
+      "completionClass": "planning-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-051",
+      "familiarityRank": 51,
+      "proverb": "رب رمية من غير رام",
+      "sourceExcerpt": "رُبّ رمية من غير رام.",
+      "distractors": [
+        "قصد",
+        "قوس",
+        "تدريب"
+      ],
+      "completionClass": "means-or-intent-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-052",
+      "familiarityRank": 52,
+      "proverb": "زرعوا فأكلنا نزرع فيأكلون",
+      "sourceExcerpt": "زرعوا فأكلنا ... نزرع فيأكلون",
+      "distractors": [
+        "فيحصدون",
+        "فيعيشون",
+        "فيشكرون"
+      ],
+      "completionClass": "coordinated-present-plural",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-053",
+      "familiarityRank": 53,
+      "proverb": "العصا لمن عصى",
+      "sourceExcerpt": "العصا لمن عصى.",
+      "distractors": [
+        "ظلم",
+        "أخطأ",
+        "تمرد"
+      ],
+      "completionClass": "past-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-054",
+      "familiarityRank": 54,
+      "proverb": "في الليلة الظلماء يفتقد البدر",
+      "sourceExcerpt": "في الليلة الظلماء يفتقد البدر",
+      "distractors": [
+        "النور",
+        "الدليل",
+        "الرفيق"
+      ],
+      "completionClass": "missed-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-055",
+      "familiarityRank": 55,
+      "proverb": "تلك القشة التي قصمت ظهر البعير",
+      "sourceExcerpt": "تلك القشة التي قصمت ظهر البعير",
+      "distractors": [
+        "الحصان",
+        "الحمار",
+        "الثور"
+      ],
+      "completionClass": "back-bearing-animal",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-056",
+      "familiarityRank": 56,
+      "proverb": "بلغ السيل الزبى",
+      "sourceExcerpt": "بلغ السيل الزبى (كلتا الجملتان بمعنى طفح الكيل)",
+      "distractors": [
+        "الوادي",
+        "الجسر",
+        "الركب"
+      ],
+      "completionClass": "limit-or-place-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-057",
+      "familiarityRank": 57,
+      "proverb": "عند جهينة الخبر اليقين",
+      "sourceExcerpt": "عند جهينة الخبر اليقين. (و لها قصة طويلة)",
+      "distractors": [
+        "المؤكد",
+        "الكامل",
+        "العاجل"
+      ],
+      "completionClass": "information-adjective",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-058",
+      "familiarityRank": 58,
+      "proverb": "قطعت جهيزة قول كل خطيب",
+      "sourceExcerpt": "قطعت جهيزه قول كل خطيب *",
+      "distractors": [
+        "متحدث",
+        "حكيم",
+        "شاهد"
+      ],
+      "completionClass": "person-role-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-059",
+      "familiarityRank": 59,
+      "proverb": "أسمع جعجعة ولا أرى طحنا",
+      "sourceExcerpt": "أسمع جَعْجةً ولا أرى طِحنا (كناية عن كثر الكلام بلا عمل)",
+      "distractors": [
+        "خبزا",
+        "حصادا",
+        "عملا"
+      ],
+      "completionClass": "perceived-output-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-060",
+      "familiarityRank": 60,
+      "proverb": "يداك أوكتا وفوك نفخ",
+      "sourceExcerpt": "يداك أوكتا وفوك نفخ.",
+      "distractors": [
+        "صاح",
+        "سكت",
+        "اعترف"
+      ],
+      "completionClass": "past-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-061",
+      "familiarityRank": 61,
+      "proverb": "سرك أسيرك فإن أفشيته صرت أسيره",
+      "sourceExcerpt": "سرك أسيرك فان افشيته صرت أسيره (عمرو بن العاص)",
+      "distractors": [
+        "ضحيته",
+        "خادمه",
+        "حارسه"
+      ],
+      "completionClass": "possessed-role-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-062",
+      "familiarityRank": 62,
+      "proverb": "إذا أنت أكرمت الكريم ملكته وإن أنت أكرمت اللئيم تمردا",
+      "sourceExcerpt": "إذا أنت أكرمت الكريم ملكته ... وإن أنت أكرمت اللئيم تمردا",
+      "distractors": [
+        "تكبر",
+        "تمادى",
+        "جفا"
+      ],
+      "completionClass": "past-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-063",
+      "familiarityRank": 63,
+      "proverb": "أخوك من صدقك النصيحة",
+      "sourceExcerpt": "أخوك من صدقك النصيحة",
+      "distractors": [
+        "الحقيقة",
+        "الخبر",
+        "الوعد"
+      ],
+      "completionClass": "speech-object-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-064",
+      "familiarityRank": 64,
+      "proverb": "من قال لا أعلم فقد أفتى",
+      "sourceExcerpt": "من قال لا أعلم فقد أفتى.",
+      "distractors": [
+        "تعلم",
+        "سأل",
+        "توقف"
+      ],
+      "completionClass": "past-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-065",
+      "familiarityRank": 65,
+      "proverb": "وقعت الفأس في الرأس",
+      "sourceExcerpt": "وقعت الفاس في الرأس.",
+      "distractors": [
+        "القدم",
+        "الأرض",
+        "الباب"
+      ],
+      "completionClass": "body-or-place-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-066",
+      "familiarityRank": 66,
+      "proverb": "أكل عليه الدهر وشرب",
+      "sourceExcerpt": "أكل عليه الدهر وشرب.",
+      "distractors": [
+        "ومضى",
+        "وتقلب",
+        "وتغير"
+      ],
+      "completionClass": "coordinated-past-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-067",
+      "familiarityRank": 67,
+      "proverb": "أكلت يوم أكل الثور الأبيض",
+      "sourceExcerpt": "أكلت يوم أكل الثور الأبيض",
+      "distractors": [
+        "الكبير",
+        "الأخير",
+        "الوحيد"
+      ],
+      "completionClass": "masculine-adjective",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-068",
+      "familiarityRank": 68,
+      "proverb": "من استعجل شيئا قبل أوانه عوقب بحرمانه",
+      "sourceExcerpt": "من استعجل شيئاً قبل أوانه عوقب بحرمانه .",
+      "distractors": [
+        "بإبعاده",
+        "بانتظاره",
+        "بتكليفه"
+      ],
+      "completionClass": "prepositional-consequence",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-069",
+      "familiarityRank": 69,
+      "proverb": "شق عصا الطاعة",
+      "sourceExcerpt": "شق عصا الطاعة.",
+      "distractors": [
+        "الجماعة",
+        "الوحدة",
+        "التحالف"
+      ],
+      "completionClass": "collective-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-070",
+      "familiarityRank": 70,
+      "proverb": "زوبعة في فنجان",
+      "sourceExcerpt": "زوبعة في فنجان \"أي أزمة صغيرة وأخذت أكبر من حقها\".",
+      "distractors": [
+        "مجلس",
+        "طريق",
+        "مكان"
+      ],
+      "completionClass": "container-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-071",
+      "familiarityRank": 71,
+      "proverb": "لا تبك على اللبن المسكوب",
+      "sourceExcerpt": "لا تبكِ علي اللبن المسكوب.",
+      "distractors": [
+        "الفاسد",
+        "الضائع",
+        "البارد"
+      ],
+      "completionClass": "masculine-adjective",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-072",
+      "familiarityRank": 72,
+      "proverb": "لا تقول فول حتى يصير في المكيول",
+      "sourceExcerpt": "لا تقول فول حتى يصير في المكيول.",
+      "distractors": [
+        "السوق",
+        "المخزن",
+        "الكيس"
+      ],
+      "completionClass": "destination-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-073",
+      "familiarityRank": 73,
+      "proverb": "ما خفي كان أعظم",
+      "sourceExcerpt": "ما خفى كان أعظم.",
+      "distractors": [
+        "أبعد",
+        "أخطر",
+        "أقدم"
+      ],
+      "completionClass": "comparative-adjective",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-074",
+      "familiarityRank": 74,
+      "proverb": "ما طار طير وارتفع إلا كما طار وقع",
+      "sourceExcerpt": "ما طار طير وارتفع الا كما طار وقع",
+      "distractors": [
+        "عاد",
+        "هبط",
+        "استقر"
+      ],
+      "completionClass": "past-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-075",
+      "familiarityRank": 75,
+      "proverb": "كريشة في مهب الريح",
+      "sourceExcerpt": "كريشة في مهب الريح",
+      "distractors": [
+        "النسيم",
+        "الإعصار",
+        "العاصفة"
+      ],
+      "completionClass": "wind-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-076",
+      "familiarityRank": 76,
+      "proverb": "أظلم من الليل",
+      "sourceExcerpt": "أظلم من الليل.",
+      "distractors": [
+        "الكهف",
+        "القبر",
+        "الغيم"
+      ],
+      "completionClass": "dark-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-077",
+      "familiarityRank": 77,
+      "proverb": "أعدل من الميزان",
+      "sourceExcerpt": "أعدل من الميزان. (بل أعدل من عمر)فعمر أعدل من الميزان",
+      "distractors": [
+        "القاضي",
+        "القانون",
+        "الحكم"
+      ],
+      "completionClass": "justice-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-078",
+      "familiarityRank": 78,
+      "proverb": "أَمَرُّ من العلقم",
+      "sourceExcerpt": "أمرّ من العلقم.",
+      "distractors": [
+        "السم",
+        "الصبر",
+        "الدواء"
+      ],
+      "completionClass": "bitter-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-079",
+      "familiarityRank": 79,
+      "proverb": "أسرع من البرق",
+      "sourceExcerpt": "أسرع من البرق.",
+      "distractors": [
+        "الريح",
+        "الصوت",
+        "السهم"
+      ],
+      "completionClass": "fast-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-080",
+      "familiarityRank": 80,
+      "proverb": "أضيق من ثقب الإبرة",
+      "sourceExcerpt": "أضيق من ثقب الإبرة.",
+      "distractors": [
+        "المفتاح",
+        "الجدار",
+        "المنخل"
+      ],
+      "completionClass": "object-with-opening",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-081",
+      "familiarityRank": 81,
+      "proverb": "سمن على عسل",
+      "sourceExcerpt": "سمن على عسل.",
+      "distractors": [
+        "خبز",
+        "تمر",
+        "قشطة"
+      ],
+      "completionClass": "food-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-082",
+      "familiarityRank": 82,
+      "proverb": "سمك في ماء",
+      "sourceExcerpt": "سمك في ماء.",
+      "distractors": [
+        "شبكة",
+        "قارب",
+        "سوق"
+      ],
+      "completionClass": "fish-context-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-083",
+      "familiarityRank": 83,
+      "proverb": "يخاف من ظله",
+      "sourceExcerpt": "يخاف من ظله.",
+      "distractors": [
+        "صوته",
+        "نفسه",
+        "مستقبله"
+      ],
+      "completionClass": "possessed-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-084",
+      "familiarityRank": 84,
+      "proverb": "يخبط خبط عشواء",
+      "sourceExcerpt": "يخبط خبط عشواء.",
+      "distractors": [
+        "شديد",
+        "متواصل",
+        "مضطرب"
+      ],
+      "completionClass": "masculine-adjective",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-085",
+      "familiarityRank": 85,
+      "proverb": "يؤذن في مالطة",
+      "sourceExcerpt": "يؤذن في مالطة.",
+      "distractors": [
+        "الصحراء",
+        "السوق",
+        "الميناء"
+      ],
+      "completionClass": "place-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-086",
+      "familiarityRank": 86,
+      "proverb": "فخار يكسر بعضه",
+      "sourceExcerpt": "فخار يكسِّر بعضه.",
+      "distractors": [
+        "الزجاج",
+        "الحجر",
+        "غيره"
+      ],
+      "completionClass": "object-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-087",
+      "familiarityRank": 87,
+      "proverb": "فسر الماء بعد الجهد بالماء",
+      "sourceExcerpt": "فسر الماءَ بعد الجهدِ بالماءِ!",
+      "distractors": [
+        "بالشرح",
+        "بالقول",
+        "بالكلام"
+      ],
+      "completionClass": "prepositional-explanation",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-088",
+      "familiarityRank": 88,
+      "proverb": "زمار الحي لا يطرب",
+      "sourceExcerpt": "زمار الحي لا يطرب. (أي أن الرجل قد لا يعرف قدره في قومه \"الحي\"، في حين يُعرف له قدْره خارج \"الحي\"!)",
+      "distractors": [
+        "يسمع",
+        "ينجح",
+        "يشتهر"
+      ],
+      "completionClass": "present-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-089",
+      "familiarityRank": 89,
+      "proverb": "لكل أناس في بعيرهم خبر",
+      "sourceExcerpt": "كل شئ يبدأ صغيراً ثم يكبر إلا المصيبة فإنها تبدأ كبيرة ثم تصغر * لكل أناس في بعيرهم خبر.",
+      "distractors": [
+        "نصيب",
+        "أثر",
+        "شأن"
+      ],
+      "completionClass": "abstract-noun",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    },
+    {
+      "sourceRecordId": "arabic-proverb-090",
+      "familiarityRank": 90,
+      "proverb": "إن البغاث بأرضنا يستنسر",
+      "sourceExcerpt": "إنّ البغاث بأرضنا يستنسر (البغاث طائر صغير )",
+      "distractors": [
+        "يتكبر",
+        "يتمرد",
+        "يتصدر"
+      ],
+      "completionClass": "present-verb",
+      "distractorPolicy": "editorial_contextual_completion_v1"
+    }
+  ]
+}

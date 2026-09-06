@@ -136,7 +136,7 @@ async function withPage(fn) {
     );
     // زوّر ربط الهوية حتى يكمل initRevenueCat() إلى RC.configure()
     await page.route('**/api/v2/revenuecat/identity', (route) =>
-      route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+      route.fulfill({ status: 200, contentType: 'application/json', body: '{"rcAppUserId":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}' })
     );
     await fn(page);
     await context.close();

@@ -4,6 +4,11 @@ on:
   pull_request:
   push:
     branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ios-release-${{ github.ref }}
@@ -68,7 +73,54 @@ jobs:
           npm ci
           npm ci --prefix functions
           uv sync --locked
+          npx playwright install chromium
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      # App/App/public is intentionally generated and ignored. Create it on a
+      # clean checkout before release gates whose regression tests read it.
+      - name: Sync native iOS project before content gates
+        run: npm run sync:ios
+
+      - name: Question content release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run questions:release-gate
+          npm run questions:next-release-gate
+          npm run images:build-curated-300
+          generated_artifacts=(
+            content/questions/next-release-factual-ledger.json
+            server-assets/question-bank/v1/bank.json
+            server-assets/question-bank/v1/manifest.json
+            server-assets/question-bank/v1/curation-report.json
+            server-assets/question-bank/v1/quality-report.json
+            server-assets/question-images/curated-question-bank.json
+            www/curated-image-options.js
+          )
+          for artifact in "${generated_artifacts[@]}"; do
+            git ls-files --error-unmatch "$artifact" >/dev/null || {
+              echo "Generated release artifact is not tracked: $artifact" >&2
+              exit 1
+            }
+          done
+          git diff --exit-code -- \
+            content/questions/next-release-factual-ledger.json \
+            server-assets/question-bank/v1 \
+            server-assets/question-images/curated-question-bank.json \
+            www/curated-image-options.js
+
+      # Generators above may refresh www/. Copy that tracked source again and
+      # compare every byte without requiring generated native files in Git.
+      - name: Refresh and verify generated iOS web bundle
+        run: |
+          npx cap copy ios
+          node scripts/validate-ios-public.mjs
+
+      - name: Fetch and verify production image assets
+        run: npm run images:fetch-release-assets
+
+      - name: Verify curated image assets from production CDN
+        run: npm run images:verify-curated-remote-assets
 
       - name: Web, server, security, and content tests
         run: |
@@ -79,9 +131,6 @@ jobs:
           npm run questions:audit
           npm run questions:runtime-audit
 
-      - name: Sync native iOS project
-        run: npm run sync:ios
-
       - name: Swift Testing and XCUITest
         run: |
           simulator_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); print(next(d["udid"] for devices in data["devices"].values() for d in devices if d.get("isAvailable") and "iPhone" in d["name"]))')
@@ -89,21 +138,24 @@ jobs:
             -workspace ios/App/App.xcworkspace \
             -scheme App \
             -destination "platform=iOS Simulator,id=${simulator_id}" \
+            -enableCodeCoverage YES \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Unsigned Release build (no external uploads)
-        run: >-
-          xcodebuild build
-          -workspace ios/App/App.xcworkspace
-          -scheme App
-          -configuration Release
-          -sdk iphoneos
-          -destination 'generic/platform=iOS'
-          COMPILER_INDEX_STORE_ENABLE=NO
-          CODE_SIGNING_ALLOWED=NO
-          SKIP_CRASHLYTICS_UPLOAD=1
-
-      # اترك الاختبارات والبناء غير الموقّع يعملان حتى أثناء ترحيل المحتوى،
-      # ثم امنع دمج/إصدار 1.3 في الخطوة النهائية بلا تعطيل تغذية CI الراجعة.
-      - name: Question content release gate
-        run: npm run questions:release-gate
+      - name: Unsigned Release archive (no external uploads)
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive_path="$RUNNER_TEMP/Fatinah.xcarchive"
+          xcodebuild archive \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$archive_path" \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ENABLE_CODE_COVERAGE=NO \
+            SKIP_CRASHLYTICS_UPLOAD=1
+          archived_app="$(find "$archive_path/Products/Applications" -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$archived_app"

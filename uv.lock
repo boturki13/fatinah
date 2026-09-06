@@ -244,6 +244,23 @@ wheels = [
 ]
 
 [[package]]
+name = "fatinah-server"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "cbor2" },
+    { name = "cryptography" },
+    { name = "firebase-admin" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cbor2", specifier = ">=5.7.1" },
+    { name = "cryptography", specifier = ">=50.0.0" },
+    { name = "firebase-admin", specifier = ">=7.5.0" },
+]
+
+[[package]]
 name = "firebase-admin"
 version = "7.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -624,25 +641,6 @@ crypto = [
 ]
 
 [[package]]
-name = "repl-nix-workspace"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "cbor2" },
-    { name = "cryptography" },
-    { name = "firebase-admin" },
-    { name = "stripe" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "cbor2", specifier = ">=5.7.1" },
-    { name = "cryptography", specifier = ">=50.0.0" },
-    { name = "firebase-admin", specifier = ">=7.5.0" },
-    { name = "stripe", specifier = ">=15.3.1" },
-]
-
-[[package]]
 name = "requests"
 version = "2.34.2"
 source = { registry = "https://pypi.org/simple" }
@@ -655,19 +653,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ac/c3/e2a2b89f2d3e2179abd6d00ebd70bff6273f37fb3e0cc209f48b39d00cbf/requests-2.34.2.tar.gz", hash = "sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed", size = 142856, upload-time = "2026-05-14T19:25:27.735Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl", hash = "sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0", size = 73075, upload-time = "2026-05-14T19:25:26.443Z" },
-]
-
-[[package]]
-name = "stripe"
-version = "15.3.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "requests" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b6/a0/52b623a5c07238af6282dfc07ba8c8a9b332f4d7ef69d0006e8a52e6b34d/stripe-15.3.1.tar.gz", hash = "sha256:2f9a8d961e5c2ec19149fb4e0b47d9709d014a68592cdb1f4efd044abc8d2359", size = 1516385, upload-time = "2026-07-16T00:47:46.829Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/eb/7a/58f266c262bbf903e2eca438ef752ed0fcc7273c9a4bc42edc20effa962f/stripe-15.3.1-py3-none-any.whl", hash = "sha256:f7c87a9a9072db7316e9ba497b4dbaa1dbae51f67ca201ba6155fe8b6487e5e3", size = 2173610, upload-time = "2026-07-16T00:47:45.173Z" },
 ]
 
 [[package]]

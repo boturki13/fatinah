@@ -38,12 +38,14 @@ main
    npm ci
    npm run images:fetch-release-assets
    npm test
+   npm run questions:release-gate
+   npm run questions:next-release-gate -- --release
    npm run sync:ios
    ```
 
 4. شغّل اختبارات Swift/Xcode وابنِ Archive موقّعًا.
 5. انشر خادم staging وشغّل بوابة الإنتاج مع اعتمادات staging.
-6. اختبر TestFlight: تسجيل الدخول، الشراء والاستعادة، الجولة المجانية، البلاغ، الصور، الحذف، الشبكة الضعيفة، وVoiceOver.
+6. اختبر TestFlight: تسجيل الدخول، الشراء والاستعادة، الجولة المجانية وإعادة محاولة التحقق، استعادة جولة خادمية من دور الفريق الثاني، البلاغ، الصور، الحذف، الشبكة الضعيفة، اختفاء شريط QA، وVoiceOver.
 7. أنشئ tag بصيغة `vX.Y.Z-build.N` من commit المرشح نفسه.
 
 ## ترتيب النشر

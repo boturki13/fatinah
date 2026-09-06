@@ -10,6 +10,9 @@ try{
   for(const [name,width,height] of [['iPhone portrait',390,844],['iPhone landscape',844,390]]){
     const page=await browser.newPage({viewport:{width,height}});
     await page.goto(url);
+    // انتظر اكتمال توجيه الإقلاع قبل تركيب حالة اختبار التخطيط؛
+    // وإلا قد يعيد checkSubscriptionAndRoute المتأخر الانتقال وسط القياس.
+    await page.waitForFunction(()=>document.querySelector('.screen.active')?.id!=='s-loading');
     const before=await page.evaluate(()=>{
       go('s-cats');
       state.teamCount=2;

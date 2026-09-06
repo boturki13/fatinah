@@ -82,7 +82,7 @@ try{
       return route.fulfill({status:200,contentType:'application/json',body:'{"active":false}'});
     }
     if(requestUrl.includes('/api/v2/revenuecat/identity')){
-      return route.fulfill({status:200,contentType:'application/json',body:'{}'});
+      return route.fulfill({status:200,contentType:'application/json',body:'{"rcAppUserId":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}'});
     }
     if(requestUrl.includes('/api/v2/app-attest/status')){
       const payload=JSON.parse(request.postData()||'{}');
@@ -182,6 +182,20 @@ try{
   assert.deepEqual(failClosed,{
     allowed:false,available:false,state:'unknown',screen:'s-home',
   },'503 أو الأوفلاين يبقى unknown ولا يتحول إلى جولة مجانية أو paywall خاطئ');
+  const verificationFailureUi=await page.evaluate(()=>({
+    text:document.getElementById('free-round-banner')?.textContent||'',
+    retryVisible:!!document.querySelector('[data-action="retry-free-round"]'),
+  }));
+  assert.match(verificationFailureUi.text,/ما قدرنا نتحقق/,
+    'الاتصال المتاح مع فشل الخدمة يجب ألا يُعرض كأنه انقطاع إنترنت');
+  assert.doesNotMatch(verificationFailureUi.text,/نحتاج اتصال بالإنترنت/);
+  assert.equal(verificationFailureUi.retryVisible,true,'يجب توفير إعادة محاولة واضحة');
+
+  statusUnavailable=false;
+  await page.locator('[data-action="retry-free-round"]').click();
+  await page.waitForFunction(()=>_freeRoundVerificationState==='used');
+  assert.match(await page.locator('#free-round-banner').textContent(),/خلصت جولتك المجانية/,
+    'إعادة التحقق تحدّث الحالة من الخادم دون إعادة تشغيل التطبيق');
 
   const attestationRecovery=await page.evaluate(async()=>{
     const plugin=window.Capacitor.Plugins.FatinahDeviceIntegrity;

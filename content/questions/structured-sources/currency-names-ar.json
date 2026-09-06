@@ -1,0 +1,819 @@
+{
+  "schemaVersion": 1,
+  "sourceProfile": "cldr_currency_names_v1",
+  "cldrVersion": "48.0",
+  "generatedWithNode": "v24.18.0",
+  "selectionPolicy": "90 explicitly ranked current ISO-style currency codes; prohibited topic excluded; reviewed Arabic display overrides retained alongside original CLDR labels",
+  "records": [
+    {
+      "sourceRecordId": "cldr-currency-kwd",
+      "code": "KWD",
+      "nameAr": "دينار كويتي",
+      "cldrNameAr": "دينار كويتي",
+      "familiarityRank": 1,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-sar",
+      "code": "SAR",
+      "nameAr": "ريال سعودي",
+      "cldrNameAr": "ريال سعودي",
+      "familiarityRank": 2,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-aed",
+      "code": "AED",
+      "nameAr": "درهم إماراتي",
+      "cldrNameAr": "درهم إماراتي",
+      "familiarityRank": 3,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-qar",
+      "code": "QAR",
+      "nameAr": "ريال قطري",
+      "cldrNameAr": "ريال قطري",
+      "familiarityRank": 4,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-bhd",
+      "code": "BHD",
+      "nameAr": "دينار بحريني",
+      "cldrNameAr": "دينار بحريني",
+      "familiarityRank": 5,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-omr",
+      "code": "OMR",
+      "nameAr": "ريال عماني",
+      "cldrNameAr": "ريال عماني",
+      "familiarityRank": 6,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-usd",
+      "code": "USD",
+      "nameAr": "دولار أمريكي",
+      "cldrNameAr": "دولار أمريكي",
+      "familiarityRank": 7,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-eur",
+      "code": "EUR",
+      "nameAr": "يورو",
+      "cldrNameAr": "يورو",
+      "familiarityRank": 8,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-gbp",
+      "code": "GBP",
+      "nameAr": "جنيه إسترليني",
+      "cldrNameAr": "جنيه إسترليني",
+      "familiarityRank": 9,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-jpy",
+      "code": "JPY",
+      "nameAr": "ين ياباني",
+      "cldrNameAr": "ين ياباني",
+      "familiarityRank": 10,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-cny",
+      "code": "CNY",
+      "nameAr": "يوان صيني",
+      "cldrNameAr": "يوان صيني",
+      "familiarityRank": 11,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-inr",
+      "code": "INR",
+      "nameAr": "روبية هندية",
+      "cldrNameAr": "روبية هندي",
+      "familiarityRank": 12,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-egp",
+      "code": "EGP",
+      "nameAr": "جنيه مصري",
+      "cldrNameAr": "جنيه مصري",
+      "familiarityRank": 13,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-iqd",
+      "code": "IQD",
+      "nameAr": "دينار عراقي",
+      "cldrNameAr": "دينار عراقي",
+      "familiarityRank": 14,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-jod",
+      "code": "JOD",
+      "nameAr": "دينار أردني",
+      "cldrNameAr": "دينار أردني",
+      "familiarityRank": 15,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-mad",
+      "code": "MAD",
+      "nameAr": "درهم مغربي",
+      "cldrNameAr": "درهم مغربي",
+      "familiarityRank": 16,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-dzd",
+      "code": "DZD",
+      "nameAr": "دينار جزائري",
+      "cldrNameAr": "دينار جزائري",
+      "familiarityRank": 17,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-tnd",
+      "code": "TND",
+      "nameAr": "دينار تونسي",
+      "cldrNameAr": "دينار تونسي",
+      "familiarityRank": 18,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-try",
+      "code": "TRY",
+      "nameAr": "ليرة تركية",
+      "cldrNameAr": "ليرة تركية",
+      "familiarityRank": 19,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-cad",
+      "code": "CAD",
+      "nameAr": "دولار كندي",
+      "cldrNameAr": "دولار كندي",
+      "familiarityRank": 20,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-aud",
+      "code": "AUD",
+      "nameAr": "دولار أسترالي",
+      "cldrNameAr": "دولار أسترالي",
+      "familiarityRank": 21,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-chf",
+      "code": "CHF",
+      "nameAr": "فرنك سويسري",
+      "cldrNameAr": "فرنك سويسري",
+      "familiarityRank": 22,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-rub",
+      "code": "RUB",
+      "nameAr": "روبل روسي",
+      "cldrNameAr": "روبل روسي",
+      "familiarityRank": 23,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-krw",
+      "code": "KRW",
+      "nameAr": "وون كوريا الجنوبية",
+      "cldrNameAr": "وون كوريا الجنوبية",
+      "familiarityRank": 24,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-brl",
+      "code": "BRL",
+      "nameAr": "ريال برازيلي",
+      "cldrNameAr": "ريال برازيلي",
+      "familiarityRank": 25,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-mxn",
+      "code": "MXN",
+      "nameAr": "بيزو مكسيكي",
+      "cldrNameAr": "بيزو مكسيكي",
+      "familiarityRank": 26,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-pkr",
+      "code": "PKR",
+      "nameAr": "روبية باكستانية",
+      "cldrNameAr": "روبية باكستاني",
+      "familiarityRank": 27,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-idr",
+      "code": "IDR",
+      "nameAr": "روبية إندونيسية",
+      "cldrNameAr": "روبية إندونيسية",
+      "familiarityRank": 28,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-myr",
+      "code": "MYR",
+      "nameAr": "رينغيت ماليزي",
+      "cldrNameAr": "رينغيت ماليزي",
+      "familiarityRank": 29,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-sgd",
+      "code": "SGD",
+      "nameAr": "دولار سنغافوري",
+      "cldrNameAr": "دولار سنغافوري",
+      "familiarityRank": 30,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-nzd",
+      "code": "NZD",
+      "nameAr": "دولار نيوزيلندي",
+      "cldrNameAr": "دولار نيوزيلندي",
+      "familiarityRank": 31,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-sek",
+      "code": "SEK",
+      "nameAr": "كرونة سويدية",
+      "cldrNameAr": "كرونة سويدية",
+      "familiarityRank": 32,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-nok",
+      "code": "NOK",
+      "nameAr": "كرونة نرويجية",
+      "cldrNameAr": "كرونة نرويجية",
+      "familiarityRank": 33,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-dkk",
+      "code": "DKK",
+      "nameAr": "كرونة دنماركية",
+      "cldrNameAr": "كرونة دنماركية",
+      "familiarityRank": 34,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-pln",
+      "code": "PLN",
+      "nameAr": "زلوتي بولندي",
+      "cldrNameAr": "زلوتي بولندي",
+      "familiarityRank": 35,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-czk",
+      "code": "CZK",
+      "nameAr": "كرونة تشيكية",
+      "cldrNameAr": "كرونة تشيكية",
+      "familiarityRank": 36,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-huf",
+      "code": "HUF",
+      "nameAr": "فورينت هنغاري",
+      "cldrNameAr": "فورينت هنغاري",
+      "familiarityRank": 37,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-ron",
+      "code": "RON",
+      "nameAr": "ليو روماني",
+      "cldrNameAr": "ليو روماني",
+      "familiarityRank": 38,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-bgn",
+      "code": "BGN",
+      "nameAr": "ليف بلغاري",
+      "cldrNameAr": "ليف بلغاري",
+      "familiarityRank": 39,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-zar",
+      "code": "ZAR",
+      "nameAr": "راند جنوب أفريقيا",
+      "cldrNameAr": "راند جنوب أفريقيا",
+      "familiarityRank": 40,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-ngn",
+      "code": "NGN",
+      "nameAr": "نايرا نيجيري",
+      "cldrNameAr": "نايرا نيجيري",
+      "familiarityRank": 41,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-kes",
+      "code": "KES",
+      "nameAr": "شلن كيني",
+      "cldrNameAr": "شلن كينيي",
+      "familiarityRank": 42,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-etb",
+      "code": "ETB",
+      "nameAr": "بير أثيوبي",
+      "cldrNameAr": "بير أثيوبي",
+      "familiarityRank": 43,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-ghs",
+      "code": "GHS",
+      "nameAr": "سيدي غانا",
+      "cldrNameAr": "سيدي غانا",
+      "familiarityRank": 44,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-ugx",
+      "code": "UGX",
+      "nameAr": "شلن أوغندي",
+      "cldrNameAr": "شلن أوغندي",
+      "familiarityRank": 45,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-tzs",
+      "code": "TZS",
+      "nameAr": "شلن تنزاني",
+      "cldrNameAr": "شلن تنزاني",
+      "familiarityRank": 46,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-rwf",
+      "code": "RWF",
+      "nameAr": "فرنك رواندي",
+      "cldrNameAr": "فرنك رواندي",
+      "familiarityRank": 47,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-sdg",
+      "code": "SDG",
+      "nameAr": "جنيه سوداني",
+      "cldrNameAr": "جنيه سوداني",
+      "familiarityRank": 48,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-lyd",
+      "code": "LYD",
+      "nameAr": "دينار ليبي",
+      "cldrNameAr": "دينار ليبي",
+      "familiarityRank": 49,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-irr",
+      "code": "IRR",
+      "nameAr": "ريال إيراني",
+      "cldrNameAr": "ريال إيراني",
+      "familiarityRank": 50,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-afn",
+      "code": "AFN",
+      "nameAr": "أفغاني",
+      "cldrNameAr": "أفغاني",
+      "familiarityRank": 51,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-bdt",
+      "code": "BDT",
+      "nameAr": "تاكا بنغلاديشي",
+      "cldrNameAr": "تاكا بنغلاديشي",
+      "familiarityRank": 52,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-lkr",
+      "code": "LKR",
+      "nameAr": "روبية سريلانكية",
+      "cldrNameAr": "روبية سريلانكية",
+      "familiarityRank": 53,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-npr",
+      "code": "NPR",
+      "nameAr": "روبية نيبالية",
+      "cldrNameAr": "روبية نيبالي",
+      "familiarityRank": 54,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-thb",
+      "code": "THB",
+      "nameAr": "بات تايلاندي",
+      "cldrNameAr": "باخت تايلاندي",
+      "familiarityRank": 55,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-vnd",
+      "code": "VND",
+      "nameAr": "دونج فيتنامي",
+      "cldrNameAr": "دونج فيتنامي",
+      "familiarityRank": 56,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-php",
+      "code": "PHP",
+      "nameAr": "بيزو فلبيني",
+      "cldrNameAr": "بيزو فلبيني",
+      "familiarityRank": 57,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-hkd",
+      "code": "HKD",
+      "nameAr": "دولار هونغ كونغ",
+      "cldrNameAr": "دولار هونغ كونغ",
+      "familiarityRank": 58,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-twd",
+      "code": "TWD",
+      "nameAr": "دولار تايواني",
+      "cldrNameAr": "دولار تايواني",
+      "familiarityRank": 59,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-mop",
+      "code": "MOP",
+      "nameAr": "باتاكا ماكاوي",
+      "cldrNameAr": "باتاكا ماكاوي",
+      "familiarityRank": 60,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-ars",
+      "code": "ARS",
+      "nameAr": "بيزو أرجنتيني",
+      "cldrNameAr": "بيزو أرجنتيني",
+      "familiarityRank": 61,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-clp",
+      "code": "CLP",
+      "nameAr": "بيزو تشيلي",
+      "cldrNameAr": "بيزو تشيلي",
+      "familiarityRank": 62,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-cop",
+      "code": "COP",
+      "nameAr": "بيزو كولومبي",
+      "cldrNameAr": "بيزو كولومبي",
+      "familiarityRank": 63,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-pen",
+      "code": "PEN",
+      "nameAr": "سول بيروفي",
+      "cldrNameAr": "سول بيروفي",
+      "familiarityRank": 64,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-uyu",
+      "code": "UYU",
+      "nameAr": "بيزو أوروغواي",
+      "cldrNameAr": "بيزو اوروغواي",
+      "familiarityRank": 65,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-pyg",
+      "code": "PYG",
+      "nameAr": "غواراني باراغواي",
+      "cldrNameAr": "غواراني باراغواي",
+      "familiarityRank": 66,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-bob",
+      "code": "BOB",
+      "nameAr": "بوليفيانو بوليفي",
+      "cldrNameAr": "بوليفيانو بوليفي",
+      "familiarityRank": 67,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-ves",
+      "code": "VES",
+      "nameAr": "بوليفار فنزويلي",
+      "cldrNameAr": "بوليفار فنزويلي",
+      "familiarityRank": 68,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-dop",
+      "code": "DOP",
+      "nameAr": "بيزو دومينيكاني",
+      "cldrNameAr": "بيزو الدومنيكان",
+      "familiarityRank": 69,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-jmd",
+      "code": "JMD",
+      "nameAr": "دولار جامايكي",
+      "cldrNameAr": "دولار جامايكي",
+      "familiarityRank": 70,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-ttd",
+      "code": "TTD",
+      "nameAr": "دولار ترينيداد وتوباغو",
+      "cldrNameAr": "دولار ترينداد وتوباغو",
+      "familiarityRank": 71,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-bbd",
+      "code": "BBD",
+      "nameAr": "دولار بربادوسي",
+      "cldrNameAr": "دولار بربادوسي",
+      "familiarityRank": 72,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-bsd",
+      "code": "BSD",
+      "nameAr": "دولار باهامي",
+      "cldrNameAr": "دولار باهامي",
+      "familiarityRank": 73,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-bzd",
+      "code": "BZD",
+      "nameAr": "دولار بليزي",
+      "cldrNameAr": "دولار بليزي",
+      "familiarityRank": 74,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-crc",
+      "code": "CRC",
+      "nameAr": "كولن كوستاريكي",
+      "cldrNameAr": "كولن كوستاريكي",
+      "familiarityRank": 75,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-gtq",
+      "code": "GTQ",
+      "nameAr": "كتزال غواتيمالي",
+      "cldrNameAr": "كوتزال غواتيمالا",
+      "familiarityRank": 76,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-hnl",
+      "code": "HNL",
+      "nameAr": "لمبيرة هندوراسية",
+      "cldrNameAr": "ليمبيرا هنداروس",
+      "familiarityRank": 77,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-nio",
+      "code": "NIO",
+      "nameAr": "قرطبة نيكاراغوا",
+      "cldrNameAr": "قرطبة نيكاراغوا",
+      "familiarityRank": 78,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-pab",
+      "code": "PAB",
+      "nameAr": "بالبوا بنمي",
+      "cldrNameAr": "بالبوا بنمي",
+      "familiarityRank": 79,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-xcd",
+      "code": "XCD",
+      "nameAr": "دولار شرق الكاريبي",
+      "cldrNameAr": "دولار شرق الكاريبي",
+      "familiarityRank": 80,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-fjd",
+      "code": "FJD",
+      "nameAr": "دولار فيجي",
+      "cldrNameAr": "دولار فيجي",
+      "familiarityRank": 81,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-pgk",
+      "code": "PGK",
+      "nameAr": "كينا بابوا غينيا الجديدة",
+      "cldrNameAr": "كينا بابوا غينيا الجديدة",
+      "familiarityRank": 82,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-wst",
+      "code": "WST",
+      "nameAr": "تالا ساموا",
+      "cldrNameAr": "تالا ساموا",
+      "familiarityRank": 83,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-top",
+      "code": "TOP",
+      "nameAr": "بانغا تونغا",
+      "cldrNameAr": "بانغا تونغا",
+      "familiarityRank": 84,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-vuv",
+      "code": "VUV",
+      "nameAr": "فاتو فانواتو",
+      "cldrNameAr": "فاتو فانواتو",
+      "familiarityRank": 85,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-mur",
+      "code": "MUR",
+      "nameAr": "روبية موريشيوسية",
+      "cldrNameAr": "روبية موريشيوسية",
+      "familiarityRank": 86,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-scr",
+      "code": "SCR",
+      "nameAr": "روبية سيشيلية",
+      "cldrNameAr": "روبية سيشيلية",
+      "familiarityRank": 87,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-mvr",
+      "code": "MVR",
+      "nameAr": "روفية مالديفية",
+      "cldrNameAr": "روفيه جزر المالديف",
+      "familiarityRank": 88,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-kzt",
+      "code": "KZT",
+      "nameAr": "تينغ كازاخستاني",
+      "cldrNameAr": "تينغ كازاخستاني",
+      "familiarityRank": 89,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    },
+    {
+      "sourceRecordId": "cldr-currency-uzs",
+      "code": "UZS",
+      "nameAr": "سوم أوزبكستاني",
+      "cldrNameAr": "سوم أوزبكستاني",
+      "familiarityRank": 90,
+      "sourceUrl": "https://www.unicode.org/cldr/charts/48/summary/ar.html",
+      "sourcePublisher": "Unicode Consortium — CLDR"
+    }
+  ]
+}

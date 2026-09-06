@@ -39,13 +39,18 @@ for (const category of ['دين وسيرة','السيرة النبوية','ال�
 
 assert.match(app, /questionHistoryOwner\(\)/);
 assert.match(app, /questionWasSeen\(history,cat,q\)/);
-assert.match(app, /sessionIds\.add\(q\.id\)/);
+assert.match(app, /function commitPickedQuestion\(cat,question\)/);
+assert.match(app, /sessionIds\.add\(question\.id\)/);
+assert.match(app, /reservedQuestionIds\.add\(q\.id\)/);
+assert.match(app, /function releasePickedQuestion\(question\)/);
 assert.doesNotMatch(app, /\{status:'approved',bankVersion:2,reviewedAt:'2026-08-20'\}/);
 assert.match(app, /pending_religious_review/);
 assert.match(app, /hasExplicitApproval/);
 assert.match(app, /religiousSourceAndIsnadConfirmed===true/);
-assert.match(app, /__APPROVED_QUESTION_BANK_DATA__/);
-assert.match(html, /approved-question-bank\.js/);
+assert.doesNotMatch(app, /__APPROVED_QUESTION_BANK_DATA__/,
+  'التطبيق لا يدمج أسئلة محلية في بنك 1.4.');
+assert.doesNotMatch(html, /approved-question-bank\.js/,
+  'صفحة اللعبة لا تحمّل بنكاً محلياً.');
 assert.match(approvedBank, /__APPROVED_QUESTION_BANK_DATA__/);
 assert.doesNotMatch(app, /api\.anthropic\.com|AI_BACKEND_URL|aiGenerate\(/);
 assert.doesNotMatch(app, /api\.openai\.com|OPENAI_API_KEY/);

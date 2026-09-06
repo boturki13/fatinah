@@ -16,7 +16,11 @@
     "allowedSourceProfiles": [
       "wikidata_entities_v1",
       "official_dataset_v1",
-      "curated_trusted_records_v1"
+      "curated_trusted_records_v1",
+      "source_record_fields_v1",
+      "source_record_set_v1",
+      "logic_unique_solution_v1",
+      "curated_immutable_revision_v2"
     ]
   },
   "familyContentPolicy": {
@@ -61,6 +65,25 @@
       "sexual act",
       "sex position"
     ],
+    "blockedTopicTokens": [
+      "إسرائيل",
+      "إسرائيلي",
+      "إسرائيلية",
+      "اسرائيل",
+      "اسرائيلي",
+      "اسرائيلية",
+      "israel",
+      "israeli",
+      "ישראל"
+    ],
+    "blockedTopicPhrases": [
+      "تل أبيب",
+      "تل ابيب",
+      "tel aviv",
+      "state of israel",
+      "دولة إسرائيل",
+      "دولة اسرائيل"
+    ],
     "severeProfanityTokens": [
       "ظراط",
       "ظراطه",
@@ -85,6 +108,30 @@
       "genitalia"
     ]
   },
+  "factualQualityPolicy": {
+    "schemaVersion": 1,
+    "blockedSourceRecordIds": [
+      "2b7aada8",
+      "e38b49bd",
+      "fe117edf",
+      "c05a248b",
+      "b3530e02",
+      "9aa42f35",
+      "c9ac50f7",
+      "2aac49ec",
+      "4cadaf7f",
+      "wikidata-Q7241234-P50-Q91",
+      "wikidata-Q447-P50-Q448",
+      "wikidata-Q3113371-P50-Q260",
+      "wikidata-Q1134342-P50-Q237",
+      "wikidata-Q621330-P50-Q312",
+      "wikidata-Q104868759-P61-Q2283"
+    ],
+    "blockedSourceRecordPrefixes": [
+      "wikidata-tournament-Q2081346-"
+    ],
+    "reason": "سجلات حُجبت بعد كشف خطأ واقعي أو غموض زمني أو تسرب خارج الفئة في تدقيق الإصدار 1.3."
+  },
   "legacyReviewedDirectFileSources": [
     { "id": "gq-33176b02222e702104e4", "url": "https://library.ksaa.gov.sa/links/epubs/tiqniaat_allughat_alearabiat_alhasubia.pdf" },
     { "id": "gq-34a7f8e96d408db24e55", "url": "https://library.ksaa.gov.sa/links/epubs/tiqniaat_allughat_alearabiat_alhasubia.pdf" },
@@ -101,6 +148,7 @@
     "arabicacademy.gov.eg",
     "atari.com",
     "bafta.org",
+    "bipm.org",
     "bl.uk",
     "britannica.com",
     "computerhistory.org",
@@ -109,6 +157,7 @@
     "fifa.com",
     "folger.edu",
     "gutenberg.org",
+    "gis.csb.gov.kw",
     "jacc-kw.com",
     "inaturalist.org",
     "ksu.edu.sa",
@@ -121,21 +170,26 @@
     "noaa.gov",
     "nobelprize.org",
     "nintendo.com",
+    "ourairports.com",
     "olympics.com",
     "oscars.org",
     "playstation.com",
     "redseafilmfest.com",
     "si.edu",
+    "stanford.edu",
     "thegameawards.com",
     "uefa.com",
     "unesco.org",
     "un.org",
+    "unicode.org",
     "uspto.gov",
     "usgs.gov",
     "who.int",
     "worldbank.org",
     "wikidata.org",
+    "wikipedia.org",
     "ar.wikisource.org",
+    "ar.wikiquote.org",
     "xbox.com"
   ],
   "categoryTrustedHosts": {
