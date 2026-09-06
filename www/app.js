@@ -5523,6 +5523,11 @@ function advanceSteal(token){
 async function revealCurrentQuestionAnswer(){
   const c=state.cur;
   if(!c||c.replacingQuestion===true||c.revealPending===true) return;
+  if(window.__FATINAH_GAME_FLOW_UI_TEST__===true){
+    const answerIndex=window.__FATINAH_IMAGE_FLOW_UI_TEST__===true?1:0;
+    c.q={...c.q,a:answerIndex,answer:c.q.o[answerIndex]};
+    setQuestionAnswer(c.q); startPhase('reveal'); return;
+  }
   if((Number.isInteger(c.q?.a)||!c.q?.id)&&typeof c.q?.answer==='string'){
     startPhase('reveal'); return;
   }
@@ -6639,6 +6644,39 @@ function invokeUIAction(element,event){
 })();
 
 // ---- تهيئة ----
+function defaultGameFlowUITestFixture({image=false}={}){
+  const categories=image?['صور اختبارية أ','صور اختبارية ب']:['من أنا؟','كرتون وأنمي'];
+  const questions=Object.fromEntries(categories.map((category,categoryIndex)=>[
+    category,Array.from({length:6},(_,levelIndex)=>[1,2].map(variant=>{
+      const level=levelIndex+1;
+      const serial=`${categoryIndex+1}${level}${variant}`.padStart(20,'0');
+      const base={
+        id:image?`img-v1-ui-test-${serial}`:`gq-${serial}`,
+        d:level,
+        q:image?'شنو أداة السلامة الظاهرة بالصورة؟':`ما الإجابة الاختبارية للفئة ${category} في المستوى ${level}؟`,
+        o:image?['كاشف دخان','مطفأة حريق','حقيبة إسعافات أولية','بطانية حريق']
+          :[`الإجابة ${categoryIndex+1}-${level}-${variant}`,`الخيار ب ${serial}`,`الخيار ج ${serial}`,`الخيار د ${serial}`],
+        source:{title:'مصدر اختباري',url:'https://example.com/source'},
+        review:{status:'approved',reviewer:'Fatinah test gate',reviewedAt:'2026-09-05'},
+      };
+      if(image) base.image={
+        alt:'مطفأة حريق حمراء مع خرطوم أسود',version:'1',
+        factSource:{title:'NFPA — Fire extinguishers',url:'https://www.nfpa.org/education-and-research/home-fire-safety/fire-extinguishers'},
+        rights:{owner:'فطنة',credit:'صورة اختبار أصلية',provider:'فطنة',license:'حقوق استخدام حصرية',licenseUrl:'https://ata20.com/terms',sourcePage:'https://ata20.com'},
+        assets:[
+          {url:'https://ata20.com/assets/question-images/v1/fire-extinguisher.avif',mimeType:'image/avif',sha256:'9ac8381074077ba557b12bb22dca64cf113d0cc380eed8da6d3ff8def19b983c',bytes:14048},
+          {url:'https://ata20.com/assets/question-images/v1/fire-extinguisher.webp',mimeType:'image/webp',sha256:'a5d26c2cdadefd56f18190387d43714b6865faae99c4dc8b8ad804e0a5aecf9a',bytes:16442},
+        ],
+      };
+      return base;
+    })).flat(),
+  ]));
+  return {
+    catalog:{schemaVersion:1,questionSchemaVersion:1,releaseReady:true,bankVersion:'ui-test-bank',questionCount:180,
+      categories:categories.map(name=>({name,questionCount:90,levels:{1:15,2:15,3:15,4:15,5:15,6:15}}))},
+    round:{schemaVersion:1,bankVersion:'ui-test-bank',questions},
+  };
+}
 function buildGameFlowUITestFixture(){
   const fixture=window.__FATINAH_GAME_FLOW_UI_TEST_FIXTURE__;
   const categories=fixture?.catalog?.categories?.map(item=>item.name).slice(0,2)||[];
@@ -6648,6 +6686,9 @@ function buildGameFlowUITestFixture(){
   return {categories,questions:fixture.round.questions};
 }
 async function startGameFlowUITest(){
+  if(!window.__FATINAH_GAME_FLOW_UI_TEST_FIXTURE__){
+    window.__FATINAH_GAME_FLOW_UI_TEST_FIXTURE__=defaultGameFlowUITestFixture({image:window.__FATINAH_IMAGE_FLOW_UI_TEST__===true});
+  }
   await ensureQuestionBank();
   const uid='ui-test-player';
   window._currentUid=uid;
@@ -6662,12 +6703,13 @@ async function startGameFlowUITest(){
     name:style.name,score:0,ll:3,used:new Set(),idx,bombUsed:false,
   }));
   state.catCount=2;
-  const imageCategories=[];
   if(window.__FATINAH_IMAGE_FLOW_UI_TEST__===true){
-    const primary=imageCategories.includes('تعرف على الصورة')?'تعرف على الصورة':imageCategories[0];
-    state.cats=[primary,...imageCategories.filter(category=>category!==primary)].slice(0,2);
+    const fixture=buildGameFlowUITestFixture();
+    state.cats=fixture.categories;
+    roundQuestionBank=fixture.questions;
+    const primary=state.cats[0];
     roundImageQuestionIds=new Set();
-    const ready=await window.FatinahImageAssets.prepareCategory(QUESTION_BANK[primary]||[]);
+    const ready=await window.FatinahImageAssets.prepareCategory(roundQuestionBank[primary]||[]);
     for(const ids of ready.values()) ids.forEach(id=>roundImageQuestionIds.add(id));
   }else{
     const fixture=buildGameFlowUITestFixture();
