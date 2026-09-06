@@ -8,7 +8,9 @@ const url=`file://${path.join(root,'www/index.html')}`;
 const categories=['من أنا؟','كرتون وأنمي','تقنية وإنترنت'];
 const catalog={schemaVersion:1,questionSchemaVersion:1,releaseReady:true,
   bankVersion:'visibility-test-bank',questionCount:270,
-  categories:categories.map(name=>({name,questionCount:90,
+  categories:categories.map((name,index)=>({name,questionCount:90,
+    group:index<2?'مجموعة جديدة':'مجموعة تقنية',groupIcon:index<2?'✨':'🧪',
+    icon:index<2?'🆕':'💻',tone:index<2?'lime':'cyan',groupOrder:index<2?1:2,displayOrder:index+1,
     levels:{'1':15,'2':15,'3':15,'4':15,'5':15,'6':15}}))};
 
 const browser=await chromium.launch();
@@ -34,10 +36,17 @@ try{
   });
   await page.goto(url);
   await page.evaluate(()=>ensureQuestionBank());
-  const state=await page.evaluate(()=>({categories:[...ALL_CATS],remote:[...CURATED_REMOTE_CATEGORIES],localCount:Object.keys(QUESTION_BANK).length}));
+  const state=await page.evaluate(()=>({categories:[...ALL_CATS],remote:[...CURATED_REMOTE_CATEGORIES],localCount:Object.keys(QUESTION_BANK).length,
+    groups:runtimeCategoryGroups(),groupIcons:runtimeGroupIcons(),visual:categoryVisual('من أنا؟')}));
   assert.deepEqual(state.categories,categories,'الفئات الظاهرة يجب أن تطابق كتالوج الخادم تماماً.');
   assert.deepEqual(state.remote,categories,'كل الفئات يجب أن تكون خادمية.');
   assert.equal(state.localCount,0,'لا يجوز وجود أسئلة محلية في بنك التشغيل.');
+  assert.deepEqual(state.groups,{'مجموعة جديدة':['من أنا؟','كرتون وأنمي'],'مجموعة تقنية':['تقنية وإنترنت']},
+    'مجموعات الفئات وترتيبها تأتي من كتالوج الخادم.');
+  assert.deepEqual(state.groupIcons,{'مجموعة جديدة':'✨','مجموعة تقنية':'🧪'},
+    'أيقونات المجموعات تأتي من كتالوج الخادم.');
+  assert.equal(state.visual.icon,'🆕','أيقونة الفئة تأتي من الخادم.');
+  assert.equal(state.visual.accent,'#B7E65C','لون الفئة يأتي من الخادم.');
   assert.equal(catalogRequests,1,'يجب تحميل كتالوج الخادم مباشرة.');
   await context.close();
 
