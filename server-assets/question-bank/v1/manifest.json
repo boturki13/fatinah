@@ -1,18 +1,15 @@
 {
   "schemaVersion": 1,
-  "bankVersion": "v3-curated-240c6fc210efaf61",
-  "generatedAt": "2026-09-05T00:00:00.000Z",
-  "sha256": "240c6fc210efaf61f3fc1334a719c2533bb3891892821bb2c8bfaef27b2d5459",
-  "questionCount": 2070,
-  "categoryCount": 23,
-  "targetBankSize": 2070,
+  "bankVersion": "v3-curated-expanded-043b20d3614a2969",
+  "generatedAt": "2026-09-06T01:56:45.677Z",
+  "sha256": "043b20d3614a29696c81f0fe70105fbc6be728e821f9e4cd122948dba2c121a8",
+  "questionCount": 2970,
+  "categoryCount": 33,
+  "targetBankSize": 2970,
   "ready": true,
   "releaseReady": true,
-  "factualInputSha256": "ea2ae5a904f11752d758f407c4f4bce22a56d9cbe488d6cbecafc1d51a545fa5",
-  "factuallyVerifiedCount": 2070,
+  "factuallyVerifiedCount": 2970,
   "releaseBlockers": [],
-  "oldBankQuestionsReused": 0,
-  "legacyQuestionRecordsChecked": 5029,
   "distribution": {
     "من أنا؟": {
       "count": 90,
@@ -367,6 +364,166 @@
       }
     },
     "منظمات دولية": {
+      "count": 90,
+      "bands": {
+        "easy": 30,
+        "medium": 30,
+        "hard": 30
+      },
+      "levels": {
+        "1": 15,
+        "2": 15,
+        "3": 15,
+        "4": 15,
+        "5": 15,
+        "6": 15
+      }
+    },
+    "كرة القدم العالمية": {
+      "count": 90,
+      "bands": {
+        "easy": 30,
+        "medium": 30,
+        "hard": 30
+      },
+      "levels": {
+        "1": 15,
+        "2": 15,
+        "3": 15,
+        "4": 15,
+        "5": 15,
+        "6": 15
+      }
+    },
+    "معلومات عامة": {
+      "count": 90,
+      "bands": {
+        "easy": 30,
+        "medium": 30,
+        "hard": 30
+      },
+      "levels": {
+        "1": 15,
+        "2": 15,
+        "3": 15,
+        "4": 15,
+        "5": 15,
+        "6": 15
+      }
+    },
+    "تاريخ وتراث الخليج": {
+      "count": 90,
+      "bands": {
+        "easy": 30,
+        "medium": 30,
+        "hard": 30
+      },
+      "levels": {
+        "1": 15,
+        "2": 15,
+        "3": 15,
+        "4": 15,
+        "5": 15,
+        "6": 15
+      }
+    },
+    "الفن الخليجي والعربي": {
+      "count": 90,
+      "bands": {
+        "easy": 30,
+        "medium": 30,
+        "hard": 30
+      },
+      "levels": {
+        "1": 15,
+        "2": 15,
+        "3": 15,
+        "4": 15,
+        "5": 15,
+        "6": 15
+      }
+    },
+    "ألعاب الفيديو": {
+      "count": 90,
+      "bands": {
+        "easy": 30,
+        "medium": 30,
+        "hard": 30
+      },
+      "levels": {
+        "1": 15,
+        "2": 15,
+        "3": 15,
+        "4": 15,
+        "5": 15,
+        "6": 15
+      }
+    },
+    "تاريخ وحضارات": {
+      "count": 90,
+      "bands": {
+        "easy": 30,
+        "medium": 30,
+        "hard": 30
+      },
+      "levels": {
+        "1": 15,
+        "2": 15,
+        "3": 15,
+        "4": 15,
+        "5": 15,
+        "6": 15
+      }
+    },
+    "جسم الإنسان والصحة": {
+      "count": 90,
+      "bands": {
+        "easy": 30,
+        "medium": 30,
+        "hard": 30
+      },
+      "levels": {
+        "1": 15,
+        "2": 15,
+        "3": 15,
+        "4": 15,
+        "5": 15,
+        "6": 15
+      }
+    },
+    "مطابخ العالم": {
+      "count": 90,
+      "bands": {
+        "easy": 30,
+        "medium": 30,
+        "hard": 30
+      },
+      "levels": {
+        "1": 15,
+        "2": 15,
+        "3": 15,
+        "4": 15,
+        "5": 15,
+        "6": 15
+      }
+    },
+    "سيارات ومركبات": {
+      "count": 90,
+      "bands": {
+        "easy": 30,
+        "medium": 30,
+        "hard": 30
+      },
+      "levels": {
+        "1": 15,
+        "2": 15,
+        "3": 15,
+        "4": 15,
+        "5": 15,
+        "6": 15
+      }
+    },
+    "اللغة العربية والأمثال": {
       "count": 90,
       "bands": {
         "easy": 30,

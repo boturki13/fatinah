@@ -516,16 +516,17 @@ srv._question_bank_cache.update(mtime_ns=None, document=None)
 reset_image_bank_cache()
 release_bank = srv.load_server_question_bank()
 release_image_bank = srv.load_server_image_question_bank()
-assert release_bank['questionCount'] == 2070
-assert release_bank['targetBankSize'] == 2070
+assert release_bank['questionCount'] == 2970
+assert release_bank['targetBankSize'] == 2970
 assert release_bank['ready'] is True
 assert release_bank['releaseReady'] is True
 assert release_bank['factuallyVerifiedCount'] == release_bank['questionCount']
 assert release_bank['releaseBlockers'] == []
-assert len(release_bank['categories']) == 23
+assert len(release_bank['categories']) == 33
 assert 'رتّبها صح' not in release_bank['categories']
+assert 'رياضيات وحساب' not in release_bank['categories']
 assert {'الكويت', 'دول الخليج', 'من أنا؟', 'منظمات دولية'} <= set(release_bank['categories'])
-assert sum(len(rows) for rows in release_bank['categories'].values()) == 2070
+assert sum(len(rows) for rows in release_bank['categories'].values()) == 2970
 assert all(len(rows) == 90 for rows in release_bank['categories'].values())
 assert all({band: sum(question['band'] == band for question in rows)
             for band in ('easy', 'medium', 'hard')} ==
@@ -555,8 +556,8 @@ assert all(len(question['o']) == 4 and
            for question in rows)
 release_catalog = srv.server_question_catalog()
 assert release_catalog['releaseReady'] is True
-assert release_catalog['questionCount'] == 2370
-assert len(release_catalog['categories']) == 30
+assert release_catalog['questionCount'] == 3270
+assert len(release_catalog['categories']) == 40
 catalog_by_name = {item['name']: item for item in release_catalog['categories']}
 assert set(release_image_bank['categories']) <= set(catalog_by_name)
 assert all(catalog_by_name[category]['kind'] == 'image'

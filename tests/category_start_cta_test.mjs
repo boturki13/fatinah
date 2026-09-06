@@ -65,24 +65,43 @@ try{
       state.catCount=2; state.pickSplit=[1,1]; state.pickTurn=0;
       state.pickedByTeam=[0,0]; state.cats=[]; state.catOwner={};
       const firstPick=toggleCat('معلومات عامة');
-      const denied=toggleCat('معلومات عامة');
-      const afterDenied={cats:[...state.cats],owners:{...state.catOwner},picked:[...state.pickedByTeam],turn:state.pickTurn,title:document.getElementById('toast-t').textContent};
+      const previousTeamRemoval=toggleCat('معلومات عامة');
+      const afterRemoval={cats:[...state.cats],owners:{...state.catOwner},picked:[...state.pickedByTeam],turn:state.pickTurn};
+      const firstRepick=toggleCat('معلومات عامة');
       const secondPick=toggleCat('تاريخ');
       const ownRemoval=toggleCat('تاريخ');
-      return {firstPick,denied,afterDenied,secondPick,ownRemoval,cats:[...state.cats],picked:[...state.pickedByTeam],turn:state.pickTurn};
+      return {firstPick,previousTeamRemoval,afterRemoval,firstRepick,secondPick,ownRemoval,cats:[...state.cats],picked:[...state.pickedByTeam],turn:state.pickTurn};
     });
     assert.equal(ownership.firstPick,true,`${name}: الفريق الأول يختار فئته.`);
-    assert.equal(ownership.denied,false,`${name}: الفريق الثاني ما يقدر يلغي فئة الأول.`);
-    assert.deepEqual(ownership.afterDenied.cats,['معلومات عامة'],`${name}: الفئة تبقى بعد محاولة الإلغاء المرفوضة.`);
-    assert.deepEqual(ownership.afterDenied.owners,{'معلومات عامة':0},`${name}: ملكية الفئة ما تتغير.`);
-    assert.deepEqual(ownership.afterDenied.picked,[1,0],`${name}: العدادات ما تتغير بعد الرفض.`);
-    assert.equal(ownership.afterDenied.turn,1,`${name}: الدور يبقى للفريق الثاني.`);
-    assert.match(ownership.afterDenied.title,/مو لفريقكم/,`${name}: تظهر رسالة توضح سبب الرفض.`);
+    assert.equal(ownership.previousTeamRemoval,true,`${name}: الضغط على فئة سابقة يلغيها.`);
+    assert.deepEqual(ownership.afterRemoval.cats,[],`${name}: تنحذف الفئة السابقة.`);
+    assert.deepEqual(ownership.afterRemoval.owners,{},`${name}: تنحذف ملكية الفئة الملغاة.`);
+    assert.deepEqual(ownership.afterRemoval.picked,[0,0],`${name}: ينقص عداد مالك الفئة.`);
+    assert.equal(ownership.afterRemoval.turn,0,`${name}: يرجع الدور إلى مالك الفئة.`);
+    assert.equal(ownership.firstRepick,true,`${name}: يقدر الفريق الأول يعيد اختياره.`);
     assert.equal(ownership.secondPick,true,`${name}: الفريق الثاني يختار فئته.`);
     assert.equal(ownership.ownRemoval,true,`${name}: الفريق الثاني يقدر يلغي فئته هو.`);
     assert.deepEqual(ownership.cats,['معلومات عامة'],`${name}: تنحذف فئة الفريق الثاني فقط.`);
     assert.deepEqual(ownership.picked,[1,0],`${name}: ينقص عداد الفريق المالك فقط.`);
     assert.equal(ownership.turn,1,`${name}: يرجع الاختيار للفريق المالك بعد الإلغاء.`);
+
+    const threeTeams=await page.evaluate(()=>{
+      state.teamCount=3;
+      state.teams=[{name:'الأول',idx:0},{name:'الثاني',idx:1},{name:'الثالث',idx:2}];
+      state.catCount=3; state.pickSplit=[1,1,1]; state.pickTurn=0;
+      state.pickedByTeam=[0,0,0]; state.cats=[]; state.catOwner={};
+      toggleCat('معلومات عامة');
+      toggleCat('تاريخ');
+      const before={cats:[...state.cats],picked:[...state.pickedByTeam],turn:state.pickTurn};
+      const removed=toggleCat('معلومات عامة');
+      return {before,removed,cats:[...state.cats],picked:[...state.pickedByTeam],turn:state.pickTurn};
+    });
+    assert.deepEqual(threeTeams.before,{cats:['معلومات عامة','تاريخ'],picked:[1,1,0],turn:2},
+      `${name}: تناوب ثلاثة فرق صحيح قبل التراجع.`);
+    assert.equal(threeTeams.removed,true,`${name}: يمكن التراجع عن اختيار الفريق الأول بعد وصول الدور للثالث.`);
+    assert.deepEqual(threeTeams.cats,['تاريخ'],`${name}: لا تُحذف اختيارات الفرق الأخرى.`);
+    assert.deepEqual(threeTeams.picked,[0,1,0],`${name}: عدادات الفرق الثلاثة تبقى صحيحة.`);
+    assert.equal(threeTeams.turn,0,`${name}: يرجع الدور إلى مالك الفئة الملغاة.`);
     await page.close();
   }
   console.log('✓ زر يلا نبدأ يظهر ثابتاً بعد اكتمال الفئات على iPhone عمودي وأفقي');
