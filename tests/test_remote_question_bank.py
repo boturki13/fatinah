@@ -160,6 +160,15 @@ with tempfile.TemporaryDirectory() as directory:
                for item in catalog['categories'])
     assert all(item['questionCount'] == sum(item['levels'].values())
                for item in catalog['categories'])
+    assert all(item['group'] and item['groupIcon'] and item['icon']
+               for item in catalog['categories'])
+    assert all(item['tone'] in {
+        'gold', 'orange', 'coral', 'pink', 'purple', 'indigo',
+        'blue', 'cyan', 'teal', 'green', 'lime', 'sand'}
+               for item in catalog['categories'])
+    assert all(isinstance(item['groupOrder'], int)
+               and isinstance(item['displayOrder'], int)
+               for item in catalog['categories'])
     assert all(item['kind'] == 'image' for item in catalog['categories']
                if item['name'] in image_categories)
     assert all(item['kind'] == 'text' for item in catalog['categories']
@@ -556,6 +565,8 @@ assert all(catalog_by_name[category]['levels'] ==
            release_image_bank['distribution'][category]['levels']
            for category in release_image_bank['categories'])
 assert all(item['questionCount'] == sum(item['levels'].values())
+           for item in release_catalog['categories'])
+assert all(item['group'] and item['groupIcon'] and item['icon']
            for item in release_catalog['categories'])
 status, published_release = srv.select_remote_round_questions({
     'categories': ['الكويت'], 'excludeQuestionIds': [], 'questionsPerLevel': 2,

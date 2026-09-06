@@ -19,6 +19,8 @@ QUESTION_IMAGE_DIR = os.path.join(
 QUESTION_BANK_DIR = os.path.join(
     os.path.dirname(__file__), 'server-assets', 'question-bank', 'v1')
 QUESTION_BANK_FILE = os.path.join(QUESTION_BANK_DIR, 'bank.json')
+CATEGORY_PRESENTATION_FILE = os.path.join(
+    QUESTION_BANK_DIR, 'category-presentation.json')
 IMAGE_QUESTION_BANK_FILE = os.path.join(
     QUESTION_IMAGE_DIR, 'curated-question-bank.json')
 DB_PATH   = os.path.join(os.path.dirname(__file__), 'subscriptions.db')
@@ -579,6 +581,17 @@ def server_question_catalog() -> dict:
     document = load_combined_server_question_bank()
     if document.get('releaseReady') is not True:
         raise ValueError('بنك الأسئلة لم يجتز التحقق الواقعي المستقل')
+    presentation = {'groups': {}, 'categories': {}}
+    try:
+        with open(CATEGORY_PRESENTATION_FILE, encoding='utf-8') as handle:
+            candidate = json.load(handle)
+        if (isinstance(candidate, dict)
+                and candidate.get('schemaVersion') == 1
+                and isinstance(candidate.get('groups'), dict)
+                and isinstance(candidate.get('categories'), dict)):
+            presentation = candidate
+    except (FileNotFoundError, OSError, ValueError, TypeError):
+        pass
     category_rows = []
     for name, questions in document['categories'].items():
         levels = {str(level): 0 for level in range(1, 7)}
@@ -592,13 +605,24 @@ def server_question_catalog() -> dict:
                 bands[band] += 1
         # لا نعلن فئة غير قادرة على تكوين جولة كاملة.
         if all(levels[str(level)] >= 2 for level in range(1, 7)):
+            display = presentation['categories'].get(name, {})
+            group_name = str(display.get('group') or 'فئات جديدة').strip()
+            group = presentation['groups'].get(group_name, {})
             category_rows.append({
                 'name': name,
                 'kind': document['categoryKinds'].get(name, 'text'),
                 'questionCount': len(questions),
                 'levels': levels,
                 'bands': bands,
+                'group': group_name,
+                'groupIcon': str(group.get('icon') or '🧠').strip(),
+                'groupOrder': int(group.get('order') or 999),
+                'icon': str(display.get('icon') or '🧠').strip(),
+                'tone': str(display.get('tone') or 'purple').strip(),
+                'displayOrder': int(display.get('order') or 999),
             })
+    category_rows.sort(key=lambda item: (
+        item['groupOrder'], item['displayOrder'], item['name']))
     return {
         'schemaVersion': 1,
         'questionSchemaVersion': int(document.get('questionSchemaVersion') or 1),

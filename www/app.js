@@ -62,6 +62,19 @@ function validRemoteQuestionCatalog(payload){
     if(![1,2,3,4,5,6].every(level=>Number.isInteger(levels[level])&&levels[level]>=ROUND_QUESTIONS_PER_LEVEL)) return false;
     if([1,2,3,4,5,6].reduce((sum,level)=>sum+levels[level],0)!==item.questionCount) return false;
     if(item.kind!==undefined&&!['text','image','mixed'].includes(item.kind)) return false;
+    const presentationFields=['group','groupIcon','icon','tone','groupOrder','displayOrder'];
+    const hasPresentation=presentationFields.some(field=>item[field]!==undefined);
+    if(hasPresentation){
+      const group=String(item.group||'').trim();
+      const groupIcon=String(item.groupIcon||'').trim();
+      const icon=String(item.icon||'').trim();
+      if(!group||group.length>40||/[\u0000-\u001f]/u.test(group)) return false;
+      if(!groupIcon||groupIcon.length>16||/[\u0000-\u001f]/u.test(groupIcon)) return false;
+      if(!icon||icon.length>16||/[\u0000-\u001f]/u.test(icon)) return false;
+      if(!Object.hasOwn(CATEGORY_TONES,String(item.tone||''))) return false;
+      if(!Number.isInteger(item.groupOrder)||item.groupOrder<0||item.groupOrder>9999) return false;
+      if(!Number.isInteger(item.displayOrder)||item.displayOrder<0||item.displayOrder>9999) return false;
+    }
     names.add(name); countedQuestions+=item.questionCount; return true;
   });
   return valid&&Number.isInteger(payload.questionCount)&&payload.questionCount===countedQuestions;
@@ -76,6 +89,15 @@ function installRemoteQuestionCatalog(payload){
   const names=payload.categories.map(item=>String(item.name).trim());
   CURATED_REMOTE_CATEGORIES.clear();
   names.forEach(name=>CURATED_REMOTE_CATEGORIES.add(name));
+  REMOTE_CATEGORY_VISUALS={}; REMOTE_CATEGORY_GROUPS={}; REMOTE_GROUP_ICONS={};
+  payload.categories.forEach(item=>{
+    const name=String(item.name).trim();
+    const group=String(item.group||'').trim();
+    if(!group) return;
+    REMOTE_CATEGORY_VISUALS[name]={icon:String(item.icon).trim(),tone:String(item.tone).trim()};
+    (REMOTE_CATEGORY_GROUPS[group]||(REMOTE_CATEGORY_GROUPS[group]=[])).push(name);
+    REMOTE_GROUP_ICONS[group]=String(item.groupIcon).trim();
+  });
   remoteQuestionCatalogVersion=typeof payload.bankVersion==='string'?payload.bankVersion.trim():'';
   // الكتالوج المنشور هو المصدر الوحيد للنص والصور. فئة جديدة في الخادم
   // تظهر مباشرة، وحذف فئة منه يخفيها بدل إعادتها من نسخة محلية قديمة.
@@ -400,7 +422,7 @@ function categoryVisual(category){
   const fallback=isFamilyCat(category)
     ?{icon:'👨‍👩‍👧‍👦',tone:'purple'}
     :{icon:'🧠',tone:'purple'};
-  const visual=CAT_VISUALS[category]||fallback;
+  const visual=REMOTE_CATEGORY_VISUALS[category]||CAT_VISUALS[category]||fallback;
   return {...visual,...(CATEGORY_TONES[visual.tone]||CATEGORY_TONES.purple)};
 }
 // تصنيف الفئات إلى مجموعات للفلترة
@@ -413,6 +435,15 @@ const CAT_GROUPS={
   "فنون وأدب":["كرتون وأنمي","سينما وأفلام عربية","شعراء وأدباء عرب","روايات عالمية"],
 };
 const GROUP_ICONS={"ألغاز وذكاء":"🧩","علوم وتقنية":"🧪","الكويت والخليج":"🇰🇼","تاريخ وعالم":"🏛️","رياضة وطيران":"⚽","فنون وأدب":"🎭"};
+let REMOTE_CATEGORY_VISUALS={};
+let REMOTE_CATEGORY_GROUPS={};
+let REMOTE_GROUP_ICONS={};
+function runtimeCategoryGroups(){
+  return Object.keys(REMOTE_CATEGORY_GROUPS).length?REMOTE_CATEGORY_GROUPS:CAT_GROUPS;
+}
+function runtimeGroupIcons(){
+  return Object.keys(REMOTE_GROUP_ICONS).length?REMOTE_GROUP_ICONS:GROUP_ICONS;
+}
 
 // هوية العرض الكويتية: تبقى مفاتيح البنك والنصوص المراجَعة كما هي، وتتغير
 // الصياغة عند العرض فقط. هذا يحافظ على معرّفات الأسئلة والمصادر وسجل المراجعة،
@@ -4270,13 +4301,15 @@ function buildFilterBar(){
   const bar=document.getElementById('filter-bar');
   setupFilterBarDrag();
   bar.innerHTML='';
-  const groups=['الكل',...Object.keys(CAT_GROUPS)];
+  const categoryGroups=runtimeCategoryGroups();
+  const groupIcons=runtimeGroupIcons();
+  const groups=['الكل',...Object.keys(categoryGroups)];
   if((familyCats||[]).some(f=>f.questions.length>0)) groups.push('عائلية');
   groups.forEach(g=>{
     const b=document.createElement('button');
     b.className='fbtn'+(g===activeFilter?' on':'');
     b.setAttribute('aria-pressed',g===activeFilter?'true':'false');
-    b.textContent=(g==='الكل'?'🗂️ الكل':(g==='عائلية'?'👨‍👩‍👧‍👦 عائلية':(GROUP_ICONS[g]||'')+' '+g));
+    b.textContent=(g==='الكل'?'🗂️ الكل':(g==='عائلية'?'👨‍👩‍👧‍👦 عائلية':(groupIcons[g]||'🗂️')+' '+g));
     b.addEventListener('click',()=>{ sfx('tap'); activeFilter=g; document.getElementById('cat-search').value=''; buildFilterBar(); renderCatGrid(); });
     bar.appendChild(b);
   });
@@ -4313,7 +4346,7 @@ function catsForFilter(){
   if(activeFilter==='عائلية') return familyNames();
   // فلاتر العرض لا يجوز أن تعيد فئة حذفها الكتالوج الديناميكي.
   const published=new Set(ALL_CATS);
-  return (CAT_GROUPS[activeFilter]||[]).filter(category=>published.has(category));
+  return (runtimeCategoryGroups()[activeFilter]||[]).filter(category=>published.has(category));
 }
 function familyNames(){ return (familyCats||[]).filter(f=>f.questions.length>0).map(f=>f.name); }
 function isFamilyCat(name){ return (familyCats||[]).some(f=>f.name===name); }
