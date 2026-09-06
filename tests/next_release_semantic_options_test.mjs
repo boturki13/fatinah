@@ -14,6 +14,9 @@ const expectedCategories = [
   'شخصيات تاريخية', 'مدن وعواصم', 'عملات العالم', 'فيزياء وكيمياء',
   'شعراء وأدباء عرب', 'روايات عالمية', 'مسرحيات خليجية', 'طيران ومطارات',
   'أندية ومنتخبات', 'ألغاز بوليسية', 'اكتشف الكلمة', 'أحداث غيرت العالم', 'منظمات دولية',
+  'كرة القدم العالمية', 'معلومات عامة', 'تاريخ وتراث الخليج', 'الفن الخليجي والعربي',
+  'ألعاب الفيديو', 'تاريخ وحضارات', 'جسم الإنسان والصحة', 'مطابخ العالم',
+  'سيارات ومركبات', 'اللغة العربية والأمثال',
 ];
 const worldScienceCategories = [
   'اختر العبارة الصحيحة', 'كرة القدم', 'علوم وطبيعة', 'مدن وعواصم',
@@ -33,10 +36,11 @@ const previouslyAmbiguousIds=new Set([
 const repeatedLegacyFactIds=new Set(['gq-fd6d751d599a64fca7e7']);
 
 assert.equal(bank.releaseReady, true, 'بنك الإصدار يجب أن يكون معتمدًا.');
-assert.equal(bank.questionCount, 2070);
-assert.equal(bank.categoryCount, 23);
+assert.equal(bank.questionCount, 2970);
+assert.equal(bank.categoryCount, 33);
 assert.deepEqual(Object.keys(bank.categories), expectedCategories, 'ترتيب فئات الإصدار غير مطابق.');
 assert.equal(Object.hasOwn(bank.categories, 'رتّبها صح'), false, 'فئة رتّبها صح محذوفة.');
+assert.equal(Object.hasOwn(bank.categories, 'رياضيات وحساب'), false, 'فئة رياضيات وحساب محذوفة نهائيًا.');
 
 const seenIds = new Set();
 const seenQuestions = new Set();
@@ -87,9 +91,9 @@ for (const category of expectedCategories) {
       `${category}: المستوى ${level} يجب أن يحتوي 15 سؤالًا.`);
   }
 }
-assert.equal(seenIds.size, 2070);
-assert.equal(seenQuestions.size, 2070);
-assert.equal(seenFacts.size, 2070);
+assert.equal(seenIds.size, 2970);
+assert.equal(seenQuestions.size, 2970);
+assert.equal(seenFacts.size, 2970);
 
 const trueFalse = bank.categories['اختر العبارة الصحيحة'];
 assert.deepEqual([...new Set(trueFalse.map(question => question.templateId))].sort(), [
@@ -167,4 +171,4 @@ const legacyCategories = Object.fromEntries([
 ].map(category => [category, bank.categories[category]]));
 assertNoLegacyFacts(legacyCategories, loadLegacyQuestionRecords());
 
-console.log('✅ 2070 سؤالًا: خيارات منطقية، صعوبة متدرجة، حلول قابلة للإعادة، ولا تكرار من البنك القديم');
+console.log('✅ 2970 سؤالًا: خيارات منطقية، صعوبة متدرجة، حلول قابلة للإعادة، ولا تكرار نصي');

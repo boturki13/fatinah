@@ -4405,14 +4405,12 @@ function filterCats(){ renderCatGrid(); }
 
 function toggleCat(cat,el,{preserveFocus=true}={}){
   const already=state.cats.indexOf(cat);
-  // إلغاء اختيار: فقط الفريق الذي اختارها يقدر يلغيها، وترجع الأدوار
+  // إلغاء اختيار فئة يعيد الدور إلى الفريق الذي اختارها. بعد انتقال الدور
+  // تلقائياً لا توجد وسيلة أخرى لرجوع الفريق السابق، لذلك منع الإلغاء هنا
+  // كان يحبس اللاعب برسالة «مو لفريقكم» من دون مسار تراجع فعلي.
   if(already>=0){
     const owner=state.catOwner[cat];
-    if(owner!==state.pickTurn){
-      const ownerName=state.teams[owner]?.name||'الفريق الثاني';
-      showToast('🔒','هذي الفئة مو لفريقكم',`فريق ${ownerName} هو اللي اختارها، وما يقدر يلغيها إلا بدوره.`,false);
-      return false;
-    }
+    if(!Number.isInteger(owner)||owner<0||owner>=state.teams.length) return false;
     sfx('tap');
     state.cats.splice(already,1);
     delete state.catOwner[cat];

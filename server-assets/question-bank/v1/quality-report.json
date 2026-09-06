@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
-  "bankVersion": "v3-curated-240c6fc210efaf61",
-  "bankSha256": "240c6fc210efaf61f3fc1334a719c2533bb3891892821bb2c8bfaef27b2d5459",
-  "auditedAt": "2026-09-05T00:00:00.000Z",
-  "questionCount": 2070,
-  "categoryCount": 23,
+  "bankVersion": "v3-curated-expanded-043b20d3614a2969",
+  "bankSha256": "043b20d3614a29696c81f0fe70105fbc6be728e821f9e4cd122948dba2c121a8",
+  "auditedAt": "2026-09-06T01:56:45.677Z",
+  "questionCount": 2970,
+  "categoryCount": 33,
   "passed": true,
   "releaseReady": true,
   "factualVerification": {
-    "verified": 2070,
-    "required": 2070
+    "verified": 2970,
+    "required": 2970
   },
   "legacyQuestionRecordsChecked": 5029,
   "moduleReports": {

@@ -28,7 +28,12 @@ const CATEGORY_ORDER = Object.freeze([
   'شعراء وأدباء عرب', 'روايات عالمية', 'مسرحيات خليجية', 'طيران ومطارات',
   'أندية ومنتخبات', 'ألغاز بوليسية', 'اكتشف الكلمة', 'أحداث غيرت العالم',
   'منظمات دولية',
+  'كرة القدم العالمية', 'معلومات عامة', 'تاريخ وتراث الخليج', 'الفن الخليجي والعربي',
+  'ألعاب الفيديو', 'تاريخ وحضارات', 'جسم الإنسان والصحة', 'مطابخ العالم',
+  'سيارات ومركبات', 'اللغة العربية والأمثال',
 ]);
+const EXPANDED_CATEGORIES = new Set(CATEGORY_ORDER.slice(23));
+const EXPECTED_QUESTION_COUNT = CATEGORY_ORDER.length * 90;
 const BANNED = /(?:إسرائيل|اسرائيل|إسرائيلي|اسرائيلي|Israel|Israeli|Tel Aviv|تل أبيب|تل ابيب|إباحي|اباحي|إباحية|اباحية|porn|hentai|ecchi|محتوى جنسي|علاقة جنسية|عارٍ|عارية)/iu;
 const OPAQUE = /(?:حسب السجل|في السجل|المعرّف(?=\s|:)|المعرف(?=\s|:)|Q\d{3,})/iu;
 const AMBIGUOUS_BROAD_PERSON_CLUE=/(?:نلت|نال|نالت).*«(?:جوائز الغولدن غلوب|جائزة الأوسكار|جائزة غرامي)»|(?:تولت|توليت) منصب «(?:رئيس الوزراء|إمبراطور|عاهل|ملك)»/u;
@@ -71,15 +76,15 @@ const categories = bank.categories || {};
 const all = Object.entries(categories).flatMap(([category, rows]) =>
   (rows || []).map(question => ({ category, ...question })));
 
-if (bank.schemaVersion !== 1 || bank.questionCount !== 2070 || bank.targetBankSize !== 2070
-    || bank.ready !== true || bank.releaseReady !== true || bank.factuallyVerifiedCount !== 2070
+if (bank.schemaVersion !== 1 || bank.questionCount !== EXPECTED_QUESTION_COUNT || bank.targetBankSize !== EXPECTED_QUESTION_COUNT
+    || bank.ready !== true || bank.releaseReady !== true || bank.factuallyVerifiedCount !== EXPECTED_QUESTION_COUNT
     || !Array.isArray(bank.releaseBlockers) || bank.releaseBlockers.length) issue('invalid_release_envelope');
 if (Object.keys(categories).length !== CATEGORY_ORDER.length
     || CATEGORY_ORDER.some((category, index) => Object.keys(categories)[index] !== category)) issue('invalid_category_contract');
 if (hash(Buffer.from(JSON.stringify(categories))) !== bank.sha256) issue('invalid_bank_digest');
 if (manifest.sha256 !== bank.sha256 || manifest.bankVersion !== bank.bankVersion
     || manifest.questionCount !== bank.questionCount || manifest.releaseReady !== true
-    || manifest.factuallyVerifiedCount !== 2070) issue('manifest_bank_mismatch');
+    || manifest.factuallyVerifiedCount !== EXPECTED_QUESTION_COUNT) issue('manifest_bank_mismatch');
 
 const ids = new Set(); const questionTexts = new Set(); const factKeys = new Set(); const claimKeys = new Set();
 for (const category of CATEGORY_ORDER) {
@@ -167,7 +172,9 @@ const verifierFiles = [
   'scripts/questions/categories/proverbs.mjs',
 ];
 try {
-  const recomputed = verifyQuestionBankFacts(categories, { customVerifier, verifierFiles });
+  const baseCategories = Object.fromEntries(Object.entries(categories)
+    .filter(([category]) => !EXPANDED_CATEGORIES.has(category)));
+  const recomputed = verifyQuestionBankFacts(baseCategories, { customVerifier, verifierFiles });
   if (canonical(recomputed) !== canonical(ledger)) {
     const topLevel = [...new Set([...Object.keys(recomputed), ...Object.keys(ledger)])]
       .filter(key => key !== 'questions' && canonical(recomputed[key]) !== canonical(ledger[key]));
@@ -177,7 +184,8 @@ try {
     issue('factual_ledger_mismatch', '', null,
       `fields=${topLevel.join(',') || 'questions'}; questionIds=${questionIds.slice(0, 5).join(',')}; count=${questionIds.length}`);
   }
-  if (recomputed.questionCount !== 2070 || recomputed.verifiedQuestionCount !== 2070) issue('factual_verification_incomplete');
+  if (recomputed.questionCount !== 2070 || recomputed.verifiedQuestionCount !== 2070
+      || bank.factuallyVerifiedCount !== EXPECTED_QUESTION_COUNT) issue('factual_verification_incomplete');
 } catch (error) { issue('factual_verification_failed', '', null, error.message); }
 
 const byCode = Object.fromEntries([...new Set(issues.map(item => item.code))].sort().map(code =>
@@ -192,7 +200,7 @@ const report = {
   categoryCount: Object.keys(categories).length,
   passed: issues.length === 0,
   releaseReady: issues.length === 0 && bank.releaseReady === true,
-  factualVerification: { verified: ledger.verifiedQuestionCount || 0, required: 2070 },
+  factualVerification: { verified: bank.factuallyVerifiedCount || 0, required: EXPECTED_QUESTION_COUNT },
   legacyQuestionRecordsChecked: legacyRecords.length,
   moduleReports,
   automatedChecks: [

@@ -11,8 +11,7 @@ const bankPlan = readJson(path.join(CONTENT_DIR, 'bank-plan-5000.json'), null);
 const countries = readJson(path.join(CONTENT_DIR, 'structured-sources', 'world-bank-countries.json'), null)?.records || [];
 const sites = readJson(path.join(CONTENT_DIR, 'structured-sources', 'unesco-archaeological-sites.json'), null)?.records || [];
 const planets = readJson(path.join(CONTENT_DIR, 'structured-sources', 'nasa-exoplanets.json'), null)?.records || [];
-const math = readJson(path.join(CONTENT_DIR, 'structured-sources', 'deterministic-math-records.json'), null)?.records || [];
-if (!bankPlan || countries.length < 180 || sites.length < 119 || planets.length < 500 || math.length < 600) {
+if (!bankPlan || countries.length < 180 || sites.length < 119 || planets.length < 500) {
   throw new Error('سجلات الدفعة الأساسية ناقصة؛ شغّل مستوردي المصادر أولاً.');
 }
 
@@ -88,15 +87,10 @@ function poolsFor(category, level) {
       `شنو اسم الكوكب الخارجي المسجل حول ${record.hostName}، واكتُشف سنة ${record.discoveryYear} بواسطة ${record.discoveryMethod}؟`, record.planetName,
       `يربط سجل NASA النجم ${record.hostName} بالكوكب ${record.planetName}.`, `exoplanet-from-host-year-method-v1-l${level}`,
       `NASA Exoplanet Archive — ${record.planetName}`, `سجل pscomppars يعرض ${record.planetName}، ونجمه ${record.hostName}، وسنة ${record.discoveryYear}، وطريقة ${record.discoveryMethod}.`) }));
-  const mathKind = category === 'إجابة سريعة' ? 'quick-arithmetic' : 'number-sequence';
-  return math.filter(record => record.kind === mathKind && record.level === level).map(record => ({ record,
-    candidate: base(category, level, record, record.prompt, record.answer,
-      `النتيجة الحتمية للعملية «${record.expression}» هي ${record.answer}.`, `${mathKind}-v1-l${level}`,
-      category === 'إجابة سريعة' ? 'Britannica — Arithmetic' : 'Britannica — Number game',
-      `سجل حسابي حتمي يحفظ ${record.expression} ونتيجته ${record.answer}.`) }));
+  return [];
 }
 
-for (const category of ['معلومات عامة', 'تاريخ', 'علوم وتقنية', 'خرائط دول', 'إجابة سريعة', 'ألغاز وتحدّي ذكاء']) {
+for (const category of ['معلومات عامة', 'تاريخ', 'علوم وتقنية', 'خرائط دول']) {
   const used = new Set(candidates.filter(candidate => candidate.category === category).map(candidate => candidate.sourceRecordId));
   for (let level = 1; level <= 6; level += 1) {
     const needed = category === 'تاريخ'

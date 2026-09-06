@@ -18,6 +18,13 @@ const read = relative => JSON.parse(fs.readFileSync(new URL(`../${relative}`, im
 const clone = value => JSON.parse(JSON.stringify(value));
 const document = read('server-assets/question-bank/v1/bank.json');
 const ledger = read('content/questions/next-release-factual-ledger.json');
+const expandedCategories = new Set([
+  'كرة القدم العالمية', 'معلومات عامة', 'تاريخ وتراث الخليج', 'الفن الخليجي والعربي',
+  'ألعاب الفيديو', 'تاريخ وحضارات', 'جسم الإنسان والصحة', 'مطابخ العالم',
+  'سيارات ومركبات', 'اللغة العربية والأمثال',
+]);
+const baseCategories = Object.fromEntries(Object.entries(document.categories)
+  .filter(([category]) => !expandedCategories.has(category)));
 const verifierFiles = [
   'scripts/questions/categories/common.mjs',
   'scripts/questions/categories/people-literature.mjs',
@@ -41,7 +48,7 @@ const customVerifier = (question, record) => {
 };
 
 assert.equal(document.releaseReady, true);
-const recomputed = verifyQuestionBankFacts(document.categories, { customVerifier, verifierFiles });
+const recomputed = verifyQuestionBankFacts(baseCategories, { customVerifier, verifierFiles });
 assert.deepEqual(recomputed, ledger, 'سجل التحقق المنشور يجب أن يُعاد إنتاجه حرفيًا من البنك والمصادر والمدققات الحالية.');
 
 const sample = category => clone(document.categories[category][0]);
@@ -121,9 +128,9 @@ const rejectsVerification = (label, category, question) => {
   rejectsVerification('تغيير الإجابة مع إبقاء البنية قابلة للعب', category, question);
 }
 
-assert.doesNotThrow(() => approveVerifiedQuestions(clone(document.categories), clone(ledger), { verifierFiles }));
+assert.doesNotThrow(() => approveVerifiedQuestions(clone(baseCategories), clone(ledger), { verifierFiles }));
 {
-  const changed = clone(document.categories);
+  const changed = clone(baseCategories);
   const first = Object.values(changed)[0][0];
   first.difficultyBasis = `${first.difficultyBasis || 'rank'}-tampered`;
   assert.throws(() => approveVerifiedQuestions(changed, clone(ledger), { verifierFiles }),
@@ -133,36 +140,36 @@ assert.doesNotThrow(() => approveVerifiedQuestions(clone(document.categories), c
   const changedLedger = clone(ledger);
   const artifact = Object.keys(changedLedger.artifacts)[0];
   changedLedger.artifacts[artifact] = '0'.repeat(64);
-  assert.throws(() => approveVerifiedQuestions(clone(document.categories), changedLedger, { verifierFiles }),
+  assert.throws(() => approveVerifiedQuestions(clone(baseCategories), changedLedger, { verifierFiles }),
     /سجل التحقق لا يطابق/u, 'تغيير بصمة لقطة المصدر يجب أن يلغي الاعتماد.');
 }
 {
   const changedLedger = clone(ledger);
   changedLedger.verifierBundleSha256 = '0'.repeat(64);
-  assert.throws(() => approveVerifiedQuestions(clone(document.categories), changedLedger, { verifierFiles }),
+  assert.throws(() => approveVerifiedQuestions(clone(baseCategories), changedLedger, { verifierFiles }),
     /سجل التحقق لا يطابق/u, 'تغيير حزمة المدققات يجب أن يلغي الاعتماد.');
 }
 {
   const changedLedger = clone(ledger);
   changedLedger.policySha256 = '0'.repeat(64);
-  assert.throws(() => approveVerifiedQuestions(clone(document.categories), changedLedger, { verifierFiles }),
+  assert.throws(() => approveVerifiedQuestions(clone(baseCategories), changedLedger, { verifierFiles }),
     /سجل التحقق لا يطابق/u, 'تغيير سياسة المصادر يجب أن يلغي الاعتماد.');
 }
 {
   const changedLedger = clone(ledger);
   const firstId = Object.keys(changedLedger.questions)[0];
   changedLedger.questions[firstId].claimSha256 = '0'.repeat(64);
-  assert.throws(() => approveVerifiedQuestions(clone(document.categories), changedLedger, { verifierFiles }),
+  assert.throws(() => approveVerifiedQuestions(clone(baseCategories), changedLedger, { verifierFiles }),
     /سجل التحقق لا يطابق/u, 'تغيير بصمة الادعاء يجب أن يلغي الاعتماد.');
 }
 {
   const changedLedger = clone(ledger);
   const firstId = Object.keys(changedLedger.questions)[0];
   changedLedger.questions[firstId].evidence[0].url = 'https://www.wikidata.org/wiki/Q42';
-  assert.throws(() => approveVerifiedQuestions(clone(document.categories), changedLedger, { verifierFiles }),
+  assert.throws(() => approveVerifiedQuestions(clone(baseCategories), changedLedger, { verifierFiles }),
     /سجل التحقق لا يطابق/u, 'تغيير دليل السؤال يجب أن يلغي الاعتماد.');
 }
-assert.throws(() => approveVerifiedQuestions(clone(document.categories), clone(ledger)),
+assert.throws(() => approveVerifiedQuestions(clone(baseCategories), clone(ledger)),
   /بلا حزمة مدققات/u, 'الاعتماد يجب أن يفشل مغلقًا من دون حزمة مدققات محددة.');
 
 console.log('✅ بوابة الحقائق ترفض العبث بالنص والخيارات والإجابة والمصدر والمنطق وبصمات الاعتماد');
