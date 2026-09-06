@@ -2,11 +2,13 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {testCatalog,testRound,testReveal} from './fixtures/question-server.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const url = `file://${path.join(root, 'www/index.html')}`;
 
 function installNativeTestHarness() {
+  window.__FATINAH_LEGACY_SPOKEN_TEST__ = true;
   localStorage.setItem('fatinah_authUid', JSON.stringify('turn-order-player'));
   localStorage.setItem('fatinah_onbDone', JSON.stringify(true));
   localStorage.setItem('fatinah_family', JSON.stringify([{
@@ -46,11 +48,22 @@ async function createGame(browser, teamNames) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{"active":true}' });
     }
     if (requestUrl.includes('/api/v2/revenuecat/identity')) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '{"rcAppUserId":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}' });
     }
     if (requestUrl.includes('/api/v2/questions/seen')) {
       const body = route.request().method() === 'GET' ? '{"items":[]}' : '{"ok":true}';
       return route.fulfill({ status: 200, contentType: 'application/json', body });
+    }
+    if(requestUrl.includes('/api/v2/questions/catalog')){
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(testCatalog())});
+    }
+    if(requestUrl.includes('/api/v2/questions/round')){
+      const request=JSON.parse(route.request().postData()||'{}');
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(testRound(request.categories||[]))});
+    }
+    if(requestUrl.includes('/api/v2/questions/reveal')){
+      const request=JSON.parse(route.request().postData()||'{}');
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(testReveal(request.questionId))});
     }
     return route.abort();
   });
@@ -79,12 +92,24 @@ async function openQuestion(page) {
 }
 
 async function revealAndResolve(page, teamName = null) {
+  while (await page.getByRole('button', { name: /^⏭️ اطرح على/ }).count()) {
+    await page.getByRole('button', { name: /^⏭️ اطرح على/ }).click();
+  }
   await page.getByRole('button', { name: '👁️ اكشف الإجابة' }).click();
+  await page.locator('#answer-box.show').waitFor({state:'visible'});
   if (teamName) {
     await page.getByRole('button', { name: `✅ ${teamName}` }).click();
   } else {
     await page.getByRole('button', { name: '❌ محد جاوب صح' }).click();
   }
+}
+
+async function revealAfterAllTeams(page) {
+  while (await page.getByRole('button', { name: /^⏭️ اطرح على/ }).count()) {
+    await page.getByRole('button', { name: /^⏭️ اطرح على/ }).click();
+  }
+  await page.getByRole('button', { name: '👁️ اكشف الإجابة' }).click();
+  await page.locator('#answer-box.show').waitFor({state:'visible'});
 }
 
 async function score(page, index) {
@@ -251,7 +276,7 @@ async function testPassAndTimeoutEligibility(browser) {
         1,
         'وسائل المساعدة تنتقل لصاحب مرحلة السرقة',
       );
-      await page.getByRole('button', { name: '👁️ اكشف الإجابة' }).click();
+      await revealAfterAllTeams(page);
       assert.deepEqual(await page.locator('.verdict-row .vb').allTextContents(), ['✅ اللاعب الثاني']);
       await page.getByRole('button', { name: '✅ اللاعب الثاني' }).click();
       assert.match(await page.locator('#turn-pill').textContent(), /اللاعب الثاني/);
@@ -270,6 +295,7 @@ async function testPassAndTimeoutEligibility(browser) {
       await page.evaluate(() => timeUp(state.cur.token));
       assert.match(await page.locator('#phase-pill').textContent(), /اللاعب الثالث/);
       await page.evaluate(() => timeUp(state.cur.token));
+      await page.locator('#answer-box.show').waitFor({state:'visible'});
       assert.match(await page.locator('#phase-pill').textContent(), /منو جاوب صح/);
       assert.deepEqual(await page.locator('.verdict-row .vb').allTextContents(), [
         '✅ اللاعب الأول', '✅ اللاعب الثاني', '✅ اللاعب الثالث',
@@ -291,12 +317,8 @@ async function testSkipResetsQuestionEligibility(browser) {
   const names = ['اللاعب الأول', 'اللاعب الثاني', 'اللاعب الثالث'];
   const { context, page } = await createGame(browser, names);
   try {
-    // استخدم فئة لها أكثر من سؤال في المستوى نفسه؛ تغيير السؤال لا يجوز أن
-    // يستعين بمستوى آخر لمجرد أن الفئة القديمة لا تملك بديلاً في هذا الصف.
-    await page.evaluate(() => {
-      state.cats[0]='ألعاب الفيديو';
-      buildBoard();
-    });
+    // جولة الخادم توفر سؤالين في كل مستوى؛ تغيير السؤال لا يجوز أن
+    // يستعين بمستوى آخر.
     await openQuestion(page);
     const originalQuestion=await page.evaluate(() => ({id:state.cur.q.id,d:state.cur.q.d}));
     await page.getByRole('button', { name: /اطرح على اللاعب الثاني/ }).click();
@@ -304,15 +326,15 @@ async function testSkipResetsQuestionEligibility(browser) {
     const replacementQuestion=await page.evaluate(() => ({id:state.cur.q.id,d:state.cur.q.d}));
     assert.notEqual(replacementQuestion.id, originalQuestion.id, 'تغيير السؤال يحتاج بديلاً جديداً.');
     assert.equal(replacementQuestion.d, originalQuestion.d, 'السؤال البديل يجب أن يبقى في مستوى صف اللوحة نفسه.');
-    await page.getByRole('button', { name: '👁️ اكشف الإجابة' }).click();
+    await revealAfterAllTeams(page);
     const eligible = await page.locator('.verdict-row .vb').allTextContents();
-    assert.deepEqual(eligible, ['✅ اللاعب الثاني'], 'السؤال البديل لم يُطرح على اللاعب الأول');
+    assert.deepEqual(eligible, ['✅ اللاعب الثاني', '✅ اللاعب الثالث'], 'السؤال البديل يمر على بقية الفرق بالترتيب دون اللاعب الأول');
   } finally {
     await context.close();
   }
 }
 
-async function testBombAndNewRoundReset(browser) {
+async function testBombDisabledAndNewRoundReset(browser) {
   const names = ['اللاعب الأول', 'اللاعب الثاني'];
   const { context, page } = await createGame(browser, names);
   try {
@@ -321,14 +343,24 @@ async function testBombAndNewRoundReset(browser) {
       renderTeamsBar();
       updateBombButton();
     });
-    await page.getByRole('button', { name: /قنبلة/ }).click();
-    assert.match(await page.locator('#phase-pill').textContent(), /اللاعب الثاني/);
-    await page.getByRole('button', { name: '👁️ اكشف الإجابة' }).click();
-    await page.getByRole('button', { name: '✅ جاوب صح (+1200)' }).click();
-    assert.equal(await score(page, 1), 1200);
-    assert.match(await page.locator('#turn-pill').textContent(), /اللاعب الثاني/);
+    assert.equal(await page.locator('#bomb-box.show').count(), 0,
+      'القنبلة مخفية في إصدار الخيارات الأربعة');
+    assert.deepEqual(await page.evaluate(async() => ({
+      startResult: startBomb(),
+      fireResult: await fireBomb(1),
+      currentQuestion: state.cur,
+      bombUsed: state.teams.map(team => team.bombUsed),
+    })), {
+      startResult: false,
+      fireResult: false,
+      currentQuestion: null,
+      bombUsed: [false, false],
+    }, 'حارس الدوال يمنع تشغيل المسار الشفهي مباشرة');
 
-    await page.evaluate(() => restart());
+    await page.evaluate(() => {
+      state.teams[0].bombUsed=true;
+      restart();
+    });
     const reset = await page.evaluate(() => ({
       turn: state.turn,
       scores: state.teams.map(team => team.score),
@@ -351,6 +383,14 @@ async function testFamilyRoundAlternation(browser) {
     await page.evaluate(() => go('s-home'));
     await page.getByRole('button', { name: '👨‍👩‍👧‍👦 أسئلة عائلية' }).click();
     await page.getByRole('button', { name: '▶ العب' }).click();
+    assert.equal(await page.locator('#board .cell').count(), 12,
+      'لا تبدأ جولة عائلية ثانية بينما الجولة الحالية نشطة');
+    assert.equal(await page.evaluate(()=>state.familyRound),null);
+    await page.evaluate(()=>{
+      state.roundActive=false;
+      clearActiveRound();
+    });
+    await page.getByRole('button', { name: '▶ العب' }).click();
     assert.equal(await page.locator('#board .cell').count(), 6);
     assert.match(await page.locator('#turn-pill').textContent(), /النجوم/);
     await openQuestion(page);
@@ -369,9 +409,9 @@ try {
   await testLifelineOwnership(browser);
   await testPassAndTimeoutEligibility(browser);
   await testSkipResetsQuestionEligibility(browser);
-  await testBombAndNewRoundReset(browser);
+  await testBombDisabledAndNewRoundReset(browser);
   await testFamilyRoundAlternation(browser);
-  console.log('✓ ترتيب الأدوار: لاعبان وثلاثة، السرقة، المؤقت، الوسائل والقنبلة');
+  console.log('✓ ترتيب الأدوار: لاعبان وثلاثة، السرقة، المؤقت، الوسائل، وتعطيل القنبلة الشفهية');
 } finally {
   await browser.close();
 }

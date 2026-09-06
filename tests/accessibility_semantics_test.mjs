@@ -17,10 +17,98 @@ assert.match(css,/--fatinah-text-size-adjust:100%/,'لازم يكون للويب
 assert.match(bridgeSwift,/preferredContentSizeCategory/,'لازم جسر iOS يستجيب لإعداد Dynamic Type.');
 assert.match(bridgeSwift,/accessibilityExtraExtraExtraLarge:\s*return 180/,'لازم أكبر حجم وصول يرفع حجم نص الويب بوضوح.');
 
+function rgbFromHex(value){
+  const hex=value.replace('#','');
+  return [0,2,4].map(offset=>parseInt(hex.slice(offset,offset+2),16)/255);
+}
+function relativeLuminance(rgb){
+  const linear=rgb.map(component=>component<=0.04045
+    ?component/12.92:((component+0.055)/1.055)**2.4);
+  return 0.2126*linear[0]+0.7152*linear[1]+0.0722*linear[2];
+}
+function contrastAgainstWhite(rgb){ return 1.05/(relativeLuminance(rgb)+0.05); }
+function selectorRule(selector){
+  const escaped=selector.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`,'i'))?.[1]||'';
+}
+function activeBrightness(selector){
+  return Number(selectorRule(`${selector}:active`).match(/brightness\((\.?\d+(?:\.\d+)?)\)/i)?.[1]||1);
+}
+function minimumGradientContrast(start,end,brightness=1){
+  let minimum=Infinity;
+  for(let step=0;step<=100;step++){
+    const amount=step/100;
+    const sample=start.map((component,index)=>Math.min(1,
+      (component+(end[index]-component)*amount)*brightness));
+    minimum=Math.min(minimum,contrastAgainstWhite(sample));
+  }
+  return minimum;
+}
+const hot=rgbFromHex(css.match(/--hot\s*:\s*(#[0-9a-f]{6})/i)?.[1]||'');
+const hot2=rgbFromHex(css.match(/--hot2\s*:\s*(#[0-9a-f]{6})/i)?.[1]||'');
+const dangerHexes=selectorRule('.btn-danger').match(/#[0-9a-f]{6}/ig)||[];
+assert.equal(dangerHexes.length>=2,true,'يجب أن يحتوي زر danger على تدرج لوني صريح.');
+const contrastStates=[
+  {name:'primary',selector:'.btn-primary',start:hot2,end:hot},
+  {name:'danger',selector:'.btn-danger',start:rgbFromHex(dangerHexes[0]),end:rgbFromHex(dangerHexes[1])},
+];
+for(const state of contrastStates){
+  for(const [interaction,brightness] of [['normal',1],['active',activeBrightness(state.selector)]]){
+    const minimum=minimumGradientContrast(state.start,state.end,brightness);
+    assert.ok(minimum>=4.5,
+      `النص الأبيض على ${state.name} (${interaction}) لازم يحقق 4.5:1؛ الأدنى ${minimum.toFixed(2)}:1.`);
+  }
+}
+assert.ok(activeBrightness('.btn-primary')<=1,
+  'حالة active للزر الرئيسي لا يجوز أن ترفع luminance التدرج.');
+
 const browser=await chromium.launch();
 try{
   const page=await browser.newPage({viewport:{width:390,height:844}});
+  await page.addInitScript(()=>{
+    window.__FATINAH_GAME_FLOW_UI_TEST__=true;
+    const names=['معلومات عامة','من أنا؟'];
+    const questions=Object.fromEntries(names.map((name,categoryIndex)=>[name,
+      Array.from({length:6},(_,level)=>[1,2].map(variant=>{
+        const suffix=`${categoryIndex+1}${level+1}${String(variant).padStart(18,'0')}`;
+        return {id:`gq-${suffix}`,d:level+1,q:`ما الخيار الاختباري الصحيح للفئة ${name} في المستوى ${level+1}؟`,
+          o:['الخيار الأول','الخيار الثاني','الخيار الثالث','الخيار الرابع'],
+          source:{title:'مصدر اختباري',url:'https://example.com/source'},
+          review:{status:'approved',reviewer:'Fatinah test gate',reviewedAt:'2026-09-05'}};
+      })).flat()]));
+    window.__FATINAH_GAME_FLOW_UI_TEST_FIXTURE__={catalog:{schemaVersion:1,questionSchemaVersion:1,
+      releaseReady:true,bankVersion:'accessibility-test-bank',questionCount:180,
+      categories:names.map(name=>({name,questionCount:90,levels:{'1':15,'2':15,'3':15,'4':15,'5':15,'6':15}}))},
+      round:{schemaVersion:1,bankVersion:'accessibility-test-bank',questions}};
+  });
   await page.goto(`file://${indexPath}`);
+
+  async function actualButtonState(modalId,selector){
+    await page.evaluate(id=>{
+      const modal=document.getElementById(id);
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden','false');
+    },modalId);
+    await page.waitForTimeout(350); // لا تضغط أثناء حركة pop التي تغيّر موضع الزر
+    const button=page.locator(selector);
+    const normal=await button.evaluate(element=>({
+      color:getComputedStyle(element).color,
+      filter:getComputedStyle(element).filter,
+      backgroundImage:getComputedStyle(element).backgroundImage,
+    }));
+    await page.evaluate(id=>{
+      const modal=document.getElementById(id);
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden','true');
+    },modalId);
+    return {normal};
+  }
+  const actualPrimary=await actualButtonState('reauth-password-modal','#reauth-password-submit');
+  const actualDanger=await actualButtonState('exit-modal','#exit-modal .btn-danger');
+  assert.match(actualPrimary.normal.color,/rgb\(255, 255, 255\)/);
+  assert.match(actualPrimary.normal.backgroundImage,/linear-gradient/);
+  assert.match(actualDanger.normal.color,/rgb\(255, 255, 255\)/);
+  assert.match(actualDanger.normal.backgroundImage,/linear-gradient/);
 
   await page.evaluate(()=>go('s-teams'));
   await page.waitForFunction(()=>document.getElementById('s-teams').contains(document.activeElement));
@@ -57,6 +145,7 @@ try{
 
   const filters=await page.evaluate(async()=>{
     await ensureQuestionBank();
+    roundQuestionBank=Object.assign(Object.create(null),window.__FATINAH_GAME_FLOW_UI_TEST_FIXTURE__.round.questions);
     state.teamCount=2;
     state.teams=[{name:'الأول',idx:0},{name:'الثاني',idx:1}];
     state.catCount=2;

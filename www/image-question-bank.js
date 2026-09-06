@@ -12,12 +12,32 @@ window.__IMAGE_QUESTION_BANK_DATA__={"تعرف على الصورة":[
   {id:"img-v1-astrolabe",d:6,q:"شنو اسم الأداة الفلكية التاريخية الظاهرة بالصورة؟",answer:"الأسطرلاب",image:{alt:"أسطرلاب نحاسي دائري مزخرف مع مؤشر دوار",version:"1",factSource:{title:"Smithsonian National Museum of American History — Astrolabe",url:"https://americanhistory.si.edu/collections/object/nmah_1183789"},rights:{owner:"فطنة",credit:"صورة أصلية مولّدة خصيصاً لفطنة بواسطة OpenAI",license:"حقوق استخدام حصرية لفطنة؛ يمنع إعادة التوزيع"},assets:[]}},
   {id:"img-v1-okapi",d:6,q:"شنو اسم الحيوان الظاهر بالصورة؟",answer:"الأوكابي",image:{alt:"حيوان أوكابي بني بأرجل مخططة بالأبيض والأسود واقف في غابة",version:"1",factSource:{title:"Smithsonian's National Zoo — Okapi",url:"https://nationalzoo.si.edu/animals/okapi"},rights:{owner:"فطنة",credit:"صورة أصلية مولّدة خصيصاً لفطنة بواسطة OpenAI",license:"حقوق استخدام حصرية لفطنة؛ يمنع إعادة التوزيع"},assets:[]}}
 ]};
+(function(){
+  const choices={
+    'img-v1-fire-extinguisher':[['كاشف دخان','مطفأة حريق','حقيبة إسعافات أولية','بطانية حريق'],1],
+    'img-v1-emperor-penguin':[['بطريق آديلي','البطريق الإمبراطور','البطريق الملكي','بطريق جنتو'],1],
+    'img-v1-eiffel-tower':[['برج بيزا المائل','برج إيفل','بيغ بن','برج طوكيو'],1],
+    'img-v1-dragon-fruit':[['فاكهة العاطفة','الرمان','فاكهة التنين (البتايا)','الرامبوتان'],2],
+    'img-v1-saturn':[['المشتري','زحل','أورانوس','نبتون'],1],
+    'img-v1-oud':[['القانون','الربابة','العود','الكمان'],2],
+    'img-v1-petra-treasury':[['الدير في البتراء','الخزنة في البتراء','معبد أبو سمبل','قصر الفريد في الحِجر'],1],
+    'img-v1-pangolin':[['المدرع','آكل النمل','البنغول (آكل النمل الحرشفي)','خنزير الأرض'],2],
+    'img-v1-aurora':[['الشفق القطبي','درب التبانة','الضوء البروجي','السحب العدسية'],0],
+    'img-v1-axolotl':[['سمندر النار','سمندر الكهوف','الأكسولوتل','سمندر الماء'],2],
+    'img-v1-astrolabe':[['البوصلة','المزولة الشمسية','السدس البحري','الأسطرلاب'],3],
+    'img-v1-okapi':[['الحمار الوحشي','الأوكابي','الزرافة','ظبي البونغو'],1],
+  };
+  window.__IMAGE_QUESTION_BANK_DATA__['تعرف على الصورة'].forEach(question=>{
+    const item=choices[question.id];
+    if(!item||item[0].length!==4||new Set(item[0]).size!==4||item[0][item[1]]!==question.answer) throw new Error('invalid_curated_image_choices');
+    question.o=item[0]; question.a=item[1];
+  });
+})();
 // لا تُضاف أسماء الفئات هنا إلا بعد رفع جميع أصولها المطابقة إلى ata20.com
 // والتحقق من الحجم والبصمة ونوع المحتوى. فئة اللاعبين مستثناة حتى اكتمال
 // موافقات حقوق الشخصية والصور.
 window.__RELEASED_IMAGE_CATEGORIES__=[
-  'أعلام منو؟','تعرف على الصورة','شنو بالفضاء؟','شنو هالحيوان؟',
-  'شنو هالشي؟','كنوز الحضارات','وين هالمعلم؟',
+  'تعرف على الصورة',
 ];
 
 (function(){

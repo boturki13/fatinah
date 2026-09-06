@@ -24,10 +24,12 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           cache: npm
@@ -36,7 +38,7 @@ jobs:
             functions/package-lock.json
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.13"
 
@@ -44,6 +46,9 @@ jobs:
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
+
+      - name: Scan repository and Git history for sensitive material
+        run: npm run security:scan-history
 
       - name: Install locked dependencies
         run: |
@@ -54,8 +59,38 @@ jobs:
 
       - name: Prepare generated test assets
         run: |
-          npx cap copy ios
+          # ios/App/App/public is ignored and absent on a clean checkout.
+          npm run sync:ios
           node scripts/images/fetch-release-assets.mjs --asset=v1/fire-extinguisher.avif
+
+      - name: Verify next question-bank release artifacts
+        run: |
+          npm run questions:next-release-gate
+          git diff --exit-code -- \
+            content/questions/next-release-factual-ledger.json \
+            server-assets/question-bank/v1
+
+      - name: Verify curated image-bank release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run images:build-curated-300
+          generated_artifacts=(
+            server-assets/question-images/curated-question-bank.json
+            www/curated-image-options.js
+          )
+          for artifact in "${generated_artifacts[@]}"; do
+            git ls-files --error-unmatch "$artifact" >/dev/null || {
+              echo "Generated image release artifact is not tracked: $artifact" >&2
+              exit 1
+            }
+          done
+          git diff --exit-code -- "${generated_artifacts[@]}"
+
+      - name: Refresh and verify generated iOS web bundle
+        run: |
+          npx cap copy ios
+          node scripts/validate-ios-public.mjs
 
       - name: Run release metadata and static tests
         run: npm run test:static
@@ -86,10 +121,10 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           cache: npm
@@ -99,6 +134,9 @@ jobs:
 
       - name: Fetch and verify production image assets
         run: npm run images:fetch-release-assets
+
+      - name: Verify curated image assets from production CDN
+        run: npm run images:verify-curated-remote-assets
 
       - name: Run image release tests
         run: npm run test:images

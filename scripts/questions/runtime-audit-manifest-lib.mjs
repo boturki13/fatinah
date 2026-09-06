@@ -134,6 +134,8 @@ function runtimeBankFromApp({ base, approved, additions, overrides, reviewedSour
     QUESTION_OVERRIDES: overrides,
     QUESTION_SOURCE_BY_CATEGORY: fallbacks,
     combined,
+    // مسار تدقيق الإصدار يمثل تشغيل الإنتاج، لا معاينة loopback.
+    isLocalWebPreview: () => false,
     window: {
       __REVIEWED_QUESTION_SOURCES__: reviewedSources,
       __LEGACY_QUESTION_REVIEWS__: reviewedLedger,

@@ -1,0 +1,1267 @@
+{
+  "schemaVersion": 1,
+  "endpoint": "https://query.wikidata.org/sparql",
+  "retrievedAt": "2026-09-04T23:48:01.754Z",
+  "records": [
+    {
+      "item": "http://www.wikidata.org/entity/Q251",
+      "itemLabel": "جافا",
+      "developer": "http://www.wikidata.org/entity/Q14647",
+      "developerLabel": "صن ميكروسيستمز",
+      "sitelinks": "159"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q251",
+      "itemLabel": "جافا",
+      "developer": "http://www.wikidata.org/entity/Q19900",
+      "developerLabel": "أوراكل",
+      "sitelinks": "159"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q251",
+      "itemLabel": "جافا",
+      "developer": "http://www.wikidata.org/entity/Q92622",
+      "developerLabel": "جيمس غوسلينغ",
+      "sitelinks": "159"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q40984",
+      "itemLabel": "سكايب",
+      "developer": "http://www.wikidata.org/entity/Q246125",
+      "developerLabel": "سكايب تكنولوجيز",
+      "sitelinks": "112"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q4885200",
+      "itemLabel": "ويندوز فون",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "74"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q780442",
+      "itemLabel": "أوبر",
+      "developer": "http://www.wikidata.org/entity/Q780442",
+      "developerLabel": "أوبر",
+      "sitelinks": "73"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q136469",
+      "itemLabel": "أمازون كيندل",
+      "developer": "http://www.wikidata.org/entity/Q3884",
+      "developerLabel": "أمازون",
+      "sitelinks": "64"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q213602",
+      "itemLabel": "التجول الافتراضي من جوجل",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "60"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q183480",
+      "itemLabel": "الربح من جوجل أدسنس",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "57"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q51713",
+      "itemLabel": "جوجل توك",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "50"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q218924",
+      "itemLabel": "أدوبي إنديزاين",
+      "developer": "http://www.wikidata.org/entity/Q11463",
+      "developerLabel": "أدوبي",
+      "sitelinks": "45"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q231136",
+      "itemLabel": "إنكارتا",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "40"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q60220726",
+      "itemLabel": "ون يو آي",
+      "developer": "http://www.wikidata.org/entity/Q20718",
+      "developerLabel": "إلكترونيات سامسونج",
+      "sitelinks": "40"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q623456",
+      "itemLabel": "مواقع جوجل",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "39"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q275141",
+      "itemLabel": "نابستر",
+      "developer": "http://www.wikidata.org/entity/Q92633",
+      "developerLabel": "شون فانينج",
+      "sitelinks": "38"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q275141",
+      "itemLabel": "نابستر",
+      "developer": "http://www.wikidata.org/entity/Q328929",
+      "developerLabel": "شون باركر",
+      "sitelinks": "38"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q219885",
+      "itemLabel": "جوجل فيديو",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "37"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q196305",
+      "itemLabel": "مستكشف الملفات",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "36"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q474334",
+      "itemLabel": "كنيكت",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "35"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7276397",
+      "itemLabel": "RETScreen",
+      "developer": "http://www.wikidata.org/entity/Q422404",
+      "developerLabel": "حكومة كندا",
+      "sitelinks": "35"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q267193",
+      "itemLabel": "سابليم تكست",
+      "developer": "http://www.wikidata.org/entity/Q18510668",
+      "developerLabel": "جون سكينر",
+      "sitelinks": "34"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q267193",
+      "itemLabel": "سابليم تكست",
+      "developer": "http://www.wikidata.org/entity/Q112301836",
+      "developerLabel": "Q112301836",
+      "sitelinks": "34"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7854718",
+      "itemLabel": "جوجل كيب",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "34"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q369089",
+      "itemLabel": "فنون وثقافة جوجل",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "33"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q229851",
+      "itemLabel": "زون",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "33"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q17355735",
+      "itemLabel": "بروتون میل",
+      "developer": "http://www.wikidata.org/entity/Q30537036",
+      "developerLabel": "بروتون أيه جي",
+      "sitelinks": "33"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q17590603",
+      "itemLabel": "ماتيريال ديزاين",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "33"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1147445",
+      "itemLabel": "ميتاسبلويت",
+      "developer": "http://www.wikidata.org/entity/Q85874460",
+      "developerLabel": "Q85874460",
+      "sitelinks": "32"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q305910",
+      "itemLabel": "آي جوجل",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "31"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2474765",
+      "itemLabel": "متصفح يوسي",
+      "developer": "http://www.wikidata.org/entity/Q17727179",
+      "developerLabel": "يوسي ويب",
+      "sitelinks": "31"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q580318",
+      "itemLabel": "إليزا",
+      "developer": "http://www.wikidata.org/entity/Q75778",
+      "developerLabel": "جوزيف فايزنباوم",
+      "sitelinks": "30"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q71694",
+      "itemLabel": "ياهو مسنجر",
+      "developer": "http://www.wikidata.org/entity/Q37093",
+      "developerLabel": "ياهو!",
+      "sitelinks": "30"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q8029",
+      "itemLabel": "بب تخ",
+      "developer": "http://www.wikidata.org/entity/Q93068",
+      "developerLabel": "أورين باتاشنيك",
+      "sitelinks": "29"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q60827595",
+      "itemLabel": "ألفافولد",
+      "developer": "http://www.wikidata.org/entity/Q15733006",
+      "developerLabel": "ديب مايند",
+      "sitelinks": "29"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q606550",
+      "itemLabel": "سيميولينك",
+      "developer": "http://www.wikidata.org/entity/Q1518683",
+      "developerLabel": "ماثووركس",
+      "sitelinks": "28"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q116038",
+      "itemLabel": "لينكس المحسن أمنيا",
+      "developer": "http://www.wikidata.org/entity/Q485593",
+      "developerLabel": "ريد هات",
+      "sitelinks": "28"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q873463",
+      "itemLabel": "مدير مهام ويندوز",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "28"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q873463",
+      "itemLabel": "مدير مهام ويندوز",
+      "developer": "http://www.wikidata.org/entity/Q99500578",
+      "developerLabel": "Q99500578",
+      "sitelinks": "28"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q19407678",
+      "itemLabel": "فولكان",
+      "developer": "http://www.wikidata.org/entity/Q1138941",
+      "developerLabel": "مجموعة خرونوس",
+      "sitelinks": "28"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q79608",
+      "itemLabel": "شريط أدوات جوجل",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "27"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q116894231",
+      "itemLabel": "لاما",
+      "developer": "http://www.wikidata.org/entity/Q380",
+      "developerLabel": "ميتا بلاتفورمز",
+      "sitelinks": "27"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q402799",
+      "itemLabel": "بوت كامب",
+      "developer": "http://www.wikidata.org/entity/Q312",
+      "developerLabel": "أبل",
+      "sitelinks": "26"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q748417",
+      "itemLabel": "ويندوز فيرتشوال بي سي",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "26"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q748417",
+      "itemLabel": "ويندوز فيرتشوال بي سي",
+      "developer": "http://www.wikidata.org/entity/Q825991",
+      "developerLabel": "Q825991",
+      "sitelinks": "26"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1433417",
+      "itemLabel": "جوجل للتسوق",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "26"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q18150347",
+      "itemLabel": "جوجل متابعة مستوى اللياقة",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "26"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q15940106",
+      "itemLabel": "كار بلاي",
+      "developer": "http://www.wikidata.org/entity/Q312",
+      "developerLabel": "أبل",
+      "sitelinks": "26"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q689412",
+      "itemLabel": "إس دي إل ترادوس",
+      "developer": "http://www.wikidata.org/entity/Q112244",
+      "developerLabel": "Q112244",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q689412",
+      "itemLabel": "إس دي إل ترادوس",
+      "developer": "http://www.wikidata.org/entity/Q144175",
+      "developerLabel": "Q144175",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q689412",
+      "itemLabel": "إس دي إل ترادوس",
+      "developer": "http://www.wikidata.org/entity/Q372891",
+      "developerLabel": "Q372891",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q689579",
+      "itemLabel": "مايكروسوفت أوفيس 2010",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q864680",
+      "itemLabel": "طاقم كاليغرا",
+      "developer": "http://www.wikidata.org/entity/Q1431",
+      "developerLabel": "كيدي",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1133580",
+      "itemLabel": "ماثكاد",
+      "developer": "http://www.wikidata.org/entity/Q4043809",
+      "developerLabel": "Q4043809",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q23542287",
+      "itemLabel": "مايكروسوفت باور بي آي",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q28470421",
+      "itemLabel": "كيراس (مكتبة شبكات عصبونية)",
+      "developer": "http://www.wikidata.org/entity/Q50495366",
+      "developerLabel": "فرانسوا شوليه",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q107435063",
+      "itemLabel": "غيت هاب كوبايلوت",
+      "developer": "http://www.wikidata.org/entity/Q21708200",
+      "developerLabel": "أوبن أيه آي",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q107435063",
+      "itemLabel": "غيت هاب كوبايلوت",
+      "developer": "http://www.wikidata.org/entity/Q28771536",
+      "developerLabel": "شركة غيت هب",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q483101",
+      "itemLabel": "تتش-وز",
+      "developer": "http://www.wikidata.org/entity/Q20718",
+      "developerLabel": "إلكترونيات سامسونج",
+      "sitelinks": "24"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q855381",
+      "itemLabel": "ميزة ويندوز الأصلي",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "24"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1068438",
+      "itemLabel": "جدار حماية ويندوز",
+      "developer": "http://www.wikidata.org/entity/Q1406",
+      "developerLabel": "مايكروسوفت ويندوز",
+      "sitelinks": "24"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1343860",
+      "itemLabel": "صدفة جنوم",
+      "developer": "http://www.wikidata.org/entity/Q1056660",
+      "developerLabel": "مؤسسة جنوم",
+      "sitelinks": "24"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1343860",
+      "itemLabel": "صدفة جنوم",
+      "developer": "http://www.wikidata.org/entity/Q7735575",
+      "developerLabel": "مشروع جنوم",
+      "sitelinks": "24"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q55774523",
+      "itemLabel": "رياكت نيتف",
+      "developer": "http://www.wikidata.org/entity/Q380",
+      "developerLabel": "ميتا بلاتفورمز",
+      "sitelinks": "24"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q724878",
+      "itemLabel": "مايكروسوفت أوفيس 2013",
+      "developer": "http://www.wikidata.org/entity/Q4044234",
+      "developerLabel": "مايكروسوفت كويري",
+      "sitelinks": "23"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q51712",
+      "itemLabel": "صوت جوجل",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "23"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q135964",
+      "itemLabel": "زد برش",
+      "developer": "http://www.wikidata.org/entity/Q3841213",
+      "developerLabel": "Q3841213",
+      "sitelinks": "23"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1198691",
+      "itemLabel": "جوجل فاينانس",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "23"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2334242",
+      "itemLabel": "محفظة جوجل",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "23"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q484531",
+      "itemLabel": "متجر تطبيقات سامسونج",
+      "developer": "http://www.wikidata.org/entity/Q20718",
+      "developerLabel": "إلكترونيات سامسونج",
+      "sitelinks": "22"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1461054",
+      "itemLabel": "اوبن جي دي كي",
+      "developer": "http://www.wikidata.org/entity/Q14647",
+      "developerLabel": "صن ميكروسيستمز",
+      "sitelinks": "22"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1461054",
+      "itemLabel": "اوبن جي دي كي",
+      "developer": "http://www.wikidata.org/entity/Q19900",
+      "developerLabel": "أوراكل",
+      "sitelinks": "22"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1461054",
+      "itemLabel": "اوبن جي دي كي",
+      "developer": "http://www.wikidata.org/entity/Q67471308",
+      "developerLabel": "Q67471308",
+      "sitelinks": "22"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q360310",
+      "itemLabel": "أدوبي أير",
+      "developer": "http://www.wikidata.org/entity/Q11463",
+      "developerLabel": "أدوبي",
+      "sitelinks": "21"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q360310",
+      "itemLabel": "أدوبي أير",
+      "developer": "http://www.wikidata.org/entity/Q1585599",
+      "developerLabel": "هارمان للصناعات الدولية",
+      "sitelinks": "21"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1048294",
+      "itemLabel": "جوجل تشك أوت",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "21"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1995050",
+      "itemLabel": "مايكروسوفت حلال الرياضيات",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "21"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q79593",
+      "itemLabel": "جوجل باك",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "20"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3110781",
+      "itemLabel": "منشئ صفحات جوجل",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "20"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3110781",
+      "itemLabel": "منشئ صفحات جوجل",
+      "developer": "http://www.wikidata.org/entity/Q130097657",
+      "developerLabel": "Q130097657",
+      "sitelinks": "20"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1417729",
+      "itemLabel": "إكسبرشن ويب",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "20"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q18844946",
+      "itemLabel": "ويندوز ميكسد ريليتي",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "20"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q47134419",
+      "itemLabel": "ترون",
+      "developer": "http://www.wikidata.org/entity/Q105498496",
+      "developerLabel": "Q105498496",
+      "sitelinks": "20"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q117428",
+      "itemLabel": "مايكروسوفت موني",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q876646",
+      "itemLabel": "ويندوز لايف سبيسس",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q892647",
+      "itemLabel": "بونجور",
+      "developer": "http://www.wikidata.org/entity/Q312",
+      "developerLabel": "أبل",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1277662",
+      "itemLabel": "محاكي الأرض",
+      "developer": "http://www.wikidata.org/entity/Q179103",
+      "developerLabel": "منظمة استكشاف الفضاء اليابانية",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1277662",
+      "itemLabel": "محاكي الأرض",
+      "developer": "http://www.wikidata.org/entity/Q219203",
+      "developerLabel": "إن إي سي",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2595529",
+      "itemLabel": "هوديني (برمجية)",
+      "developer": "http://www.wikidata.org/entity/Q58693886",
+      "developerLabel": "Q58693886",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q45319394",
+      "itemLabel": "أبل هوم",
+      "developer": "http://www.wikidata.org/entity/Q312",
+      "developerLabel": "أبل",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q133141215",
+      "itemLabel": "جوجل فيو",
+      "developer": "http://www.wikidata.org/entity/Q15733006",
+      "developerLabel": "ديب مايند",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q688988",
+      "itemLabel": "مايكروسوفت إكسبرشن ستوديو",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q904150",
+      "itemLabel": "بيزتالك",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q306106",
+      "itemLabel": "CFosSpeed",
+      "developer": "http://www.wikidata.org/entity/Q306106",
+      "developerLabel": "CFosSpeed",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q540202",
+      "itemLabel": "جوجل كلاود برينت",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q378530",
+      "itemLabel": "برات",
+      "developer": "http://www.wikidata.org/entity/Q7149422",
+      "developerLabel": "Q7149422",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q15241057",
+      "itemLabel": "لغة ولفرام",
+      "developer": "http://www.wikidata.org/entity/Q310798",
+      "developerLabel": "ستيفن ولفرام",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q15241057",
+      "itemLabel": "لغة ولفرام",
+      "developer": "http://www.wikidata.org/entity/Q1367937",
+      "developerLabel": "ولفرام ريسيرتش",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q343961",
+      "itemLabel": "آكتف سينك",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "17"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2755835",
+      "itemLabel": "جوجل أدوات المترجم",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "17"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q14628801",
+      "itemLabel": "سامسونج نوكس",
+      "developer": "http://www.wikidata.org/entity/Q20716",
+      "developerLabel": "سامسونغ",
+      "sitelinks": "17"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q15918054",
+      "itemLabel": "تروكولر",
+      "developer": "http://www.wikidata.org/entity/Q126367344",
+      "developerLabel": "Q126367344",
+      "sitelinks": "17"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q596031",
+      "itemLabel": "بيرشير",
+      "developer": "http://www.wikidata.org/entity/Q123116380",
+      "developerLabel": "Q123116380",
+      "sitelinks": "16"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q720287",
+      "itemLabel": "مينتال راي",
+      "developer": "http://www.wikidata.org/entity/Q182477",
+      "developerLabel": "إنفيديا",
+      "sitelinks": "16"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1347061",
+      "itemLabel": "ويندوز سمول بيزنس سيرفر",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "16"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q30943865",
+      "itemLabel": "نينتندو سويتش أونلاين",
+      "developer": "http://www.wikidata.org/entity/Q8093",
+      "developerLabel": "نينتندو",
+      "sitelinks": "16"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q39048590",
+      "itemLabel": "فايل كوين",
+      "developer": "http://www.wikidata.org/entity/Q63930216",
+      "developerLabel": "Q63930216",
+      "sitelinks": "16"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q108582200",
+      "itemLabel": "أوبن أيه آي كودكس",
+      "developer": "http://www.wikidata.org/entity/Q21708200",
+      "developerLabel": "أوبن أيه آي",
+      "sitelinks": "16"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q29364625",
+      "itemLabel": "حزمة أدوات تطوير برامج أندرويد",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "16"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q594062",
+      "itemLabel": "كارنيفور",
+      "developer": "http://www.wikidata.org/entity/Q8333",
+      "developerLabel": "مكتب التحقيق الاتحادي",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q664672",
+      "itemLabel": "محرك جوجل للبحث عن للأكواد",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q122381",
+      "itemLabel": "بلاك بيري ورلد",
+      "developer": "http://www.wikidata.org/entity/Q502121",
+      "developerLabel": "بلاك بيري ليميتد",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1542670",
+      "itemLabel": "فيجوال سورس سيف",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2736257",
+      "itemLabel": "بحث جوجل الصوتي",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q28446850",
+      "itemLabel": "ادوبي سبارك (Adobe Spark)",
+      "developer": "http://www.wikidata.org/entity/Q11463",
+      "developerLabel": "أدوبي",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q94277753",
+      "itemLabel": "أنريل إنجن 5",
+      "developer": "http://www.wikidata.org/entity/Q739711",
+      "developerLabel": "إيبك غيمز",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7202970",
+      "itemLabel": "تطبيق بلاي ستيشن",
+      "developer": "http://www.wikidata.org/entity/Q91038266",
+      "developerLabel": "بلاي ستيشن موبايل",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1196945",
+      "itemLabel": "روزيتا",
+      "developer": "http://www.wikidata.org/entity/Q312",
+      "developerLabel": "أبل",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1473586",
+      "itemLabel": "بارتيشن ماجيك",
+      "developer": "http://www.wikidata.org/entity/Q677085",
+      "developerLabel": "Gen Digital",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1473586",
+      "itemLabel": "بارتيشن ماجيك",
+      "developer": "http://www.wikidata.org/entity/Q4047295",
+      "developerLabel": "Q4047295",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2263597",
+      "itemLabel": "نادي روكستار جيمز الاجتماعي",
+      "developer": "http://www.wikidata.org/entity/Q94912",
+      "developerLabel": "روكستار جيمز",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2394058",
+      "itemLabel": "مايكروسوفت ستيودنت",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1788938",
+      "itemLabel": "وورد وايد تيليسكوب",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "13"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q4040782",
+      "itemLabel": "هوت سبوت شيلد",
+      "developer": "http://www.wikidata.org/entity/Q16825082",
+      "developerLabel": "Q16825082",
+      "sitelinks": "13"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2078655",
+      "itemLabel": "NAMD",
+      "developer": "http://www.wikidata.org/entity/Q457281",
+      "developerLabel": "جامعة إلينوي في إربانا-شامبين",
+      "sitelinks": "13"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q11072391",
+      "itemLabel": "فاستبوت",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "13"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q736181",
+      "itemLabel": "إكس بوكس (تطبيق)",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "12"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1289689",
+      "itemLabel": "سوفت ميكر أوفيس",
+      "developer": "http://www.wikidata.org/entity/Q318040",
+      "developerLabel": "Q318040",
+      "sitelinks": "12"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1358512",
+      "itemLabel": "هوت جافا",
+      "developer": "http://www.wikidata.org/entity/Q14647",
+      "developerLabel": "صن ميكروسيستمز",
+      "sitelinks": "12"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3656354",
+      "itemLabel": "نظام التعرف على الكلام في ويندوز",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "12"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1853389",
+      "itemLabel": "مايكروسوفت ماب بوينت",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "12"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q16971518",
+      "itemLabel": "مركز التحكم (أبل)",
+      "developer": "http://www.wikidata.org/entity/Q312",
+      "developerLabel": "أبل",
+      "sitelinks": "12"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q50414488",
+      "itemLabel": "تشوتشيل",
+      "developer": "http://www.wikidata.org/entity/Q2540486",
+      "developerLabel": "Q2540486",
+      "sitelinks": "12"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q60748043",
+      "itemLabel": "أوبن أيه آي فايف",
+      "developer": "http://www.wikidata.org/entity/Q21708200",
+      "developerLabel": "أوبن أيه آي",
+      "sitelinks": "12"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q120759195",
+      "itemLabel": "ويسبر (نظام التعرف على الكلام)",
+      "developer": "http://www.wikidata.org/entity/Q21708200",
+      "developerLabel": "أوبن أيه آي",
+      "sitelinks": "12"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q568991",
+      "itemLabel": "موزيلا بريزم",
+      "developer": "http://www.wikidata.org/entity/Q169925",
+      "developerLabel": "شركة موزيلا",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1132555",
+      "itemLabel": "كوريل فنتورا",
+      "developer": "http://www.wikidata.org/entity/Q835702",
+      "developerLabel": "شركة كوريل",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1142403",
+      "itemLabel": "تقارير كريستال",
+      "developer": "http://www.wikidata.org/entity/Q552581",
+      "developerLabel": "ساب",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1537691",
+      "itemLabel": "محسن المواقع من جوجل",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1753743",
+      "itemLabel": "أوت لوك على الويب",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1864976",
+      "itemLabel": "Q1864976",
+      "developer": "http://www.wikidata.org/entity/Q55936470",
+      "developerLabel": "Q55936470",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2704444",
+      "itemLabel": "أداة القرص (ماك أو إس)",
+      "developer": "http://www.wikidata.org/entity/Q312",
+      "developerLabel": "أبل",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q54621410",
+      "itemLabel": "ماسنجر للأطفال",
+      "developer": "http://www.wikidata.org/entity/Q380",
+      "developerLabel": "ميتا بلاتفورمز",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q298929",
+      "itemLabel": "أفايفو",
+      "developer": "http://www.wikidata.org/entity/Q213849",
+      "developerLabel": "إيه تي آي تكنولوجيز",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q384622",
+      "itemLabel": "أدوبي فلاش لايت",
+      "developer": "http://www.wikidata.org/entity/Q234946",
+      "developerLabel": "ماكروميديا",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q151524",
+      "itemLabel": "منصة خرائط بينغ",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3110764",
+      "itemLabel": "جوجل تيك أوت",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1161680",
+      "itemLabel": "جي إم بي",
+      "developer": "http://www.wikidata.org/entity/Q1473820",
+      "developerLabel": "معهد ساس",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1206328",
+      "itemLabel": "ريسورس هاكر",
+      "developer": "http://www.wikidata.org/entity/Q47437710",
+      "developerLabel": "Q47437710",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1335388",
+      "itemLabel": "أليس",
+      "developer": "http://www.wikidata.org/entity/Q190080",
+      "developerLabel": "جامعة كارنيغي ميلون",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2018814",
+      "itemLabel": "الحماية العائلية المباشرة من ويندوز",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q6954417",
+      "itemLabel": "إن آي ملتي سيم",
+      "developer": "http://www.wikidata.org/entity/Q1544413",
+      "developerLabel": "Q1544413",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2706736",
+      "itemLabel": "قاموس (برمجيات)",
+      "developer": "http://www.wikidata.org/entity/Q312",
+      "developerLabel": "أبل",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q17144173",
+      "itemLabel": "مباد",
+      "developer": "http://www.wikidata.org/entity/Q296782",
+      "developerLabel": "آرم القابضة",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q56280421",
+      "itemLabel": "رحلات جوجل",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q23038417",
+      "itemLabel": "ستيكي نوتس",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q15952517",
+      "itemLabel": "مشروع تانغو",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q136556923",
+      "itemLabel": "استوديو جوجل للذكاء الاصطناعي",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q360295",
+      "itemLabel": "أدوبي ميديا بلاير",
+      "developer": "http://www.wikidata.org/entity/Q11463",
+      "developerLabel": "أدوبي",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1187310",
+      "itemLabel": "اس كيو ال ازور",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1394019",
+      "itemLabel": "كويك أوفيس",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2252819",
+      "itemLabel": "دفتر الخطوط (برنامج)",
+      "developer": "http://www.wikidata.org/entity/Q312",
+      "developerLabel": "أبل",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2497805",
+      "itemLabel": "كروم إنجن",
+      "developer": "http://www.wikidata.org/entity/Q2066242",
+      "developerLabel": "تيكلاند",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3051072",
+      "itemLabel": "آي راف",
+      "developer": "http://www.wikidata.org/entity/Q1315390",
+      "developerLabel": "المرصد الفلكي البصري الوطني",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3051072",
+      "itemLabel": "آي راف",
+      "developer": "http://www.wikidata.org/entity/Q58335845",
+      "developerLabel": "Q58335845",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3051072",
+      "itemLabel": "آي راف",
+      "developer": "http://www.wikidata.org/entity/Q99534494",
+      "developerLabel": "Q99534494",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q19599499",
+      "itemLabel": "الأودين",
+      "developer": "http://www.wikidata.org/entity/Q20718",
+      "developerLabel": "إلكترونيات سامسونج",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q24807477",
+      "itemLabel": "مايكروسوفت باي",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q16928072",
+      "itemLabel": "جراعل في إم",
+      "developer": "http://www.wikidata.org/entity/Q19900",
+      "developerLabel": "أوراكل",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q98098840",
+      "itemLabel": "المشاركة عن قرب",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q109620998",
+      "itemLabel": "مايكروسوفت لوب",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q124153669",
+      "itemLabel": "مشاركة سريعة",
+      "developer": "http://www.wikidata.org/entity/Q95",
+      "developerLabel": "جوجل",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q124153669",
+      "itemLabel": "مشاركة سريعة",
+      "developer": "http://www.wikidata.org/entity/Q20718",
+      "developerLabel": "إلكترونيات سامسونج",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q795920",
+      "itemLabel": "أدوبي ديفايس سنترال",
+      "developer": "http://www.wikidata.org/entity/Q11463",
+      "developerLabel": "أدوبي",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q631011",
+      "itemLabel": "آرك فيو",
+      "developer": "http://www.wikidata.org/entity/Q1045778",
+      "developerLabel": "إسري",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3325183",
+      "itemLabel": "أوتودسك موسيون بولدير",
+      "developer": "http://www.wikidata.org/entity/Q628051",
+      "developerLabel": "أوتودسك",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3533171",
+      "itemLabel": "دفتر عناوين ويندوز",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3543859",
+      "itemLabel": "نورتن الاتصال الآمن",
+      "developer": "http://www.wikidata.org/entity/Q677085",
+      "developerLabel": "Gen Digital",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2006475",
+      "itemLabel": "مايكروسوفت هيلثفولت",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2547997",
+      "itemLabel": "الاتصال المباشر من ويندوز",
+      "developer": "http://www.wikidata.org/entity/Q2283",
+      "developerLabel": "مايكروسوفت",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7544153",
+      "itemLabel": "سمارت شيت",
+      "developer": "http://www.wikidata.org/entity/Q85801645",
+      "developerLabel": "Q85801645",
+      "sitelinks": "8"
+    }
+  ]
+}

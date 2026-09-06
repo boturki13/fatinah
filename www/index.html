@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; script-src 'self' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; script-src-elem 'self' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; script-src-attr 'unsafe-inline'; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' data: blob:; connect-src 'self' https://ata20.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com wss://*.firebaseio.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self'; frame-src 'none'; child-src 'none'; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; script-src 'self' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; script-src-elem 'self' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com; script-src-attr 'none'; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' data: blob:; connect-src 'self' https://ata20.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://api.revenuecat.com wss://*.firebaseio.com; worker-src 'self' blob:; manifest-src 'self'; form-action 'self'; frame-src 'none'; child-src 'none'; object-src 'none';">
 <title>فطنة — لعبة الذكاء الجماعية</title>
 <link rel="icon" href="/favicon.ico">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -20,6 +20,7 @@
 </head>
 <body>
 <div id="app">
+  <div class="preview-environment-banner" id="preview-environment-banner" role="status" hidden>🧪 وضع معاينة داخلي — أسئلة التحديث غير معتمدة للنشر</div>
 
   <!-- تسجيل الدخول -->
   <section class="screen" id="s-auth">
@@ -31,47 +32,47 @@
       <div class="auth-title" id="auth-title" data-screen-title role="heading" aria-level="1">اربط حسابك</div>
       <div class="auth-sub" id="auth-sub">سجّل بالطريقة اللي تناسبك عشان تحفظ نقاطك وإنجازاتك حتى لو بدّلت جهازك</div>
 
-      <button class="sso sso-apple" onclick="appleSignIn()">
+      <button class="sso sso-apple" data-action="apple-sign-in">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.09-2.01-3.76-2.04-1.6-.16-3.12.94-3.93.94-.81 0-2.06-.92-3.39-.89-1.74.03-3.35 1.01-4.25 2.57-1.81 3.15-.46 7.81 1.3 10.37.86 1.25 1.88 2.66 3.22 2.61 1.29-.05 1.78-.84 3.34-.84 1.56 0 2 .84 3.37.81 1.39-.02 2.27-1.28 3.12-2.54.98-1.46 1.39-2.87 1.41-2.94-.03-.01-2.7-1.04-2.73-4.11l-.23-.5zM14.6 4.59c.71-.86 1.19-2.06 1.06-3.25-1.02.04-2.26.68-3 1.54-.66.76-1.24 1.98-1.08 3.15 1.14.09 2.31-.58 3.02-1.44z"/></svg>
         متابعة مع Apple
       </button>
-      <button class="sso sso-google" onclick="googleSignIn()">
+      <button class="sso sso-google" data-action="google-sign-in">
         <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/></svg>
         متابعة مع Google
       </button>
-      <button class="sso" style="background:linear-gradient(145deg,#2E3350,#1E2238); color:#fff;" onclick="toggleEmailForm()">
+      <button class="sso" style="background:linear-gradient(145deg,#2E3350,#1E2238); color:#fff;" data-action="toggle-email-form">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
         متابعة بالبريد الإلكتروني
       </button>
-      <button class="sso" style="background:linear-gradient(145deg,#243A52,#182638); color:#fff;" onclick="togglePhoneSignInForm()">
+      <button class="sso" style="background:linear-gradient(145deg,#243A52,#182638); color:#fff;" data-action="toggle-phone-sign-in-form">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 9.73a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 16.92z"/></svg>
         متابعة برقم الهاتف
       </button>
 
-      <form id="auth-phone-form" onsubmit="return false;" style="display:none; margin-top:14px;">
+      <form id="auth-phone-form" data-submit-action="prevent" style="display:none; margin-top:14px;">
         <div style="display:flex;gap:8px;align-items:stretch;">
           <input class="team-input" id="auth-phone" type="tel" inputmode="tel" aria-label="رقم الهاتف" placeholder="+965XXXXXXXX" autocomplete="tel" style="flex:1;min-width:0;">
-          <button id="auth-phone-send-btn" type="button" class="btn btn-primary" onclick="startPhoneSignIn()" style="width:auto;padding:10px 14px;white-space:nowrap;">إرسال الرمز</button>
+          <button id="auth-phone-send-btn" type="button" class="btn btn-primary" data-action="start-phone-sign-in" style="width:auto;padding:10px 14px;white-space:nowrap;">إرسال الرمز</button>
         </div>
         <div id="auth-phone-code-form" style="display:none;margin-top:10px;">
           <input class="team-input" id="auth-phone-code" type="text" inputmode="numeric" aria-label="رمز التحقق من الهاتف" autocomplete="one-time-code" maxlength="10" placeholder="أدخل رمز التحقق" style="width:100%;margin-bottom:8px;text-align:center;letter-spacing:4px;">
-          <button id="auth-phone-confirm-btn" type="button" class="btn btn-primary btn-block" onclick="confirmPhoneSignIn()">تسجيل الدخول</button>
+          <button id="auth-phone-confirm-btn" type="button" class="btn btn-primary btn-block" data-action="confirm-phone-sign-in">تسجيل الدخول</button>
         </div>
       </form>
 
-      <form id="auth-email-form" onsubmit="return false;" style="display:none; margin-top:14px;">
+      <form id="auth-email-form" data-submit-action="prevent" style="display:none; margin-top:14px;">
         <input class="team-input" id="auth-email" type="email" aria-label="البريد الإلكتروني" placeholder="البريد الإلكتروني" autocomplete="email" style="width:100%; margin-bottom:10px;">
         <input class="team-input" id="auth-password" type="password" aria-label="كلمة المرور" placeholder="كلمة المرور (٦ أحرف على الأقل)" autocomplete="current-password" style="width:100%; margin-bottom:12px;">
-        <button type="button" class="btn btn-primary btn-block" onclick="emailAuth('signup')">📧 إنشاء حساب جديد</button>
-        <button type="button" class="btn btn-ghost btn-block" onclick="emailAuth('signin')" style="margin-top:8px;">عندي حساب — تسجيل الدخول</button>
+        <button type="button" class="btn btn-primary btn-block" data-action="email-auth" data-auth-mode="signup">📧 إنشاء حساب جديد</button>
+        <button type="button" class="btn btn-ghost btn-block" data-action="email-auth" data-auth-mode="signin" style="margin-top:8px;">عندي حساب — تسجيل الدخول</button>
         <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;flex-wrap:wrap;">
-          <button type="button" class="btn btn-ghost" onclick="forgotPassword()" style="width:auto;padding:8px 10px;font-size:12px;">نسيت كلمة المرور؟</button>
-          <button type="button" class="btn btn-ghost" onclick="forgotEmail()" style="width:auto;padding:8px 10px;font-size:12px;">نسيت البريد الإلكتروني؟</button>
+          <button type="button" class="btn btn-ghost" data-action="forgot-password" style="width:auto;padding:8px 10px;font-size:12px;">نسيت كلمة المرور؟</button>
+          <button type="button" class="btn btn-ghost" data-action="forgot-email" style="width:auto;padding:8px 10px;font-size:12px;">نسيت البريد الإلكتروني؟</button>
         </div>
       </form>
       <div id="auth-msg" style="font-size:13px; text-align:center; margin-top:10px; min-height:18px;"></div>
 
-      <button class="btn btn-ghost btn-block" style="margin-top:16px;" onclick="skipAuth()">كمّل بدون ربط الحين</button>
+      <button class="btn btn-ghost btn-block" style="margin-top:16px;" data-action="skip-auth">كمّل بدون ربط الحين</button>
       <div class="legal">بياناتك محفوظة بأمان وما نشاركها مع أحد</div>
     </div>
   </section>
@@ -80,7 +81,7 @@
   <section class="screen" id="s-paywall" style="padding:0;overflow-y:auto;background:var(--pw-ink,#07060E);">
     <div class="pw-backdrop"></div>
     <div class="pw-grain"></div>
-    <button class="pw-close" onclick="closePaywall()" aria-label="إغلاق">✕</button>
+    <button class="pw-close" data-action="close-paywall" aria-label="إغلاق">✕</button>
     <div class="pw-wrap">
       <header class="pw-hero pw-rise pw-d1">
         <div class="pw-logo">فطنة</div>
@@ -135,22 +136,22 @@
           </div>
         </div>
       </div>
-      <button class="pw-cta pw-rise pw-d5" id="paywall-btn" onclick="startCheckout()" disabled>
+      <button class="pw-cta pw-rise pw-d5" id="paywall-btn" data-action="start-checkout" disabled>
         اشترك عبر Apple
         <small id="pw-cta-sub">ثواني ونجيب الأسعار…</small>
       </button>
       <div id="paywall-loading" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:14px;">ثواني ونجهّز اشتراك Apple…</div>
       <div id="web-payment-note" style="display:none;text-align:center;padding:10px;color:#A79FBE;font-size:13px;line-height:1.7;">الاشتراك متاح حصرياً عبر Apple داخل تطبيق فطنة على iPhone وiPad.</div>
       <div id="pw-price-error" style="display:none;text-align:center;padding:10px;color:#ff8a8a;font-size:13px;line-height:1.7;">ما قدرنا نجيب الأسعار من App Store — تأكد من النت وجرّب مرة ثانية.</div>
-      <button type="button" class="pw-offer-code pw-rise pw-d6" onclick="redeemAppleOfferCode()" aria-label="ضع كود الأهل والأصدقاء هنا">🎁 ضع الكود هنا</button>
+      <button type="button" class="pw-offer-code pw-rise pw-d6" data-action="redeem-apple-offer-code" aria-label="ضع كود الأهل والأصدقاء هنا">🎁 ضع الكود هنا</button>
       <p class="pw-offer-note">كود الأهل والأصدقاء يُنشأ ويُسترد بأمان عبر Apple.</p>
       <p class="pw-legal pw-rise pw-d6">اشتراك يتجدّد تلقائياً ما لم يُلغَ قبل نهاية الفترة الحالية بـ24 ساعة.</p>
       <nav class="pw-links pw-rise pw-d6">
-        <a href="#" onclick="rcRestore();return false;">استعادة المشتريات</a>
+        <a href="#" data-action="restore-purchases">استعادة المشتريات</a>
         <span class="pw-dot">·</span>
-        <a href="#" onclick="go('s-terms');return false;">شروط الاستخدام</a>
+        <a href="#" data-action="navigate" data-screen="s-terms">شروط الاستخدام</a>
         <span class="pw-dot">·</span>
-        <a href="#" onclick="go('s-privacy');return false;">سياسة الخصوصية</a>
+        <a href="#" data-action="navigate" data-screen="s-privacy">سياسة الخصوصية</a>
       </nav>
     </div>
   </section>
@@ -255,8 +256,8 @@
 
     </div><!-- /onb-cards -->
     <div class="onb-actions">
-      <button class="btn btn-primary btn-block" id="onb-next-btn" onclick="onbNext()">كمّل</button>
-      <button class="btn btn-ghost btn-block" onclick="onbFinish()">طوّف</button>
+      <button class="btn btn-primary btn-block" id="onb-next-btn" data-action="onboarding-next">كمّل</button>
+      <button class="btn btn-ghost btn-block" data-action="onboarding-finish">طوّف</button>
     </div>
   </section>
 
@@ -270,21 +271,21 @@
   <!-- الرئيسية -->
   <section class="screen" id="s-home">
     <div class="topbar">
-      <button class="icon-btn" onclick="openStats()" title="إحصاءاتي" aria-label="إحصاءاتي وإنجازاتي">📊</button>
+      <button class="icon-btn" data-action="open-stats" title="إحصاءاتي" aria-label="إحصاءاتي وإنجازاتي">📊</button>
       <div class="hi">هلا <b id="user-name">لاعب</b> 👋</div>
-      <button class="icon-btn" id="sound-btn" onclick="toggleSound()" title="الصوت" aria-label="تشغيل أو كتم الصوت">🔊</button>
+      <button class="icon-btn" id="sound-btn" data-action="toggle-sound" title="الصوت" aria-label="تشغيل أو كتم الصوت">🔊</button>
     </div>
     <div style="height:5vh;"></div>
     <div class="logo-xl brand" data-screen-title role="heading" aria-level="1" style="animation:floaty 4s ease-in-out infinite, glowPulse 3.5s ease-in-out infinite;">فطنة</div>
     <div class="tag">منو الأفطن في المجلس؟</div>
-    <div class="free-round-banner" id="free-round-banner" hidden></div>
+    <div class="free-round-banner" id="free-round-banner" role="status" aria-live="polite" hidden></div>
     <div style="height:5vh;"></div>
     <div style="text-align:center; font-size:16px; color:var(--muted); font-weight:700; margin-bottom:14px;">اختار فريقين أو ثلاث فرق</div>
-    <button class="btn btn-primary btn-block" onclick="sfx('tap');go('s-teams')">🎯 يلا نلعب</button>
-    <button class="btn btn-ghost btn-block" onclick="sfx('tap');openFamily()">👨‍👩‍👧‍👦 أسئلة عائلية</button>
-    <button class="btn btn-ghost btn-block" onclick="sfx('tap');openStats()">📊 إحصاءاتي وإنجازاتي</button>
-    <button class="btn btn-ghost btn-block" onclick="sfx('tap');go('s-paywall')" style="background:linear-gradient(120deg,rgba(255,45,108,.15),rgba(255,122,60,.10)); border-color:rgba(255,45,108,.4); color:var(--hot);">👑 اشترك في فطنة برو</button>
-    <button class="btn btn-ghost btn-block" onclick="sfx('tap');openAccountSettings()">⚙️ إعدادات الحساب</button>
+    <button class="btn btn-primary btn-block" data-action="sound-navigate" data-sound="tap" data-screen="s-teams">🎯 يلا نلعب</button>
+    <button class="btn btn-ghost btn-block" data-action="sound-open-family">👨‍👩‍👧‍👦 أسئلة عائلية</button>
+    <button class="btn btn-ghost btn-block" data-action="sound-open-stats">📊 إحصاءاتي وإنجازاتي</button>
+    <button class="btn btn-ghost btn-block" data-action="sound-navigate" data-sound="tap" data-screen="s-paywall" style="background:linear-gradient(120deg,rgba(255,45,108,.15),rgba(255,122,60,.10)); border-color:rgba(255,45,108,.4); color:var(--hot);">👑 اشترك في فطنة برو</button>
+    <button class="btn btn-ghost btn-block" data-action="sound-open-account">⚙️ إعدادات الحساب</button>
   </section>
 
   <!-- إعداد الفرق -->
@@ -293,59 +294,59 @@
     <div class="card">
       <div class="field-label">جم فريق؟</div>
       <div class="seg" id="seg-teams" role="group" aria-label="عدد الفرق">
-        <button class="on" data-n="2" aria-pressed="true" onclick="setTeamCount(2)">فريقين</button>
-        <button data-n="3" aria-pressed="false" onclick="setTeamCount(3)">ثلاث فرق</button>
+        <button class="on" data-n="2" aria-pressed="true" data-action="set-team-count">فريقين</button>
+        <button data-n="3" aria-pressed="false" data-action="set-team-count">ثلاث فرق</button>
       </div>
     </div>
     <div class="card">
       <div class="field-label">جم فئة؟ <b id="catcount-lbl" style="color:var(--gold)">6</b></div>
       <div class="seg" id="seg-catcount" role="group" aria-label="عدد الفئات">
-        <button data-n="2" aria-pressed="false" onclick="updateCatCount(2)">2 فئات</button>
-        <button data-n="3" aria-pressed="false" onclick="updateCatCount(3)">3 فئات</button>
-        <button data-n="4" aria-pressed="false" onclick="updateCatCount(4)">4 فئات</button>
-        <button data-n="5" aria-pressed="false" onclick="updateCatCount(5)">5 فئات</button>
-        <button class="on" data-n="6" aria-pressed="true" onclick="updateCatCount(6)">6 فئات</button>
-        <button data-n="7" aria-pressed="false" onclick="updateCatCount(7)">7 فئات</button>
-        <button data-n="8" aria-pressed="false" onclick="updateCatCount(8)">8 فئات</button>
+        <button data-n="2" aria-pressed="false" data-action="set-category-count">2 فئات</button>
+        <button data-n="3" aria-pressed="false" data-action="set-category-count">3 فئات</button>
+        <button data-n="4" aria-pressed="false" data-action="set-category-count">4 فئات</button>
+        <button data-n="5" aria-pressed="false" data-action="set-category-count">5 فئات</button>
+        <button class="on" data-n="6" aria-pressed="true" data-action="set-category-count">6 فئات</button>
+        <button data-n="7" aria-pressed="false" data-action="set-category-count">7 فئات</button>
+        <button data-n="8" aria-pressed="false" data-action="set-category-count">8 فئات</button>
       </div>
       <div id="catcount-split" style="font-size:12.5px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.6;"></div>
     </div>
     <div class="card">
       <div class="field-label">مستوى الصعوبة</div>
       <div class="seg" id="seg-diff" role="group" aria-label="مستوى الصعوبة">
-        <button data-d="easy" aria-pressed="false" onclick="setDifficulty('easy')">🟢 سهل</button>
-        <button class="on" data-d="normal" aria-pressed="true" onclick="setDifficulty('normal')">🟡 عادي</button>
-        <button data-d="hard" aria-pressed="false" onclick="setDifficulty('hard')">🔴 صعب</button>
+        <button data-d="easy" aria-pressed="false" data-action="set-difficulty">🟢 سهل</button>
+        <button class="on" data-d="normal" aria-pressed="true" data-action="set-difficulty">🟡 عادي</button>
+        <button data-d="hard" aria-pressed="false" data-action="set-difficulty">🔴 صعب</button>
       </div>
       <div id="diff-hint" style="font-size:12.5px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.6;">⏱ وقت الإجابة: 30 ثانية</div>
     </div>
     <div class="card" id="team-names"></div>
-    <button class="btn btn-primary" onclick="sfx('tap');toCats()">الخطوة الياية: اختار الفئات</button>
-    <button class="btn btn-ghost btn-block" onclick="go('s-home')">رجوع</button>
+    <button class="btn btn-primary" data-action="sound-to-categories">الخطوة الياية: اختار الفئات</button>
+    <button class="btn btn-ghost btn-block" data-action="navigate" data-screen="s-home">رجوع</button>
   </section>
 
   <!-- اختيار الفئات -->
   <section class="screen" id="s-cats">
     <div class="pick-turn-pill" id="pick-turn-pill" data-screen-title role="heading" aria-level="1" aria-live="polite" aria-atomic="true">اختيار الفئات</div>
-    <input class="team-input" id="cat-search" aria-label="البحث في الفئات" placeholder="🔍 دوّر على فئة..." style="width:100%; margin-bottom:12px;" oninput="filterCats()">
+    <input class="team-input" id="cat-search" aria-label="البحث في الفئات" placeholder="🔍 دوّر على فئة..." style="width:100%; margin-bottom:12px;" data-input-action="filter-categories">
     <div class="filter-bar" id="filter-bar" role="group" aria-label="تصفية الفئات"></div>
     <div class="cat-grid" id="cat-grid"></div>
     <div class="pick-count" id="pick-count-line"></div>
-    <button class="btn btn-primary cat-start-float" id="start-btn" onclick="sfx('start');startGame()" disabled aria-hidden="true" aria-label="يلا نبدأ!">يلا نبدأ!</button>
-    <button class="btn btn-ghost btn-block" onclick="go('s-teams')">رجوع</button>
+    <button class="btn btn-primary cat-start-float" id="start-btn" data-action="sound-start-game" disabled aria-hidden="true" aria-label="يلا نبدأ!">يلا نبدأ!</button>
+    <button class="btn btn-ghost btn-block" data-action="navigate" data-screen="s-teams">رجوع</button>
   </section>
 
   <!-- اللوحة -->
   <section class="screen" id="s-board">
     <div class="board-top">
       <div style="display:flex; align-items:center; gap:10px;">
-        <button class="exit-btn" onclick="confirmExit()" title="خروج" aria-label="الخروج من الجولة">✕</button>
+        <button class="exit-btn" data-action="confirm-exit" title="خروج" aria-label="الخروج من الجولة">✕</button>
         <div class="brand" data-screen-title role="heading" aria-level="1" style="font-size:26px;">فطنة</div>
       </div>
       <div class="turn-pill" id="turn-pill" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
     <div class="bomb-box" id="bomb-box">
-      <button class="bomb-btn" onclick="startBomb()">💣 قنبلة — ارمِها على الخصم</button>
+      <button class="bomb-btn" data-action="start-bomb">💣 قنبلة — ارمِها على الخصم</button>
     </div>
     <div class="teams-bar" id="teams-bar"></div>
     <div class="board-scroll" id="board-scroll" role="region" aria-label="لوحة فئات الجولة" aria-describedby="board-hint" tabindex="0">
@@ -363,8 +364,8 @@
     <h2 class="title center">خلصت الجولة! 🎊</h2>
     <div class="winner-line" id="winner-line"></div>
     <div class="podium" id="podium"></div>
-    <button class="btn btn-primary mt" id="result-primary-btn" onclick="sfx('start');afterResultPrimary()">🔄 جولة جديدة</button>
-    <button class="btn btn-ghost btn-block" onclick="afterResultHome()">القائمة الرئيسية</button>
+    <button class="btn btn-primary mt" id="result-primary-btn" data-action="sound-result-primary">🔄 جولة جديدة</button>
+    <button class="btn btn-ghost btn-block" data-action="result-home">القائمة الرئيسية</button>
   </section>
 
   <!-- الإحصاءات -->
@@ -373,7 +374,7 @@
     <div class="stats-grid" id="stats-grid"></div>
     <div class="field-label" style="margin-top:18px;">الإنجازات</div>
     <div class="ach-list" id="ach-list"></div>
-    <button class="btn btn-ghost btn-block mt" onclick="go('s-home')">رجوع</button>
+    <button class="btn btn-ghost btn-block mt" data-action="navigate" data-screen="s-home">رجوع</button>
   </section>
 
   <!-- إعدادات الحساب -->
@@ -383,7 +384,7 @@
       <div class="field-label" style="margin-bottom:10px;">اسم اللاعب</div>
       <div style="display:flex;gap:8px;">
         <input class="team-input" id="account-name-input" type="text" aria-label="اسم اللاعب" maxlength="30" placeholder="اسمك في اللعبة" style="flex:1;">
-        <button class="btn btn-primary" onclick="savePlayerName()" style="width:auto;padding:10px 18px;white-space:nowrap;">حفظ</button>
+        <button class="btn btn-primary" data-action="save-player-name" style="width:auto;padding:10px 18px;white-space:nowrap;">حفظ</button>
       </div>
       <div id="account-name-msg" style="font-size:12px;color:var(--ok);text-align:center;margin-top:8px;min-height:16px;"></div>
     </div>
@@ -396,16 +397,16 @@
       <div class="field-label" style="margin-bottom:12px;">توثيق بيانات التواصل</div>
       <div id="verification-status" class="legal" style="text-align:right;margin:0 0 12px;"></div>
       <div style="display:flex;gap:8px;margin-bottom:10px;">
-        <button id="send-email-verification-btn" class="btn btn-ghost" onclick="sendEmailVerificationMessage()" style="flex:1;">✉️ إرسال رسالة تحقق للبريد</button>
-        <button id="refresh-verification-btn" class="btn btn-ghost" onclick="refreshEmailVerificationStatus()" style="width:auto;padding:10px 13px;" title="تحديث حالة البريد" aria-label="تحديث حالة التحقق">↻</button>
+        <button id="send-email-verification-btn" class="btn btn-ghost" data-action="send-email-verification" style="flex:1;">✉️ إرسال رسالة تحقق للبريد</button>
+        <button id="refresh-verification-btn" class="btn btn-ghost" data-action="refresh-email-verification" style="width:auto;padding:10px 13px;" title="تحديث حالة البريد" aria-label="تحديث حالة التحقق">↻</button>
       </div>
       <div style="display:flex;gap:8px;align-items:stretch;">
         <input class="team-input" id="verification-phone" type="tel" inputmode="tel" aria-label="رقم الهاتف للتوثيق" placeholder="+965XXXXXXXX" autocomplete="tel" style="flex:1;min-width:0;">
-        <button id="send-phone-code-btn" class="btn btn-primary" onclick="startPhoneVerification()" style="width:auto;padding:10px 14px;white-space:nowrap;">إرسال رمز SMS</button>
+        <button id="send-phone-code-btn" class="btn btn-primary" data-action="start-phone-verification" style="width:auto;padding:10px 14px;white-space:nowrap;">إرسال رمز SMS</button>
       </div>
       <div id="phone-code-form" style="display:none;margin-top:10px;">
         <input class="team-input" id="verification-phone-code" type="text" inputmode="numeric" aria-label="رمز توثيق رقم الهاتف" autocomplete="one-time-code" maxlength="10" placeholder="أدخل رمز التحقق" style="width:100%;margin-bottom:8px;text-align:center;letter-spacing:4px;">
-        <button id="confirm-phone-code-btn" class="btn btn-primary btn-block" onclick="confirmPhoneVerification()">تأكيد رقم الهاتف</button>
+        <button id="confirm-phone-code-btn" class="btn btn-primary btn-block" data-action="confirm-phone-verification">تأكيد رقم الهاتف</button>
       </div>
       <div id="verification-msg" class="legal" style="text-align:right;margin-top:8px;min-height:18px;"></div>
       <div id="phone-recaptcha" style="position:fixed;left:-9999px;width:1px;height:1px;overflow:hidden;"></div>
@@ -413,19 +414,19 @@
     <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
       <div class="field-label" style="margin-bottom:8px;">الإشعارات</div>
       <div id="notification-permission-status" class="legal" aria-live="polite" style="text-align:right;margin:0 0 10px;line-height:1.7;">فعّلها عشان توصلك التنبيهات المهمة اللي تختارها</div>
-      <button id="enable-notifications-btn" class="btn btn-ghost btn-block" onclick="enablePushNotifications()">🔔 فعّل الإشعارات</button>
+      <button id="enable-notifications-btn" class="btn btn-ghost btn-block" data-action="enable-push-notifications">🔔 فعّل الإشعارات</button>
     </div>
     <div style="margin-top:24px;border-top:1px solid rgba(255,255,255,.08);padding-top:20px;">
       <div class="field-label" style="margin-bottom:12px;">الحساب</div>
-      <button class="btn btn-ghost btn-block" onclick="go('s-privacy')" style="margin-bottom:8px;">🔒 سياسة الخصوصية</button>
-      <button class="btn btn-ghost btn-block" onclick="go('s-terms')" style="margin-bottom:8px;">📄 شروط الاستخدام</button>
-      <button id="sign-out-btn" class="btn btn-ghost btn-block" onclick="signOut()" style="margin-bottom:8px;">🚪 تسجيل الخروج</button>
+      <button class="btn btn-ghost btn-block" data-action="navigate" data-screen="s-privacy" style="margin-bottom:8px;">🔒 سياسة الخصوصية</button>
+      <button class="btn btn-ghost btn-block" data-action="navigate" data-screen="s-terms" style="margin-bottom:8px;">📄 شروط الاستخدام</button>
+      <button id="sign-out-btn" class="btn btn-ghost btn-block" data-action="sign-out" style="margin-bottom:8px;">🚪 تسجيل الخروج</button>
       <a id="manage-apple-subscription" class="btn btn-ghost btn-block" href="https://apps.apple.com/account/subscriptions" target="_blank" rel="noopener" style="margin-bottom:8px;text-decoration:none;">🧾 إدارة اشتراك Apple</a>
       <div class="legal" style="text-align:right;margin:4px 0 12px;line-height:1.7;">حذف حساب فطنة لا يلغي الاشتراك المتجدد في App Store. ألغِ الاشتراك من الرابط أعلاه إذا أردت إيقاف الفوترة.</div>
-      <button id="delete-account-btn" class="btn btn-block" onclick="confirmDeleteAccount()" style="background:rgba(220,53,69,.15);color:#ff6b7a;border:1px solid rgba(220,53,69,.3);margin-top:8px;">🗑️ حذف الحساب وكل البيانات</button>
+      <button id="delete-account-btn" class="btn btn-block" data-action="confirm-delete-account" style="background:rgba(220,53,69,.15);color:#ff6b7a;border:1px solid rgba(220,53,69,.3);margin-top:8px;">🗑️ حذف الحساب وكل البيانات</button>
       <div id="account-action-msg" class="legal" aria-live="polite" style="text-align:center;min-height:18px;margin-top:10px;"></div>
     </div>
-    <button class="btn btn-ghost btn-block mt" onclick="go('s-home')">رجوع</button>
+    <button class="btn btn-ghost btn-block mt" data-action="navigate" data-screen="s-home">رجوع</button>
   </section>
 
   <!-- سياسة الخصوصية -->
@@ -453,7 +454,7 @@
       لأي استفسار: fatinahgame@gmail.com</p>
       <p><a class="legal-document-link" href="https://ata20.com/privacy" target="_blank" rel="noopener">عرض سياسة الخصوصية الكاملة والمحدّثة</a></p>
     </div>
-    <button class="btn btn-ghost btn-block mt" onclick="go('s-account')">رجوع</button>
+    <button class="btn btn-ghost btn-block mt" data-action="navigate" data-screen="s-account">رجوع</button>
   </section>
 
   <!-- شروط الاستخدام -->
@@ -477,7 +478,7 @@
       fatinahgame@gmail.com</p>
       <p><a class="legal-document-link" href="https://ata20.com/terms" target="_blank" rel="noopener">عرض الشروط الكاملة والمحدّثة</a></p>
     </div>
-    <button class="btn btn-ghost btn-block mt" onclick="go('s-account')">رجوع</button>
+    <button class="btn btn-ghost btn-block mt" data-action="navigate" data-screen="s-account">رجوع</button>
   </section>
 
   <!-- أسئلة عائلية -->
@@ -497,14 +498,14 @@
         <div class="field-label">الخيارات (اختار الصح)</div>
         <div id="fm-opts"></div>
       </div>
-      <button class="btn btn-ghost" onclick="addManualQuestion()">➕ ضيف السؤال للفئة</button>
+      <button class="btn btn-ghost" data-action="add-manual-question">➕ ضيف السؤال للفئة</button>
       <div class="hint" id="fm-added">ما ضفت أسئلة للحين</div>
     </div>
 
     <!-- الفئات العائلية المحفوظة -->
     <div id="family-saved"></div>
 
-    <button class="btn btn-ghost btn-block mt" onclick="go('s-home')">رجوع</button>
+    <button class="btn btn-ghost btn-block mt" data-action="navigate" data-screen="s-home">رجوع</button>
   </section>
 
   <!-- نتيجة التوليد / معاينة -->
@@ -512,8 +513,8 @@
     <h2 class="title">معاينة الأسئلة</h2>
     <div class="sub" id="fp-info"></div>
     <div id="fp-list"></div>
-    <button class="btn btn-primary mt" onclick="saveFamilyCategory()">💾 احفظ الفئة</button>
-    <button class="btn btn-ghost btn-block" onclick="go('s-family')">رجوع</button>
+    <button class="btn btn-primary mt" data-action="save-family-category">💾 احفظ الفئة</button>
+    <button class="btn btn-ghost btn-block" data-action="navigate" data-screen="s-family">رجوع</button>
   </section>
 
 </div>
@@ -535,7 +536,7 @@
       </header>
       <div class="phase-row">
         <div class="phase-pill" id="phase-pill" role="status" aria-live="polite" aria-atomic="true"></div>
-        <button class="btn btn-sm btn-ghost" id="pause-btn" onclick="togglePause()" aria-label="وقّف العداد مؤقتًا">⏸</button>
+        <button class="btn btn-sm btn-ghost" id="pause-btn" data-action="toggle-pause" aria-label="وقّف العداد مؤقتًا">⏸</button>
       </div>
       <section class="q-question-card" id="q-question-card" tabindex="-1" aria-label="السؤال">
         <div class="q-section-label" aria-hidden="true">السؤال</div>
@@ -544,31 +545,34 @@
           <figcaption class="q-image-fallback" id="q-image-fallback" hidden></figcaption>
         </figure>
         <div class="q-text" id="q-text"></div>
+        <div class="q-options" id="q-options" role="list" aria-label="خيارات الإجابة" hidden></div>
         <div class="q-paused" id="q-paused">
           <div class="qp-icon">⏸️</div>
           <div class="qp-title" id="q-paused-title">وقفنا الوقت</div>
           <div class="qp-sub">السؤال مخفي · اضغط كمّل عشان يرجع العداد</div>
-          <button class="btn btn-primary" style="max-width:220px;margin-top:6px;" onclick="togglePause()">▶ كمّل</button>
+          <button class="btn btn-primary" style="max-width:220px;margin-top:6px;" data-action="toggle-pause" aria-label="كمّل العداد وأظهر السؤال">▶ كمّل</button>
         </div>
       </section>
       <div class="answer-box" id="answer-box" role="status" aria-live="polite" aria-hidden="true" tabindex="-1">
         <div class="ans-label">الإجابة الصحيحة</div>
         <div class="ans-text" id="ans-text"></div>
-        <a class="q-source" id="q-source" target="_blank" rel="noopener">المصدر الموثوق</a>
-        <div class="q-image-rights" id="q-image-rights" aria-label="حقوق الصورة" hidden>
-          <div class="q-image-credit" id="q-image-credit"></div>
-          <div class="q-image-rights-links">
-            <a id="q-image-source-page" target="_blank" rel="noopener">صفحة الصورة الأصلية</a>
-            <a id="q-image-license" target="_blank" rel="noopener">تفاصيل الرخصة</a>
+        <div class="q-attribution" id="q-attribution" aria-label="المصدر وحقوق الصورة" aria-hidden="true" hidden>
+          <a class="q-source" id="q-source" target="_blank" rel="noopener noreferrer" aria-hidden="true" hidden>المصدر الموثوق</a>
+          <div class="q-image-rights" id="q-image-rights" role="group" aria-label="حقوق الصورة" aria-hidden="true" hidden>
+            <div class="q-image-credit" id="q-image-credit"></div>
+            <div class="q-image-rights-links">
+              <a id="q-image-source-page" target="_blank" rel="noopener noreferrer">صفحة الصورة الأصلية</a>
+              <a id="q-image-license" target="_blank" rel="noopener noreferrer">تفاصيل الرخصة</a>
+            </div>
+            <div class="q-image-modifications" id="q-image-modifications"></div>
           </div>
-          <div class="q-image-modifications" id="q-image-modifications"></div>
         </div>
-        <button class="q-report-btn" id="q-report-btn" onclick="openQuestionReport()">⚑ الإبلاغ عن السؤال</button>
+        <button class="q-report-btn" id="q-report-btn" data-action="open-question-report">⚑ الإبلاغ عن السؤال</button>
       </div>
       <div class="q-controls" id="q-controls">
         <div class="search-timer" id="search-timer" role="group" aria-label="مهلة البحث بالجوال">
           <div class="search-timer-label" id="search-timer-label"></div>
-          <button class="btn btn-primary search-stop-btn" id="search-stop-btn" onclick="finishSearchEarly()" aria-label="حصلنا الإجابة، وقف البحث وكمّل السؤال">✅ حصلنا الإجابة</button>
+          <button class="btn btn-primary search-stop-btn" id="search-stop-btn" data-action="finish-search-early" aria-label="حصلنا الإجابة، وقف البحث وكمّل السؤال">✅ حصلنا الإجابة</button>
         </div>
         <div class="lifelines" id="lifelines"></div>
         <div class="q-flow" id="q-flow"></div>
@@ -581,6 +585,25 @@
 <div class="confetti" id="confetti"></div>
 <div class="offline-bar" id="offline-bar" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true"><span class="ob-dot" aria-hidden="true"></span><span id="connectivity-message">ماكو إنترنت</span></div>
 
+<!-- إعادة مصادقة الحذف: حقل مقنّع بدل window.prompt المكشوف -->
+<div class="modal-wrap" id="reauth-password-modal" role="dialog" aria-modal="true" aria-labelledby="reauth-password-title" aria-describedby="reauth-password-sub" aria-hidden="true">
+  <div class="modal">
+    <div class="modal-icon" aria-hidden="true">🔐</div>
+    <div class="modal-title" id="reauth-password-title">أكّد هويتك</div>
+    <div class="modal-sub" id="reauth-password-sub">اكتب كلمة مرور حساب <bdi id="reauth-password-email"></bdi> قبل الحذف.</div>
+    <form id="reauth-password-form" class="reauth-password-form">
+      <label class="report-label" for="reauth-password-input">كلمة المرور</label>
+      <input class="team-input" id="reauth-password-input" type="password" autocomplete="current-password" autocapitalize="none" spellcheck="false" aria-describedby="reauth-password-error">
+      <div class="reauth-password-error" id="reauth-password-error" role="alert" aria-live="assertive" aria-atomic="true"></div>
+      <div class="reauth-password-status" id="reauth-password-status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="reauth-password-cancel" type="button" data-modal-cancel>إلغاء</button>
+        <button class="btn btn-primary" id="reauth-password-submit" type="submit">تحقّق وكمّل</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- نافذة تأكيد الخروج -->
 <div class="modal-wrap" id="exit-modal" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" aria-describedby="exit-modal-sub" aria-hidden="true">
   <div class="modal">
@@ -588,8 +611,8 @@
     <div class="modal-title" id="exit-modal-title">متأكد تبي تطلع؟</div>
     <div class="modal-sub" id="exit-modal-sub">راح تخسرون تقدّم الجولة الحالية والنقاط.</div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" data-modal-cancel onclick="closeExitModal()">لا، نكمّل</button>
-      <button class="btn btn-danger" onclick="doExit()">إي، اطلع</button>
+      <button class="btn btn-ghost" data-modal-cancel data-action="close-exit-modal">لا، نكمّل</button>
+      <button class="btn btn-danger" data-action="exit-round">إي، اطلع</button>
     </div>
   </div>
 </div>
@@ -601,8 +624,8 @@
     <div class="modal-title" id="delete-family-title">حذف الفئة؟</div>
     <div class="modal-sub" id="delete-family-sub">راح تنحذف كل أسئلتها نهائياً وما تقدر تتراجع.</div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" data-modal-cancel onclick="closeDeleteFamilyModal()">لا، تراجع</button>
-      <button class="btn btn-danger" onclick="doDeleteFamily()">إي، احذف</button>
+      <button class="btn btn-ghost" data-modal-cancel data-action="close-delete-family-modal">لا، تراجع</button>
+      <button class="btn btn-danger" data-action="delete-family-confirmed">إي، احذف</button>
     </div>
   </div>
 </div>
@@ -613,7 +636,7 @@
     <div class="modal-title" id="bomb-target-title">على منو ترمي القنبلة؟</div>
     <div class="modal-sub" id="bomb-target-sub">سؤال صعب برصيد ±1200 نقطة لهم فقط، بلا أثر عليكم</div>
     <div class="bomb-target-list" id="bomb-target-list"></div>
-    <button class="btn btn-ghost" data-modal-cancel style="margin-top:12px;" onclick="closeBombTargetPicker()">إلغاء</button>
+    <button class="btn btn-ghost" data-modal-cancel style="margin-top:12px;" data-action="close-bomb-target-picker">إلغاء</button>
   </div>
 </div>
 
@@ -635,18 +658,13 @@
     <label class="report-label" for="question-report-details">تفاصيل إضافية (اختياري)</label>
     <textarea class="report-control report-details" id="question-report-details" maxlength="500" placeholder="اكتب ملاحظتك باختصار"></textarea>
     <div class="modal-actions">
-      <button class="btn btn-ghost" data-modal-cancel onclick="closeQuestionReport()">إلغاء</button>
-      <button class="btn btn-primary" id="question-report-submit" onclick="submitQuestionReport()">إرسال البلاغ</button>
+      <button class="btn btn-ghost" data-modal-cancel data-action="close-question-report">إلغاء</button>
+      <button class="btn btn-primary" id="question-report-submit" data-action="submit-question-report">إرسال البلاغ</button>
     </div>
   </div>
 </div>
 
 <script src="image-assets.js"></script>
-<script src="image-question-bank.js"></script>
-<script src="image-question-bank-commons.js"></script>
-<script src="approved-question-bank.js"></script>
-<script src="reviewed-question-sources.js"></script>
-<script src="reviewed-question-ledger.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

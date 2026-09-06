@@ -11,10 +11,13 @@
 ## الاختبار
 
 - [ ] `npm test` ناجح بعد استعادة أصول الصور.
+- [ ] `npm run questions:release-gate` ناجح لبنك التشغيل، و`npm run questions:next-release-gate -- --release` ناجح قبل دمج البنك القادم.
 - [ ] اختبارات Xcode/Swift ناجحة.
 - [ ] Archive Release لجهاز حقيقي ناجح.
 - [ ] TestFlight على جهازين وإصدارَي iOS مدعومين على الأقل.
 - [ ] VoiceOver وDynamic Type والشبكة الضعيفة اختُبرت.
+- [ ] شريط QA يظهر فقط في loopback preview، ورسائل الجولة المجانية تميّز الأوفلاين عن فشل الخدمة.
+- [ ] جولة خادمية تستعيد السؤال ودور الفريق الثاني بلا كشف الحل.
 
 ## الخادم
 

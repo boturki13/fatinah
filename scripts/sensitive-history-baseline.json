@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "description": "Exact pre-existing Git blobs acknowledged on 2026-09-05. This baseline does not remove them from public history; it only lets CI reject every new sensitive blob until an authorized history rewrite is completed.",
+  "entries": [
+    {
+      "objectId": "1ef1753a8785103ba1ceeb2b38c801f32041061e",
+      "path": "attached_assets/Pasted--UIScene-lifecycle-will-soon-be-required-Failure-to-ado_1785522871636.txt",
+      "finding": "raw-authentication-diagnostic"
+    },
+    {
+      "objectId": "273f52993236b1a49531981325d7e91a756e59b0",
+      "path": "subscriptions.db",
+      "finding": "runtime-database"
+    },
+    {
+      "objectId": "9f344a6c2a9577b3dc6b15ee4df5493f94e41356",
+      "path": "subscriptions.db",
+      "finding": "runtime-database"
+    },
+    {
+      "objectId": "bcd5bcc06f0ee9bbdcbc38da8c46120b0126f680",
+      "path": "subscriptions.db",
+      "finding": "runtime-database"
+    }
+  ]
+}

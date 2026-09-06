@@ -319,9 +319,19 @@ export function familyContentViolations(item, policy = loadPolicy()) {
   }
 
   const source = item?.source && typeof item.source === 'object' ? item.source : {};
+  const choices = [
+    ...(Array.isArray(item?.o) ? item.o : []),
+    ...(Array.isArray(item?.options) ? item.options : []),
+    ...(Array.isArray(item?.incorrectAnswers) ? item.incorrectAnswers : []),
+    ...(Array.isArray(item?.incorrect_answers) ? item.incorrect_answers : []),
+  ];
+  const image = item?.image && typeof item.image === 'object' ? item.image : {};
   const normalized = normalizeArabic([
     item?.question, item?.q, item?.answer, item?.explanation,
-    source.title, source.evidence,
+    item?.correctAnswer, item?.correct_answer, ...choices,
+    source.title, source.evidence, source.url,
+    image.alt, image?.factSource?.title, image?.factSource?.url,
+    image?.rights?.sourcePage,
     item?.itemLabel, item?.answerLabel, item?.proverb, item?.meaning,
     item?.nameAr, item?.officialNameEn,
   ].filter(Boolean).join(' '));
@@ -335,6 +345,10 @@ export function familyContentViolations(item, policy = loadPolicy()) {
   if (hasConfiguredToken(config.explicitAdultTokens) ||
       hasConfiguredPhrase(config.explicitAdultPhrases)) {
     violations.push('explicit_adult_content');
+  }
+  if (hasConfiguredToken(config.blockedTopicTokens) ||
+      hasConfiguredPhrase(config.blockedTopicPhrases)) {
+    violations.push('blocked_topic');
   }
   if (hasConfiguredToken(config.severeProfanityTokens) ||
       hasConfiguredPhrase(config.severeProfanityPhrases)) {

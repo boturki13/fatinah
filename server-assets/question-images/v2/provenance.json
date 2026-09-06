@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-26T23:07:23.486Z",
+  "generatedAt": "2026-09-05T13:54:52.240Z",
   "items": [
     {
       "id": "img-v2-flag-kuwait",
@@ -8244,19 +8244,6 @@
       "credit": "Edward C. Moore Collection, Bequest of Edward C. Moore, 1891"
     },
     {
-      "id": "img-v2-treasurex-q145780",
-      "provider": "commons",
-      "commonsFile": "Temple Scroll.png",
-      "nasaId": null,
-      "objectId": null,
-      "url": "https://upload.wikimedia.org/wikipedia/commons/1/15/Temple_Scroll.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
-      "pageUrl": "https://commons.wikimedia.org/wiki/File:Temple_Scroll.png",
-      "license": "Public domain",
-      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
-      "creator": "Israel Museum",
-      "credit": "The Israel Museum's 'Dead Sea Scrolls Digital Project', link: [1]"
-    },
-    {
       "id": "img-v2-treasurex-q179492",
       "provider": "commons",
       "commonsFile": "Voynich Manuscript (32).jpg",
@@ -12844,6 +12831,19 @@
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
       "creator": "Allef Vinicius seteales",
       "credit": "https://unsplash.com/photos/cYbQEnBiLs4 Image at the Wayback Machine Gallery at the Wayback Machine"
+    },
+    {
+      "id": "img-v2-treasurex-q1394096",
+      "provider": "commons",
+      "commonsFile": "Guldhornene.jpg",
+      "nasaId": null,
+      "objectId": null,
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/74/Guldhornene.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Guldhornene.jpg",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "creator": "مساهم في Wikimedia Commons",
+      "credit": ""
     }
   ]
 }

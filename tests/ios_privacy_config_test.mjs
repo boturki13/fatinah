@@ -6,7 +6,6 @@
 
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { Buffer } from 'node:buffer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,11 +17,11 @@ const entitlements = await readFile(path.join(root, 'ios/App/App/App.entitlement
 const webApp = await readFile(path.join(root, 'www/index.html'), 'utf8');
 const webLogic = await readFile(path.join(root, 'www/app.js'), 'utf8');
 const webStyles = await readFile(path.join(root, 'www/app.css'), 'utf8');
-const questionBank = await readFile(path.join(root, 'www/question-bank.js'), 'utf8');
+const privacyPolicy = await readFile(path.join(root, 'www/privacy-policy.html'), 'utf8');
+const termsOfService = await readFile(path.join(root, 'www/terms-of-service.html'), 'utf8');
 const nativeWebApp = await readFile(path.join(root, 'ios/App/App/public/index.html'), 'utf8');
 const nativeWebLogic = await readFile(path.join(root, 'ios/App/App/public/app.js'), 'utf8');
 const nativeWebStyles = await readFile(path.join(root, 'ios/App/App/public/app.css'), 'utf8');
-const nativeQuestionBank = await readFile(path.join(root, 'ios/App/App/public/question-bank.js'), 'utf8');
 const cloudFunction = await readFile(path.join(root, 'functions/index.js'), 'utf8');
 const appDelegate = await readFile(path.join(root, 'ios/App/App/AppDelegate.swift'), 'utf8');
 const capacitorConfig = await readFile(path.join(root, 'capacitor.config.ts'), 'utf8');
@@ -40,6 +39,13 @@ assert.doesNotMatch(
   'لا تضف طلب تتبع ما لم يكن التطبيق يتتبع المستخدمين فعلاً وتُحدَّث إفصاحات App Store Connect.'
 );
 assert.match(entitlements, /com\.apple\.developer\.devicecheck\.appattest-environment/);
+assert.match(
+  entitlements,
+  /com\.apple\.developer\.devicecheck\.appattest-environment<\/key>\s*<string>\$\(APP_ATTEST_ENVIRONMENT\)<\/string>/,
+  'App Attest must resolve its environment from the active Xcode configuration.',
+);
+assert.match(project, /APP_ATTEST_ENVIRONMENT = development;/);
+assert.match(project, /APP_ATTEST_ENVIRONMENT = production;/);
 assert.equal(packageJson.dependencies['@capacitor-firebase/app-check'], '8.4.0');
 assert.match(podfile, /pod 'CapacitorFirebaseAppCheck'/);
 assert.match(webLogic, /X-Firebase-AppCheck/);
@@ -168,11 +174,14 @@ assert.match(
 );
 assert.match(
   webLogic,
-  /async function checkSubscriptionAndRoute\(uid, \{showLoading=true\} = \{\}\)\{\s*if\(showLoading\) go\('s-loading'\);/,
+  /async function checkSubscriptionAndRoute\(uid, \{showLoading=true,revenueCatTimeoutMs=8000\} = \{\}\)\{\s*if\(showLoading\) go\('s-loading'\);/,
   'يجب أن يدعم فحص الاشتراك وضع الخلفية عند الإقلاع.'
 );
 assert.doesNotMatch(webLogic, /const QUESTION_BANK = \{/);
-assert.match(webLogic, /function ensureQuestionBank\(\)[\s\S]*?script\.src='question-bank\.js';/);
+assert.match(webLogic, /function ensureQuestionBank\(\)[\s\S]*?await refreshRemoteQuestionCatalog\(\)/,
+  'بنك 1.4 يجب أن يحمّل كتالوج الخادم ولا يحمّل ملف أسئلة محلياً.');
+assert.doesNotMatch(webLogic, /script\.src='question-bank\.js'/,
+  'لا يجوز شحن أو تحميل بنك أسئلة احتياطي داخل التطبيق.');
 assert.match(webLogic, /const TEAM_STYLES=\[/);
 assert.match(webLogic, /const FIRE=\[null,/);
 assert.match(webLogic, /const POINTS=\[0,100,200,300,400,500,600\]/);
@@ -189,12 +198,32 @@ const contentSecurityPolicy = webApp.match(
 assert.match(contentSecurityPolicy, /default-src 'none'/);
 assert.match(contentSecurityPolicy, /base-uri 'none'/);
 assert.match(contentSecurityPolicy, /form-action 'self'/);
-assert.match(contentSecurityPolicy, /script-src-attr 'unsafe-inline'/);
+assert.match(contentSecurityPolicy, /script-src-attr 'none'/);
+for (const directive of ['script-src', 'script-src-elem', 'script-src-attr']) {
+  const value = contentSecurityPolicy.match(
+    new RegExp(`(?:^|;\\s*)${directive}\\s+([^;]+)`)
+  )?.[1] || '';
+  assert.doesNotMatch(value, /'unsafe-inline'|'unsafe-eval'/, `${directive} يجب أن يبقى صارماً.`);
+}
+assert.doesNotMatch(webApp, /\son[a-z]+\s*=/i, 'لا تسمح بمعالجات أحداث مضمّنة في HTML.');
 assert.doesNotMatch(
-  contentSecurityPolicy.match(/(?:^|;\s*)script-src\s+([^;]+)/)?.[1] || '',
-  /'unsafe-inline'/,
-  'السماح بخصائص onclick لا يجوز أن يتيح أي كتلة JavaScript مضمّنة.',
+  webLogic,
+  /\s(?:onclick|oninput|onsubmit|onkeydown)\s*=/,
+  'القوالب الديناميكية لا يجوز أن تعيد إنشاء event-handler attributes.',
 );
+for (const match of webApp.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+  assert.match(match[1], /\bsrc=/i, 'كل JavaScript في واجهة اللعبة يجب أن يأتي من ملف self-hosted.');
+  assert.equal(match[2].trim(), '', 'لا تضف كوداً داخل وسم script.');
+}
+for (const legalDocument of [privacyPolicy, termsOfService]) {
+  const legalCsp = legalDocument.match(
+    /<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]+)"/i
+  )?.[1] || '';
+  assert.match(legalCsp, /script-src 'none'/);
+  assert.match(legalCsp, /script-src-attr 'none'/);
+  assert.doesNotMatch(legalDocument, /\son[a-z]+\s*=/i);
+  assert.match(legalDocument, /<a class="back-btn" href="index\.html">/);
+}
 const appBoundDomainsSetting = capacitorConfig.match(
   /limitsNavigationsToAppBoundDomains:\s*(true|false)/
 );
@@ -227,15 +256,9 @@ assert.match(
   /pod 'CapacitorFirebaseAuthentication\/Google'/,
   'إضافة google.com إلى capacitor.config لا تكفي؛ يجب تضمين Google subspec كي لا يعلق الاستدعاء الأصلي بلا نتيجة.'
 );
-assert.match(questionBank, /^window\.__QUESTION_BANK_DATA__ = \{/);
-assert.ok(
-  Buffer.byteLength(questionBank) > 20_000 && Buffer.byteLength(questionBank) < 100_000,
-  'يجب أن يبقى بنك الأسئلة المحلي ضمن حجم مناسب للتطبيق.'
-);
 assert.equal(nativeWebApp, webApp, 'يجب مزامنة www مع نسخة iOS قبل البناء.');
 assert.equal(nativeWebLogic, webLogic, 'يجب مزامنة JavaScript مع نسخة iOS قبل البناء.');
 assert.equal(nativeWebStyles, webStyles, 'يجب مزامنة CSS مع نسخة iOS قبل البناء.');
-assert.equal(nativeQuestionBank, questionBank, 'يجب مزامنة بنك الأسئلة مع نسخة iOS قبل البناء.');
 assert.match(webLogic, /function normalizeQuestionBank\(bank\)/);
 assert.match(webLogic, /function rememberQuestion\(cat,question\)/);
 assert.match(webLogic, /state\.usedQuestionIds=new Set\(\)/);

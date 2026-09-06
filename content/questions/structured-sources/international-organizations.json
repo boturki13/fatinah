@@ -1,0 +1,1449 @@
+{
+  "schemaVersion": 1,
+  "endpoint": "https://query.wikidata.org/sparql",
+  "retrievedAt": "2026-09-04T23:51:07.356Z",
+  "records": [
+    {
+      "item": "http://www.wikidata.org/entity/Q1065",
+      "itemLabel": "الأمم المتحدة",
+      "hq": "http://www.wikidata.org/entity/Q60",
+      "hqLabel": "نيويورك",
+      "sitelinks": "335"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7184",
+      "itemLabel": "حلف شمال الأطلسي",
+      "hq": "http://www.wikidata.org/entity/Q239",
+      "hqLabel": "مدينة بروكسل",
+      "sitelinks": "241"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7817",
+      "itemLabel": "منظمة الصحة العالمية",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "209"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7159",
+      "itemLabel": "الاتحاد الإفريقي",
+      "hq": "http://www.wikidata.org/entity/Q3624",
+      "hqLabel": "أديس أبابا",
+      "sitelinks": "177"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7159",
+      "itemLabel": "الاتحاد الإفريقي",
+      "hq": "http://www.wikidata.org/entity/Q34647",
+      "hqLabel": "جوهانسبرغ",
+      "sitelinks": "177"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7825",
+      "itemLabel": "منظمة التجارة العالمية",
+      "hq": "http://www.wikidata.org/entity/Q2944897",
+      "hqLabel": "Q2944897",
+      "sitelinks": "153"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7172",
+      "itemLabel": "جامعة الدول العربية",
+      "hq": "http://www.wikidata.org/entity/Q2086335",
+      "hqLabel": "مقر جامعة الدول العربية",
+      "sitelinks": "149"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7795",
+      "itemLabel": "أوبك",
+      "hq": "http://www.wikidata.org/entity/Q267329",
+      "hqLabel": "إينير شتات",
+      "sitelinks": "143"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7779",
+      "itemLabel": "رابطة الدول المستقلة",
+      "hq": "http://www.wikidata.org/entity/Q2280",
+      "hqLabel": "مينسك",
+      "sitelinks": "138"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q38130",
+      "itemLabel": "عصبة الأمم",
+      "hq": "http://www.wikidata.org/entity/Q594846",
+      "hqLabel": "قصر الأمم",
+      "sitelinks": "119"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q38130",
+      "itemLabel": "عصبة الأمم",
+      "hq": "http://www.wikidata.org/entity/Q2333715",
+      "hqLabel": "قصر ويلسون",
+      "sitelinks": "119"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q42262",
+      "itemLabel": "وكالة الفضاء الأوروبية",
+      "hq": "http://www.wikidata.org/entity/Q90",
+      "hqLabel": "باريس",
+      "sitelinks": "118"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q41644",
+      "itemLabel": "حلف وارسو",
+      "hq": "http://www.wikidata.org/entity/Q649",
+      "hqLabel": "موسكو",
+      "sitelinks": "116"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q41550",
+      "itemLabel": "منظمة التعاون الاقتصادي والتنمية",
+      "hq": "http://www.wikidata.org/entity/Q90",
+      "hqLabel": "باريس",
+      "sitelinks": "105"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q8475",
+      "itemLabel": "منظمة الشرطة الجنائية الدولية",
+      "hq": "http://www.wikidata.org/entity/Q456",
+      "hqLabel": "ليون",
+      "sitelinks": "102"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q42944",
+      "itemLabel": "سيرن",
+      "hq": "http://www.wikidata.org/entity/Q68230",
+      "hqLabel": "ميرين",
+      "sitelinks": "102"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q42944",
+      "itemLabel": "سيرن",
+      "hq": "http://www.wikidata.org/entity/Q328385",
+      "hqLabel": "بريفيسسان-مون، أين",
+      "sitelinks": "102"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q54129",
+      "itemLabel": "منظمة العمل الدولية",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "94"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q6867",
+      "itemLabel": "الاتحاد الفلكي الدولي",
+      "hq": "http://www.wikidata.org/entity/Q90",
+      "hqLabel": "باريس",
+      "sitelinks": "92"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q133207",
+      "itemLabel": "الإخوان المسلمون",
+      "hq": "http://www.wikidata.org/entity/Q85",
+      "hqLabel": "القاهرة",
+      "sitelinks": "92"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q123759",
+      "itemLabel": "منظمة البلدان الأمريكية",
+      "hq": "http://www.wikidata.org/entity/Q30",
+      "hqLabel": "الولايات المتحدة",
+      "sitelinks": "91"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q123759",
+      "itemLabel": "منظمة البلدان الأمريكية",
+      "hq": "http://www.wikidata.org/entity/Q5755202",
+      "hqLabel": "مبنى اتحاد عموم أمريكا",
+      "sitelinks": "91"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q47543",
+      "itemLabel": "منظمة التعاون الإسلامي",
+      "hq": "http://www.wikidata.org/entity/Q374365",
+      "hqLabel": "جدة",
+      "sitelinks": "89"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q132551",
+      "itemLabel": "المفوضية السامية للأمم المتحدة لشؤون اللاجئين",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "86"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q170424",
+      "itemLabel": "المنظمة العالمية للأرصاد الجوية",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "82"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q4173083",
+      "itemLabel": "الاتحاد الاقتصادي الأوروآسيوي",
+      "hq": "http://www.wikidata.org/entity/Q649",
+      "hqLabel": "موسكو",
+      "sitelinks": "71"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q166546",
+      "itemLabel": "رابطة التجارة الحرة الأوروبية",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "71"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q146165",
+      "itemLabel": "المجلس الشمالي",
+      "hq": "http://www.wikidata.org/entity/Q1748",
+      "hqLabel": "كوبنهاغن",
+      "sitelinks": "67"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q318693",
+      "itemLabel": "منظمة معاهدة الأمن الجماعي",
+      "hq": "http://www.wikidata.org/entity/Q649",
+      "hqLabel": "موسكو",
+      "sitelinks": "67"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q318693",
+      "itemLabel": "منظمة معاهدة الأمن الجماعي",
+      "hq": "http://www.wikidata.org/entity/Q4410225",
+      "hqLabel": "Q4410225",
+      "sitelinks": "67"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q8919",
+      "itemLabel": "الجماعة الأوروبية للطاقة الذرية",
+      "hq": "http://www.wikidata.org/entity/Q9005",
+      "hqLabel": "بروكسل",
+      "sitelinks": "66"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q190193",
+      "itemLabel": "حركة هاري كريشنا",
+      "hq": "http://www.wikidata.org/entity/Q2606609",
+      "hqLabel": "Q2606609",
+      "sitelinks": "66"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q205995",
+      "itemLabel": "الجماعة الكاريبية",
+      "hq": "http://www.wikidata.org/entity/Q10717",
+      "hqLabel": "جورج تاون",
+      "sitelinks": "62"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q151991",
+      "itemLabel": "المرصد الأوروبي الجنوبي",
+      "hq": "http://www.wikidata.org/entity/Q264620",
+      "hqLabel": "غارشينغ باي مونشن",
+      "sitelinks": "60"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q157033",
+      "itemLabel": "معهد جوته",
+      "hq": "http://www.wikidata.org/entity/Q60168804",
+      "hqLabel": "Q60168804",
+      "sitelinks": "60"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q191582",
+      "itemLabel": "مجلس التعاون الاقتصادي",
+      "hq": "http://www.wikidata.org/entity/Q649",
+      "hqLabel": "موسكو",
+      "sitelinks": "60"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q191703",
+      "itemLabel": "منظمة الوحدة الإفريقية",
+      "hq": "http://www.wikidata.org/entity/Q3624",
+      "hqLabel": "أديس أبابا",
+      "sitelinks": "60"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q229478",
+      "itemLabel": "المكتب الدولي للأوزان والمقاييس",
+      "hq": "http://www.wikidata.org/entity/Q206493",
+      "hqLabel": "سيفر",
+      "sitelinks": "60"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q596850",
+      "itemLabel": "منظمة الدول التركية",
+      "hq": "http://www.wikidata.org/entity/Q732923",
+      "hqLabel": "الفاتح",
+      "sitelinks": "56"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q309195",
+      "itemLabel": "بنك التسويات الدولية",
+      "hq": "http://www.wikidata.org/entity/Q78",
+      "hqLabel": "بازل",
+      "sitelinks": "56"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q337456",
+      "itemLabel": "مجموعة شرق إفريقيا",
+      "hq": "http://www.wikidata.org/entity/Q4301",
+      "hqLabel": "أروشا",
+      "sitelinks": "55"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q189946",
+      "itemLabel": "اتحاد أوروبا الغربية",
+      "hq": "http://www.wikidata.org/entity/Q239",
+      "hqLabel": "مدينة بروكسل",
+      "sitelinks": "54"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q215613",
+      "itemLabel": "منظمة الأمم والشعوب غير الممثلة",
+      "hq": "http://www.wikidata.org/entity/Q36600",
+      "hqLabel": "لاهاي",
+      "sitelinks": "54"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q252420",
+      "itemLabel": "المكتب الدولي للسلام",
+      "hq": "http://www.wikidata.org/entity/Q64",
+      "hqLabel": "برلين",
+      "sitelinks": "54"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q252420",
+      "itemLabel": "المكتب الدولي للسلام",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "54"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q136402081",
+      "itemLabel": "مجلس السلام",
+      "hq": "http://www.wikidata.org/entity/Q61",
+      "hqLabel": "واشنطن العاصمة",
+      "sitelinks": "54"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q45433",
+      "itemLabel": "المجلس الثقافي البريطاني",
+      "hq": "http://www.wikidata.org/entity/Q84",
+      "hqLabel": "لندن",
+      "sitelinks": "51"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q816706",
+      "itemLabel": "مجموعة التنمية لإفريقيا الجنوبية",
+      "hq": "http://www.wikidata.org/entity/Q3919",
+      "hqLabel": "غابورون",
+      "sitelinks": "50"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q107569",
+      "itemLabel": "منظمة نادي روما",
+      "hq": "http://www.wikidata.org/entity/Q9125",
+      "hqLabel": "فينترتور",
+      "sitelinks": "50"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q380340",
+      "itemLabel": "منظمة التعاون الاقتصادي للبحر الأسود",
+      "hq": "http://www.wikidata.org/entity/Q406",
+      "hqLabel": "إسطنبول",
+      "sitelinks": "49"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q477328",
+      "itemLabel": "مجموعة ال77",
+      "hq": "http://www.wikidata.org/entity/Q11297",
+      "hqLabel": "مقر الأمم المتحدة",
+      "sitelinks": "49"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q157169",
+      "itemLabel": "جمعية الشبان المسيحيين",
+      "hq": "http://www.wikidata.org/entity/Q63922",
+      "hqLabel": "فيرناير",
+      "sitelinks": "49"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q123209",
+      "itemLabel": "الاتحاد اللاتيني",
+      "hq": "http://www.wikidata.org/entity/Q90",
+      "hqLabel": "باريس",
+      "sitelinks": "48"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q325523",
+      "itemLabel": "الحملة الدولية لمنع الألغام الأرضية",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "47"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q270029",
+      "itemLabel": "نوادي ليونز الدولية",
+      "hq": "http://www.wikidata.org/entity/Q935479",
+      "hqLabel": "أوك بروك",
+      "sitelinks": "46"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1993710",
+      "itemLabel": "المنظمة الدولية للثقافة التركية",
+      "hq": "http://www.wikidata.org/entity/Q3640",
+      "hqLabel": "أنقرة",
+      "sitelinks": "43"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q461736",
+      "itemLabel": "نادي باريس",
+      "hq": "http://www.wikidata.org/entity/Q90",
+      "hqLabel": "باريس",
+      "sitelinks": "42"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q218868",
+      "itemLabel": "اللجنة الثلاثية",
+      "hq": "http://www.wikidata.org/entity/Q61",
+      "hqLabel": "واشنطن العاصمة",
+      "sitelinks": "41"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q663492",
+      "itemLabel": "المنظمة الأوروبية لسلامة الملاحة الجوية",
+      "hq": "http://www.wikidata.org/entity/Q239",
+      "hqLabel": "مدينة بروكسل",
+      "sitelinks": "40"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q8874",
+      "itemLabel": "التحالف البوليفاري لشعوب أمريكتنا",
+      "hq": "http://www.wikidata.org/entity/Q1533",
+      "hqLabel": "كراكاس",
+      "sitelinks": "39"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q205386",
+      "itemLabel": "المنظمة الصهيونية العالمية",
+      "hq": "http://www.wikidata.org/entity/Q81035",
+      "hqLabel": "Q81035",
+      "sitelinks": "38"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q253988",
+      "itemLabel": "الاتحاد الدولي للنقاد السينمائيين",
+      "hq": "http://www.wikidata.org/entity/Q1726",
+      "hqLabel": "ميونخ",
+      "sitelinks": "38"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q579663",
+      "itemLabel": "الاتحاد الدولي للعلوم الجيولوجية",
+      "hq": "http://www.wikidata.org/entity/Q956",
+      "hqLabel": "بكين",
+      "sitelinks": "35"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q757276",
+      "itemLabel": "منتدى جزر المحيط الهادئ",
+      "hq": "http://www.wikidata.org/entity/Q38807",
+      "hqLabel": "سوفا",
+      "sitelinks": "35"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q27396",
+      "itemLabel": "اتحاد الشباب الديمقراطي العالمي",
+      "hq": "http://www.wikidata.org/entity/Q1781",
+      "hqLabel": "بودابست",
+      "sitelinks": "35"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1142901",
+      "itemLabel": "اللجنة الاقتصادية والاجتماعية لآسيا والمحيط الهادئ",
+      "hq": "http://www.wikidata.org/entity/Q1861",
+      "hqLabel": "بانكوك",
+      "sitelinks": "34"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q170245",
+      "itemLabel": "قوة الحماية التابعة للأمم المتحدة",
+      "hq": "http://www.wikidata.org/entity/Q1435",
+      "hqLabel": "زغرب",
+      "sitelinks": "34"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q942284",
+      "itemLabel": "الاتحاد اللوثري العالمي",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "33"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1334284",
+      "itemLabel": "الاتحاد الدولي لجمعيات ومؤسسات المكتبات",
+      "hq": "http://www.wikidata.org/entity/Q36600",
+      "hqLabel": "لاهاي",
+      "sitelinks": "33"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q735279",
+      "itemLabel": "لجنة بيانات العلوم والتقنية",
+      "hq": "http://www.wikidata.org/entity/Q90",
+      "hqLabel": "باريس",
+      "sitelinks": "33"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q28346",
+      "itemLabel": "الاتحاد الدولي للفيزياء البحتة والتطبيقية",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "33"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q170",
+      "itemLabel": "أممية أحزاب القراصنة",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "32"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1010514",
+      "itemLabel": "المكتب الدولي للمعارض",
+      "hq": "http://www.wikidata.org/entity/Q90",
+      "hqLabel": "باريس",
+      "sitelinks": "31"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q659012",
+      "itemLabel": "لجنة الأمم المتحدة الاقتصادية لأوروبا",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "31"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q698099",
+      "itemLabel": "مجلس مراقبة الحلفاء",
+      "hq": "http://www.wikidata.org/entity/Q64",
+      "hqLabel": "برلين",
+      "sitelinks": "31"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q245076",
+      "itemLabel": "لجنة الطيران الدولية",
+      "hq": "http://www.wikidata.org/entity/Q649",
+      "hqLabel": "موسكو",
+      "sitelinks": "31"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1210996",
+      "itemLabel": "الاتحاد الدولي للملحدين",
+      "hq": "http://www.wikidata.org/entity/Q61",
+      "hqLabel": "واشنطن العاصمة",
+      "sitelinks": "30"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1354497",
+      "itemLabel": "مجلس السلم العالمي",
+      "hq": "http://www.wikidata.org/entity/Q1524",
+      "hqLabel": "أثينا",
+      "sitelinks": "30"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q670356",
+      "itemLabel": "مجلس البلطيق",
+      "hq": "http://www.wikidata.org/entity/Q1773",
+      "hqLabel": "ريغا",
+      "sitelinks": "30"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q689768",
+      "itemLabel": "الرابطة النسائية الدولية للسلام والحرية",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "30"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q40358",
+      "itemLabel": "الجمعية الأمريكية لتقدم العلوم",
+      "hq": "http://www.wikidata.org/entity/Q61",
+      "hqLabel": "واشنطن العاصمة",
+      "sitelinks": "30"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1058594",
+      "itemLabel": "المنظمة العالمية لصحة الحيوان",
+      "hq": "http://www.wikidata.org/entity/Q197297",
+      "hqLabel": "الدائرة السابعة عشرة في باريس",
+      "sitelinks": "29"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q392770",
+      "itemLabel": "منظمة دول شرق الكاريبي",
+      "hq": "http://www.wikidata.org/entity/Q41699",
+      "hqLabel": "كاستريس",
+      "sitelinks": "29"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q189966",
+      "itemLabel": "المجموعة الاقتصادية لدول وسط إفريقيا",
+      "hq": "http://www.wikidata.org/entity/Q3818",
+      "hqLabel": "مالابو",
+      "sitelinks": "29"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1052077",
+      "itemLabel": "منظمة الأقطار العربية المصدرة للبترول",
+      "hq": "http://www.wikidata.org/entity/Q817",
+      "hqLabel": "الكويت",
+      "sitelinks": "27"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1067053",
+      "itemLabel": "الرابطة العالمية للاتحادات الرياضية الدولية",
+      "hq": "http://www.wikidata.org/entity/Q807",
+      "hqLabel": "لوزان",
+      "sitelinks": "27"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q511252",
+      "itemLabel": "الاتحاد الدولي لبناة الأجسام",
+      "hq": "http://www.wikidata.org/entity/Q592747",
+      "hqLabel": "لاس روزاس دي مدريد",
+      "sitelinks": "27"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1548793",
+      "itemLabel": "انترسبوتنيك",
+      "hq": "http://www.wikidata.org/entity/Q649",
+      "hqLabel": "موسكو",
+      "sitelinks": "26"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q701642",
+      "itemLabel": "المؤتمر الأويغوري العالمي",
+      "hq": "http://www.wikidata.org/entity/Q1726",
+      "hqLabel": "ميونخ",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q42584",
+      "itemLabel": "الاتحاد الدولي للقطط",
+      "hq": "http://www.wikidata.org/entity/Q1842",
+      "hqLabel": "مدينة لوكسمبورغ",
+      "sitelinks": "25"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1500985",
+      "itemLabel": "المجتمع من أجل الديمقراطية وحقوق الأمم",
+      "hq": "http://www.wikidata.org/entity/Q27468",
+      "hqLabel": "أوروبا الشرقية",
+      "sitelinks": "24"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1500985",
+      "itemLabel": "المجتمع من أجل الديمقراطية وحقوق الأمم",
+      "hq": "http://www.wikidata.org/entity/Q200173",
+      "hqLabel": "جنوب القوقاز",
+      "sitelinks": "24"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1142430",
+      "itemLabel": "مجلس معايير المحاسبة الدولية",
+      "hq": "http://www.wikidata.org/entity/Q84",
+      "hqLabel": "لندن",
+      "sitelinks": "23"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1264411",
+      "itemLabel": "منظمة العالم الإسلامي للتربية والعلوم والثقافة",
+      "hq": "http://www.wikidata.org/entity/Q3551",
+      "hqLabel": "الرباط",
+      "sitelinks": "23"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q695267",
+      "itemLabel": "مختبر علم الأحياء الجزيئي الأوروبي",
+      "hq": "http://www.wikidata.org/entity/Q2966",
+      "hqLabel": "هيدلبرغ",
+      "sitelinks": "23"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q333727",
+      "itemLabel": "السلطة الدولية لقاع البحار",
+      "hq": "http://www.wikidata.org/entity/Q34692",
+      "hqLabel": "كينغستون",
+      "sitelinks": "23"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q866996",
+      "itemLabel": "مجموعة الدول لمكافحة الفساد",
+      "hq": "http://www.wikidata.org/entity/Q465591",
+      "hqLabel": "قصر أوروبا",
+      "sitelinks": "22"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2867530",
+      "itemLabel": "اتحاد اللجان الأولمبية الوطنية",
+      "hq": "http://www.wikidata.org/entity/Q807",
+      "hqLabel": "لوزان",
+      "sitelinks": "22"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2020649",
+      "itemLabel": "بنك الاستثمار النوردي",
+      "hq": "http://www.wikidata.org/entity/Q1757",
+      "hqLabel": "هلسنكي",
+      "sitelinks": "22"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q118922",
+      "itemLabel": "بعثة مراقبي الأمم المتحدة في جورجيا",
+      "hq": "http://www.wikidata.org/entity/Q994",
+      "hqLabel": "تبليسي",
+      "sitelinks": "22"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q118922",
+      "itemLabel": "بعثة مراقبي الأمم المتحدة في جورجيا",
+      "hq": "http://www.wikidata.org/entity/Q40811",
+      "hqLabel": "سوخومي",
+      "sitelinks": "22"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q262779",
+      "itemLabel": "بعثة الأمم المتحدة لمساعدة رواندا",
+      "hq": "http://www.wikidata.org/entity/Q60",
+      "hqLabel": "نيويورك",
+      "sitelinks": "22"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1657077",
+      "itemLabel": "المنظمة النسائية الصهيونية العالمية",
+      "hq": "http://www.wikidata.org/entity/Q33935",
+      "hqLabel": "تل أبيب",
+      "sitelinks": "21"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q453851",
+      "itemLabel": "الاتحاد النسائي الديمقراطي الدولي",
+      "hq": "http://www.wikidata.org/entity/Q174",
+      "hqLabel": "ساو باولو",
+      "sitelinks": "21"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q688592",
+      "itemLabel": "التحالف العالمي للقاحات والتحصين",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "21"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q48192",
+      "itemLabel": "المنظمة الدولية للقهوة",
+      "hq": "http://www.wikidata.org/entity/Q84",
+      "hqLabel": "لندن",
+      "sitelinks": "21"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q951292",
+      "itemLabel": "فيمكاب",
+      "hq": "http://www.wikidata.org/entity/Q12892",
+      "hqLabel": "أنتويرب",
+      "sitelinks": "20"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1072120",
+      "itemLabel": "نظام تحكم تكنولوجيا القذائف",
+      "hq": "http://www.wikidata.org/entity/Q789848",
+      "hqLabel": "وزارة الخارجية",
+      "sitelinks": "20"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2534166",
+      "itemLabel": "الجمعية النووية العالمية",
+      "hq": "http://www.wikidata.org/entity/Q84",
+      "hqLabel": "لندن",
+      "sitelinks": "20"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2534166",
+      "itemLabel": "الجمعية النووية العالمية",
+      "hq": "http://www.wikidata.org/entity/Q189960",
+      "hqLabel": "وستمنستر",
+      "sitelinks": "20"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q496967",
+      "itemLabel": "تحالف الدول الجزرية الصغيرة",
+      "hq": "http://www.wikidata.org/entity/Q60",
+      "hqLabel": "نيويورك",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1667016",
+      "itemLabel": "الاتحاد الدولي للطلاب",
+      "hq": "http://www.wikidata.org/entity/Q1085",
+      "hqLabel": "براغ",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q593768",
+      "itemLabel": "رابطة جامعات الكومنولث",
+      "hq": "http://www.wikidata.org/entity/Q84",
+      "hqLabel": "لندن",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q782942",
+      "itemLabel": "مجموعة أستراليا",
+      "hq": "http://www.wikidata.org/entity/Q13420360",
+      "hqLabel": "Q13420360",
+      "sitelinks": "19"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1559556",
+      "itemLabel": "باكس كريستي الدولية",
+      "hq": "http://www.wikidata.org/entity/Q239",
+      "hqLabel": "مدينة بروكسل",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1170531",
+      "itemLabel": "المعهد الدولي للصحافة",
+      "hq": "http://www.wikidata.org/entity/Q1741",
+      "hqLabel": "فيينا",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q42709",
+      "itemLabel": "جمعية القط الدولية",
+      "hq": "http://www.wikidata.org/entity/Q868869",
+      "hqLabel": "هارلينغن",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q72781",
+      "itemLabel": "الخصوصية الدولية",
+      "hq": "http://www.wikidata.org/entity/Q84",
+      "hqLabel": "لندن",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q162027",
+      "itemLabel": "الاتحاد الدولي للمترجمين",
+      "hq": "http://www.wikidata.org/entity/Q90",
+      "hqLabel": "باريس",
+      "sitelinks": "18"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2297150",
+      "itemLabel": "الصندوق العالمي للآثار والتراث",
+      "hq": "http://www.wikidata.org/entity/Q60",
+      "hqLabel": "نيويورك",
+      "sitelinks": "17"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q29774",
+      "itemLabel": "المنظمة الدولية للأجهزة العليا للرقابة المالية والمحاسبة",
+      "hq": "http://www.wikidata.org/entity/Q1741",
+      "hqLabel": "فيينا",
+      "sitelinks": "16"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2989312",
+      "itemLabel": "مجموعة الطاقة",
+      "hq": "http://www.wikidata.org/entity/Q1741",
+      "hqLabel": "فيينا",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q369760",
+      "itemLabel": "وكالة الطاقة النووية",
+      "hq": "http://www.wikidata.org/entity/Q172455",
+      "hqLabel": "بولون-بيانكور",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1251615",
+      "itemLabel": "كونغرس مجلس أوروبا",
+      "hq": "http://www.wikidata.org/entity/Q6602",
+      "hqLabel": "ستراسبورغ",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1354096",
+      "itemLabel": "اجتماع حوكمة الإنترنت",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1376533",
+      "itemLabel": "الحقوق الرقمية الأوروبية",
+      "hq": "http://www.wikidata.org/entity/Q239",
+      "hqLabel": "مدينة بروكسل",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1388484",
+      "itemLabel": "فيديك",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q685547",
+      "itemLabel": "المنظمة الأوروبية لبراءات الاختراع",
+      "hq": "http://www.wikidata.org/entity/Q1726",
+      "hqLabel": "ميونخ",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q806667",
+      "itemLabel": "بنك الجنوب",
+      "hq": "http://www.wikidata.org/entity/Q1533",
+      "hqLabel": "كراكاس",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q6054110",
+      "itemLabel": "الاتحاد العالمي لعلماء المسلمين",
+      "hq": "http://www.wikidata.org/entity/Q3861",
+      "hqLabel": "الدوحة",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q15278864",
+      "itemLabel": "المجلس الثقافي العالمي",
+      "hq": "http://www.wikidata.org/entity/Q1489",
+      "hqLabel": "مدينة مكسيكو",
+      "sitelinks": "15"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2622118",
+      "itemLabel": "نيو أكروبوليس",
+      "hq": "http://www.wikidata.org/entity/Q239",
+      "hqLabel": "مدينة بروكسل",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1153045",
+      "itemLabel": "إنجاز",
+      "hq": "http://www.wikidata.org/entity/Q49258",
+      "hqLabel": "كولورادو سبرينغز",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1376977",
+      "itemLabel": "الجمعية الأوروبية لطب القلب",
+      "hq": "http://www.wikidata.org/entity/Q239",
+      "hqLabel": "مدينة بروكسل",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1376977",
+      "itemLabel": "الجمعية الأوروبية لطب القلب",
+      "hq": "http://www.wikidata.org/entity/Q1359930",
+      "hqLabel": "صوفيا أنتيبوليس",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q677691",
+      "itemLabel": "المجلس الدولي للمبادرات المحلية البيئية",
+      "hq": "http://www.wikidata.org/entity/Q60",
+      "hqLabel": "نيويورك",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1785413",
+      "itemLabel": "بعثة مراقبي الأمم المتحدة في طاجيكستان",
+      "hq": "http://www.wikidata.org/entity/Q9365",
+      "hqLabel": "دوشنبة",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2001993",
+      "itemLabel": "قوة الأمم المتحدة للانتشار الوقائي",
+      "hq": "http://www.wikidata.org/entity/Q384",
+      "hqLabel": "إسكوبية",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2420112",
+      "itemLabel": "رابطة الاتحادات الرياضية الدولية للألعاب الأولمبية الصيفية",
+      "hq": "http://www.wikidata.org/entity/Q807",
+      "hqLabel": "لوزان",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q190650",
+      "itemLabel": "اللجنة المركزية للملاحة في نهر الراين",
+      "hq": "http://www.wikidata.org/entity/Q6602",
+      "hqLabel": "ستراسبورغ",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q241824",
+      "itemLabel": "الاتحاد الدولي لعلوم الراديو",
+      "hq": "http://www.wikidata.org/entity/Q1296",
+      "hqLabel": "خنت",
+      "sitelinks": "14"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1531665",
+      "itemLabel": "المبادرة العالمية للتقارير",
+      "hq": "http://www.wikidata.org/entity/Q727",
+      "hqLabel": "أمستردام",
+      "sitelinks": "13"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1856835",
+      "itemLabel": "منظمة الصحة للبلدان الأمريكية",
+      "hq": "http://www.wikidata.org/entity/Q61",
+      "hqLabel": "واشنطن العاصمة",
+      "sitelinks": "13"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1971799",
+      "itemLabel": "بعثة الأمم المتحدة الثالثة للتحقق في أنغولا",
+      "hq": "http://www.wikidata.org/entity/Q37470",
+      "hqLabel": "مجلس الأمن التابع للأمم المتحدة",
+      "sitelinks": "13"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7157377",
+      "itemLabel": "مجلس تطبيق السلام",
+      "hq": "http://www.wikidata.org/entity/Q11194",
+      "hqLabel": "سراييفو",
+      "sitelinks": "13"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q7988404",
+      "itemLabel": "الاتحاد الغربي",
+      "hq": "http://www.wikidata.org/entity/Q182872",
+      "hqLabel": "فونتينبلو",
+      "sitelinks": "13"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1666462",
+      "itemLabel": "المجلس الدولي لتنسيق المتطلبات التقنية للمستحضرات الصيدلانية للاستخدام البشري",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "12"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1457461",
+      "itemLabel": "بعثة مراقبي الأمم المتحدة في ليبريا",
+      "hq": "http://www.wikidata.org/entity/Q3748",
+      "hqLabel": "مونروفيا",
+      "sitelinks": "12"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q356694",
+      "itemLabel": "منظمة معاهدة الحظر الشامل للتجارب النووية",
+      "hq": "http://www.wikidata.org/entity/Q1741",
+      "hqLabel": "فيينا",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q668205",
+      "itemLabel": "الجمعية العالمية للمشغلين النوويين",
+      "hq": "http://www.wikidata.org/entity/Q84",
+      "hqLabel": "لندن",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q4164494",
+      "itemLabel": "المنظمة العربية للتربية والثقافة والعلوم",
+      "hq": "http://www.wikidata.org/entity/Q3572",
+      "hqLabel": "تونس",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q4816582",
+      "itemLabel": "جمعية حلف الأطلسي",
+      "hq": "http://www.wikidata.org/entity/Q239",
+      "hqLabel": "مدينة بروكسل",
+      "sitelinks": "11"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2561760",
+      "itemLabel": "الاتحاد المصرفي الأوروبي",
+      "hq": "http://www.wikidata.org/entity/Q239",
+      "hqLabel": "مدينة بروكسل",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2893060",
+      "itemLabel": "اسرائيل ايد",
+      "hq": "http://www.wikidata.org/entity/Q192811",
+      "hqLabel": "منطقة تل أبيب",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1666544",
+      "itemLabel": "الاتحاد الدولي للجامعات للنساء",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q55200",
+      "itemLabel": "المرأة في التكنولوجيا الدولية",
+      "hq": "http://www.wikidata.org/entity/Q65",
+      "hqLabel": "لوس أنجلوس",
+      "sitelinks": "10"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q146905",
+      "itemLabel": "لجنة زانغر",
+      "hq": "http://www.wikidata.org/entity/Q1741",
+      "hqLabel": "فيينا",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q6054186",
+      "itemLabel": "معهد اللقاحات الدولي",
+      "hq": "http://www.wikidata.org/entity/Q8684",
+      "hqLabel": "سول",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q6402371",
+      "itemLabel": "المجمع العالمي للتقريب بين المذاهب الإسلامية",
+      "hq": "http://www.wikidata.org/entity/Q3616",
+      "hqLabel": "طهران",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q300085",
+      "itemLabel": "مجلس السلام والأمن الإفريقي",
+      "hq": "http://www.wikidata.org/entity/Q3624",
+      "hqLabel": "أديس أبابا",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q12239049",
+      "itemLabel": "مجلس الوحدة الاقتصادية العربية",
+      "hq": "http://www.wikidata.org/entity/Q85",
+      "hqLabel": "القاهرة",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q13231715",
+      "itemLabel": "أمانة التعاون الثلاثي",
+      "hq": "http://www.wikidata.org/entity/Q8684",
+      "hqLabel": "سول",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q117032291",
+      "itemLabel": "وكالة الفضاء الإفريقية",
+      "hq": "http://www.wikidata.org/entity/Q12191144",
+      "hqLabel": "القاهرة الجديدة",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q131876495",
+      "itemLabel": "المنظمة الدولية للوساطة",
+      "hq": "http://www.wikidata.org/entity/Q8646",
+      "hqLabel": "هونغ كونغ",
+      "sitelinks": "9"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2629175",
+      "itemLabel": "الجمعية الدولية لعلم النفس التحليلي",
+      "hq": "http://www.wikidata.org/entity/Q72",
+      "hqLabel": "زيورخ",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q357934",
+      "itemLabel": "لجنة الشرق الأقصى",
+      "hq": "http://www.wikidata.org/entity/Q61",
+      "hqLabel": "واشنطن العاصمة",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3075682",
+      "itemLabel": "مؤسسة آنا ليند الأورومتوسطية للحوار بين الثقافات",
+      "hq": "http://www.wikidata.org/entity/Q87",
+      "hqLabel": "الإسكندرية",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1331783",
+      "itemLabel": "الجماعة الاقتصادية لدول منطقة البحيرات الكبرى",
+      "hq": "http://www.wikidata.org/entity/Q830631",
+      "hqLabel": "جيسايني",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1378028",
+      "itemLabel": "المنتدى الذري الأوروبي",
+      "hq": "http://www.wikidata.org/entity/Q239",
+      "hqLabel": "مدينة بروكسل",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2029901",
+      "itemLabel": "أحدى",
+      "hq": "http://www.wikidata.org/entity/Q3808",
+      "hqLabel": "ياوندي",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q14816384",
+      "itemLabel": "مشجعي كرة القدم الأوروبية",
+      "hq": "http://www.wikidata.org/entity/Q1055",
+      "hqLabel": "هامبورغ",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q22976638",
+      "itemLabel": "أفريبول",
+      "hq": "http://www.wikidata.org/entity/Q3561",
+      "hqLabel": "الجزائر العاصمة",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q105730365",
+      "itemLabel": "الشراكة العالمية للذكاء الاصطناعي",
+      "hq": "http://www.wikidata.org/entity/Q90",
+      "hqLabel": "باريس",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q105730365",
+      "itemLabel": "الشراكة العالمية للذكاء الاصطناعي",
+      "hq": "http://www.wikidata.org/entity/Q340",
+      "hqLabel": "مونتريال",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q333536",
+      "itemLabel": "المنظمة الاستشارية القانونية الأفرو-آسيوية",
+      "hq": "http://www.wikidata.org/entity/Q987",
+      "hqLabel": "نيو دلهي",
+      "sitelinks": "8"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1665759",
+      "itemLabel": "مجلس دفاع الدول الأمريكية",
+      "hq": "http://www.wikidata.org/entity/Q61",
+      "hqLabel": "واشنطن العاصمة",
+      "sitelinks": "7"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3523113",
+      "itemLabel": "الجمعية الأوروبية لمكافحة الروماتيزم",
+      "hq": "http://www.wikidata.org/entity/Q72",
+      "hqLabel": "زيورخ",
+      "sitelinks": "7"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q6324948",
+      "itemLabel": "مركز الملك عبدالله بن عبدالعزيز العالمي للحوار بين أتباع الأديان والثقافات",
+      "hq": "http://www.wikidata.org/entity/Q597",
+      "hqLabel": "لشبونة",
+      "sitelinks": "7"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q6324948",
+      "itemLabel": "مركز الملك عبدالله بن عبدالعزيز العالمي للحوار بين أتباع الأديان والثقافات",
+      "hq": "http://www.wikidata.org/entity/Q1741",
+      "hqLabel": "فيينا",
+      "sitelinks": "7"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q10853121",
+      "itemLabel": "لجنة الهدنة العسكرية (قيادة الأمم المتحدة)",
+      "hq": "http://www.wikidata.org/entity/Q495167",
+      "hqLabel": "بانمنجوم",
+      "sitelinks": "7"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q386559",
+      "itemLabel": "الرابطة الدولية للمترجمين التحريريين والشفويين المحترفين (IAPTI)",
+      "hq": "http://www.wikidata.org/entity/Q1486",
+      "hqLabel": "بوينس آيرس",
+      "sitelinks": "6"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3512342",
+      "itemLabel": "ترافيك",
+      "hq": "http://www.wikidata.org/entity/Q350",
+      "hqLabel": "كامبريدج",
+      "sitelinks": "6"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q4783148",
+      "itemLabel": "المصرف العربي للتنمية الاقتصادية في إفريقيا",
+      "hq": "http://www.wikidata.org/entity/Q3692",
+      "hqLabel": "الرياض",
+      "sitelinks": "6"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3152339",
+      "itemLabel": "المعهد الدولي للتبريد",
+      "hq": "http://www.wikidata.org/entity/Q90",
+      "hqLabel": "باريس",
+      "sitelinks": "5"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q5963265",
+      "itemLabel": "المؤتمر الدولي للأحزاب السياسية الآسيوية",
+      "hq": "http://www.wikidata.org/entity/Q8684",
+      "hqLabel": "سول",
+      "sitelinks": "5"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q65227050",
+      "itemLabel": "تحالف القضاء على نفايات البلاستيك",
+      "hq": "http://www.wikidata.org/entity/Q334",
+      "hqLabel": "سنغافورة",
+      "sitelinks": "5"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3075387",
+      "itemLabel": "الهيئة الآسيوية الأوربية",
+      "hq": "http://www.wikidata.org/entity/Q334",
+      "hqLabel": "سنغافورة",
+      "sitelinks": "4"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1376562",
+      "itemLabel": "الاتحاد الأوروبي للصناعات والجمعيات الصيدلانية",
+      "hq": "http://www.wikidata.org/entity/Q240",
+      "hqLabel": "بروكسل",
+      "sitelinks": "4"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q4651977",
+      "itemLabel": "الرابطة الدولية لمنتجي البستنة AIPH",
+      "hq": "http://www.wikidata.org/entity/Q23169",
+      "hqLabel": "أكسفوردشير",
+      "sitelinks": "4"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q5060362",
+      "itemLabel": "برنامج التعاون الاقتصادي الإقليمي لآسيا الوسطى",
+      "hq": "http://www.wikidata.org/entity/Q9085",
+      "hqLabel": "ماندالويونغ",
+      "sitelinks": "4"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q5970551",
+      "itemLabel": "آيرا",
+      "hq": "http://www.wikidata.org/entity/Q84",
+      "hqLabel": "لندن",
+      "sitelinks": "4"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q48748710",
+      "itemLabel": "التحالف الدولي لحماية التراث",
+      "hq": "http://www.wikidata.org/entity/Q71",
+      "hqLabel": "جنيف",
+      "sitelinks": "4"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2974848",
+      "itemLabel": "منظمة المدن والحكومات المحلية الأفريقية المتحدة",
+      "hq": "http://www.wikidata.org/entity/Q3551",
+      "hqLabel": "الرباط",
+      "sitelinks": "3"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1340188",
+      "itemLabel": "جمعية تاريخ العصور الوسطى",
+      "hq": "http://www.wikidata.org/entity/Q2999",
+      "hqLabel": "فورتسبورغ",
+      "sitelinks": "3"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3977756",
+      "itemLabel": "منظمة المدن العربية",
+      "hq": "http://www.wikidata.org/entity/Q12236750",
+      "hqLabel": "كيفان",
+      "sitelinks": "3"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q30596094",
+      "itemLabel": "منظمة مكافحة الجراد الصحراوي لشرق إفريقيا",
+      "hq": "http://www.wikidata.org/entity/Q3624",
+      "hqLabel": "أديس أبابا",
+      "sitelinks": "3"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q56064561",
+      "itemLabel": "منظمة التحالف العالمي للأراضي الجافة",
+      "hq": "http://www.wikidata.org/entity/Q3861",
+      "hqLabel": "الدوحة",
+      "sitelinks": "3"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q4783192",
+      "itemLabel": "المنظمة العربية لتكنولوجيات الاتصال والمعلومات",
+      "hq": "http://www.wikidata.org/entity/Q3572",
+      "hqLabel": "تونس",
+      "sitelinks": "2"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q5513635",
+      "itemLabel": "منظمة المشرعين العالميين",
+      "hq": "http://www.wikidata.org/entity/Q84",
+      "hqLabel": "لندن",
+      "sitelinks": "2"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q6053726",
+      "itemLabel": "الجمعية الدولية للتأتأة",
+      "hq": "http://www.wikidata.org/entity/Q545119",
+      "hqLabel": "نيو أولم",
+      "sitelinks": "2"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q8035994",
+      "itemLabel": "المعهد العالمي للنقل النووي",
+      "hq": "http://www.wikidata.org/entity/Q84",
+      "hqLabel": "لندن",
+      "sitelinks": "2"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q102354124",
+      "itemLabel": "منظمة التعاون الرقمي",
+      "hq": "http://www.wikidata.org/entity/Q3692",
+      "hqLabel": "الرياض",
+      "sitelinks": "2"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q6052211",
+      "itemLabel": "مؤسسة اضطراب الوسواس القهري الدولية",
+      "hq": "http://www.wikidata.org/entity/Q100",
+      "hqLabel": "بوسطن",
+      "sitelinks": "1"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q6538965",
+      "itemLabel": "اتحاد الأطباء العرب",
+      "hq": "http://www.wikidata.org/entity/Q85",
+      "hqLabel": "القاهرة",
+      "sitelinks": "1"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q30314100",
+      "itemLabel": "الجمعية الدولية لعلم المناعة العصبية",
+      "hq": "http://www.wikidata.org/entity/Q243228",
+      "hqLabel": "روكا دي بابا",
+      "sitelinks": "1"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q63122539",
+      "itemLabel": "المنظمة الدولية للإبل",
+      "hq": "http://www.wikidata.org/entity/Q3692",
+      "hqLabel": "الرياض",
+      "sitelinks": "1"
+    }
+  ]
+}

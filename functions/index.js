@@ -3,7 +3,6 @@ const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const { getApps, initializeApp } = require("firebase-admin/app");
 const { getAuth } = require("firebase-admin/auth");
-const { getFirestore } = require("firebase-admin/firestore");
 const {
   apiVersionAllows,
   configuredDeploymentEnvironment,
@@ -15,6 +14,10 @@ const {
   TRUSTED_SOURCE_HOSTS,
   reachableTrustedSource,
 } = require("./trusted-source");
+const {
+  filterLegacyGeneratedCandidates,
+  legacyContentIsBlocked,
+} = require("./legacy-content-policy");
 
 if (!getApps().length) initializeApp();
 
@@ -35,6 +38,9 @@ function envFlag(name, defaultValue) {
 
 // حد موزع (وليس ذاكرة عملية واحدة) حتى يبقى صحيحاً مع التوسع الأفقي.
 async function checkRateLimit(uid, maxCalls = RATE_LIMIT_MAX_CALLS) {
+  // Firestore is intentionally loaded on demand. Loading the native transport at
+  // module discovery time can delay local tooling and Firebase function discovery.
+  const { getFirestore } = require("firebase-admin/firestore");
   const firestore = getFirestore();
   const ref = firestore.collection("ai_rate_limits").doc(uid);
   const now = Date.now();
@@ -90,6 +96,12 @@ async function generateQuestionsV1Handler(req, res) {
     }
     if (!topic) {
       return res.status(400).json({ error: "topic مطلوب" });
+    }
+    if (legacyContentIsBlocked(topic)) {
+      return res.status(400).json({
+        error: "الموضوع غير متاح",
+        code: "blocked_content",
+      });
     }
 
     let decoded;
@@ -200,9 +212,11 @@ async function generateQuestionsV1Handler(req, res) {
       .replace(/```json|```/g, "")
       .trim();
     const parsed = JSON.parse(clean);
-    const candidates = Array.isArray(parsed)
+    const parsedCandidates = Array.isArray(parsed)
       ? parsed.filter((question) => question && question.q && question.answer)
       : [];
+    // نفحص قبل التحقق من المصدر حتى لا يصل سجل مرفوض إلى طلب شبكة آخر.
+    const candidates = filterLegacyGeneratedCandidates(parsedCandidates, safeCount);
     let questions = [];
 
     if (trustedRound) {
@@ -232,6 +246,16 @@ async function generateQuestionsV1Handler(req, res) {
         q: String(question.q).trim().slice(0, 600),
         answer: String(question.answer).trim().slice(0, 400),
       })).filter((question) => question.q && question.answer);
+    }
+
+    // دفاع أخير بعد تطبيع الحقول واتباع رابط المصدر. لا نعيد أو نسجل
+    // القيمة المرفوضة؛ يرى العميل رمزاً عاماً فقط.
+    questions = questions.filter((question) => !legacyContentIsBlocked(question));
+    if (!questions.length && parsedCandidates.length) {
+      return res.status(502).json({
+        error: "تعذّر إنشاء أسئلة مناسبة، حاول لاحقاً",
+        code: "generated_content_rejected",
+      });
     }
 
     return res.status(200).json({ questions, trustedSources: trustedRound });

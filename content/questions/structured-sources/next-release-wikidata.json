@@ -1,0 +1,2551 @@
+{
+  "schemaVersion": 1,
+  "endpoint": "https://query.wikidata.org/sparql",
+  "retrievedAt": "2026-09-04T23:12:30.453Z",
+  "datasets": {
+    "kuwait": [
+      {
+        "item": "http://www.wikidata.org/entity/Q1086979",
+        "itemLabel": "الاتحاد الكويتي لكرة القدم",
+        "kindLabel": "اتحاد كرة قدم"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1072757",
+        "itemLabel": "محافظة الفروانية",
+        "kindLabel": "قائمة محافظات الكويت"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1077024",
+        "itemLabel": "الجهراء",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1086979",
+        "itemLabel": "الاتحاد الكويتي لكرة القدم",
+        "kindLabel": "منظمة غير ربحية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1137381",
+        "itemLabel": "الصندوق العربي للإنماء الاقتصادي والاجتماعي",
+        "kindLabel": "منظمة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1155457",
+        "itemLabel": "سياسة الكويت",
+        "kindLabel": "Q12332021"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1139228",
+        "itemLabel": "مجلس الأمة الكويتي",
+        "kindLabel": "مجلس تشريعي أحادي الغرف"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1155457",
+        "itemLabel": "سياسة الكويت",
+        "kindLabel": "نظام سياسي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1103742",
+        "itemLabel": "كأس العرب 2002",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1155411",
+        "itemLabel": "ألعاب غرب آسيا",
+        "kindLabel": "حدث رياضي متكرر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1179881",
+        "itemLabel": "سلوى",
+        "kindLabel": "قائمة مناطق الكويت"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1256150",
+        "itemLabel": "خط عرض 30° شمال",
+        "kindLabel": "دائرة العرض"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1256623",
+        "itemLabel": "خط عرض 29° شمال",
+        "kindLabel": "دائرة العرض"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1335640",
+        "itemLabel": "أبراج الكويت",
+        "kindLabel": "معلم"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1195526",
+        "itemLabel": "الفروانية",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1335640",
+        "itemLabel": "أبراج الكويت",
+        "kindLabel": "مجمع مباني"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1185220",
+        "itemLabel": "اللجنة الأولمبية الكويتية",
+        "kindLabel": "اللجنة الأولمبية الوطنية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1179881",
+        "itemLabel": "سلوى",
+        "kindLabel": "ضاحية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1392645",
+        "itemLabel": "قائمة السفراء الألمان في الكويت",
+        "kindLabel": "مقالة في شكل قائمة من ويكيميديا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1392962",
+        "itemLabel": "فيلكا",
+        "kindLabel": "جزيرة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1424697",
+        "itemLabel": "طريق الموت",
+        "kindLabel": "طريق سريع"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1477406",
+        "itemLabel": "أيزو 3166-2:KW",
+        "kindLabel": "مجموعة بيانات لبلد معين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1424697",
+        "itemLabel": "طريق الموت",
+        "kindLabel": "مقبرة دبابات"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1432832",
+        "itemLabel": "المسجد الكبير",
+        "kindLabel": "مسجد"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1477496",
+        "itemLabel": "الكويت في كأس العالم 1982",
+        "kindLabel": "منتخب كرة قدم في كأس العالم 1982"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1477496",
+        "itemLabel": "الكويت في كأس العالم 1982",
+        "kindLabel": "الكويت في كأس العالم"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1634571",
+        "itemLabel": "منتخب الكويت لكأس ديفيز",
+        "kindLabel": "Q66817784"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1634685",
+        "itemLabel": "منتخب الخليج العربي لكرة الرجبي",
+        "kindLabel": "Q61719000"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1638948",
+        "itemLabel": "منتخب الكويت لكرة اليد",
+        "kindLabel": "Q103842693"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1634762",
+        "itemLabel": "مؤسسة البترول الكويتية",
+        "kindLabel": "مقاولة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1634762",
+        "itemLabel": "مؤسسة البترول الكويتية",
+        "kindLabel": "شركة نفطية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1634762",
+        "itemLabel": "مؤسسة البترول الكويتية",
+        "kindLabel": "عمل تجاري"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1634762",
+        "itemLabel": "مؤسسة البترول الكويتية",
+        "kindLabel": "سلسلة محطات الغاز"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4119092",
+        "itemLabel": "جليب الشيوخ",
+        "kindLabel": "حي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4118737",
+        "itemLabel": "بطولة آسيا لكرة اليد للرجال 1977",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4118921",
+        "itemLabel": "ملعب نادي الكويت",
+        "kindLabel": "ملعب متعدد الأغراض"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4119207",
+        "itemLabel": "شركة البترول الكويتية العالمية",
+        "kindLabel": "مقاولة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4119207",
+        "itemLabel": "شركة البترول الكويتية العالمية",
+        "kindLabel": "شركة نفطية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4119207",
+        "itemLabel": "شركة البترول الكويتية العالمية",
+        "kindLabel": "عمل تجاري"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4119207",
+        "itemLabel": "شركة البترول الكويتية العالمية",
+        "kindLabel": "سلسلة محطات الغاز"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4120524",
+        "itemLabel": "الصبيحية",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4120400",
+        "itemLabel": "مبارك الكبير",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4165357",
+        "itemLabel": "إقليم البحرين",
+        "kindLabel": "منطقة تاريخية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4165220",
+        "itemLabel": "نادي الفحيحيل",
+        "kindLabel": "نادي كرة قدم"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4165717",
+        "itemLabel": "نادي الساحل الرياضي",
+        "kindLabel": "نادي كرة قدم"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4164626",
+        "itemLabel": "سوق الكويت للأوراق المالية",
+        "kindLabel": "مؤسسة حكومية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4120520",
+        "itemLabel": "الظهر",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4164575",
+        "itemLabel": "مسكان",
+        "kindLabel": "جزيرة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4164626",
+        "itemLabel": "سوق الكويت للأوراق المالية",
+        "kindLabel": "سوق الأوراق المالية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4158288",
+        "itemLabel": "عيد التحرير",
+        "kindLabel": "عطلة رسمية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4158288",
+        "itemLabel": "عيد التحرير",
+        "kindLabel": "يوم وطني"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1794764",
+        "itemLabel": "وكالة الأنباء الكويتية",
+        "kindLabel": "وكالة أنباء"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1794763",
+        "itemLabel": "الاتحاد العام لعمال الكويت",
+        "kindLabel": "اتحاد نقابة عمال"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1689756",
+        "itemLabel": "كاظمة",
+        "kindLabel": "نادي كرة قدم"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1647999",
+        "itemLabel": "حقل الروضتين",
+        "kindLabel": "حقل نفط"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1794770",
+        "itemLabel": "الاتحاد الكويتي لهوكي الجليد",
+        "kindLabel": "Q63364175"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1794772",
+        "itemLabel": "منتخب الكويت لهوكي الجليد",
+        "kindLabel": "فريق وطني لهوكي الجليد"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1794766",
+        "itemLabel": "الهيئة العامة للاستثمار",
+        "kindLabel": "صندوق الثروة السيادي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1794766",
+        "itemLabel": "الهيئة العامة للاستثمار",
+        "kindLabel": "مؤسسة حكومية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1794764",
+        "itemLabel": "وكالة الأنباء الكويتية",
+        "kindLabel": "مؤسسة حكومية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952954",
+        "itemLabel": "الدوري الكويتي 1988–89",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952955",
+        "itemLabel": "الدوري الكويتي 1989–90",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952952",
+        "itemLabel": "الدوري الكويتي 1986–87",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952958",
+        "itemLabel": "الدوري الكويتي 1993–94",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952959",
+        "itemLabel": "الدوري الكويتي 1994–95",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952956",
+        "itemLabel": "الدوري الكويتي 1991–92",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952957",
+        "itemLabel": "الدوري الكويتي 1992–93",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952963",
+        "itemLabel": "الدوري الكويتي 1997–98",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952960",
+        "itemLabel": "الدوري الكويتي 1995–96",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952966",
+        "itemLabel": "الدوري الكويتي 1998–99",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952964",
+        "itemLabel": "الدوري الكويتي 1996–97",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952970",
+        "itemLabel": "الدوري الكويتي 2002–03",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952968",
+        "itemLabel": "الدوري الكويتي 1999–2000",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952971",
+        "itemLabel": "الدوري الكويتي 2006–07",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952975",
+        "itemLabel": "الدوري الكويتي 2005–06",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952979",
+        "itemLabel": "الدوري الكويتي 2010–11",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2952980",
+        "itemLabel": "الدوري الكويتي 2011–12",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2954350",
+        "itemLabel": "بطولة آسيا لألعاب القوى 1983",
+        "kindLabel": "نسخة حدث رياضي متكرر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3081559",
+        "itemLabel": "الإسلام في الكويت",
+        "kindLabel": "الإسلام في منطقة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3067960",
+        "itemLabel": "أوريدو للاتصالات",
+        "kindLabel": "عمل تجاري"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3079743",
+        "itemLabel": "القوة البحرية الكويتية",
+        "kindLabel": "قوات بحرية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2954388",
+        "itemLabel": "بطولة آسيا للملاكمة للهواة موسم 1987",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3088715",
+        "itemLabel": "الحدود السعودية الكويتية",
+        "kindLabel": "حدود دولية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3088785",
+        "itemLabel": "الحدود العراقية الكويتية",
+        "kindLabel": "حدود دولية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3088715",
+        "itemLabel": "الحدود السعودية الكويتية",
+        "kindLabel": "حد سياسي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3088785",
+        "itemLabel": "الحدود العراقية الكويتية",
+        "kindLabel": "حد سياسي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3088715",
+        "itemLabel": "الحدود السعودية الكويتية",
+        "kindLabel": "حدود برية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3088785",
+        "itemLabel": "الحدود العراقية الكويتية",
+        "kindLabel": "حدود برية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3120749",
+        "itemLabel": "سكة الحديد الخليجية",
+        "kindLabel": "نظام السكك الحديدية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3113538",
+        "itemLabel": "شركة نفط الكويت",
+        "kindLabel": "عمل تجاري"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3088715",
+        "itemLabel": "الحدود السعودية الكويتية",
+        "kindLabel": "حدود بحرية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3088785",
+        "itemLabel": "الحدود العراقية الكويتية",
+        "kindLabel": "حدود بحرية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3138087",
+        "itemLabel": "ثقافة الكويت",
+        "kindLabel": "ثقافة منطقة جغرافية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3235220",
+        "itemLabel": "حولي",
+        "kindLabel": "ضاحية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3354009",
+        "itemLabel": "بطولة الكويت المفتوحة لكرة الطاولة",
+        "kindLabel": "دورة رياضية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3238476",
+        "itemLabel": "لايتنينغ",
+        "kindLabel": "أفعوانية فولاذية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3269102",
+        "itemLabel": "مدرسة الكويت الفرنسية",
+        "kindLabel": "Q2511322"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3269102",
+        "itemLabel": "مدرسة الكويت الفرنسية",
+        "kindLabel": "مدرسة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3272029",
+        "itemLabel": "ملعب صباح السالم",
+        "kindLabel": "ملعب"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3272392",
+        "itemLabel": "ملعب محمد الحمد",
+        "kindLabel": "ملعب"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3303014",
+        "itemLabel": "العلاقات العراقية الكويتية",
+        "kindLabel": "علاقات ثنائية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3225501",
+        "itemLabel": "كأس الكويت للإسكواش",
+        "kindLabel": "حدث رياضي متكرر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3273657",
+        "itemLabel": "جامعة الكويت",
+        "kindLabel": "جامعة حكومية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3286948",
+        "itemLabel": "انتخابات مجلس الأمة الكويتي 2009",
+        "kindLabel": "الانتخابات العامة الكويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1986832",
+        "itemLabel": "منتخب الكويت لكرة السلة",
+        "kindLabel": "Q135728463"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1935593",
+        "itemLabel": "عوهة",
+        "kindLabel": "جزيرة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2022228",
+        "itemLabel": "منتخب الكويت لكرة الصالات",
+        "kindLabel": "Q94696559"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2035020",
+        "itemLabel": "قائمة رؤساء وزراء الكويت",
+        "kindLabel": "مقالة في شكل قائمة من ويكيميديا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1883371",
+        "itemLabel": "مدينة الحرير",
+        "kindLabel": "بناء معماري"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1982340",
+        "itemLabel": "الشرق الأوسط الكبير",
+        "kindLabel": "منطقة عابرة للقارات"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2044560",
+        "itemLabel": "لغة سيلهيتية",
+        "kindLabel": "لغة حية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2044560",
+        "itemLabel": "لغة سيلهيتية",
+        "kindLabel": "لغة طبيعية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2336459",
+        "itemLabel": "بيت التمويل الكويتي",
+        "kindLabel": "مقاولة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2336459",
+        "itemLabel": "بيت التمويل الكويتي",
+        "kindLabel": "عمل تجاري"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2300277",
+        "itemLabel": "الكويت في الألعاب البارالمبية الصيفية 2012",
+        "kindLabel": "بلد في رياضة بارالمبية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2398627",
+        "itemLabel": "مايو سي سي إن برو سايكلنج",
+        "kindLabel": "فريق قاري"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2398627",
+        "itemLabel": "مايو سي سي إن برو سايكلنج",
+        "kindLabel": "فريق نادي الدراجات"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2081317",
+        "itemLabel": "نادي الشباب الكويتي",
+        "kindLabel": "نادي كرة قدم"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2086900",
+        "itemLabel": "الدوري الكويتي 2008–09",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2096473",
+        "itemLabel": "نادي الجهراء",
+        "kindLabel": "نادي كرة قدم"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q2134168",
+        "itemLabel": "شبكة طرق المشرق العربي الدولية",
+        "kindLabel": "شبكة طرق"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3564897",
+        "itemLabel": "قصر السيف",
+        "kindLabel": "بناء معماري"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3495496",
+        "itemLabel": "الرقة",
+        "kindLabel": "مستوطنة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3505782",
+        "itemLabel": "السالمية",
+        "kindLabel": "مدينة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3495496",
+        "itemLabel": "الرقة",
+        "kindLabel": "مقاطعة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3587196",
+        "itemLabel": "انتخابات مجلس الأمة الكويتي 2012",
+        "kindLabel": "الانتخابات العامة الكويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3495468",
+        "itemLabel": "القرين",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3495485",
+        "itemLabel": "الفحيحيل",
+        "kindLabel": "مستوطنة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3495485",
+        "itemLabel": "الفحيحيل",
+        "kindLabel": "مقاطعة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3457676",
+        "itemLabel": "احتياطات النفط في الكويت",
+        "kindLabel": "احتياطيات النفط"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3495478",
+        "itemLabel": "ضاحية صباح السالم",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3563542",
+        "itemLabel": "قصر بيان",
+        "kindLabel": "مبنى"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4576314",
+        "itemLabel": "الهجوم على السفارة اليابانية في الكويت 1974",
+        "kindLabel": "أخذ رهائن"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4436039",
+        "itemLabel": "قائمة سفراء روسيا لدى الكويت",
+        "kindLabel": "مقالة في شكل قائمة من ويكيميديا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4607969",
+        "itemLabel": "بطولة آسيا للرماية 2007",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4620343",
+        "itemLabel": "البطولة الآسيوية للرماية بالبندقية الهوائية 2011",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4614290",
+        "itemLabel": "بطولة العالم المفتوحة للاسكواش للرجال 2009",
+        "kindLabel": "نسخة حدث رياضي متكرر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4582023",
+        "itemLabel": "قاعدة أحمد الجابر الجوية",
+        "kindLabel": "قاعدة جوية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4204945",
+        "itemLabel": "تاريخ البريد في الكويت",
+        "kindLabel": "Q74614691"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4293939",
+        "itemLabel": "ميناء الشعيبة",
+        "kindLabel": "ميناء"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4318093",
+        "itemLabel": "حوض الخليج العربي",
+        "kindLabel": "Q4318090"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4438178",
+        "itemLabel": "رياضيون من الكويت في الألعاب الآسيوية الشتوية 2011",
+        "kindLabel": "بلد في منافسة رياضية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4268642",
+        "itemLabel": "بيان",
+        "kindLabel": "قائمة مناطق الكويت"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4318093",
+        "itemLabel": "حوض الخليج العربي",
+        "kindLabel": "حوض أمامي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4607507",
+        "itemLabel": "دوري الدرجة الأولى الكويتي 2006–07",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4607965",
+        "itemLabel": "بطولة آسيا للجودو 2007",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4610073",
+        "itemLabel": "دوري الدرجة الأولى الكويتي 2007–08",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4611389",
+        "itemLabel": "كأس ولي العهد 2007–08",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4614146",
+        "itemLabel": "كأس الأمير 2009",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4617680",
+        "itemLabel": "كأس الأمير 2009–10",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4617681",
+        "itemLabel": "كأس ولي العهد 2009–10",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4621625",
+        "itemLabel": "كأس الأمير 2010–11",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4621624",
+        "itemLabel": "كأس ولي العهد 2010–11",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4669426",
+        "itemLabel": "أبرق خيطان",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4682830",
+        "itemLabel": "العديلية",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4699526",
+        "itemLabel": "الأتشومية",
+        "kindLabel": "مجموعة لهجات"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4692553",
+        "itemLabel": "أجيليتي",
+        "kindLabel": "عمل تجاري"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4699526",
+        "itemLabel": "الأتشومية",
+        "kindLabel": "لغة طبيعية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4623805",
+        "itemLabel": "كأس الأمير 2011–12",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4623804",
+        "itemLabel": "كأس ولي العهد 2011–12",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4628249",
+        "itemLabel": "كأس ولي العهد 2012–13",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4646824",
+        "itemLabel": "مدرسة التكامل الدولية",
+        "kindLabel": "مدرسة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4670197",
+        "itemLabel": "ملعب نادي الساحل",
+        "kindLabel": "ملعب"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4670174",
+        "itemLabel": "أبو فطيرة",
+        "kindLabel": "مقاطعة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q817",
+        "itemLabel": "الكويت",
+        "kindLabel": "دولة ذات سيادة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q817",
+        "itemLabel": "الكويت",
+        "kindLabel": "بلد"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5500778",
+        "itemLabel": "حرية الأديان في الكويت",
+        "kindLabel": "حرية الدين حسب البلد"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5804221",
+        "itemLabel": "صحراء وشبه صحراء الخليج العربي",
+        "kindLabel": "منطقة بيئية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5764674",
+        "itemLabel": "فندق هيلتون أولمبيا",
+        "kindLabel": "فندق"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5938866",
+        "itemLabel": "الاتجار بالبشر في الكويت",
+        "kindLabel": "Q69359318"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5618434",
+        "itemLabel": "قانون السلاح في الكويت",
+        "kindLabel": "عنصر موضوع في منطقة جغرافية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5952347",
+        "itemLabel": "حقل الدرة",
+        "kindLabel": "حقل غاز طبيعي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q6003058",
+        "itemLabel": "مسجد الإمام باقر",
+        "kindLabel": "مسجد"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5612437",
+        "itemLabel": "خطوط جريفون الجوية",
+        "kindLabel": "شركة طيران"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5804221",
+        "itemLabel": "صحراء وشبه صحراء الخليج العربي",
+        "kindLabel": "منطقة بيئية في الصندوق العالمي للطبيعة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5885406",
+        "itemLabel": "كنيسية العائلة المقدسة",
+        "kindLabel": "كاتدرائية كاثوليكية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5938329",
+        "itemLabel": "حقوق الإنسان في الكويت",
+        "kindLabel": "حقوق الإنسان حسب الدول والأقاليم"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5474511",
+        "itemLabel": "جائزة عبد العزيز سعود البابطين للإبداع الشعري",
+        "kindLabel": "جائزة أدبية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5436994",
+        "itemLabel": "فاست تلكو",
+        "kindLabel": "عمل تجاري"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5508724",
+        "itemLabel": "الفنيطيس",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5450984",
+        "itemLabel": "الفنطاس",
+        "kindLabel": "مستوطنة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5439083",
+        "itemLabel": "الفيحاء",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5466277",
+        "itemLabel": "كرة القدم في الكويت",
+        "kindLabel": "رياضة في منطقة جغرافية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5637600",
+        "itemLabel": "الحركة الدستورية الإسلامية",
+        "kindLabel": "حزب سياسي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q5995390",
+        "itemLabel": "إيكاروس",
+        "kindLabel": "مدينة قديمة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q7204",
+        "itemLabel": "الشرق الأوسط",
+        "kindLabel": "مناطق نفوذ ثقافي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q7204",
+        "itemLabel": "الشرق الأوسط",
+        "kindLabel": "منطقة عابرة للقارات"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3590692",
+        "itemLabel": "منتخب الكويت تحت 17 سنة لكرة القدم",
+        "kindLabel": "منتخب كرة قدم"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3741110",
+        "itemLabel": "الاتحاد الكويتي لكرة السلة",
+        "kindLabel": "مجلس إداري رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3817586",
+        "itemLabel": "الدوري الكويتي 2012–13",
+        "kindLabel": "موسم رياضي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3883966",
+        "itemLabel": "عملية غرانبي",
+        "kindLabel": "حملة عسكرية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3776119",
+        "itemLabel": "البرقان الكبير",
+        "kindLabel": "حقل نفط"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3679860",
+        "itemLabel": "الجامعة العربية المفتوحة",
+        "kindLabel": "جامعة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4045072",
+        "itemLabel": "بنك الكويت الوطني",
+        "kindLabel": "مقاولة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3906657",
+        "itemLabel": "مسجد الإمام الحسين",
+        "kindLabel": "مسجد"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3732794",
+        "itemLabel": "البطريركية الكاثوليكية اليونانية الملكية في الكويت",
+        "kindLabel": "Q3732793"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4045072",
+        "itemLabel": "بنك الكويت الوطني",
+        "kindLabel": "عمل تجاري"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4045072",
+        "itemLabel": "بنك الكويت الوطني",
+        "kindLabel": "مصرف"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3873868",
+        "itemLabel": "منتخب الكويت لكرة الطائرة للرجال",
+        "kindLabel": "منتخب كرة طائرة وطني"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q3608991",
+        "itemLabel": "نظام نهري دجلة والفرات",
+        "kindLabel": "منظومة تصريف"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4115799",
+        "itemLabel": "ملعب علي صباح السالم",
+        "kindLabel": "ملعب"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4073403",
+        "itemLabel": "الشعيبة",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4115240",
+        "itemLabel": "الجابرية",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4073403",
+        "itemLabel": "الشعيبة",
+        "kindLabel": "مدن الميناء"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4115156",
+        "itemLabel": "حرائق آبار النفط الكويتية",
+        "kindLabel": "إستراتيجية الأرض المحروقة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4115518",
+        "itemLabel": "قاعدة علي السالم الجوية",
+        "kindLabel": "قاعدة جوية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4115156",
+        "itemLabel": "حرائق آبار النفط الكويتية",
+        "kindLabel": "حريق آبار النفط"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4115832",
+        "itemLabel": "الصناعة النفطية في الكويت",
+        "kindLabel": "صناعة نفطية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4115894",
+        "itemLabel": "قوات التحالف في حرب الخليج الثانية",
+        "kindLabel": "تحالف عسكري متعدد الجنسيات"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4116008",
+        "itemLabel": "الأندلس",
+        "kindLabel": "ضاحية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4116005",
+        "itemLabel": "المنقف",
+        "kindLabel": "ضاحية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4116005",
+        "itemLabel": "المنقف",
+        "kindLabel": "مستوطنة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4116012",
+        "itemLabel": "المهبولة",
+        "kindLabel": "ضاحية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4116012",
+        "itemLabel": "المهبولة",
+        "kindLabel": "مستوطنة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4116094",
+        "itemLabel": "الجامعة الأمريكية في الكويت",
+        "kindLabel": "جامعة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4116010",
+        "itemLabel": "القصور",
+        "kindLabel": "مقاطعة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4116095",
+        "itemLabel": "أم المرادم",
+        "kindLabel": "جزيرة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4116006",
+        "itemLabel": "الصليبية",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4116014",
+        "itemLabel": "الرميثية",
+        "kindLabel": "منطقة كويتية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q4116011",
+        "itemLabel": "تيماء",
+        "kindLabel": "منطقة كويتية"
+      }
+    ],
+    "airports": [
+      {
+        "item": "http://www.wikidata.org/entity/Q86446",
+        "iata": "MNL",
+        "itemLabel": "مطار مانيلا , نينوي أكوينو الدولي",
+        "countryLabel": "الفلبين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q76269",
+        "iata": "FBU",
+        "itemLabel": "مطار أوسلو، فورنبو",
+        "countryLabel": "النرويج"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q1547",
+        "iata": "LYS",
+        "itemLabel": "مطار ليون سانت إكسوبيري",
+        "countryLabel": "فرنسا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8685",
+        "iata": "JFK",
+        "itemLabel": "مطار جون إف كينيدي الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q721258",
+        "iata": "BKO",
+        "itemLabel": "مطار باماكو موديبو كيتا الدولي",
+        "countryLabel": "مالي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q721494",
+        "iata": "AMM",
+        "itemLabel": "مطار الملكة علياء الدولي",
+        "countryLabel": "الأردن"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8688",
+        "iata": "SFO",
+        "itemLabel": "مطار سان فرانسيسكو الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8691",
+        "iata": "LHR",
+        "itemLabel": "مطار لندن هيثرو",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q597649",
+        "iata": "CLT",
+        "itemLabel": "مطار شارلوت دوغلاس الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q597631",
+        "iata": "SFB",
+        "itemLabel": "مطار أورلاندو سانفورد الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q385406",
+        "iata": "GRU",
+        "itemLabel": "مطار غواروليوس الدولي",
+        "countryLabel": "البرازيل"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q386864",
+        "iata": "GYD",
+        "itemLabel": "مطار ( باكو ) حيدر علييف الدولي",
+        "countryLabel": "أذربيجان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8694",
+        "iata": "MAN",
+        "itemLabel": "مطار مانشستر",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q123222",
+        "iata": "RMF",
+        "itemLabel": "مطار مرسى علم الدولي",
+        "countryLabel": "مصر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q99172",
+        "iata": "PRG",
+        "itemLabel": "مطار فاكلاف هافيل الدولي",
+        "countryLabel": "جمهورية التشيك"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q111731",
+        "iata": "KWG",
+        "itemLabel": "مطار كريفي ريه الدولي",
+        "countryLabel": "أوكرانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q598002",
+        "iata": "LAD",
+        "itemLabel": "مطار كواترو دي فيفيريرو",
+        "countryLabel": "أنغولا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8703",
+        "iata": "LGW",
+        "itemLabel": "مطار غاتويك",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8709",
+        "iata": "STN",
+        "itemLabel": "مطار لندن ستانستد",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q598197",
+        "iata": "BIO",
+        "itemLabel": "مطار بلباو",
+        "countryLabel": "إسبانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q598215",
+        "iata": "BSK",
+        "itemLabel": "مطار بسكرة - محمد خيضر",
+        "countryLabel": "الجزائر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q127530",
+        "iata": "MIA",
+        "itemLabel": "مطار ميامي الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q127671",
+        "iata": "SCL",
+        "itemLabel": "مطار أرتورو ميرينو بينيتيز الدولي",
+        "countryLabel": "تشيلي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8716",
+        "iata": "EDI",
+        "itemLabel": "مطار إدنبرة",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8712",
+        "iata": "LTN",
+        "itemLabel": "مطار لندن لوتن",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q721497",
+        "iata": "ROB",
+        "itemLabel": "مطار روبرتس",
+        "countryLabel": "ليبيريا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q721780",
+        "iata": "LLW",
+        "itemLabel": "مطار ليلونغوي الدولي",
+        "countryLabel": "ملاوي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q721618",
+        "iata": "TBZ",
+        "itemLabel": "مطار تبريز الدولي",
+        "countryLabel": "إيران"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q723325",
+        "iata": "SXM",
+        "itemLabel": "مطار الأميرة جوليانا الدولي",
+        "countryLabel": "سينت مارتن"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q387560",
+        "iata": "CTU",
+        "itemLabel": "مطار تشنغدو شوانغليو الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q388535",
+        "iata": "CCU",
+        "itemLabel": "مطار نيتاجي سوبهاس شاندرا بوس الدولي",
+        "countryLabel": "الهند"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q387628",
+        "iata": "DQM",
+        "itemLabel": "مطار الدقم",
+        "countryLabel": "سلطنة عمان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q127955",
+        "iata": "BEG",
+        "itemLabel": "مطار بلغراد نيكولا تسلا",
+        "countryLabel": "صربيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q127951",
+        "iata": "SOF",
+        "itemLabel": "مطار صوفيا",
+        "countryLabel": "بلغاريا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8719",
+        "iata": "BHX",
+        "itemLabel": "مطار برمينغهام",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8721",
+        "iata": "GLA",
+        "itemLabel": "مطار غلاسكو الدولي",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q601091",
+        "iata": "WUH",
+        "itemLabel": "مطار ووهان تيانهي الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q723474",
+        "iata": "PNK",
+        "itemLabel": "مطار سوباديو الدولي",
+        "countryLabel": "إندونيسيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q723622",
+        "iata": "SAW",
+        "itemLabel": "مطار صبيحة كوكجن الدولي",
+        "countryLabel": "تركيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8725",
+        "iata": "BRS",
+        "itemLabel": "مطار بريستول",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8727",
+        "iata": "LPL",
+        "itemLabel": "مطار ليفربول",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8731",
+        "iata": "LAX",
+        "itemLabel": "مطار لوس أنجلوس الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q389241",
+        "iata": "BLQ",
+        "itemLabel": "مطار بولونيا",
+        "countryLabel": "إيطاليا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q392728",
+        "iata": "DUR",
+        "itemLabel": "مطار الملك شاكا الدولي",
+        "countryLabel": "جنوب إفريقيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q128016",
+        "iata": "ZAG",
+        "itemLabel": "مطار زغرب",
+        "countryLabel": "كرواتيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q607230",
+        "iata": "ECN",
+        "itemLabel": "مطار إرجان الدولي",
+        "countryLabel": "قبرص"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q607230",
+        "iata": "ECN",
+        "itemLabel": "مطار إرجان الدولي",
+        "countryLabel": "قبرص الشمالية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q607789",
+        "iata": "ASA",
+        "itemLabel": "مطار عصب الدولي",
+        "countryLabel": "إرتريا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8975",
+        "iata": "NCL",
+        "itemLabel": "مطار نيوكاسل",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8979",
+        "iata": "BFS",
+        "itemLabel": "مطار بلفاست الدولي",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8982",
+        "iata": "LCY",
+        "itemLabel": "مطار لندن سيتي",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8981",
+        "iata": "ABZ",
+        "itemLabel": "مطار أبردين",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q139921",
+        "iata": "KEF",
+        "itemLabel": "مطار كيفلافيك الدولي",
+        "countryLabel": "آيسلندا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q130270",
+        "iata": "CUF",
+        "itemLabel": "مطار كونيو الدولي",
+        "countryLabel": "إيطاليا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q733738",
+        "iata": "MEL",
+        "itemLabel": "مطار ملبورن الدولي",
+        "countryLabel": "أستراليا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q403671",
+        "iata": "LIS",
+        "itemLabel": "مطار لشبونة",
+        "countryLabel": "البرتغال"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q392790",
+        "iata": "MWZ",
+        "itemLabel": "مطار موانزا",
+        "countryLabel": "تنزانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q392784",
+        "iata": "MBA",
+        "itemLabel": "مطار موي الدولي",
+        "countryLabel": "كينيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q401700",
+        "iata": "AMD",
+        "itemLabel": "مطار سردار فالابهبهاي باتل الدولي",
+        "countryLabel": "الهند"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q141677",
+        "iata": "XIY",
+        "itemLabel": "مطار شيان شيانيانغ الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q611983",
+        "iata": "BVA",
+        "itemLabel": "مطار بوفيه - تيه",
+        "countryLabel": "فرنسا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q612731",
+        "iata": "BOD",
+        "itemLabel": "مطار بوردو ميرينياك",
+        "countryLabel": "فرنسا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8987",
+        "iata": "BHD",
+        "itemLabel": "مطار مدينة جورج بست بلفاست",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8994",
+        "iata": "CWL",
+        "itemLabel": "مطار كارديف الدولي",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8988",
+        "iata": "SOU",
+        "itemLabel": "مطار ساوثهامبتون",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q733998",
+        "iata": "GIG",
+        "itemLabel": "مطار ريو دي جانيرو الدولي",
+        "countryLabel": "البرازيل"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q736627",
+        "iata": "YUL",
+        "itemLabel": "مطار مونتريال الدولي",
+        "countryLabel": "كندا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q734729",
+        "iata": "IKA",
+        "itemLabel": "مطار الإمام الخميني الدولي",
+        "countryLabel": "إيران"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q622296",
+        "iata": "AWZ",
+        "itemLabel": "مطار الأهواز الدولي",
+        "countryLabel": "إيران"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q620706",
+        "iata": "JIB",
+        "itemLabel": "مطار جيبوتي الدولي",
+        "countryLabel": "جيبوتي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q156971",
+        "iata": "BSL",
+        "itemLabel": "مطار بازل ميلوز فريبورغ الأوروبي",
+        "countryLabel": "ألمانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q156971",
+        "iata": "MLH",
+        "itemLabel": "مطار بازل ميلوز فريبورغ الأوروبي",
+        "countryLabel": "ألمانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q156971",
+        "iata": "EAP",
+        "itemLabel": "مطار بازل ميلوز فريبورغ الأوروبي",
+        "countryLabel": "ألمانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q156971",
+        "iata": "BSL",
+        "itemLabel": "مطار بازل ميلوز فريبورغ الأوروبي",
+        "countryLabel": "فرنسا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q156971",
+        "iata": "MLH",
+        "itemLabel": "مطار بازل ميلوز فريبورغ الأوروبي",
+        "countryLabel": "فرنسا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q156971",
+        "iata": "EAP",
+        "itemLabel": "مطار بازل ميلوز فريبورغ الأوروبي",
+        "countryLabel": "فرنسا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q153592",
+        "iata": "JED",
+        "itemLabel": "مطار الملك عبد العزيز الدولي",
+        "countryLabel": "السعودية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q740392",
+        "iata": "SJJ",
+        "itemLabel": "مطار سراييفو الدو (SJJ)",
+        "countryLabel": "البوسنة والهرسك"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q738866",
+        "iata": "FBM",
+        "itemLabel": "مطار لوبومباشي الدولي",
+        "countryLabel": "جمهورية الكونغو الديمقراطية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q421811",
+        "iata": "SHA",
+        "itemLabel": "مطار شانغهاي هونغكياو الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q420847",
+        "iata": "LBV",
+        "itemLabel": "مطار ليون مبا الدولي",
+        "countryLabel": "الغابون"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q8999",
+        "iata": "EXT",
+        "itemLabel": "مطار إكستر",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q9064",
+        "iata": "MVD",
+        "itemLabel": "مطار كاراسكو الدولي",
+        "countryLabel": "الأوروغواي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q623452",
+        "iata": "ALG",
+        "itemLabel": "مطار هواري بومدين الدولي",
+        "countryLabel": "الجزائر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q630645",
+        "iata": "PMO",
+        "itemLabel": "مطار باليرمو الدولي",
+        "countryLabel": "إيطاليا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q9686",
+        "iata": "THF",
+        "itemLabel": "مطار برلين تمبلهوف",
+        "countryLabel": "ألمانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q9689",
+        "iata": "SXF",
+        "itemLabel": "مطار برلين شونفيلد",
+        "countryLabel": "ألمانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q160094",
+        "iata": "HUI",
+        "itemLabel": "مطار فو باي الدولي",
+        "countryLabel": "فيتنام"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q430490",
+        "iata": "ESB",
+        "itemLabel": "مطار إيسنبوغا الدولي",
+        "countryLabel": "تركيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q429304",
+        "iata": "RAK",
+        "itemLabel": "مطار مراكش المنارة الدولي",
+        "countryLabel": "المغرب"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q14295",
+        "iata": "SEA",
+        "itemLabel": "مطار سياتل تاكوما الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q9694",
+        "iata": "AMS",
+        "itemLabel": "مطار سخيبول أمستردام",
+        "countryLabel": "هولندا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q744748",
+        "iata": "IAH",
+        "itemLabel": "مطار جورج بوش الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q744802",
+        "iata": "KBL",
+        "itemLabel": "مطار كابل الدولي",
+        "countryLabel": "أفغانستان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q635826",
+        "iata": "SHJ",
+        "itemLabel": "مطار الشارقة الدولي",
+        "countryLabel": "الإمارات العربية المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q637639",
+        "iata": "BAH",
+        "itemLabel": "مطار البحرين الدولي",
+        "countryLabel": "البحرين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q637028",
+        "iata": "ORN",
+        "itemLabel": "مطار وهران - أحمد بن بلة",
+        "countryLabel": "الجزائر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q14300",
+        "iata": "CBR",
+        "itemLabel": "مطار كانبرا",
+        "countryLabel": "أستراليا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q166276",
+        "iata": "MAD",
+        "itemLabel": "مطار مدريد باراخاس الدولي",
+        "countryLabel": "إسبانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q162139",
+        "iata": "ZYL",
+        "itemLabel": "مطار عثماني الدولي",
+        "countryLabel": "بنغلاديش"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q461793",
+        "iata": "CAI",
+        "itemLabel": "مطار القاهرة الدولي",
+        "countryLabel": "مصر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q459096",
+        "iata": "DFW",
+        "itemLabel": "مطار دالاس فورت ورث الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q639161",
+        "iata": "FNC",
+        "itemLabel": "مطار كريستيانو رونالدو",
+        "countryLabel": "البرتغال"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q641967",
+        "iata": "CUN",
+        "itemLabel": "مطار كانكون الدولي",
+        "countryLabel": "المكسيك"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q749497",
+        "iata": "CGK",
+        "itemLabel": "مطار سوكارنو هاتا الدولي",
+        "countryLabel": "إندونيسيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q15498",
+        "iata": "HBA",
+        "itemLabel": "مطار هوبارت",
+        "countryLabel": "أستراليا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q14302",
+        "iata": "ADL",
+        "itemLabel": "مطار أديلايد",
+        "countryLabel": "أستراليا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q15114",
+        "iata": "ZRH",
+        "itemLabel": "مطار زيورخ الدولي",
+        "countryLabel": "سويسرا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q170343",
+        "iata": "VCA",
+        "itemLabel": "مطار كن تاه الدولي",
+        "countryLabel": "فيتنام"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q174140",
+        "iata": "MBJ",
+        "itemLabel": "مطار سانجستر الدولي",
+        "countryLabel": "جامايكا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q174233",
+        "iata": "NQZ",
+        "itemLabel": "مطار آستانا الدولي",
+        "countryLabel": "كازاخستان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q466786",
+        "iata": "EWR",
+        "itemLabel": "مطار نيوآرك ليبرتي الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q465071",
+        "iata": "WAW",
+        "itemLabel": "مطار وارسو فريدريك شوبان",
+        "countryLabel": "بولندا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q643562",
+        "iata": "AUH",
+        "itemLabel": "مطار زايد الدولي",
+        "countryLabel": "الإمارات العربية المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q643113",
+        "iata": "HFA",
+        "itemLabel": "مطار حيفا",
+        "countryLabel": "إسرائيل"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q177216",
+        "iata": "XMN",
+        "itemLabel": "مطار شيامن قاوتشي الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q15564",
+        "iata": "HGA",
+        "itemLabel": "مطار هرجيسا الدولي",
+        "countryLabel": "أرض الصومال"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q15564",
+        "iata": "HGA",
+        "itemLabel": "مطار هرجيسا الدولي",
+        "countryLabel": "الصومال"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q16810",
+        "iata": "KHH",
+        "itemLabel": "مطار كاوهسيونغ الدولي",
+        "countryLabel": "تايوان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q17480",
+        "iata": "ANR",
+        "itemLabel": "مطار أنتويرب",
+        "countryLabel": "بلجيكا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q466835",
+        "iata": "IAD",
+        "itemLabel": "مطار واشنطن دالاس الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q753531",
+        "iata": "BJL",
+        "itemLabel": "مطار بانجول الدولي",
+        "countryLabel": "غامبيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q752537",
+        "iata": "ASW",
+        "itemLabel": "مطار أسوان الدولي",
+        "countryLabel": "مصر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q760897",
+        "iata": "HRE",
+        "itemLabel": "مطار روبرت غابريل موجابي الدولي",
+        "countryLabel": "زيمبابوي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q17581",
+        "iata": "SYD",
+        "itemLabel": "مطار سيدني",
+        "countryLabel": "أستراليا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q17704",
+        "iata": "HKG",
+        "itemLabel": "مطار هونغ كونغ الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q177844",
+        "iata": "PDG",
+        "itemLabel": "مطار مينانغكاباو الدولي",
+        "countryLabel": "إندونيسيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q177689",
+        "iata": "ACC",
+        "itemLabel": "مطار كوتوكا الدولي",
+        "countryLabel": "غانا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q178021",
+        "iata": "DUB",
+        "itemLabel": "مطار دبلن الدولي",
+        "countryLabel": "أيرلندا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q643783",
+        "iata": "PRN",
+        "itemLabel": "مطار بريشتينا الدولي",
+        "countryLabel": "كوسوفو"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q644978",
+        "iata": "CKY",
+        "itemLabel": "مطار أحمد سيكو توري الدولي",
+        "countryLabel": "غينيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q19101",
+        "iata": "FCO",
+        "itemLabel": "مطار ليوناردو دا فينشي",
+        "countryLabel": "إيطاليا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q181479",
+        "iata": "TLV",
+        "itemLabel": "مطار بن غوريون الدولي",
+        "countryLabel": "إسرائيل"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q178162",
+        "iata": "GRZ",
+        "itemLabel": "مطار غراتس",
+        "countryLabel": "النمسا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q645760",
+        "iata": "BKI",
+        "itemLabel": "مطار كوتا كينابالو الدولي",
+        "countryLabel": "ماليزيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q645462",
+        "iata": "MSU",
+        "itemLabel": "مطار موشويشوي الأول الدولي",
+        "countryLabel": "ليسوتو"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q645492",
+        "iata": "FIH",
+        "itemLabel": "مطار ندجيلي",
+        "countryLabel": "جمهورية الكونغو الديمقراطية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q477677",
+        "iata": "KBP",
+        "itemLabel": "مطار بوريسبيل الدولي",
+        "countryLabel": "أوكرانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q478595",
+        "iata": "SGN",
+        "itemLabel": "مطار تان سون نهات الدولي",
+        "countryLabel": "فيتنام"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q765650",
+        "iata": "URC",
+        "itemLabel": "مطار أورومتشي ديوبو الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q20932",
+        "iata": "ICN",
+        "itemLabel": "مطار إنتشون الدولي",
+        "countryLabel": "كوريا الجنوبية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q25060",
+        "iata": "HME",
+        "itemLabel": "مطار حاسي مسعود - كريم بلقاسم",
+        "countryLabel": "الجزائر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q25226",
+        "iata": "CXR",
+        "itemLabel": "مطار كام رانه الدولي",
+        "countryLabel": "فيتنام"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q186614",
+        "iata": "DME",
+        "itemLabel": "مطار دوموديدوفو الدولي",
+        "countryLabel": "روسيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q192733",
+        "iata": "SVO",
+        "itemLabel": "مطار شيريميتييفو الدولي",
+        "countryLabel": "روسيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q650285",
+        "iata": "UFA",
+        "itemLabel": "مطار أوفا الدولي",
+        "countryLabel": "روسيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q648423",
+        "iata": "EBL",
+        "itemLabel": "مطار أربيل الدولي",
+        "countryLabel": "العراق"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q767753",
+        "iata": "ANC",
+        "itemLabel": "مطار تيد ستيفنز أنكوراج الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q766860",
+        "iata": "BJV",
+        "itemLabel": "مطار ميلاس بودروم",
+        "countryLabel": "تركيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q193439",
+        "iata": "DXB",
+        "itemLabel": "مطار دبي الدولي",
+        "countryLabel": "الإمارات العربية المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q27049",
+        "iata": "GNA",
+        "itemLabel": "مطار هروندا",
+        "countryLabel": "بيلاروس"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q27048",
+        "iata": "BQT",
+        "itemLabel": "مطار برست",
+        "countryLabel": "بيلاروس"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q482315",
+        "iata": "SID",
+        "itemLabel": "مطار أميلكار كابرال الدولي",
+        "countryLabel": "الرأس الأخضر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q482493",
+        "iata": "GMP",
+        "itemLabel": "مطار غيمبو الدولي",
+        "countryLabel": "كوريا الجنوبية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q650373",
+        "iata": "MAJ",
+        "itemLabel": "مطار جزر مارشال الدولي",
+        "countryLabel": "جزر مارشال"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q651190",
+        "iata": "MRS",
+        "itemLabel": "مطار مرسيليا",
+        "countryLabel": "فرنسا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q651210",
+        "iata": "MSW",
+        "itemLabel": "مطار مصوع الدولي",
+        "countryLabel": "إرتريا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q27706",
+        "iata": "HAM",
+        "itemLabel": "مطار هامبورغ",
+        "countryLabel": "ألمانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q28934",
+        "iata": "BRU",
+        "itemLabel": "مطار بروكسل الدولي",
+        "countryLabel": "بلجيكا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q28461",
+        "iata": "SKT",
+        "itemLabel": "مطار سيالكوت الدولي",
+        "countryLabel": "باكستان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q773330",
+        "iata": "DAD",
+        "itemLabel": "مطار دا نانغ الدولي",
+        "countryLabel": "فيتنام"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q193682",
+        "iata": "KIX",
+        "itemLabel": "مطار كانساي الدولي",
+        "countryLabel": "اليابان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q482497",
+        "iata": "CJU",
+        "itemLabel": "مطار جيجو الدولي",
+        "countryLabel": "كوريا الجنوبية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q194316",
+        "iata": "BKK",
+        "itemLabel": "مطار سوفارنابومي الدولي",
+        "countryLabel": "تايلاند"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q197933",
+        "iata": "APW",
+        "itemLabel": "مطار فاليولو الدولي",
+        "countryLabel": "ساموا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q651372",
+        "iata": "MAH",
+        "itemLabel": "مطار منوركا",
+        "countryLabel": "إسبانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q651557",
+        "iata": "MUH",
+        "itemLabel": "مطار مرسى مطروح الدولي",
+        "countryLabel": "مصر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q651339",
+        "iata": "GND",
+        "itemLabel": "مطار موريس بيشوب الدولي",
+        "countryLabel": "غرنادة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q29104",
+        "iata": "MLE",
+        "itemLabel": "مطار فيلانا الدولي",
+        "countryLabel": "المالديف"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q29863",
+        "iata": "BMA",
+        "itemLabel": "مطار ستوكهولم بروما",
+        "countryLabel": "السويد"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q774669",
+        "iata": "TSN",
+        "itemLabel": "مطار تيانجين الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q31569",
+        "iata": "MUX",
+        "itemLabel": "مطار ملتان الدولي",
+        "countryLabel": "باكستان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q30603",
+        "iata": "DAC",
+        "itemLabel": "مطار شاه جلال الدولي",
+        "countryLabel": "بنغلاديش"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q652505",
+        "iata": "DTW",
+        "itemLabel": "مطار ديترويت",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q778213",
+        "iata": "TBS",
+        "itemLabel": "مطار تبليسي الدولي",
+        "countryLabel": "جورجيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q777855",
+        "iata": "MSQ",
+        "itemLabel": "مطار مينسك الدولي",
+        "countryLabel": "بيلاروس"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q201626",
+        "iata": "AAC",
+        "itemLabel": "مطار العريش الدولي",
+        "countryLabel": "مصر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q201785",
+        "iata": "BOG",
+        "itemLabel": "مطار إلدورادو الدولي",
+        "countryLabel": "كولومبيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q204853",
+        "iata": "HND",
+        "itemLabel": "مطار طوكيو هانيدا الدولي",
+        "countryLabel": "اليابان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q491767",
+        "iata": "FNJ",
+        "itemLabel": "مطار سونان الدولي",
+        "countryLabel": "كوريا الشمالية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q484060",
+        "iata": "MWX",
+        "itemLabel": "مطار موان الدولي",
+        "countryLabel": "كوريا الجنوبية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q31580",
+        "iata": "LYP",
+        "itemLabel": "مطار فيصل آباد الدولي",
+        "countryLabel": "باكستان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q31581",
+        "iata": "UET",
+        "itemLabel": "مطار كويته الدولي",
+        "countryLabel": "باكستان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q32159",
+        "iata": "SIN",
+        "itemLabel": "مطار شانغي سنغافورة",
+        "countryLabel": "سنغافورة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q653299",
+        "iata": "HAH",
+        "itemLabel": "مطار الأمير سيد إبراهيم الدولي",
+        "countryLabel": "جزر القمر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q654636",
+        "iata": "LCA",
+        "itemLabel": "مطار لارنكا الدولي",
+        "countryLabel": "قبرص"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q500253",
+        "iata": "KUL",
+        "itemLabel": "مطار كوالالمبور الدولي",
+        "countryLabel": "ماليزيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q500945",
+        "iata": "BUD",
+        "itemLabel": "مطار بودابست فرانز ليست الدولي",
+        "countryLabel": "المجر"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q32190",
+        "iata": "PEK",
+        "itemLabel": "مطار بكين العاصمة الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q32997",
+        "iata": "BSZ",
+        "itemLabel": "مطار مناس الدولي",
+        "countryLabel": "قرغيزستان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q210559",
+        "iata": "OSL",
+        "itemLabel": "مطار أوسلو-غاردرموين",
+        "countryLabel": "النرويج"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q206349",
+        "iata": "NBO",
+        "itemLabel": "مطار جومو كينياتا الدولي",
+        "countryLabel": "كينيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q780450",
+        "iata": "BTH",
+        "itemLabel": "مطار هانغ نديم الدولي",
+        "countryLabel": "إندونيسيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q779984",
+        "iata": "GDN",
+        "itemLabel": "مطار غدانسك ليخ فاونسا",
+        "countryLabel": "بولندا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q206277",
+        "iata": "CPH",
+        "itemLabel": "مطار كوبنهاغن",
+        "countryLabel": "الدنمارك"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q32999",
+        "iata": "VIE",
+        "itemLabel": "مطار فيينا الدولي",
+        "countryLabel": "النمسا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q501083",
+        "iata": "GIB",
+        "itemLabel": "مطار جبل طارق",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q502670",
+        "iata": "MAA",
+        "itemLabel": "مطار تشيناي الدولي",
+        "countryLabel": "الهند"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q665948",
+        "iata": "GCM",
+        "itemLabel": "مطار أوين روبرتس الدولي",
+        "countryLabel": "المملكة المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q667001",
+        "iata": "FAO",
+        "itemLabel": "مطار فارو",
+        "countryLabel": "البرتغال"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q36171",
+        "iata": "LAQ",
+        "itemLabel": "مطار الأبرق الدولي",
+        "countryLabel": "الجماهيرية العربية الليبية الشعبية الاشتراكية العظمى"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q33156",
+        "iata": "KDH",
+        "itemLabel": "مطار أحمد شاه بابا الدولي",
+        "countryLabel": "أفغانستان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q36420",
+        "iata": "PVG",
+        "itemLabel": "مطار شانغهاي بودنغ الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q36171",
+        "iata": "LAQ",
+        "itemLabel": "مطار الأبرق الدولي",
+        "countryLabel": "ليبيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q656993",
+        "iata": "PMI",
+        "itemLabel": "مطار ميورقة",
+        "countryLabel": "إسبانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q656807",
+        "iata": "RTM",
+        "itemLabel": "مطار روتردام لاهاي",
+        "countryLabel": "هولندا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q655320",
+        "iata": "SSG",
+        "itemLabel": "مطار مالابو",
+        "countryLabel": "غينيا الاستوائية"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q211734",
+        "iata": "ATH",
+        "itemLabel": "مطار أثينا الدولي",
+        "countryLabel": "اليونان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q213717",
+        "iata": "ORD",
+        "itemLabel": "مطار أوهير الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q788417",
+        "iata": "CKG",
+        "itemLabel": "مطار تشونغتشينغ جيانغبى الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q790043",
+        "iata": "BGF",
+        "itemLabel": "مطار بانغي مبوكو الدولي",
+        "countryLabel": "جمهورية إفريقيا الوسطى"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q36454",
+        "iata": "NRT",
+        "itemLabel": "مطار ناريتا الدولي",
+        "countryLabel": "اليابان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q214861",
+        "iata": "ATL",
+        "itemLabel": "مطار هارتسفيلد جاكسون",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q667326",
+        "iata": "WDH",
+        "itemLabel": "مطار ويندهوك الدولي",
+        "countryLabel": "ناميبيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q668329",
+        "iata": "BEY",
+        "itemLabel": "مطار بيروت رفيق الحريري الدولي",
+        "countryLabel": "لبنان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q669261",
+        "iata": "PEN",
+        "itemLabel": "مطار بينانق الدولي",
+        "countryLabel": "ماليزيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q41293",
+        "iata": "SEB",
+        "itemLabel": "مطار سبها الدولي",
+        "countryLabel": "ليبيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q36460",
+        "iata": "MRU",
+        "itemLabel": "مطار سير سيووساغور رامغولام الدولي",
+        "countryLabel": "موريشيوس"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q44553",
+        "iata": "BEN",
+        "itemLabel": "مطار بنينا الدولي",
+        "countryLabel": "ليبيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q44588",
+        "iata": "TIP",
+        "itemLabel": "مطار طرابلس الدولي",
+        "countryLabel": "ليبيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q504382",
+        "iata": "ADB",
+        "itemLabel": "مطار عدنان مندريس",
+        "countryLabel": "تركيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q505421",
+        "iata": "RIX",
+        "itemLabel": "مطار ريغا الدولي",
+        "countryLabel": "لاتفيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q504368",
+        "iata": "BOM",
+        "itemLabel": "مطار تشاتراباتي شيفاجي الدولي",
+        "countryLabel": "الهند"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q503364",
+        "iata": "BLR",
+        "itemLabel": "مطار كيمبيغودا الدولي",
+        "countryLabel": "الهند"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q217226",
+        "iata": "TIA",
+        "itemLabel": "مطار تيرانا الدولي",
+        "countryLabel": "ألبانيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q215327",
+        "iata": "HEL",
+        "itemLabel": "مطار هلسنكي فانتا",
+        "countryLabel": "فنلندا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q671475",
+        "iata": "BOS",
+        "itemLabel": "مطار لوجان الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q672289",
+        "iata": "MLA",
+        "itemLabel": "مطار مالطا الدولي",
+        "countryLabel": "مالطا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q44868",
+        "iata": "CAN",
+        "itemLabel": "مطار قوانغتشو باييون الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q44856",
+        "iata": "TPE",
+        "itemLabel": "مطار تايوان تاويوان الدولي",
+        "countryLabel": "تايوان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q679345",
+        "iata": "NGO",
+        "itemLabel": "مطار تشوبو سنتراير الدولي",
+        "countryLabel": "اليابان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q512128",
+        "iata": "PHL",
+        "itemLabel": "مطار فيلادلفيا الدولي",
+        "countryLabel": "الولايات المتحدة"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q505572",
+        "iata": "CJB",
+        "itemLabel": "مطار كويمباتور الدولي",
+        "countryLabel": "الهند"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q513689",
+        "iata": "DKR",
+        "itemLabel": "مطار ليوبولد سيدار سنغور الدولي",
+        "countryLabel": "السنغال"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q44923",
+        "iata": "ADD",
+        "itemLabel": "مطار أديس أبابا بولي الدولي",
+        "countryLabel": "إثيوبيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q44877",
+        "iata": "PBH",
+        "itemLabel": "مطار بارو الدولي",
+        "countryLabel": "بوتان"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q690122",
+        "iata": "LED",
+        "itemLabel": "مطار بولكوفو",
+        "countryLabel": "روسيا"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q684964",
+        "iata": "SYX",
+        "itemLabel": "مطار سانيا فينيكس الدولي",
+        "countryLabel": "الصين"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q681134",
+        "iata": "BJM",
+        "itemLabel": "مطار بوجومبورا الدولي",
+        "countryLabel": "بوروندي"
+      },
+      {
+        "item": "http://www.wikidata.org/entity/Q221279",
+        "iata": "VTE",
+        "itemLabel": "مطار واتاي الدولي",
+        "countryLabel": "لاوس"
+      }
+    ]
+  }
+}

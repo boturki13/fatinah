@@ -18,12 +18,12 @@ import {
 const candidates = readJson(CANDIDATES_PATH, []);
 const runtimeSelection = readJson(path.join(ROOT, 'content', 'questions', 'runtime-published-ids.json'), null);
 if (!runtimeSelection || runtimeSelection.schemaVersion !== 1 || !Array.isArray(runtimeSelection.ids)) {
-  throw new Error('قائمة بنك fallback المحلي غير صالحة.');
+  throw new Error('قائمة أسئلة التشغيل المنشورة غير صالحة.');
 }
 const selectedIds = new Set(runtimeSelection.ids);
-if (selectedIds.size !== runtimeSelection.ids.length) throw new Error('قائمة بنك fallback المحلي مكررة.');
+if (selectedIds.size !== runtimeSelection.ids.length) throw new Error('قائمة أسئلة التشغيل المنشورة مكررة.');
 const approved = candidates.filter(candidate => candidate.status === 'approved' && selectedIds.has(candidate.id));
-if (approved.length !== selectedIds.size) throw new Error(`بنك fallback المحلي ${approved.length}/${selectedIds.size}.`);
+if (approved.length !== selectedIds.size) throw new Error(`أسئلة التشغيل المنشورة ${approved.length}/${selectedIds.size}.`);
 const policy = loadPolicy();
 const religiousSourcePackets = loadReligiousSourcePackets();
 const baseQuestions = loadExistingQuestionTexts();

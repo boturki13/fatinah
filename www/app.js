@@ -1,6 +1,28 @@
-let QUESTION_BANK = null;
+let QUESTION_BANK = Object.create(null);
 let ALL_CATS = [];
 let _questionBankReady = null;
+// بنك الإصدار 1.4 يُخدم من الخادم فقط. لا توجد نسخة أسئلة احتياطية داخل التطبيق.
+const CURATED_REMOTE_QUESTION_BANK_ENABLED=true;
+// معطّلة في هذا الإصدار: مسار القنبلة القديم يعتمد إجابة شفهية
+// لفريق واحد، ولا يحقق عقد الأربعة خيارات وتعاقب كل الفرق.
+const BOMB_MODE_ENABLED=false;
+const CURATED_REMOTE_CATEGORIES=new Set();
+let remoteQuestionCatalogVersion='';
+// 12 صورة أصلية و288 صورة من قائمة النشر المنقحة = 300 سؤال صورة.
+const CURATED_IMAGE_QUESTION_IDS=new Set([
+  'img-v1-fire-extinguisher','img-v1-emperor-penguin','img-v1-eiffel-tower',
+  'img-v1-dragon-fruit','img-v1-saturn','img-v1-oud','img-v1-petra-treasury',
+  'img-v1-pangolin','img-v1-aurora','img-v1-axolotl','img-v1-astrolabe','img-v1-okapi',
+  ...(window.__CURATED_IMAGE_OPTION_IDS__||[]),
+]);
+function curatedImageQuestions(questions){
+  return (Array.isArray(questions)?questions:[])
+    .filter(question=>!question?.image||CURATED_IMAGE_QUESTION_IDS.has(question.id))
+    .map(question=>{
+      const reviewedDifficulty=window.__CURATED_IMAGE_DIFFICULTIES__?.[question.id];
+      return reviewedDifficulty?{...question,d:reviewedDifficulty}:question;
+    });
+}
 const ISLAMIC_CATEGORY='إسلاميات';
 const ISLAMIC_SOURCE_CATEGORIES=[
   'السيرة النبوية','فتوحات المسلمين','القرآن الكريم','الصحابة',
@@ -28,42 +50,56 @@ function selectableRuntimeCategories(categories){
   if(!inserted&&ISLAMIC_SOURCE_CATEGORIES.some(category=>QUESTION_BANK?.[category])) visible.push(ISLAMIC_CATEGORY);
   return visible;
 }
+function validRemoteQuestionCatalog(payload){
+  if(!payload||payload.schemaVersion!==1||payload.questionSchemaVersion!==1||payload.releaseReady!==true||!Array.isArray(payload.categories)) return false;
+  if(payload.categories.length<1||payload.categories.length>500) return false;
+  const names=new Set(); let countedQuestions=0;
+  const valid=payload.categories.every(item=>{
+    const name=String(item?.name||'').trim();
+    const levels=item?.levels;
+    if(!name||name.length>80||/[\u0000-\u001f]/u.test(name)||names.has(name)) return false;
+    if(!Number.isInteger(item.questionCount)||item.questionCount<12||!levels) return false;
+    if(![1,2,3,4,5,6].every(level=>Number.isInteger(levels[level])&&levels[level]>=ROUND_QUESTIONS_PER_LEVEL)) return false;
+    if([1,2,3,4,5,6].reduce((sum,level)=>sum+levels[level],0)!==item.questionCount) return false;
+    if(item.kind!==undefined&&!['text','image','mixed'].includes(item.kind)) return false;
+    names.add(name); countedQuestions+=item.questionCount; return true;
+  });
+  return valid&&Number.isInteger(payload.questionCount)&&payload.questionCount===countedQuestions;
+}
+function releasedRuntimeImageCategories(){
+  const declared=Array.isArray(window.__RELEASED_IMAGE_CATEGORIES__)
+    ?window.__RELEASED_IMAGE_CATEGORIES__:[];
+  return declared.filter(category=>(QUESTION_BANK?.[category]||[]).some(question=>question?.image));
+}
+function installRemoteQuestionCatalog(payload){
+  if(!validRemoteQuestionCatalog(payload)) return false;
+  const names=payload.categories.map(item=>String(item.name).trim());
+  CURATED_REMOTE_CATEGORIES.clear();
+  names.forEach(name=>CURATED_REMOTE_CATEGORIES.add(name));
+  remoteQuestionCatalogVersion=typeof payload.bankVersion==='string'?payload.bankVersion.trim():'';
+  // الكتالوج المنشور هو المصدر الوحيد للنص والصور. فئة جديدة في الخادم
+  // تظهر مباشرة، وحذف فئة منه يخفيها بدل إعادتها من نسخة محلية قديمة.
+  ALL_CATS=names;
+  return true;
+}
+async function refreshRemoteQuestionCatalog(){
+  try{
+    const response=await apiFetch('/api/questions/catalog',{timeoutMs:8000});
+    const payload=await response.json().catch(()=>null);
+    return response.ok&&installRemoteQuestionCatalog(payload);
+  }catch(_){ return false; }
+}
 function ensureQuestionBank(){
-  if(QUESTION_BANK) return Promise.resolve(QUESTION_BANK);
   if(_questionBankReady) return _questionBankReady;
-  _questionBankReady=new Promise((resolve,reject)=>{
-    const script=document.createElement('script');
-    script.src='question-bank.js';
-    script.async=true;
-    script.onload=()=>{
-      const bank=window.__QUESTION_BANK_DATA__;
-      if(!bank || typeof bank!=='object'){
-        reject(new Error('تعذر قراءة بنك الأسئلة'));
-        return;
-      }
-      // لا يدخل هذا البنك إلا من مسار النشر الإداري بعد التحقق والمراجعة.
-      // ملفه مستقل حتى يبقى البنك الأصلي متاحاً بالكامل عند عدم وجود اتصال.
-      const approved=window.__APPROVED_QUESTION_BANK_DATA__||{};
-      const imageBank=window.__IMAGE_QUESTION_BANK_DATA__||{};
-      const combined={};
-      new Set([...Object.keys(bank),...Object.keys(approved),...Object.keys(imageBank)]).forEach(category=>{
-        combined[category]=[
-          ...(Array.isArray(bank[category])?bank[category]:[]),
-          ...(Array.isArray(approved[category])?approved[category]:[]),
-          ...(Array.isArray(imageBank[category])?imageBank[category]:[]),
-        ];
-      });
-      QUESTION_BANK=installMergedRuntimeCategory(normalizeQuestionBank(combined));
-      const releasedImages=new Set(window.__RELEASED_IMAGE_CATEGORIES__||[]);
-      ALL_CATS=selectableRuntimeCategories(Object.keys(combined))
-        .filter(category=>!(QUESTION_BANK[category]||[]).some(question=>question.image)||releasedImages.has(category));
-      delete window.__QUESTION_BANK_DATA__;
-      delete window.__APPROVED_QUESTION_BANK_DATA__;
-      resolve(QUESTION_BANK);
-    };
-    script.onerror=()=>reject(new Error('تعذر تحميل بنك الأسئلة'));
-    document.head.appendChild(script);
-  }).catch(error=>{
+  _questionBankReady=(async()=>{
+    if(window.__FATINAH_GAME_FLOW_UI_TEST__===true){
+      const fixture=window.__FATINAH_GAME_FLOW_UI_TEST_FIXTURE__;
+      if(!fixture||!installRemoteQuestionCatalog(fixture.catalog)) throw new Error('بيانات اختبار بنك الخادم غير صالحة');
+      return QUESTION_BANK;
+    }
+    if(!(await refreshRemoteQuestionCatalog())) throw new Error('تعذر تحميل كتالوج بنك الأسئلة من الخادم');
+    return QUESTION_BANK;
+  })().catch(error=>{
     _questionBankReady=null;
     throw error;
   });
@@ -74,7 +110,19 @@ function ensureQuestionBank(){
 const API_ORIGIN = window.Capacitor?.isNativePlatform?.() === true
   ? 'https://ata20.com'
   : '';
-// الإصدار 1.3 لا يستعمل عقد 1.2 الضمني. نضع النسخة في المسار والرأس حتى
+// معاينة المتصفح المحلية لا تملك DeviceCheck أو App Attest الخاصة بأجهزة Apple.
+// الاستثناء محصور بعناوين loopback ولا يعمل على staging العام أو production.
+function isLoopbackWebHost(){
+  return window.Capacitor?.isNativePlatform?.()!==true
+    &&['127.0.0.1','localhost','::1'].includes(window.location.hostname);
+}
+function isLocalWebPreview(){
+  if(window.Capacitor?.isNativePlatform?.()===true) return false;
+  const automatedFileFixture=window.location.protocol==='file:'&&navigator.webdriver===true;
+  return (isLoopbackWebHost()||automatedFileFixture)
+    &&new URLSearchParams(window.location.search).get('preview')==='1';
+}
+// الإصدار 1.4 لا يستعمل العقود القديمة ضمنياً. نضع النسخة في المسار والرأس حتى
 // لا يعيد وسيط شبكة أو CDN الطلب بالخطأ إلى v1 عند إسقاط أحدهما.
 const API_CONTRACT_VERSION='2';
 // سجلات WebView قد تظهر في Web Inspector أو سجلات الجهاز. لا نمرر إليها
@@ -110,43 +158,176 @@ function versionedApiPath(path){
   return value;
 }
 function apiUrl(path){ return `${API_ORIGIN}${versionedApiPath(path)}`; }
-let _appIntegrityReady=null;
+const API_FETCH_TIMEOUT_MS=12000;
+class ApiFetchTimeoutError extends Error{
+  constructor(path,timeoutMs){
+    super(`API request timed out after ${timeoutMs}ms`);
+    this.name='ApiFetchTimeoutError';
+    this.code='api/timeout';
+    this.path=versionedApiPath(path);
+    this.timeoutMs=timeoutMs;
+  }
+}
+async function settleWithin(promise,timeoutMs,fallbackValue){
+  let timer=0;
+  const deadline=new Promise(resolve=>{ timer=setTimeout(()=>resolve(fallbackValue),timeoutMs); });
+  try{ return await Promise.race([Promise.resolve(promise),deadline]); }
+  finally{ clearTimeout(timer); }
+}
+const APP_INTEGRITY_ATTEMPT_TIMEOUT_MS=1500;
+const APP_INTEGRITY_RETRY_DELAY_MS=30000;
+let _appIntegrityReady=false;
+let _appIntegrityAttempt=null;
+let _appIntegrityRetryAfter=0;
+let _appIntegrityTokenAttempt=null;
+let _appIntegrityTokenRetryAfter=0;
 function getFirebaseAppCheck(){
   try{ return window.Capacitor?.Plugins?.FirebaseAppCheck || null; }
   catch(_){ return null; }
 }
-async function initAppIntegrity(){
-  if(_appIntegrityReady) return _appIntegrityReady;
-  _appIntegrityReady=(async()=>{
+function initAppIntegrity(){
+  if(_appIntegrityReady) return Promise.resolve(true);
+  if(_appIntegrityAttempt) return _appIntegrityAttempt;
+  if(Date.now()<_appIntegrityRetryAfter) return Promise.resolve(false);
+  const attempt=(async()=>{
     const appCheck=getFirebaseAppCheck();
     if(!appCheck) return false;
     await appCheck.setTokenAutoRefreshEnabled({enabled:true});
+    _appIntegrityReady=true;
     return true;
   })().catch(error=>{
     recordNonFatal(error,'firebase.app-check.initialize');
+    _appIntegrityRetryAfter=Date.now()+APP_INTEGRITY_RETRY_DELAY_MS;
     return false;
+  }).finally(()=>{
+    if(_appIntegrityAttempt===attempt) _appIntegrityAttempt=null;
   });
-  return _appIntegrityReady;
+  _appIntegrityAttempt=attempt;
+  return attempt;
+}
+async function initAppIntegrityWithin(timeoutMs=APP_INTEGRITY_ATTEMPT_TIMEOUT_MS){
+  if(_appIntegrityReady) return true;
+  const attempt=initAppIntegrity();
+  const timedOut=Symbol('app-integrity-timeout');
+  const result=await settleWithin(attempt,timeoutMs,timedOut);
+  if(result===timedOut){
+    // لا نسمح لمحاولة native معلّقة بتسميم كل طلبات الجلسة. الطلب الحالي
+    // يكمل بلا App Check، ثم يُسمح بمحاولة جديدة بعد مهلة ارتداد قصيرة.
+    if(_appIntegrityAttempt===attempt) _appIntegrityAttempt=null;
+    _appIntegrityRetryAfter=Date.now()+APP_INTEGRITY_RETRY_DELAY_MS;
+    return false;
+  }
+  return result===true;
+}
+async function getAppIntegrityTokenWithin(timeoutMs=APP_INTEGRITY_ATTEMPT_TIMEOUT_MS){
+  if(Date.now()<_appIntegrityTokenRetryAfter) return '';
+  const appCheck=getFirebaseAppCheck();
+  if(!appCheck?.getToken) return '';
+  let attempt=_appIntegrityTokenAttempt;
+  if(!attempt){
+    attempt=Promise.resolve().then(()=>appCheck.getToken({forceRefresh:false}));
+    _appIntegrityTokenAttempt=attempt;
+    void attempt.finally(()=>{
+      if(_appIntegrityTokenAttempt===attempt) _appIntegrityTokenAttempt=null;
+    }).catch(()=>{});
+  }
+  const timedOut=Symbol('app-integrity-token-timeout');
+  try{
+    const result=await settleWithin(attempt,timeoutMs,timedOut);
+    if(result===timedOut){
+      if(_appIntegrityTokenAttempt===attempt) _appIntegrityTokenAttempt=null;
+      _appIntegrityTokenRetryAfter=Date.now()+APP_INTEGRITY_RETRY_DELAY_MS;
+      const error=new Error('Firebase App Check token timed out');
+      error.code='app-check/timeout';
+      recordNonFatal(error,'firebase.app-check.token');
+      return '';
+    }
+    return String(result?.token||'');
+  }catch(error){
+    _appIntegrityTokenRetryAfter=Date.now()+APP_INTEGRITY_RETRY_DELAY_MS;
+    recordNonFatal(error,'firebase.app-check.token');
+    return '';
+  }
+}
+function bufferApiResponse(response,body,method){
+  const hasBody=method!=='HEAD'&&![204,205,304].includes(response.status);
+  const buffered=new Response(hasBody?body:null,{
+    status:response.status,
+    statusText:response.statusText,
+    headers:new Headers(response.headers),
+  });
+  // Response المُنشأ محلياً يفقد بيانات المصدر؛ احتفظ بها للمستدعين حتى
+  // لو لم تكن واجهاتنا الحالية تعتمد عليها.
+  for(const property of ['url','redirected','type']){
+    try{ Object.defineProperty(buffered,property,{value:response[property],configurable:true}); }
+    catch(_){ /* الخصائص وصفية فقط ولا تؤثر على قراءة JSON المخزّن */ }
+  }
+  return buffered;
 }
 async function apiFetch(path, options={}){
-  const headers=new Headers(options.headers||{});
-  headers.set('X-Fatinah-API-Version',API_CONTRACT_VERSION);
-  if(await initAppIntegrity()){
-    try{
-      const result=await getFirebaseAppCheck().getToken({forceRefresh:false});
-      if(result?.token) headers.set('X-Firebase-AppCheck',result.token);
-    }catch(error){
-      // الخادم يبدأ بوضع المراقبة، لذا لا نوقف تسجيل الدخول أو اللعب أثناء
-      // طرح App Attest التدريجي؛ يُسجّل الخطأ في Crashlytics للمراجعة.
-      recordNonFatal(error,'firebase.app-check.token');
+  const {signal:callerSignal,timeoutMs:requestedTimeout,...fetchOptions}=options;
+  const timeoutMs=Number.isFinite(requestedTimeout)&&requestedTimeout>0
+    ?Math.floor(requestedTimeout):API_FETCH_TIMEOUT_MS;
+  const controller=new AbortController();
+  let settled=false;
+  let timedOut=false;
+  let timer=0;
+  let rejectDeadline=()=>{};
+  const deadline=new Promise((_,reject)=>{ rejectDeadline=reject; });
+  const callerAbort=()=>{
+    if(settled) return;
+    const reason=callerSignal?.reason instanceof Error
+      ?callerSignal.reason:new DOMException('The operation was aborted.','AbortError');
+    controller.abort(reason);
+    rejectDeadline(reason);
+  };
+  if(callerSignal?.aborted) callerAbort();
+  else callerSignal?.addEventListener('abort',callerAbort,{once:true});
+  timer=setTimeout(()=>{
+    if(settled) return;
+    timedOut=true;
+    const error=new ApiFetchTimeoutError(path,timeoutMs);
+    controller.abort(error);
+    rejectDeadline(error);
+  },timeoutMs);
+  const request=(async()=>{
+    const headers=new Headers(fetchOptions.headers||{});
+    headers.set('X-Fatinah-API-Version',API_CONTRACT_VERSION);
+    const integrityBudget=Math.min(
+      APP_INTEGRITY_ATTEMPT_TIMEOUT_MS,
+      Math.max(25,Math.floor(timeoutMs/4)),
+    );
+    if(await initAppIntegrityWithin(integrityBudget)){
+      // الخادم يبدأ بوضع المراقبة؛ فشل/تعليق App Check لا يوقف الشبكة.
+      const appCheckToken=await getAppIntegrityTokenWithin(integrityBudget);
+      if(appCheckToken) headers.set('X-Firebase-AppCheck',appCheckToken);
     }
+    if(controller.signal.aborted) throw controller.signal.reason;
+    const response=await fetch(apiUrl(path),{...fetchOptions,headers,signal:controller.signal});
+    const method=String(fetchOptions.method||'GET').toUpperCase();
+    const hasBody=method!=='HEAD'&&![204,205,304].includes(response.status);
+    const body=hasBody?await response.arrayBuffer():null;
+    return bufferApiResponse(response,body,method);
+  })();
+  try{
+    return await Promise.race([request,deadline]);
+  }catch(error){
+    if(timedOut&&!(error instanceof ApiFetchTimeoutError)){
+      throw new ApiFetchTimeoutError(path,timeoutMs);
+    }
+    throw error;
+  }finally{
+    settled=true;
+    clearTimeout(timer);
+    callerSignal?.removeEventListener('abort',callerAbort);
   }
-  return fetch(apiUrl(path),{...options,headers});
 }
-const APP_VERSION = '1.3';
+const APP_VERSION = '1.4';
 let _hasActiveSubscription=false;
 let _freeRoundAvailable=false;
 let _freeRoundVerificationState='unknown'; // unknown | eligible | used
+let _freeRoundVerificationPending=false;
+let _freeRoundVerificationAttempt=0;
 let _subscriptionResolved=false;
 const TEAM_STYLES=[
   {name:"النجوم", color:"var(--t1)", bg:"var(--t1b)", dot:"#B794FF", solid:"#7C3AED"},
@@ -201,25 +382,37 @@ const CAT_VISUALS={
   "وين هالمعلم؟":{icon:"📍",tone:"coral"},"شنو هالحيوان؟":{icon:"🐾",tone:"green"},
   "شنو بالفضاء؟":{icon:"🔭",tone:"indigo"},"شنو هالشي؟":{icon:"🔎",tone:"cyan"},
   "كنوز الحضارات":{icon:"🗿",tone:"sand"},"منو هاللاعب؟":{icon:"👟",tone:"lime"},
+  "من أنا؟":{icon:"🕵️",tone:"purple"},
+  "كرتون وأنمي":{icon:"🦸",tone:"pink"},"تقنية وإنترنت":{icon:"💻",tone:"cyan"},
+  "اختر العبارة الصحيحة":{icon:"✅",tone:"green"},"سينما وأفلام عربية":{icon:"🎬",tone:"coral"},
+  "كرة القدم":{icon:"⚽",tone:"green"},"علوم وطبيعة":{icon:"🌿",tone:"green"},
+  "الكويت":{icon:"🇰🇼",tone:"green"},"دول الخليج":{icon:"🐪",tone:"sand"},
+  "شخصيات تاريخية":{icon:"👤",tone:"gold"},"مدن وعواصم":{icon:"🏙️",tone:"blue"},
+  "عملات العالم":{icon:"💱",tone:"gold"},"فيزياء وكيمياء":{icon:"⚛️",tone:"cyan"},
+  "شعراء وأدباء عرب":{icon:"🪶",tone:"sand"},"روايات عالمية":{icon:"📕",tone:"coral"},
+  "مسرحيات خليجية":{icon:"🎭",tone:"purple"},"طيران ومطارات":{icon:"✈️",tone:"blue"},
+  "أندية ومنتخبات":{icon:"🏆",tone:"indigo"},"ألغاز بوليسية":{icon:"🔍",tone:"purple"},
+  "اكتشف الكلمة":{icon:"🔤",tone:"orange"},"أحداث غيرت العالم":{icon:"🌍",tone:"gold"},
+  "منظمات دولية":{icon:"🤝",tone:"teal"},
 };
 const CAT_ICONS=Object.fromEntries(Object.entries(CAT_VISUALS).map(([category,visual])=>[category,visual.icon]));
 function categoryVisual(category){
-  const visual=CAT_VISUALS[category]||{icon:'👨‍👩‍👧‍👦',tone:'purple'};
+  const fallback=isFamilyCat(category)
+    ?{icon:'👨‍👩‍👧‍👦',tone:'purple'}
+    :{icon:'🧠',tone:'purple'};
+  const visual=CAT_VISUALS[category]||fallback;
   return {...visual,...(CATEGORY_TONES[visual.tone]||CATEGORY_TONES.purple)};
 }
 // تصنيف الفئات إلى مجموعات للفلترة
 const CAT_GROUPS={
-  "إسلاميات":[ISLAMIC_CATEGORY],
-  "معرفة وعلوم":["معلومات عامة","علوم وتقنية","الفضاء والكون","جسم الإنسان","اختراعات واكتشافات","تعرف على الصورة","شنو بالفضاء؟","شنو هالشي؟"],
-  "تاريخ وجغرافيا":["تاريخ","جغرافيا","حضارات قديمة","أعلام الدول","خرائط دول","أعلام منو؟","وين هالمعلم؟","كنوز الحضارات"],
-  "رياضة":["رياضة","كأس العالم","دوري أبطال أوروبا","كأس الخليج","الألعاب الأولمبية","منو هاللاعب؟"],
-  "محرّكات":["محرّكات ومركبات"],
-  "ثقافة وتراث":["ثقافة خليجية","أمثال","مسلسلات خليجية","أغاني خليجية","مطابخ العالم"],
-  "ألغاز وذكاء":["ألغاز وتحدّي ذكاء","إجابة سريعة","وش الرابط؟"],
-  "فنون وأدب":["الشعر العربي","أنمي","أفلام عربية","ألعاب الفيديو","اللغة العربية","كتب وروايات"],
-  "طبيعة وحيوانات":["حيوانات وطبيعة","شنو هالحيوان؟"],
+  "ألغاز وذكاء":["من أنا؟","اختر العبارة الصحيحة","ألغاز بوليسية","اكتشف الكلمة"],
+  "علوم وتقنية":["تقنية وإنترنت","علوم وطبيعة","اختراعات واكتشافات","فيزياء وكيمياء"],
+  "الكويت والخليج":["الكويت","دول الخليج","مسرحيات خليجية"],
+  "تاريخ وعالم":["شخصيات تاريخية","مدن وعواصم","عملات العالم","أحداث غيرت العالم","منظمات دولية"],
+  "رياضة وطيران":["كرة القدم","أندية ومنتخبات","طيران ومطارات"],
+  "فنون وأدب":["كرتون وأنمي","سينما وأفلام عربية","شعراء وأدباء عرب","روايات عالمية"],
 };
-const GROUP_ICONS={"إسلاميات":"🕌","معرفة وعلوم":"🧠","تاريخ وجغرافيا":"🏛️","رياضة":"⚽","محرّكات":"🏎️","ثقافة وتراث":"🐪","ألغاز وذكاء":"🧩","فنون وأدب":"📜","طبيعة وحيوانات":"🦁"};
+const GROUP_ICONS={"ألغاز وذكاء":"🧩","علوم وتقنية":"🧪","الكويت والخليج":"🇰🇼","تاريخ وعالم":"🏛️","رياضة وطيران":"⚽","فنون وأدب":"🎭"};
 
 // هوية العرض الكويتية: تبقى مفاتيح البنك والنصوص المراجَعة كما هي، وتتغير
 // الصياغة عند العرض فقط. هذا يحافظ على معرّفات الأسئلة والمصادر وسجل المراجعة،
@@ -289,6 +482,13 @@ function isHttpsUrl(value){
   try{ return new URL(String(value||'')).protocol==='https:'; }
   catch(_){ return false; }
 }
+function safeHttpsUrl(value){
+  try{
+    const url=new URL(String(value||''));
+    if(url.protocol!=='https:'||url.username||url.password) return '';
+    return url.href;
+  }catch(_){ return ''; }
+}
 function storeGet(key, fallback){
   try{
     const raw=localStorage.getItem(STORAGE_PREFIX+key);
@@ -331,6 +531,7 @@ function serializableCurrentQuestion(){
     searchedForTeam:c.searchedForTeam??null,owner:c.owner??null,
     stealQueue:Array.isArray(c.stealQueue)?c.stealQueue:[],stealPos:Number.isInteger(c.stealPos)?c.stealPos:-1,
     eligibleTeams:[...(c.eligibleTeams||[])],passedToOpp:Boolean(c.passedToOpp),
+    teamChoices:{...(c.teamChoices||{})},
     revealed:Boolean(c.revealed),searching:Boolean(c.searching),resolved:Boolean(c.resolved),
   };
 }
@@ -419,30 +620,41 @@ async function renderRestoredQuestion(snapshot){
   }else{
     badge.textContent=isFamilyCat(c.cat)?c.cat:displayCategoryName(c.cat);
     badge.style.background=FIRE[c.r].bg; badge.style.color=FIRE[c.r].tx;
+    document.getElementById('q-points').textContent=`+${Number(c.points)||POINTS[c.r]} نقطة`;
   }
   setQuestionPrompt(c.q);
-  await renderQuestionImage(c.q,{allowFallback:true});
+  // السؤال المصوّر لا يُعد مستعاداً بمجرد عرض وصف بديل؛ نحتاج الأصل الذي
+  // اجتاز التحقق وفك الصورة قبل تشغيل العداد أو تثبيته كمشاهد.
+  const imageReady=await renderQuestionImage(c.q);
+  if(!imageReady) return false;
   setQuestionAnswer(c.q);
   setAnswerRevealed(c.phase==='reveal');
   document.getElementById('search-timer').classList.remove('show');
   const pauseButton=document.getElementById('pause-btn');
   pauseButton.disabled=false; pauseButton.style.opacity='1';
+  const legacySpoken=window.__FATINAH_LEGACY_SPOKEN_TEST__===true;
   if(c.isBomb){
     setPhasePill(c.phase==='reveal'?-1:c.bombTarget,c.phase==='reveal'?'شنو النتيجة؟':'💣 قنبلة! دور فريق '+state.teams[c.bombTarget].name+' — يجاوب شفهياً');
   }else if(c.phase==='owner'){
-    setPhasePill(c.owner,'دور فريق '+state.teams[c.owner].name+' — يجاوب شفهياً');
+    setPhasePill(c.owner,'دور فريق '+state.teams[c.owner].name+(legacySpoken?' — يجاوب شفهياً':' — اختار إجابة'));
     updateQuestionPoints(c.owner);
   }else if(c.phase==='steal'){
     const teamIndex=c.stealQueue[c.stealPos];
-    setPhasePill(teamIndex,'سرقة! دور فريق '+state.teams[teamIndex].name+' — '+Math.max(1,Number(snapshot.timeLeft)||1)+' ثانية');
+    const seconds=Math.max(1,Number(snapshot.timeLeft)||1);
+    setPhasePill(teamIndex,legacySpoken
+      ?'سرقة! دور فريق '+state.teams[teamIndex].name+' — '+seconds+' ثانية'
+      :'دور فريق '+state.teams[teamIndex].name+' — اختار إجابة خلال '+seconds+' ثانية');
     updateQuestionPoints(teamIndex);
   }else{
-    setPhasePill(-1,'منو جاوب صح؟ اختار الفريق');
+    setPhasePill(-1,legacySpoken?'منو جاوب صح؟ اختار الفريق':'ظهرت الإجابة الصحيحة — اضغط التالي');
   }
   setQuestionPhaseLayout(c.phase);
   renderFlow(); renderLifelines(); keepAwakeOn(); showQuestionScreen();
   if(c.phase==='reveal'){
-    clearInterval(state.timer); state.paused=false; setQuestionHidden(false); focusRevealedAnswer();
+    clearInterval(state.timer); state.timer=null; state.paused=false;
+    updateTimerUI();
+    pauseButton.disabled=true; pauseButton.style.opacity='0.55';
+    setQuestionHidden(false); focusRevealedAnswer();
   }else{
     showTimer(Math.max(1,Number(snapshot.timeLeft)||1),{
       maxTime:Math.max(1,Number(snapshot.maxTime)||Number(snapshot.timeLeft)||1),
@@ -451,6 +663,7 @@ async function renderRestoredQuestion(snapshot){
     if(c.searching) startSearchCountdown(Math.max(1,Number(snapshot.searchTimeLeft)||1));
     else setQuestionHidden(Boolean(snapshot.paused));
   }
+  return true;
 }
 async function restoreActiveRound(uid){
   const key=activeRoundStorageKey(uid);
@@ -462,11 +675,23 @@ async function restoreActiveRound(uid){
   let skippedMissingQuestion=false;
   try{
     await ensureQuestionBank();
+    if(snapshot.cats.includes('رتّبها صح')){
+      throw new Error('saved category is no longer published');
+    }
     const familyRound=snapshot.familyRoundName
       ? (familyCats||[]).find(category=>category.name===snapshot.familyRoundName)
       : null;
     if(snapshot.familyRoundName&&!familyRound) throw new Error('saved family category is missing');
-    if(snapshot.cats.some(category=>!QUESTION_BANK?.[category]&&!(familyCats||[]).some(item=>item.name===category))){
+    const savedRemoteBank=snapshot.roundQuestionBank;
+    const savedRemoteCategories=savedRemoteBank&&typeof savedRemoteBank==='object'&&!Array.isArray(savedRemoteBank)
+      ?Object.keys(savedRemoteBank):[];
+    if(savedRemoteCategories.length&&!validRemoteRoundBank(savedRemoteBank,savedRemoteCategories)){
+      throw new Error('saved remote question bank is invalid');
+    }
+    const savedRemoteCategorySet=new Set(savedRemoteCategories);
+    if(snapshot.cats.some(category=>!QUESTION_BANK?.[category]
+      &&!savedRemoteCategorySet.has(category)
+      &&!(familyCats||[]).some(item=>item.name===category))){
       throw new Error('saved category is missing');
     }
     state.teamCount=snapshot.teams.length;
@@ -479,12 +704,7 @@ async function restoreActiveRound(uid){
     state.roundCorrect=Number(snapshot.roundCorrect)||0; state.roundIncorrect=Number(snapshot.roundIncorrect)||0;
     state.isFreeRound=Boolean(snapshot.isFreeRound); state.completedFreeRound=Boolean(snapshot.completedFreeRound);
     state.usedQ=new Set(snapshot.usedQuestions||[]); state.usedQuestionIds=new Set(snapshot.usedQuestionIds||[]);
-    const savedRemoteBank=snapshot.roundQuestionBank;
-    const savedRemoteCategories=savedRemoteBank&&typeof savedRemoteBank==='object'&&!Array.isArray(savedRemoteBank)
-      ?Object.keys(savedRemoteBank):[];
-    if(savedRemoteCategories.length&&!validRemoteRoundBank(savedRemoteBank,savedRemoteCategories)){
-      throw new Error('saved remote question bank is invalid');
-    }
+    reservedQuestionIds.clear();
     roundQuestionBank=Object.assign(Object.create(null),savedRemoteBank||{});
     state.cur=null; state.cells={}; state.roundActive=true;
     if(!(await prepareSelectedImageCategories())){
@@ -493,7 +713,11 @@ async function restoreActiveRound(uid){
       throw error;
     }
     buildBoard(); applySavedBoardCells(snapshot.cells); renderTeamsBar(); renderTurn(); go('s-board');
-    if(snapshot.current){
+    if(snapshot.current&&snapshot.current.isBomb&&!BOMB_MODE_ENABLED){
+      // لا نعيد فتح سؤال قنبلة محفوظ من إصدار سابق. نحتفظ باللوحة
+      // والنقاط، ونعيد الخانة غير مستخدمة ليختار اللاعبون سؤالاً عادياً.
+      skippedMissingQuestion=true;
+    }else if(snapshot.current){
       const question=findRestoredQuestion(snapshot.current);
       if(!state.cells[snapshot.current.key]||state.cells[snapshot.current.key].used){
         throw new Error('saved question no longer matches the board');
@@ -504,11 +728,27 @@ async function restoreActiveRound(uid){
       }else{
         const [col,level]=snapshot.current.key.split('-').map(Number);
         const cell=document.querySelectorAll('#board .cell')[(level-1)*state.cats.length+col];
-        state.cur={...snapshot.current,q:question,cell,eligibleTeams:new Set(snapshot.current.eligibleTeams||[]),token:0,resolved:false};
-        state.timeLeft=Math.max(1,Number(snapshot.timeLeft)||1);
+        const restoredQuestion=snapshot.current.phase==='reveal'
+          &&Number.isInteger(snapshot.current.q?.a)
+          &&typeof snapshot.current.q?.answer==='string'
+          ?{...question,a:snapshot.current.q.a,answer:snapshot.current.q.answer}
+          :question;
+        state.cur={...snapshot.current,q:restoredQuestion,cell,
+          eligibleTeams:new Set(snapshot.current.eligibleTeams||[]),
+          teamChoices:{...(snapshot.current.teamChoices||{})},token:0,resolved:false};
+        state.timeLeft=snapshot.current.phase==='reveal'
+          ?Math.max(0,Number(snapshot.timeLeft)||0)
+          :Math.max(1,Number(snapshot.timeLeft)||1);
         state.maxTime=Math.max(1,Number(snapshot.maxTime)||state.timeLeft);
         state.paused=Boolean(snapshot.paused); state.searchTimeLeft=Math.max(0,Number(snapshot.searchTimeLeft)||0);
-        await renderRestoredQuestion(snapshot);
+        if(!(await renderRestoredQuestion(snapshot))){
+          const error=new Error('saved current question image is unavailable');
+          error.code='saved_round_images_unavailable';
+          throw error;
+        }
+        // قد تُحفظ اللقطة أثناء انتظار صورة السؤال وقبل تثبيته في سجل
+        // المشاهدة. بعد نجاح الاستعادة نثبت السؤال بصورة idempotent.
+        commitPickedQuestion(state.cur.cat,state.cur.q);
       }
     }
     persistActiveRound(true);
@@ -598,6 +838,80 @@ function activateLocalAccount(uid){
 }
 function localFreeRoundCompleted(uid){
   return storeGet(scopedAccessKey('free_round_completed',uid),false)===true;
+}
+const FREE_ROUND_START_PENDING_SCHEMA_VERSION=1;
+function freeRoundPendingStart(uid){
+  const value=storeGet(scopedAccessKey('free_round_start_pending',uid),null);
+  if(!value||value.schemaVersion!==FREE_ROUND_START_PENDING_SCHEMA_VERSION) return null;
+  if(!['curated','family'].includes(value.kind)||!Array.isArray(value.categories)) return null;
+  const categories=value.categories.map(category=>String(category||'').trim());
+  if(categories.length<1||categories.length>12||categories.some(category=>!category)
+    ||new Set(categories).size!==categories.length) return null;
+  return {
+    schemaVersion:FREE_ROUND_START_PENDING_SCHEMA_VERSION,
+    kind:value.kind,
+    categories,
+    claimConfirmed:value.claimConfirmed===true,
+    createdAt:Number(value.createdAt)||0,
+  };
+}
+function sameFreeRoundStart(pending,kind,categories){
+  const requested=(Array.isArray(categories)?categories:[]).map(category=>String(category||'').trim());
+  return !!pending&&pending.kind===kind&&pending.categories.length===requested.length
+    &&pending.categories.every((category,index)=>category===requested[index]);
+}
+async function stageFreeRoundStart(uid,kind,categories){
+  const existing=freeRoundPendingStart(uid);
+  if(existing) return sameFreeRoundStart(existing,kind,categories)?existing:null;
+  const storageKey=scopedAccessKey('free_round_start_pending',uid);
+  const pending={
+    schemaVersion:FREE_ROUND_START_PENDING_SCHEMA_VERSION,
+    kind,
+    categories:[...categories],
+    claimConfirmed:false,
+    createdAt:Date.now(),
+  };
+  storeSet(storageKey,pending);
+  // انتظر مرآة Preferences الأصلية قبل استهلاك العرض. localStorage فوري،
+  // وهذه الكتابة الثانية تحمي الاستكمال إذا أعاد iOS إنشاء WebView لاحقاً.
+  try{
+    const preferences=window.Capacitor?.Plugins?.Preferences;
+    if(preferences?.set){
+      await preferences.set({key:STORAGE_PREFIX+storageKey,value:JSON.stringify(pending)});
+    }
+  }catch(error){
+    recordNonFatal(error,'free-round.claim');
+  }
+  const stored=freeRoundPendingStart(uid);
+  return sameFreeRoundStart(stored,kind,categories)?stored:null;
+}
+async function confirmPendingFreeRoundStart(uid){
+  const pending=freeRoundPendingStart(uid);
+  if(!pending) return false;
+  const storageKey=scopedAccessKey('free_round_start_pending',uid);
+  const confirmed={...pending,claimConfirmed:true};
+  storeSet(storageKey,confirmed);
+  try{
+    const preferences=window.Capacitor?.Plugins?.Preferences;
+    if(preferences?.set){
+      await preferences.set({key:STORAGE_PREFIX+storageKey,value:JSON.stringify(confirmed)});
+    }
+  }catch(error){
+    recordNonFatal(error,'free-round.claim');
+  }
+  updateFreeRoundUi();
+  return freeRoundPendingStart(uid)?.claimConfirmed===true;
+}
+async function clearPendingFreeRoundStart(uid){
+  const storageKey=scopedAccessKey('free_round_start_pending',uid);
+  storeRemove(storageKey);
+  try{
+    const preferences=window.Capacitor?.Plugins?.Preferences;
+    if(preferences?.remove) await preferences.remove({key:STORAGE_PREFIX+storageKey});
+  }catch(error){
+    recordNonFatal(error,'free-round.claim');
+  }
+  updateFreeRoundUi();
 }
 async function generateDeviceCheckToken(){
   const plugin=window.Capacitor?.Plugins?.FatinahDeviceIntegrity;
@@ -772,11 +1086,55 @@ function updateFreeRoundUi(){
   if(!banner) return;
   if(_hasActiveSubscription){ banner.hidden=true; return; }
   banner.hidden=false;
-  banner.textContent=_freeRoundVerificationState==='eligible'
-    ? '🎁 أول جولة عليك بالكامل — شاشة الاشتراك ما تطلع إلا عقب ما تخلّصها'
-    : (_freeRoundVerificationState==='used'
-      ? '✓ خلصت جولتك المجانية — اشترك عشان تفتح جولات بلا حدود'
-      : '⏳ نحتاج اتصال بالإنترنت عشان نتحقق من جولتك المجانية');
+  banner.replaceChildren();
+  banner.setAttribute('aria-busy',String(_freeRoundVerificationPending));
+  const uid=String(window._currentUid||storeGet('authUid','')||'');
+  const pendingStart=uid?freeRoundPendingStart(uid):null;
+  if(pendingStart){
+    banner.textContent=pendingStart.claimConfirmed
+      ?'🎁 جولتك المجانية محجوزة — كمّل نفس الفئات وراح نعيد تنزيل أسئلتها بأمان'
+      :'⏳ عندك محاولة جولة محفوظة — كمّل نفس الفئات عشان نؤكدها بأمان';
+    return;
+  }
+  if(_freeRoundVerificationState==='eligible'){
+    banner.textContent='🎁 أول جولة عليك بالكامل — شاشة الاشتراك ما تطلع إلا عقب ما تخلّصها';
+    return;
+  }
+  if(_freeRoundVerificationState==='used'){
+    banner.textContent='✓ خلصت جولتك المجانية — اشترك عشان تفتح جولات بلا حدود';
+    return;
+  }
+  if(_freeRoundVerificationPending){
+    banner.textContent='⏳ جاري التحقق من جولتك المجانية…';
+    return;
+  }
+  if(!navigator.onLine){
+    banner.textContent='📶 ماكو اتصال بالإنترنت — بنعيد التحقق تلقائياً أول ما ترجع الشبكة';
+    return;
+  }
+  const action=document.createElement('a');
+  action.className='free-round-action';
+  if(isLoopbackWebHost()){
+    banner.append('🧪 حماية الجولة المجانية غير متاحة في المتصفح المحلي.');
+    const previewUrl=new URL(window.location.href);
+    previewUrl.searchParams.set('preview','1');
+    action.href=`${previewUrl.pathname}${previewUrl.search}${previewUrl.hash}`;
+    action.textContent='افتح وضع المعاينة للاختبار';
+    banner.append(document.createElement('br'),action);
+    return;
+  }
+  if(window.Capacitor?.isNativePlatform?.()!==true){
+    banner.append('📱 التحقق من الجولة المجانية متاح داخل تطبيق فطنة على iPhone أو iPad.');
+    action.href='/download/';
+    action.textContent='نزّل التطبيق';
+    banner.append(document.createElement('br'),action);
+    return;
+  }
+  banner.append('⚠️ ما قدرنا نتحقق من جولتك المجانية حالياً.');
+  const retry=document.createElement('button');
+  retry.type='button'; retry.className='free-round-action';
+  retry.dataset.action='retry-free-round'; retry.textContent='إعادة التحقق';
+  banner.append(document.createElement('br'),retry);
 }
 async function syncFreeRoundCompletion(uid){
   if(!uid||!localFreeRoundCompleted(uid)) return false;
@@ -809,6 +1167,7 @@ async function syncFreeRoundCompletion(uid){
   return false;
 }
 async function freeRoundIsAvailable(uid){
+  if(isLocalWebPreview()) return true;
   if(localFreeRoundCompleted(uid)){
     if(storeGet(scopedAccessKey('free_round_sync_pending',uid),false)){
       void syncFreeRoundCompletion(uid);
@@ -845,9 +1204,39 @@ async function freeRoundIsAvailable(uid){
   }catch(_){ /* وضع دون اتصال: علم الجهاز يمنع إعادة الجولة */ }
   return null;
 }
-async function claimFreeRound(uid){
+async function retryFreeRoundVerification({silent=false}={}){
+  if(_freeRoundVerificationPending) return false;
+  const uid=String(window._currentUid||storeGet('authUid','')||'');
+  if(!uid) return false;
+  const attempt=++_freeRoundVerificationAttempt;
+  _freeRoundVerificationPending=true;
+  updateFreeRoundUi();
+  try{
+    const available=await freeRoundIsAvailable(uid);
+    const currentUid=String(window._currentUid||storeGet('authUid','')||'');
+    if(attempt!==_freeRoundVerificationAttempt||currentUid!==uid) return false;
+    setFreeRoundAvailability(available);
+    if(available===null&&!silent){
+      showToast('⚠️','تعذّر التحقق','تأكد من الشبكة واضغط إعادة التحقق مرة ثانية',false);
+    }
+    return available!==null;
+  }finally{
+    if(attempt===_freeRoundVerificationAttempt){
+      _freeRoundVerificationPending=false;
+      updateFreeRoundUi();
+    }
+  }
+}
+async function claimFreeRound(uid,{
+  allowPendingRetry=false,startKind='',startCategories=[],
+}={}){
+  if(startKind){
+    return claimFreeRoundForStart(uid,startKind,startCategories);
+  }
   if(_hasActiveSubscription) return false;
-  if(!_freeRoundAvailable||_freeRoundVerificationState!=='eligible') return false;
+  if((!_freeRoundAvailable||_freeRoundVerificationState!=='eligible')
+    &&!(allowPendingRetry&&freeRoundPendingStart(uid))) return false;
+  if(isLocalWebPreview()) return true;
   const [idToken,deviceCheckToken,deviceCheckUpdateToken]=await Promise.all([
     getCurrentIdToken(),generateDeviceCheckToken(),generateDeviceCheckToken(),
   ]);
@@ -885,6 +1274,25 @@ async function claimFreeRound(uid){
     recordNonFatal(error,'free-round.claim');
   }
   return null;
+}
+async function claimFreeRoundForStart(uid,kind,categories){
+  if(isLocalWebPreview()) return 'ready';
+  const pending=await stageFreeRoundStart(uid,kind,categories);
+  if(!pending) return 'locked';
+  updateFreeRoundUi();
+  if(pending.claimConfirmed) return 'ready';
+  const claimed=await claimFreeRound(uid,{allowPendingRetry:true});
+  if(claimed===true){
+    // لا نبدأ التنزيل إلا بعد تثبيت العلامة محلياً. بذلك يمكن استرداد
+    // نفس الجولة حتى لو أُغلق التطبيق بين رد المطالبة ورد بنك الأسئلة.
+    return await confirmPendingFreeRoundStart(uid)?'ready':'unavailable';
+  }
+  if(claimed===false){
+    await clearPendingFreeRoundStart(uid);
+    return 'used';
+  }
+  updateFreeRoundUi();
+  return 'unavailable';
 }
 async function completeFreeRound(){
   if(_hasActiveSubscription||!state.isFreeRound||state.completedFreeRound) return;
@@ -1226,7 +1634,8 @@ function normalizeQuestionBank(bank){
     normalized[cat]=merged.map((question,index)=>{
       // التصحيح يخص السؤال القديم فقط. سؤال الإضافة في المستوى نفسه مستقل
       // ولا يجوز أن يرث نص التصحيح، وإلا ظهر سؤالان متطابقان في البنك.
-      const isPublishedQuestion=question.review?.status==='approved';
+      const isPreviewQuestion=isLocalWebPreview()&&question.review?.status==='automated_structure_pass';
+      const isPublishedQuestion=question.review?.status==='approved'||isPreviewQuestion;
       const override=index<originals.length&&!isPublishedQuestion&&QUESTION_OVERRIDES[cat]&&QUESTION_OVERRIDES[cat][question.d];
       const q={...question,...(override||{})};
       const reviewedSource=window.__REVIEWED_QUESTION_SOURCES__?.[cat]?.[question.d];
@@ -1247,7 +1656,7 @@ function normalizeQuestionBank(bank){
       const auditedReview=window.__LEGACY_QUESTION_REVIEWS__?.[q.id];
       if(auditedReview) q.review={...auditedReview};
       const religious=['دين وسيرة','السيرة النبوية','القرآن الكريم','فتوحات المسلمين','الصحابة','الخلفاء الراشدون','الأنبياء والرسل'].includes(cat);
-      const hasExplicitApproval=q.review?.status==='approved'
+      const hasExplicitApproval=(q.review?.status==='approved'||isPreviewQuestion)
         &&typeof q.review.reviewer==='string'&&q.review.reviewer.trim()
         &&typeof q.review.reviewedAt==='string'&&q.review.reviewedAt.trim()
         &&(!religious||q.review.religiousSourceAndIsnadConfirmed===true);
@@ -1378,7 +1787,10 @@ function rememberQuestion(cat,question){
   if(!question||!question.id||state.familyRound) return;
   const history=loadQuestionHistory();
   const ids=history[cat]||[];
-  if(!ids.includes(question.id)) ids.push(question.id);
+  // الاستعادة قد تعيد اعتماد سؤال سبق تثبيته؛ لا نكرر طابور المزامنة إذا
+  // كان موجوداً أصلاً في السجل المحلي.
+  if(ids.includes(question.id)) return;
+  ids.push(question.id);
   history[cat]=ids.slice(-2000);
   saveQuestionHistory(history);
   enqueueQuestionSeen(cat,question.id);
@@ -1598,6 +2010,8 @@ function doExit(){
   clearInterval(state.timer); clearInterval(state.searchTimer);
   keepAwakeOff();
   hideQuestionScreen(false);
+  clearActiveQuestionImage();
+  reservedQuestionIds.clear();
   state.roundActive=false; state.cur=null;
   clearActiveRound();
   closeAccessibleModal('exit-modal',{restoreFocus:false});
@@ -1605,115 +2019,229 @@ function doExit(){
 }
 
 // ────────── حذف الحساب (5.1.1)
-// إعادة المصادقة عند requires-recent-login حسب مزوّد الدخول المخزَّن
-async function reauthThen(provider, fn){
-  // Normalize Firebase providerId format (stored as 'apple.com'/'google.com' in old sessions)
-  if(provider==='apple.com') provider='apple';
-  if(provider==='google.com') provider='google';
+function accountDeletionError(code){
+  const error=new Error(code);
+  error.code=code;
+  return error;
+}
+function normalizeDeletionProvider(provider,user){
+  const stored=String(provider||'').toLowerCase();
+  const firebase=String(user?.providerData?.[0]?.providerId||'').toLowerCase();
+  const value=stored==='firebase'&&firebase?firebase:stored;
+  if(value==='apple.com') return 'apple';
+  if(value==='google.com') return 'google';
+  if(value==='password') return 'password';
+  if(value==='phone') return 'phone';
+  if(user?.isAnonymous===true||value==='anonymous') return 'anonymous';
+  return value;
+}
+function assertDeletionUser(user,expectedUid){
+  const actualUid=String(user?.uid||'');
+  if(!actualUid) throw accountDeletionError('auth/no-current-user');
+  if(expectedUid&&actualUid!==String(expectedUid)){
+    throw accountDeletionError('auth/account-mismatch');
+  }
+  return user;
+}
+
+let _passwordReauthResolver=null;
+let _passwordReauthVerifying=false;
+function setPasswordReauthBackgroundIsolated(isolated){
+  const app=document.getElementById('app');
+  if(!app) return;
+  app.inert=isolated;
+  if(isolated) app.setAttribute('aria-hidden','true');
+  else app.removeAttribute('aria-hidden');
+}
+function setPasswordReauthBusy(busy){
+  _passwordReauthVerifying=busy;
+  const form=document.getElementById('reauth-password-form');
+  if(form) form.setAttribute('aria-busy',busy?'true':'false');
+  ['reauth-password-input','reauth-password-cancel','reauth-password-submit'].forEach(id=>{
+    const control=document.getElementById(id);
+    if(control) control.disabled=busy;
+  });
+}
+function closePasswordReauthenticationAfterAttempt(){
+  const input=document.getElementById('reauth-password-input');
+  const error=document.getElementById('reauth-password-error');
+  const status=document.getElementById('reauth-password-status');
+  if(input) input.value='';
+  if(error) error.textContent='';
+  if(status) status.textContent='';
+  setPasswordReauthBusy(false);
+  setPasswordReauthBackgroundIsolated(false);
+  closeAccessibleModal('reauth-password-modal',{restoreFocus:false});
+}
+function finishPasswordReauthentication(password,{verifying=false}={}){
+  const input=document.getElementById('reauth-password-input');
+  const error=document.getElementById('reauth-password-error');
+  const status=document.getElementById('reauth-password-status');
+  if(input) input.value='';
+  if(error) error.textContent='';
+  const resolve=_passwordReauthResolver;
+  _passwordReauthResolver=null;
+  if(verifying){
+    setPasswordReauthBusy(true);
+    if(status){
+      status.textContent='جاري التحقق من كلمة المرور…';
+      try{ status.focus({preventScroll:true}); }catch(_){ status.focus(); }
+    }
+  }else{
+    closePasswordReauthenticationAfterAttempt();
+  }
+  if(resolve) resolve(password);
+}
+function cancelPasswordReauthentication(){
+  if(_passwordReauthVerifying) return;
+  finishPasswordReauthentication(null);
+}
+function submitPasswordReauthentication(event){
+  event.preventDefault();
+  if(_passwordReauthVerifying) return;
+  const input=document.getElementById('reauth-password-input');
+  const password=input?.value||'';
+  if(!password){
+    const error=document.getElementById('reauth-password-error');
+    if(error) error.textContent='اكتب كلمة المرور عشان نكمّل.';
+    input?.focus();
+    return;
+  }
+  finishPasswordReauthentication(password,{verifying:true});
+}
+function requestPasswordForReauthentication(email){
+  if(_passwordReauthResolver) finishPasswordReauthentication(null);
+  const identity=document.getElementById('reauth-password-email');
+  const input=document.getElementById('reauth-password-input');
+  const error=document.getElementById('reauth-password-error');
+  const status=document.getElementById('reauth-password-status');
+  if(identity) identity.textContent=String(email||'بريدك الإلكتروني');
+  if(input) input.value='';
+  if(error) error.textContent='';
+  if(status) status.textContent='';
+  setPasswordReauthBusy(false);
+  return new Promise(resolve=>{
+    _passwordReauthResolver=resolve;
+    openAccessibleModal('reauth-password-modal','#reauth-password-input');
+    setPasswordReauthBackgroundIsolated(true);
+  });
+}
+document.getElementById('reauth-password-form')?.addEventListener('submit',submitPasswordReauthentication);
+document.getElementById('reauth-password-cancel')?.addEventListener('click',cancelPasswordReauthentication);
+
+// تحدث إعادة المصادقة قبل أول عملية حذف، وتتأكد أن المزوّد لم يبدّل
+// الحساب أثناء تسجيل الدخول. الجلسات المجهولة/المحلية يحسمها الخادم.
+async function reauthenticateAccountForDeletion(provider,expectedUid){
   logClientEvent('info','auth.reauth.start');
   const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
   if(FA){
-    if(provider==='google'){
-      if(typeof FA.reauthenticateWithGoogle==='function') await FA.reauthenticateWithGoogle();
-      else await FA.signInWithGoogle();
-    } else if(provider==='apple'){
-      const hasReauth = typeof FA.reauthenticateWithApple==='function';
+    const current=(await FA.getCurrentUser().catch(()=>null))?.user||null;
+    if(!current){
+      if(provider==='local') return true;
+      throw accountDeletionError('auth/no-current-user');
+    }
+    assertDeletionUser(current,expectedUid);
+    const normalized=normalizeDeletionProvider(provider,current);
+    let result=null;
+    if(normalized==='google'){
+      // لا نستبدل الجلسة عبر signIn fallback؛ إذا لم تتوفر إعادة المصادقة
+      // يقرر الخادم حداثة auth_time من الرمز الحالي.
+      if(typeof FA.reauthenticateWithGoogle!=='function') return true;
+      result=await FA.reauthenticateWithGoogle();
+    }else if(normalized==='apple'){
+      if(typeof FA.reauthenticateWithApple!=='function') return true;
       try{
-        if(hasReauth) await FA.reauthenticateWithApple();
-        else await FA.signInWithApple();
-      }catch(appleErr){
-        logClientEvent('error','auth.reauth.apple');
-        throw appleErr;
+        result=await FA.reauthenticateWithApple();
+      }catch(error){ logClientEvent('error','auth.reauth.apple'); throw error; }
+    }else if(normalized==='password'){
+      // استخدم بريد Firebase الحالي الموثوق، لا authEmail المحلي القابل للتعديل.
+      // signIn بهذا البريد لا يستطيع اختيار حساب مختلف بصمت.
+      const email=String(current.email||'').trim();
+      const reauthenticate=typeof FA.reauthenticateWithEmailAndPassword==='function'
+        ?options=>FA.reauthenticateWithEmailAndPassword(options)
+        :typeof FA.signInWithEmailAndPassword==='function'
+          ?options=>FA.signInWithEmailAndPassword(options):null;
+      if(!email||!reauthenticate) throw accountDeletionError('auth/reauth-unavailable');
+      let password=await requestPasswordForReauthentication(email);
+      if(password===null) throw accountDeletionError('auth/cancelled');
+      try{ result=await reauthenticate({email,password}); }
+      finally{
+        password='';
+        closePasswordReauthenticationAfterAttempt();
       }
-    } else if(provider==='password'){
-      const email = storeGet('authEmail','');
-      const password = prompt('عشان نأكد الحذف، اكتب كلمة مرور حساب ' + email + ':');
-      if(!password) throw new Error('cancelled');
-      await FA.signInWithEmailAndPassword({email, password});
-    } else {
-      // anonymous — لا توجد طريقة لإعادة المصادقة، الجلسة عادةً حديثة أصلاً
-      throw new Error('no-reauth-anonymous');
+    }else{
+      // phone لا يملك API إعادة مصادقة مباشراً، وanonymous لا يملك مزوّداً تفاعلياً.
+      // نرسل token مجدداً ليقرر الخادم، من دون حذف محلي مبكر.
+      return true;
     }
-    return fn();
+    if(result?.user) assertDeletionUser(result.user,expectedUid);
+    const refreshed=(await FA.getCurrentUser().catch(()=>null))?.user;
+    assertDeletionUser(refreshed,expectedUid);
+    return true;
   }
+
   const wb=await getFirebaseWebAuth();
-  if(wb && wb.auth.currentUser){
-    const { reauthenticateWithPopup, reauthenticateWithCredential, EmailAuthProvider } =
-      await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
-    if(provider==='password'){
-      const email = storeGet('authEmail','');
-      const password = prompt('عشان نأكد الحذف، اكتب كلمة مرور حساب ' + email + ':');
-      if(!password) throw new Error('cancelled');
-      await reauthenticateWithCredential(wb.auth.currentUser, EmailAuthProvider.credential(email, password));
-    } else if(provider==='google' || provider==='apple'){
-      const p = provider==='google' ? new wb.GoogleAuthProvider() : new wb.OAuthProvider('apple.com');
-      await reauthenticateWithPopup(wb.auth.currentUser, p);
-    } else {
-      throw new Error('no-reauth-anonymous');
-    }
-    return fn();
+  if(!wb?.auth?.currentUser){
+    if(provider==='local') return true;
+    throw accountDeletionError('auth/no-current-user');
   }
-  throw new Error('no-auth-layer');
+  const current=assertDeletionUser(wb.auth.currentUser,expectedUid);
+  const normalized=normalizeDeletionProvider(provider,current);
+  if(normalized==='anonymous'||normalized==='phone') return true;
+  const {reauthenticateWithPopup,reauthenticateWithCredential,EmailAuthProvider}=
+    await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+  let result;
+  if(normalized==='password'){
+    const email=String(current.email||'').trim();
+    if(!email) throw accountDeletionError('auth/reauth-unavailable');
+    let password=await requestPasswordForReauthentication(email);
+    if(password===null) throw accountDeletionError('auth/cancelled');
+    try{
+      result=await reauthenticateWithCredential(current,EmailAuthProvider.credential(email,password));
+    }finally{
+      password='';
+      closePasswordReauthenticationAfterAttempt();
+    }
+  }else if(normalized==='google'||normalized==='apple'){
+    const authProvider=normalized==='google'
+      ?new wb.GoogleAuthProvider():new wb.OAuthProvider('apple.com');
+    result=await reauthenticateWithPopup(current,authProvider);
+  }else{
+    return true;
+  }
+  assertDeletionUser(result?.user||wb.auth.currentUser,expectedUid);
+  return true;
 }
 
-// حذف مستخدم Firebase فعلياً (شرط Apple 5.1.1) — وليس تسجيل خروج فقط
-async function deleteFirebaseUser(){
-  const provider = storeGet('authProvider','');
-  // الطبقة الأولى: مكوّن Capacitor الأصلي (iOS)
+// حذف مستخدم Firebase فعلياً (شرط Apple 5.1.1) بعد إنهاء إعادة المصادقة مسبقاً.
+async function deleteFirebaseUser(expectedUid){
   const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
   if(FA){
     try{
-      const cur = await FA.getCurrentUser().catch(()=>null);
-      if(!cur || !cur.user) return true; // لا يوجد مستخدم Firebase — دخول بالاسم فقط
+      const current=(await FA.getCurrentUser().catch(()=>null))?.user||null;
+      if(!current) return true;
+      assertDeletionUser(current,expectedUid);
       await FA.deleteUser();
-      // قد تسجّل الطبقة الأصلية RuntimeError من دون رفض الـ Promise في
-      // JavaScript. لا نعرض نجاح الحذف قبل التأكد أن المستخدم اختفى فعلياً.
+      // قد تسجّل الطبقة الأصلية RuntimeError بلا رفض Promise، فنتحقق من اختفاء المستخدم.
       const remainingUser = await FA.getCurrentUser().catch(()=>null);
       if(remainingUser && remainingUser.user){
         throw new Error('Firebase user still exists after deleteUser');
       }
       return true;
-    }catch(e){
-      const msg = String(e?.code||e?.message||e);
-      if(msg.includes('requires-recent-login')){
-        try{ await reauthThen(provider, ()=>FA.deleteUser()); return true; }
-        catch(e2){
-          logClientEvent('error','auth.delete.reauthentication');
-          const isEmptyObject=typeof e2==='object' && e2!==null
-            && Object.keys(e2).length===0;
-          const isCancelled = !e2 || isEmptyObject ||
-            (e2?.code||'').includes('CANCEL') || (e2?.message||'').toLowerCase().includes('cancel') ||
-            e2?.code==='1001'; // ASAuthorizationError.canceled
-          if(isCancelled) showToast('❌','لغيت التحقق','عشان تحذف الحساب، كمّل التحقق عن طريق Apple',false);
-          return false;
-        }
-      }
-      logClientEvent('error','auth.delete.capacitor');
-      return false;
-    }
+    }catch(error){ logClientEvent('error','auth.delete.capacitor'); return false; }
   }
-  // الطبقة الثانية: Firebase Web SDK (متصفح)
   const wb=await getFirebaseWebAuth();
   if(wb){
-    const user = wb.auth.currentUser;
-    if(!user) return true; // لا يوجد مستخدم Firebase مسجَّل
+    const current=wb.auth.currentUser;
+    if(!current) return true;
     try{
-      const { deleteUser } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
-      await deleteUser(user);
+      assertDeletionUser(current,expectedUid);
+      const {deleteUser}=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+      await deleteUser(current);
       return true;
-    }catch(e){
-      if(e && e.code==='auth/requires-recent-login'){
-        try{
-          const { deleteUser } = await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
-          await reauthThen(provider, ()=>deleteUser(wb.auth.currentUser));
-          return true;
-        }catch(e2){ logClientEvent('error','auth.delete.web-reauthentication'); return false; }
-      }
-      logClientEvent('error','auth.delete.web');
-      return false;
-    }
+    }catch(error){ logClientEvent('error','auth.delete.web'); return false; }
   }
-  return true; // لا توجد طبقة Firebase أصلاً (دخول بالاسم)
+  return true;
 }
 
 let _accountActionPending=false;
@@ -1725,11 +2253,20 @@ function beginAccountAction(message){
   if(msg) msg.textContent=`⏳ ${message}`;
   return true;
 }
-function endAccountAction(){
+function endAccountAction({focusTargetId=''}={}){
   _accountActionPending=false;
   ['sign-out-btn','delete-account-btn'].forEach(id=>{ const button=document.getElementById(id); if(button) button.disabled=false; });
   const msg=document.getElementById('account-action-msg');
   if(msg) msg.textContent='';
+  const target=focusTargetId?document.getElementById(focusTargetId):null;
+  if(target){
+    const restore=()=>{
+      if(!target.isConnected||target.disabled) return;
+      try{ target.focus({preventScroll:true}); }catch(_){ target.focus(); }
+    };
+    restore();
+    requestAnimationFrame(()=>requestAnimationFrame(restore));
+  }
 }
 
 async function signOut(){
@@ -1771,20 +2308,49 @@ async function confirmDeleteAccount(){
   let completed=false;
   try{
   const uid = storeGet('authUid','');
-  // 1) احذف بيانات الخادم أولاً. لا يجوز حذف هوية Firebase ثم
-  // ترك البيانات الخادمية دون طريقة للمستخدم لإعادة المحاولة.
+  const provider=storeGet('authProvider','');
+  // 1) أكّد الهوية قبل أي حذف. هذا يمنع حذف بيانات الخادم ثم اكتشاف
+  // requires-recent-login عند حذف هوية Firebase.
+  try{
+    await reauthenticateAccountForDeletion(provider,uid);
+  }catch(error){
+    logClientEvent('error','auth.delete.reauthentication');
+    if(error?.code==='auth/cancelled'||isAuthCancellation(error)){
+      showToast('❌','لغيت التحقق','ما انحذف أي شي. كمّل التحقق عشان تحذف الحساب',false);
+    }else if(error?.code==='auth/account-mismatch'){
+      showToast('⚠️','الحساب ما تطابق','دخلت بحساب ثاني. سجّل دخولك بالحساب اللي تبي تحذفه',false);
+    }else if(error?.code==='auth/reauth-unavailable'){
+      showToast('🔐','يحتاج تسجيل دخول جديد','ما انحذف أي شي. سجّل خروجك، ادخل مرة ثانية، ثم أعد المحاولة',false);
+    }else{
+      showToast('⚠️','ما قدرنا نتحقق','ما انحذف أي شي. تأكد من البيانات والاتصال وجرّب مرة ثانية',false);
+    }
+    return;
+  }
+
+  // 2) جدّد token بعد إعادة المصادقة، ثم احذف بيانات الخادم. الطلب idempotent
+  // حتى يستطيع المستخد إعادة المحاولة إذا انقطع الاتصال بعد وصوله.
   if(uid){
     try{
+      clearIdTokenCache();
       const idToken = await getCurrentIdToken(true);
+      if(provider!=='local'&&!idToken) throw accountDeletionError('auth/no-id-token');
       const resp = await apiFetch('/api/account/delete',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({uid, idToken})
       });
       if(!resp.ok){
-        let detail='';
-        try{ detail=(await resp.json())?.error||''; }catch(e){}
-        throw new Error(detail || `server delete returned ${resp.status}`);
+        let payload={};
+        try{ payload=await resp.json(); }catch(error){}
+        if(payload?.code==='recent_auth_required'){
+          const method={phone:'برقم الهاتف',google:'بـ Google',apple:'بـ Apple',password:'بالبريد وكلمة المرور'}[
+            normalizeDeletionProvider(provider)
+          ]||'بنفس طريقة الدخول';
+          const detail=`سجّل خروجك، ادخل مرة ثانية ${method}، ثم أعد المحاولة. ما انحذف أي شي`;
+          showToast('🔐','يحتاج تسجيل دخول جديد',detail,false);
+          return;
+        }
+        throw new Error(payload?.error||`server delete returned ${resp.status}`);
       }
     }catch(e){
       logClientEvent('warn','account.server-delete');
@@ -1792,13 +2358,13 @@ async function confirmDeleteAccount(){
       return;
     }
   }
-  // 2) احذف مستخدم Firebase فعلياً (مع معالجة requires-recent-login)
-  const deleted = await deleteFirebaseUser();
+  // 3) احذف مستخدم Firebase بالجلسة التي حدّثناها قبل أي حذف.
+  const deleted = await deleteFirebaseUser(uid);
   if(!deleted){
-    showToast('⚠️','ما اكتمل حذف الحساب','سجّل دخولك من جديد وجرّب مرة ثانية',false);
+    showToast('⚠️','ما اكتمل حذف هوية الدخول','حذفنا بيانات فطنة، لكن Firebase ما أكمل الحذف. جرّب مرة ثانية؛ الطلب آمن للتكرار',false);
     return;
   }
-  // 3) افصل RevenueCat بعد نجاح حذف هوية Firebase. إبقاء SDK على هوية
+  // 4) افصل RevenueCat بعد نجاح حذف هوية Firebase. إبقاء SDK على هوية
   // المستخدم المحذوف كان يعيد حالة اشتراكه عند فتح التطبيق أو دخول حساب آخر.
   await resetRevenueCatIdentity();
   const rcIds=storeGet('rcAppUserIds',{}) || {};
@@ -1806,12 +2372,12 @@ async function confirmDeleteAccount(){
   storeSet('rcAppUserIds',rcIds);
   storeSet('rcAppUserId','');
   await resetVerificationSession();
-  // 4) امسح Keychain عبر signOut صريح
+  // 5) امسح Keychain عبر signOut صريح
   try{
     const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
     if(FA) await FA.signOut();
   }catch(e){}
-  // 5) امسح localStorage و Capacitor Preferences بالكامل
+  // 6) امسح localStorage و Capacitor Preferences بالكامل
   const keys=Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX));
   keys.forEach(k=>localStorage.removeItem(k));
   try{
@@ -1828,7 +2394,7 @@ async function confirmDeleteAccount(){
   showToast('✅','حذفنا حسابك','انحذف حساب فطنة وبياناته. اشتراك Apple يظل منفصل',false);
   completed=true;
   setTimeout(()=>{ endAccountAction(); go('s-auth'); },1500);
-  }finally{ if(!completed) endAccountAction(); }
+  }finally{ if(!completed) endAccountAction({focusTargetId:'delete-account-btn'}); }
 }
 
 // ---- نظام الهوية الموحّد ----
@@ -3048,7 +3614,7 @@ async function loadRcKey(){
     }catch(e){ logClientEvent('warn','revenuecat.keychain-read'); }
   }
   try{
-    const r = await fetch(apiUrl('/api/rc-config'));
+    const r = await apiFetch('/api/rc-config');
     if(r.ok){
       const d = await r.json();
       if(d && d.apiKey){
@@ -3070,34 +3636,19 @@ const RC_SUBSCRIPTION_CACHE_KEY = 'rcSubCache';
 const RC_SUBSCRIPTION_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const RC_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function createRcUuid(){
-  if(window.crypto && typeof window.crypto.randomUUID === 'function'){
-    return window.crypto.randomUUID().toLowerCase();
-  }
-  if(window.crypto && typeof window.crypto.getRandomValues === 'function'){
-    const bytes=new Uint8Array(16);
-    window.crypto.getRandomValues(bytes);
-    bytes[6]=(bytes[6]&0x0f)|0x40;
-    bytes[8]=(bytes[8]&0x3f)|0x80;
-    const hex=[...bytes].map(b=>b.toString(16).padStart(2,'0')).join('');
-    return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
-  }
-  throw new Error('المتصفح لا يدعم مولّد UUID آمن');
-}
-
-function getRcAppUserId(){
-  const uid=String(storeGet('authUid','')||'');
+function storedRcAppUserId(uid=storeGet('authUid','')){
+  uid=String(uid||'');
   const ids=storeGet(RC_APP_USER_IDS_KEY,{}) || {};
-  let value=String((uid && ids[uid]) || storeGet(RC_APP_USER_ID_KEY,'') || '').toLowerCase();
-  if(!RC_UUID_RE.test(value)){
-    value=createRcUuid();
-    if(uid){
-      ids[uid]=value;
-      storeSet(RC_APP_USER_IDS_KEY,ids);
-    }
-  }
+  const value=String((uid&&ids[uid])||storeGet(RC_APP_USER_ID_KEY,'')||'').toLowerCase();
+  return RC_UUID_RE.test(value)?value:'';
+}
+function persistCanonicalRcAppUserId(uid,rcAppUserId){
+  if(!uid||!RC_UUID_RE.test(rcAppUserId)) throw new Error('هوية RevenueCat الخادمية غير صالحة');
+  const ids=storeGet(RC_APP_USER_IDS_KEY,{})||{};
+  ids[uid]=rcAppUserId;
+  storeSet(RC_APP_USER_IDS_KEY,ids);
+  // هذا المفتاح من إصدارات قديمة لم تفصل الهويات حسب Firebase UID.
   storeSet(RC_APP_USER_ID_KEY,'');
-  return value;
 }
 
 function getRC(){
@@ -3123,6 +3674,8 @@ function clearRevenueCatAccessState(){
   _hasActiveSubscription=false;
   _freeRoundAvailable=false;
   _freeRoundVerificationState='unknown';
+  _freeRoundVerificationPending=false;
+  _freeRoundVerificationAttempt+=1;
   _subscriptionResolved=false;
 }
 
@@ -3171,19 +3724,16 @@ async function initRevenueCat(){
   if(!RC_CONFIGURED) return false; // لا تهيّئ إذا لم يتوفر المفتاح
   try{
     const uid = storeGet('authUid','');
-    const rcAppUserId=getRcAppUserId();
     if(!uid) throw new Error('لا يمكن تهيئة RevenueCat بلا حساب Firebase');
-    if(RC_CURRENT_APP_USER_ID && RC_CURRENT_APP_USER_ID!==rcAppUserId){
-      // تبديل مباشر للحساب من دون المرور بزر الخروج: لا تبقِ كاش أو صلاحية
-      // الحساب السابق أثناء ربط هوية RevenueCat الجديدة.
-      clearRevenueCatAccessState();
-      RC_CURRENT_APP_USER_ID='';
-    }
+    const legacyRcAppUserId=storedRcAppUserId(uid);
     let idToken=await getCurrentIdToken();
     const identityRequest=token=>apiFetch('/api/revenuecat/identity',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({uid, rcAppUserId, idToken:token})
+      body:JSON.stringify({
+        uid,idToken:token,
+        ...(legacyRcAppUserId?{legacyRcAppUserId}:{}),
+      })
     });
     let identityResp=await identityRequest(idToken);
     // Firebase قد يعيد token مخزناً من جلسة سابقة؛ جدّده مرة واحدة قبل الفشل.
@@ -3198,6 +3748,17 @@ async function initRevenueCat(){
         detail=payload && payload.error ? `: ${payload.error}` : '';
       }catch(e){}
       throw new Error(`ربط هوية RevenueCat فشل (HTTP ${identityResp.status})${detail}`);
+    }
+    const identityPayload=await identityResp.json().catch(()=>({}));
+    const rcAppUserId=String(identityPayload?.rcAppUserId||'').toLowerCase();
+    if(!RC_UUID_RE.test(rcAppUserId)){
+      throw new Error('الخادم لم يعد هوية RevenueCat صالحة');
+    }
+    persistCanonicalRcAppUserId(uid,rcAppUserId);
+    if(RC_CURRENT_APP_USER_ID&&RC_CURRENT_APP_USER_ID!==rcAppUserId){
+      // تبديل مباشر للحساب: اسحب كاش السابق قبل ربط الهوية الخادمية.
+      clearRevenueCatAccessState();
+      RC_CURRENT_APP_USER_ID='';
     }
     if(!RC_SDK_CONFIGURED){
       await RC.configure({ apiKey: RC_API_KEY, appUserID: rcAppUserId });
@@ -3257,6 +3818,11 @@ async function rcIsActive(){
     }
     return null;
   }
+}
+
+async function rcIsActiveWithin(timeoutMs=8000){
+  const check=Promise.resolve().then(()=>rcIsActive()).catch(()=>null);
+  return settleWithin(check,timeoutMs,null);
 }
 
 // ────────── Paywall — أسعار حقيقية من StoreKit عبر RevenueCat (App Store Guideline 3.1.2)
@@ -3435,7 +4001,7 @@ async function rcRestore(){
   }catch(e){ showToast('⚠️','ما قدرنا نستعيد المشتريات', e.message||'', false); }
 }
 
-async function checkSubscriptionAndRoute(uid, {showLoading=true} = {}){
+async function checkSubscriptionAndRoute(uid, {showLoading=true,revenueCatTimeoutMs=8000} = {}){
   if(showLoading) go('s-loading');
   // الخادم هو المصدر الأول. إن تأخر webhook بعد شراء صحيح، نستخدم
   // CustomerInfo الموقّع من RevenueCat حتى لا يبقى العميل عالقاً في paywall.
@@ -3453,7 +4019,7 @@ async function checkSubscriptionAndRoute(uid, {showLoading=true} = {}){
     }finally{ clearTimeout(timer); }
     if(!resp.ok) throw new Error('status error');
     const data = await resp.json();
-    if(data.active === true || await rcIsActive() === true){
+    if(data.active === true || await rcIsActiveWithin(revenueCatTimeoutMs) === true){
       _hasActiveSubscription=true; setFreeRoundAvailability(false); _subscriptionResolved=true;
       await routeAfterAccessCheck(uid); return;
     }
@@ -3464,12 +4030,13 @@ async function checkSubscriptionAndRoute(uid, {showLoading=true} = {}){
     // المجانية يبقى في الرئيسية، وتظهر شاشة الاشتراك عندما يطلب جولة جديدة.
     await routeAfterAccessCheck(uid);
   }catch(e){
-    if(await rcIsActive() === true){
+    if(await rcIsActiveWithin(revenueCatTimeoutMs) === true){
       _hasActiveSubscription=true; setFreeRoundAvailability(false); _subscriptionResolved=true;
       await routeAfterAccessCheck(uid); return;
     }
     _hasActiveSubscription=false;
-    setFreeRoundAvailability(localFreeRoundCompleted(uid)?false:null);
+    setFreeRoundAvailability(isLocalWebPreview()
+      ?true:(localFreeRoundCompleted(uid)?false:null));
     _subscriptionResolved=true;
     await routeAfterAccessCheck(uid);
   }
@@ -3636,7 +4203,7 @@ function renderTeamNames(){
     const st=TEAM_STYLES[i];
     const row=document.createElement('div'); row.className='team-row';
     row.innerHTML=`<div class="dot" style="background:${st.dot}; color:${st.dot}"></div>
-      <input class="team-input" id="tn-${i}" aria-label="اسم الفريق ${i+1}" value="${st.name}" maxlength="16" oninput="updateCatSplitPreview()">`;
+      <input class="team-input" id="tn-${i}" aria-label="اسم الفريق ${i+1}" value="${st.name}" maxlength="16" data-input-action="update-category-split">`;
     box.appendChild(row);
   }
 }
@@ -3710,7 +4277,7 @@ function buildFilterBar(){
     b.className='fbtn'+(g===activeFilter?' on':'');
     b.setAttribute('aria-pressed',g===activeFilter?'true':'false');
     b.textContent=(g==='الكل'?'🗂️ الكل':(g==='عائلية'?'👨‍👩‍👧‍👦 عائلية':(GROUP_ICONS[g]||'')+' '+g));
-    b.onclick=()=>{ sfx('tap'); activeFilter=g; document.getElementById('cat-search').value=''; buildFilterBar(); renderCatGrid(); };
+    b.addEventListener('click',()=>{ sfx('tap'); activeFilter=g; document.getElementById('cat-search').value=''; buildFilterBar(); renderCatGrid(); });
     bar.appendChild(b);
   });
 }
@@ -3744,7 +4311,9 @@ function setupFilterBarDrag(){
 function catsForFilter(){
   if(activeFilter==='الكل') return [...ALL_CATS, ...familyNames()];
   if(activeFilter==='عائلية') return familyNames();
-  return CAT_GROUPS[activeFilter]||[];
+  // فلاتر العرض لا يجوز أن تعيد فئة حذفها الكتالوج الديناميكي.
+  const published=new Set(ALL_CATS);
+  return (CAT_GROUPS[activeFilter]||[]).filter(category=>published.has(category));
 }
 function familyNames(){ return (familyCats||[]).filter(f=>f.questions.length>0).map(f=>f.name); }
 function isFamilyCat(name){ return (familyCats||[]).some(f=>f.name===name); }
@@ -3789,7 +4358,7 @@ function renderCatGrid({focusCategory='',preserveFocus=true}={}){
     // click.detail يساوي صفر عند التفعيل بالكيبورد أو VoiceOver، وأكبر من صفر
     // عند اللمس. نحفظ التركيز للتقنيات المساعدة فقط حتى لا يحاول WebView
     // تكبير/تمرير البطاقة بعد كل ضغطة لمس سريعة.
-    el.onclick=event=>toggleCat(cat,el,{preserveFocus:event.detail===0});
+    el.addEventListener('click',event=>toggleCat(cat,el,{preserveFocus:event.detail===0}));
     grid.appendChild(el);
   });
   if(categoryToRefocus){
@@ -3847,50 +4416,82 @@ function advancePickTurn(){
 let roundQuestionBank=Object.create(null);
 let roundQuestionToken=0;
 let roundImageQuestionIds=new Set();
+// السؤال المختار يبقى محجوزاً محلياً إلى أن يصبح جاهزاً للعرض فعلياً. هذا
+// يمنع طلبين متزامنين من اختيار السؤال نفسه، من دون تسجيل سؤال لم يره اللاعب
+// في سجل الحساب إذا فشل تحميل صورته.
+let reservedQuestionIds=new Set();
+const ROUND_QUESTIONS_PER_LEVEL=2;
+const ROUND_IMAGE_PREPARE_TIMEOUT_MS=Number(window.FatinahImageAssets?.CATEGORY_PREPARE_TIMEOUT_MS)||28000;
 function questionsForRoundCategory(category){
   return Object.prototype.hasOwnProperty.call(roundQuestionBank,category)
     ? roundQuestionBank[category]
-    : (QUESTION_BANK?.[category]||[]);
+    : [];
+}
+const REMOTE_TEXT_QUESTION_ID=/^gq-[a-f0-9]{20}$/;
+const REMOTE_IMAGE_QUESTION_ID=/^img-v[1-9][0-9]{0,2}-[a-z0-9][a-z0-9_-]{0,119}$/;
+const REMOTE_BLOCKED_IMAGE_CATALOG_IDS=new Set([
+  'object-crossbow','object-compass-flask','objectx-q39397','civilization-mughal',
+  'generalx-q32489','treasurex-q2002185','treasurex-q145780',
+]);
+const REMOTE_BLOCKED_CONTENT=/(?:إسرائيل|اسرائيل|اسراءيل|إسرائ?يل|israel(?:i|ite)?|tel[\s_-]*aviv|تل[\s_-]*أ?بيب|ישראל|إباح|اباح|محتوى[\s_-]*جنسي|علاقة[\s_-]*جنسية|porn(?:o|ographic|ography)?|hentai|ecchi|\berotic\b|\bsexual[\s_-]+(?:intercourse|act|content)\b)/iu;
+function validRemoteQuestionRecord(question){
+  if(!question||typeof question!=='object'||Array.isArray(question)) return false;
+  const id=String(question.id||'');
+  const hasImage=question.image!==undefined&&question.image!==null;
+  if(hasImage?(!REMOTE_IMAGE_QUESTION_ID.test(id)||id.length>128):!REMOTE_TEXT_QUESTION_ID.test(id)) return false;
+  if(hasImage&&REMOTE_BLOCKED_IMAGE_CATALOG_IDS.has(id.replace(/^img-v[1-9][0-9]{0,2}-/,''))) return false;
+  if(!Number.isInteger(question.d)||question.d<1||question.d>6) return false;
+  const questionText=typeof question.q==='string'?question.q.trim():'';
+  if(questionText.length<(hasImage?6:12)||questionText.length>220) return false;
+  if(!Array.isArray(question.o)||question.o.length!==4) return false;
+  const choices=question.o.map(choice=>typeof choice==='string'?choice.trim():'');
+  if(choices.some((choice,index)=>!choice||choice.length>140||choice!==question.o[index])
+    ||new Set(choices).size!==4) return false;
+  // عقد 1.4 لا يرسل a أو answer ضمن الجولة؛ تُجلبان بعد انتهاء أدوار الفرق.
+  if(question.a!==undefined||question.answer!==undefined) return false;
+  if(typeof question.source?.title!=='string'||!question.source.title.trim()||!isHttpsUrl(question.source.url)) return false;
+  if(question.review?.status!=='approved'||typeof question.review.reviewer!=='string'||!question.review.reviewer.trim()
+    ||typeof question.review.reviewedAt!=='string'||!/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(question.review.reviewedAt)) return false;
+  try{
+    if(REMOTE_BLOCKED_CONTENT.test(JSON.stringify(question))) return false;
+    if(hasImage) window.FatinahImageAssets.validateQuestion(question);
+  }catch(_){ return false; }
+  return true;
 }
 function validRemoteRoundBank(bank,categories){
-  if(!bank||Array.isArray(bank)||typeof bank!=='object') return false;
-  return categories.every(category=>{
+  if(!bank||Array.isArray(bank)||typeof bank!=='object'||!Array.isArray(categories)) return false;
+  const requested=[...new Set(categories.map(category=>String(category||'').trim()))];
+  const received=Object.keys(bank);
+  if(requested.length!==categories.length||received.length!==requested.length
+    ||received.some(category=>!requested.includes(category))) return false;
+  const allIds=new Set();
+  return requested.every(category=>{
     const questions=bank[category];
-    if(!Array.isArray(questions)||questions.length!==6) return false;
-    const levels=new Set(); const ids=new Set();
+    if(!Array.isArray(questions)||questions.length!==6*ROUND_QUESTIONS_PER_LEVEL) return false;
+    const levelCounts=new Map();
     for(const question of questions){
-      if(!question||typeof question!=='object'||!/^gq-[a-f0-9]{20}$/.test(String(question.id||''))) return false;
-      if(!Number.isInteger(question.d)||question.d<1||question.d>6||levels.has(question.d)) return false;
-      if(typeof question.q!=='string'||question.q.length<12||question.q.length>220) return false;
-      if(typeof question.answer!=='string'||!question.answer.trim()||question.answer.length>140) return false;
-      if(question.source?.url&&!isHttpsUrl(question.source.url)) return false;
-      if(question.review?.status!=='approved'||ids.has(question.id)) return false;
-      levels.add(question.d); ids.add(question.id);
+      if(!validRemoteQuestionRecord(question)||allIds.has(question.id)) return false;
+      levelCounts.set(question.d,(levelCounts.get(question.d)||0)+1); allIds.add(question.id);
     }
-    return levels.size===6;
+    return [1,2,3,4,5,6].every(level=>levelCounts.get(level)===ROUND_QUESTIONS_PER_LEVEL);
   });
 }
-function remoteRoundCacheKey(uid,categories){
-  return scopedAccessKey(`remote_round_${[...categories].sort().join('|')}`,uid);
+function validRemoteRoundPayload(payload,categories){
+  const responseBankVersion=typeof payload?.bankVersion==='string'?payload.bankVersion.trim():'';
+  return payload?.schemaVersion===1
+    &&(!remoteQuestionCatalogVersion||responseBankVersion===remoteQuestionCatalogVersion)
+    &&validRemoteRoundBank(payload.questions,categories);
 }
-async function prepareRemoteRoundQuestionBank(uid){
+async function prepareRemoteRoundQuestionBank(uid,{freeRoundGrant=false}={}){
   roundQuestionBank=Object.create(null);
-  if(!_hasActiveSubscription||state.familyRound) return true;
-  const remoteCategories=state.cats.filter(category=>
-    !(QUESTION_BANK?.[category]||[]).some(question=>question.image));
-  if(!remoteCategories.length) return true;
-  const cacheKey=remoteRoundCacheKey(uid,remoteCategories);
-  const cached=storeGet(cacheKey,null);
-  const useCache=()=>{
-    const age=Date.now()-Number(cached?.savedAt||0);
-    if(age<0||age>30*24*60*60*1000||!validRemoteRoundBank(cached?.questions,remoteCategories)) return false;
-    roundQuestionBank=Object.assign(Object.create(null),cached.questions);
-    return true;
-  };
+  if(state.familyRound) return true;
+  if(!CURATED_REMOTE_QUESTION_BANK_ENABLED) return false;
+  const remoteCategories=state.cats.filter(category=>CURATED_REMOTE_CATEGORIES.has(category));
+  if(remoteCategories.length!==state.cats.length) return false;
   const idToken=await getCurrentIdToken();
-  if(!idToken) return useCache()||!storeGet('remote_question_bank_required',false);
+  if(!idToken) return false;
   const history=loadQuestionHistory();
-  const excludeQuestionIds=[...new Set(Object.values(history).flat().filter(id=>typeof id==='string'))].slice(-2000);
+  const excludeQuestionIds=[...new Set(Object.values(history).flat().filter(id=>typeof id==='string'))].slice(-10000);
   try{
     const controller=new AbortController();
     const timeout=setTimeout(()=>controller.abort(),10000);
@@ -3899,37 +4500,60 @@ async function prepareRemoteRoundQuestionBank(uid){
       response=await apiFetch('/api/questions/round',{
         method:'POST',signal:controller.signal,
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
-        body:JSON.stringify({uid,idToken,categories:remoteCategories,excludeQuestionIds}),
+        body:JSON.stringify({
+          uid,idToken,categories:remoteCategories,excludeQuestionIds,
+          questionsPerLevel:ROUND_QUESTIONS_PER_LEVEL,
+        }),
       });
     }finally{ clearTimeout(timeout); }
     const payload=await response.json().catch(()=>({}));
-    if(response.ok&&payload.schemaVersion===1&&validRemoteRoundBank(payload.questions,remoteCategories)){
+    if(response.ok&&validRemoteRoundPayload(payload,remoteCategories)){
       roundQuestionBank=Object.assign(Object.create(null),payload.questions);
-      storeSet(cacheKey,{savedAt:Date.now(),bankVersion:payload.bankVersion||'',questions:payload.questions});
-      storeSet('remote_question_bank_required',true);
       return true;
     }
-    if(useCache()) return true;
-    if(['question_bank_not_ready','feature_disabled','unsupported_v2_route','v2_route_required','question_bank_v2_only'].includes(payload.code)) return true;
-  }catch(_){ if(useCache()) return true; }
-  return !storeGet('remote_question_bank_required',false);
+  }catch(_){ /* لا رجوع إلى بنك أو كاش محلي */ }
+  return false;
 }
-async function prepareSelectedImageCategories(){
+async function prepareSelectedImageCategories({includeRemote=true}={}){
   roundImageQuestionIds=new Set();
-  const categories=state.cats.filter(category=>(QUESTION_BANK?.[category]||[]).some(question=>question.image));
-  for(const category of categories){
-    const questions=QUESTION_BANK[category];
-    try{
-      questions.forEach(question=>window.FatinahImageAssets.validateQuestion(question));
-      const ready=await window.FatinahImageAssets.prepareCategory(questions);
+  if(!window.FatinahImageAssets) return !state.cats.some(category=>questionsForRoundCategory(category).some(question=>question?.image));
+  const categories=state.cats.filter(category=>(includeRemote||!CURATED_REMOTE_CATEGORIES.has(category))
+    &&questionsForRoundCategory(category).some(question=>question?.image));
+  const controller=typeof AbortController==='function'?new AbortController():null;
+  const deadlineAt=Date.now()+ROUND_IMAGE_PREPARE_TIMEOUT_MS;
+  const timeout=controller?setTimeout(()=>controller.abort(),ROUND_IMAGE_PREPARE_TIMEOUT_MS):null;
+  try{
+    for(const category of categories){
+      const questions=questionsForRoundCategory(category);
+      const imageQuestions=questions.filter(question=>question?.image);
+      imageQuestions.forEach(question=>window.FatinahImageAssets.validateQuestion(question));
+      const history=loadQuestionHistory();
+      // جهّز أولاً الصور التي لم يرها الحساب. نحتاج سؤالين صالحين فقط لكل
+      // مستوى للجولة الحالية؛ تنزيل عشرات الصور دفعة واحدة يرهق WebView.
+      const orderedQuestions=[
+        ...imageQuestions.filter(question=>!questionWasSeen(history,category,question)),
+        ...imageQuestions.filter(question=>questionWasSeen(history,category,question)),
+      ];
+      const ready=await window.FatinahImageAssets.prepareCategory(orderedQuestions,{
+        minimumPerDifficulty:ROUND_QUESTIONS_PER_LEVEL,
+        deadlineAt,
+        ...(controller?{signal:controller.signal}:{}),
+      });
       for(let difficulty=1;difficulty<=6;difficulty++){
-        const ids=ready.get(difficulty);
-        if(!ids?.size) return false;
-        ids.forEach(id=>roundImageQuestionIds.add(id));
+        const readyIds=ready.get(difficulty)||new Set();
+        readyIds.forEach(id=>roundImageQuestionIds.add(id));
+        const playable=questions.filter(question=>question.d===difficulty
+          &&(!question.image||readyIds.has(question.id))).length;
+        if(playable<ROUND_QUESTIONS_PER_LEVEL) return false;
       }
-    }catch(_){ return false; }
+    }
+    return true;
+  }catch(_){
+    return false;
+  }finally{
+    if(timeout!=null) clearTimeout(timeout);
+    controller?.abort();
   }
-  return true;
 }
 function findRoundStockIssue(){
   const history=loadQuestionHistory();
@@ -3952,10 +4576,21 @@ function findRoundStockIssue(){
   return null;
 }
 function canStartRound(){
+  if(state.roundActive) return false;
   if(_hasActiveSubscription) return true;
+  const uid=String(window._currentUid||storeGet('authUid','')||'');
+  if(uid&&freeRoundPendingStart(uid)) return true;
   if(_freeRoundAvailable) return true;
   if(!_subscriptionResolved||_freeRoundVerificationState==='unknown'){
-    showToast('⏳','ثواني ونتأكد','نطر شوي وجرّب مرة ثانية',false);
+    if(!navigator.onLine){
+      showToast('📶','ماكو اتصال بالإنترنت','بنحاول تلقائياً أول ما ترجع الشبكة',false);
+    }else if(isLoopbackWebHost()&&!isLocalWebPreview()){
+      showToast('🧪','فعّل وضع المعاينة','من الرئيسية اضغط «افتح وضع المعاينة للاختبار»',false);
+    }else if(window.Capacitor?.isNativePlatform?.()!==true){
+      showToast('📱','اللعب المجاني داخل التطبيق','افتح فطنة على iPhone أو iPad',false);
+    }else{
+      showToast('⚠️','تعذّر التحقق','ارجع للرئيسية واضغط إعادة التحقق',false);
+    }
     return false;
   }
   go('s-paywall');
@@ -3963,12 +4598,29 @@ function canStartRound(){
 }
 let _startGamePending=false;
 async function startGame(){
-  if(_startGamePending) return false;
+  if(_startGamePending||state.roundActive) return false;
   if(!canStartRound()) return;
   _startGamePending=true;
   try{
     const uid=window._currentUid||storeGet('authUid','');
     const startsAsFreeRound=!_hasActiveSubscription;
+    state.familyRound=null;
+    const pendingStart=startsAsFreeRound?freeRoundPendingStart(uid):null;
+    if(pendingStart&&!sameFreeRoundStart(pendingStart,'curated',state.cats)){
+      const selectedSet=new Set(state.cats);
+      const sameCategories=pendingStart.kind==='curated'
+        &&selectedSet.size===pendingStart.categories.length
+        &&pendingStart.categories.every(category=>selectedSet.has(category));
+      if(sameCategories){
+        // بصمة الخادم تعتمد الترتيب أيضاً؛ أعد ترتيب المجموعة المطابقة تلقائياً
+        // بدل إجبار اللاعب على تذكّر ترتيب ضغط البطاقات.
+        state.cats=[...pendingStart.categories];
+      }else{
+        showToast('🔒','فئات جولتك محفوظة',
+          `كمّل بالفئات المحجوزة: ${pendingStart.categories.map(displayCategoryName).join('، ')}.`,false);
+        return false;
+      }
+    }
     // على جهاز جديد يجب تنزيل سجل الحساب قبل اختيار أي سؤال؛ وإلا قد تبدأ
     // الجولة أثناء طلب GET وتعرض سؤالاً شاهده المستخدم على جهاز آخر.
     // الحساب المحلي البحت لا يملك خادماً آخر للمزامنة وسجله على الجهاز كافٍ.
@@ -3977,19 +4629,19 @@ async function startGame(){
       showToast('⚠️','ما قدرنا نزامن أسئلتك','تأكد من الإنترنت وجرّب مرة ثانية حتى ما نكرر عليك سؤالاً',false);
       return false;
     }
-    if(!(await prepareRemoteRoundQuestionBank(uid))){
-      showToast('⚠️','ما قدرنا نجهّز أسئلة الجولة','تأكد من الإنترنت وجرّب مرة ثانية. إذا سبق وحمّلنا جولة محفوظة راح نستخدمها تلقائياً.',false);
-      return false;
-    }
-    if(!(await prepareSelectedImageCategories())){
+    // نجهّز هنا فقط صور fallback غير الموجودة في كتالوج الخادم، قبل تثبيت
+    // الجولة المجانية. صور الخادم لا نثق بها أو ننزلها قبل استلام بنك الجولة.
+    if(startsAsFreeRound&&!(await prepareSelectedImageCategories({includeRemote:false}))){
       showToast('🖼️','الصورة مو جاهزة','تأكد من الإنترنت وجرّب مرة ثانية. ما راح نبدأ سؤال مصوّر من غير صورة محفوظة وآمنة.',false);
       return false;
     }
-    const stockIssue=findRoundStockIssue();
-    if(stockIssue){
-      const level=Number.isInteger(stockIssue.difficulty)?` بالمستوى ${stockIssue.difficulty}`:'';
+    // افحص النسخة المحلية قبل المطالبة حتى لا تضيع الجولة بسبب صورة ناقصة
+    // أو فئة غير خادمية غير مكتملة. الفئات الخادمية تُفحص مرة أخرى بعد التنزيل.
+    const preClaimStockIssue=startsAsFreeRound?findRoundStockIssue():null;
+    if(preClaimStockIssue&&!CURATED_REMOTE_CATEGORIES.has(preClaimStockIssue.category)){
+      const level=Number.isInteger(preClaimStockIssue.difficulty)?` بالمستوى ${preClaimStockIssue.difficulty}`:'';
       showToast('📚','اختار فئة ثانية',
-        `ما بقى سؤال يديد بفئة «${displayCategoryName(stockIssue.category)}»${level}. اختار فئة ثانية عشان نضمن إن الجولة تكتمل.`,false);
+        `ما بقى سؤال يديد بفئة «${displayCategoryName(preClaimStockIssue.category)}»${level}. اختار فئة ثانية عشان نضمن إن الجولة تكتمل.`,false);
       state.pickSplit=computeSplit(state.catCount,state.teamCount);
       state.pickTurn=0;
       state.pickedByTeam=state.teams.map(()=>0);
@@ -3997,17 +4649,52 @@ async function startGame(){
       go('s-cats');
       return false;
     }
-    // لا نستهلك bit العرض في DeviceCheck إلا بعد اكتمال كل فحوص بدء
-    // الجولة؛ حتى لا يفقد اللاعب عرضه بسبب فشل مزامنة سجل الأسئلة.
     if(startsAsFreeRound){
-      const claimed=await claimFreeRound(uid);
-      if(claimed!==true){
-        if(claimed===false) go('s-paywall');
+      const claimState=await claimFreeRound(uid,{
+        startKind:'curated',startCategories:state.cats,
+      });
+      if(claimState!=='ready'){
+        if(claimState==='used') go('s-paywall');
+        else if(claimState==='locked') showToast('🔒','فئات جولتك محفوظة',
+          'اختَر نفس الفئات وبنفس الترتيب اللي بدأت فيها عشان نكمّل الجولة.',false);
         else showToast('⚠️','ما قدرنا نثبت الجولة','تأكد من الإنترنت وجرّب مرة ثانية',false);
         return false;
       }
     }
-  state.familyRound=null; state.usedQ=new Set(); state.usedQuestionIds=new Set();
+    if(!(await prepareRemoteRoundQuestionBank(uid,{
+      freeRoundGrant:startsAsFreeRound&&!isLocalWebPreview(),
+    }))){
+      showToast('⚠️','ما قدرنا ننزّل أسئلة الجولة',startsAsFreeRound
+        ?'جولتك محفوظة وما راح تضيع. تأكد من الإنترنت واضغط «يلا نبدأ!» مرة ثانية.'
+        :'تأكد من الإنترنت وجرّب مرة ثانية. إذا سبق وحمّلنا جولة محفوظة راح نستخدمها تلقائياً.',false);
+      return false;
+    }
+    // بعد التنزيل يكون roundQuestionBank هو المصدر؛ نتحقق من حقوق الصور
+    // وأصول ata20 وبصماتها، ونجهّز سؤالين قابلين للعب لكل مستوى.
+    if(!(await prepareSelectedImageCategories())){
+      showToast('🖼️','الصورة مو جاهزة',startsAsFreeRound
+        ?'جولتك محفوظة. تأكد من الإنترنت واضغط «يلا نبدأ!» مرة ثانية.'
+        :'تأكد من الإنترنت وجرّب مرة ثانية. ما راح نبدأ سؤال مصوّر من غير صورة محفوظة وآمنة.',false);
+      return false;
+    }
+    const stockIssue=findRoundStockIssue();
+    if(stockIssue){
+      const level=Number.isInteger(stockIssue.difficulty)?` بالمستوى ${stockIssue.difficulty}`:'';
+      showToast('📚',startsAsFreeRound?'تعذّر تجهيز الجولة':'اختار فئة ثانية',
+        startsAsFreeRound
+          ?'جولتك محفوظة. جرّب تنزيلها مرة ثانية بعد التأكد من الاتصال.'
+          :`ما بقى سؤال يديد بفئة «${displayCategoryName(stockIssue.category)}»${level}. اختار فئة ثانية عشان نضمن إن الجولة تكتمل.`,false);
+      if(!startsAsFreeRound){
+        state.pickSplit=computeSplit(state.catCount,state.teamCount);
+        state.pickTurn=0;
+        state.pickedByTeam=state.teams.map(()=>0);
+        renderCats();
+        go('s-cats');
+      }
+      return false;
+    }
+  state.usedQ=new Set(); state.usedQuestionIds=new Set();
+  reservedQuestionIds.clear();
   // لا نمسح بنك الجولة الذي جُلب وتحققنا منه قبل بناء اللوحة.
   roundQuestionToken++;
   vibrate(30); state.turn=0; state.answered=0; state.cells={};
@@ -4017,6 +4704,7 @@ async function startGame(){
   state.roundActive=true; state.cur=null; state.searchTimeLeft=0;
   buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
   persistActiveRound(true);
+  if(startsAsFreeRound&&!isLocalWebPreview()) await clearPendingFreeRoundStart(uid);
   void trackMetric('game_started',{
     difficulty:state.difficulty,teams:state.teams.length,
     categoryCount:state.cats.length,freeRound:state.isFreeRound,
@@ -4049,7 +4737,7 @@ function buildBoard(){
     cell.style.background=FIRE[r].bg; cell.style.color=FIRE[r].tx; cell.textContent=POINTS[r];
     cell.setAttribute('aria-label',`سؤال ${isFamilyCat(state.cats[col])?state.cats[col]:displayCategoryName(state.cats[col])} بقيمة ${POINTS[r]} نقطة`);
     cell.style.fontSize=fontSize;
-    cell.onclick=()=>openQuestion(col,r,key,cell); board.appendChild(cell);
+    cell.addEventListener('click',()=>openQuestion(col,r,key,cell)); board.appendChild(cell);
   }
   // إجمالي الأسئلة = عدد الفئات × 6
   state.totalQuestions = n*6;
@@ -4069,8 +4757,8 @@ function renderTeamsBar(){
       <span class="cn" style="color:${st.color}">${esc(t.name)}</span>
       <span class="cs" style="color:${st.color}">${t.score}</span>
       <div class="score-adj" style="color:${st.color}">
-        <button aria-label="خصم 100 نقطة من ${esc(t.name)}" onclick="adjustScore(${i},-100)">-100</button>
-        <button aria-label="إضافة 100 نقطة إلى ${esc(t.name)}" onclick="adjustScore(${i},100)">+100</button>
+        <button aria-label="خصم 100 نقطة من ${esc(t.name)}" data-action="adjust-score" data-team-index="${i}" data-score-delta="-100">-100</button>
+        <button aria-label="إضافة 100 نقطة إلى ${esc(t.name)}" data-action="adjust-score" data-team-index="${i}" data-score-delta="100">+100</button>
       </div>`;
     bar.appendChild(chip);
   });
@@ -4096,10 +4784,11 @@ function renderTurn(){
 function updateBombButton(){
   const box=document.getElementById('bomb-box');
   if(!box || !state.teams.length) return;
-  const canBomb = state.teams[state.turn].score>=1000 && !state.teams[state.turn].bombUsed;
+  const canBomb = BOMB_MODE_ENABLED&&state.teams[state.turn].score>=1000&&!state.teams[state.turn].bombUsed;
   box.classList.toggle('show', canBomb);
 }
 function startBomb(){
+  if(!BOMB_MODE_ENABLED) return false;
   if(questionOpenPending||state.cur) return false;
   sfx('tap'); vibrate(15);
   if(state.teams.length===2){
@@ -4112,7 +4801,7 @@ function startBomb(){
       const b=document.createElement('button');
       b.style.background=st.bg; b.style.color=st.color;
       b.textContent='💣 ارمِها على '+t.name;
-      b.onclick=()=>{ closeBombTargetPicker(); fireBomb(i); };
+      b.addEventListener('click',()=>{ closeBombTargetPicker(); fireBomb(i); });
       list.appendChild(b);
     });
     openAccessibleModal('bomb-target-modal');
@@ -4122,6 +4811,7 @@ function closeBombTargetPicker(){
   closeAccessibleModal('bomb-target-modal');
 }
 async function fireBomb(targetIdx){
+  if(!BOMB_MODE_ENABLED) return false;
   if(questionOpenPending||state.cur) return false;
   clearInterval(state.searchTimer); // احتياط: لا يبقى مؤقّت بحث من سؤال سابق يلوّث القنبلة
   const n=state.cats.length;
@@ -4147,8 +4837,9 @@ async function fireBomb(targetIdx){
   questionOpenPending=true;
   const imageReady=await renderQuestionImage(q);
   questionOpenPending=false;
-  if(state.cur!==openingQuestion) return false;
+  if(state.cur!==openingQuestion){ releasePickedQuestion(q); return false; }
   if(!imageReady){
+    releasePickedQuestion(q);
     state.cur=null;
     showToast('🖼️','الصورة مو جاهزة','ما بدأنا السؤال ولا شغّلنا العداد. تأكد من الإنترنت وجرّب مرة ثانية.',false);
     return false;
@@ -4164,6 +4855,7 @@ async function fireBomb(targetIdx){
   renderLifelines();
   keepAwakeOn();
   showQuestionScreen();
+  commitPickedQuestion(cat,q);
   persistActiveRound(true);
 }
 function awardBomb(correct){
@@ -4222,11 +4914,37 @@ function hideQuestionScreen(restoreBoardFocus=true){
   }
   questionFocusOrigin=null;
 }
+function updateQuestionAttributionVisibility(revealed){
+  // نسب المصدر جزء من الحل، لذلك لا يظهر بصرياً أو لقارئ الشاشة إلا بعد
+  // دخول السؤال فعلياً في مرحلة الكشف.
+  const canReveal=revealed===true&&state.cur?.phase==='reveal';
+  const attribution=document.getElementById('q-attribution');
+  const source=document.getElementById('q-source');
+  const rights=document.getElementById('q-image-rights');
+  let sourceVisible=false;
+  let rightsVisible=false;
+  if(source){
+    sourceVisible=canReveal&&source.dataset.available==='true';
+    source.hidden=!sourceVisible;
+    source.setAttribute('aria-hidden',sourceVisible?'false':'true');
+  }
+  if(rights){
+    rightsVisible=canReveal&&rights.dataset.available==='true';
+    rights.hidden=!rightsVisible;
+    rights.setAttribute('aria-hidden',rightsVisible?'false':'true');
+  }
+  if(attribution){
+    const visible=sourceVisible||rightsVisible;
+    attribution.hidden=!visible;
+    attribution.setAttribute('aria-hidden',visible?'false':'true');
+  }
+}
 function setAnswerRevealed(revealed){
   const answer=document.getElementById('answer-box');
   if(!answer) return;
   answer.classList.toggle('show',revealed);
   answer.setAttribute('aria-hidden',revealed?'false':'true');
+  updateQuestionAttributionVisibility(revealed);
 }
 function focusRevealedAnswer(){
   requestAnimationFrame(()=>{
@@ -4258,6 +4976,82 @@ function setAdaptiveCopy(element,text){
 }
 function setQuestionPrompt(q){
   setAdaptiveCopy(document.getElementById('q-text'),displayQuestionText(q));
+  const options=document.getElementById('q-options');
+  const values=Array.isArray(q?.o)&&q.o.length===4?q.o:[];
+  options.innerHTML=values.map((value,index)=>
+    `<button class="q-option" type="button" data-option-index="${index}" data-action="select-question-option"><span aria-hidden="true">${['أ','ب','ج','د'][index]}</span><b>${esc(value)}</b></button>`).join('');
+  options.hidden=values.length!==4;
+  options.setAttribute('aria-hidden',values.length===4?'false':'true');
+  updateQuestionOptionButtons();
+}
+function activeAnsweringTeam(c=state.cur){
+  if(!c||c.isBomb) return -1;
+  if(c.phase==='owner') return c.owner;
+  if(c.phase==='steal') return c.stealQueue[c.stealPos];
+  return -1;
+}
+function updateQuestionOptionButtons(){
+  const c=state.cur;
+  const buttons=[...document.querySelectorAll('#q-options .q-option')];
+  const activeTeam=activeAnsweringTeam(c);
+  const hasActiveTeam=Number.isInteger(activeTeam)&&activeTeam>=0&&activeTeam<state.teams.length;
+  const transitionLocked=c?.optionInputLocked===true;
+  buttons.forEach((button,index)=>{
+    const optionText=String(c?.q?.o?.[index]||button.querySelector('b')?.textContent||'').trim();
+    const spokenOption=`${['أ','ب','ج','د'][index]}. ${optionText}`;
+    button.classList.remove('selected','correct','wrong');
+    button.disabled=!c||c.isBomb||c.replacingQuestion===true||transitionLocked||!hasActiveTeam||c.phase==='reveal';
+    button.removeAttribute('aria-pressed');
+    button.setAttribute('aria-label',spokenOption);
+    if(c&&hasActiveTeam&&(c.phase==='owner'||c.phase==='steal')){
+      // اربط كل نقرة بالمرحلة والفريق اللذين فُعّل لهما الزر. أي حدث قديم
+      // يصل بعد انتقال المرحلة يُرفض بدلاً من احتسابه للفريق التالي.
+      button.dataset.questionToken=String(c.token||0);
+      button.dataset.answerTeam=String(activeTeam);
+      button.dataset.answerPhase=c.phase;
+    }else{
+      delete button.dataset.questionToken;
+      delete button.dataset.answerTeam;
+      delete button.dataset.answerPhase;
+    }
+    if(c?.phase==='reveal'){
+      if(index===c.q.a) button.classList.add('correct');
+      const chosenTeams=Object.entries(c.teamChoices||{})
+        .filter(([,choice])=>choice===index)
+        .map(([team])=>state.teams[Number(team)]?.name).filter(Boolean);
+      if(chosenTeams.length){
+        button.classList.add(index===c.q.a?'correct':'wrong');
+        button.setAttribute('aria-label',`${spokenOption} — اختيار ${chosenTeams.join(' و')}`);
+      }
+    }else if(hasActiveTeam){
+      button.setAttribute('aria-label',`${spokenOption} — اختيار فريق ${state.teams[activeTeam].name}`);
+    }
+  });
+}
+const QUESTION_OPTION_TRANSITION_GUARD_MS=400;
+function selectQuestionOption(index,expectedContext={}){
+  const c=state.cur;
+  const teamIndex=activeAnsweringTeam(c);
+  if(!c||c.resolved||c.replacingQuestion===true||c.optionInputLocked===true
+    ||teamIndex<0||!Number.isInteger(index)||index<0||index>3) return false;
+  if(Number.isSafeInteger(expectedContext.token)&&expectedContext.token!==c.token) return false;
+  if(Number.isSafeInteger(expectedContext.team)&&expectedContext.team!==teamIndex) return false;
+  if(typeof expectedContext.phase==='string'&&expectedContext.phase!==c.phase) return false;
+  c.teamChoices||(c.teamChoices={});
+  if(Object.prototype.hasOwnProperty.call(c.teamChoices,teamIndex)) return false;
+  // تعطيل قصير يغطي click الثاني الناتج عن double tap. انتقال المرحلة يحدث
+  // فوراً، لكن الفريق التالي لا يستقبل نقرة كانت جزءاً من لمسة الفريق السابق.
+  c.optionInputLocked=true;
+  updateQuestionOptionButtons();
+  c.teamChoices[teamIndex]=index;
+  sfx('tap'); vibrate(15);
+  advanceSteal(c.token);
+  setTimeout(()=>{
+    if(state.cur!==c) return;
+    c.optionInputLocked=false;
+    updateQuestionOptionButtons();
+  },QUESTION_OPTION_TRANSITION_GUARD_MS);
+  return true;
 }
 function setQuestionPhaseLayout(phase){
   const wrap=document.getElementById('q-wrap');
@@ -4265,9 +5059,75 @@ function setQuestionPhaseLayout(phase){
 }
 let activeQuestionImageUrl='';
 let questionImageRequestToken=0;
+let activeQuestionImageRenderController=null;
+const QUESTION_IMAGE_RENDER_TIMEOUT_MS=Number(window.FatinahImageAssets?.IMAGE_RENDER_TIMEOUT_MS)||12000;
 function revokeQuestionImageUrl(url){
   if(!url) return;
   try{ URL.revokeObjectURL(url); }catch(_){ }
+}
+function clearActiveQuestionImage({cancelPending=true}={}){
+  if(cancelPending){
+    questionImageRequestToken+=1;
+    activeQuestionImageRenderController?.abort();
+    activeQuestionImageRenderController=null;
+  }
+  if(activeQuestionImageUrl){
+    revokeQuestionImageUrl(activeQuestionImageUrl);
+    activeQuestionImageUrl='';
+  }
+  document.getElementById('q-image')?.removeAttribute('src');
+}
+function waitForQuestionImageOperation(value,signal,{onAbort}={}){
+  if(!signal) return Promise.resolve(value);
+  if(signal.aborted){
+    try{ onAbort?.(); }catch(_){ }
+    return Promise.reject(new Error('question_image_render_aborted'));
+  }
+  return new Promise((resolve,reject)=>{
+    let settled=false;
+    const cleanup=()=>signal.removeEventListener('abort',abort);
+    const finish=(callback,result)=>{
+      if(settled) return;
+      settled=true; cleanup(); callback(result);
+    };
+    const abort=()=>{
+      try{ onAbort?.(); }catch(_){ }
+      finish(reject,new Error('question_image_render_aborted'));
+    };
+    signal.addEventListener('abort',abort,{once:true});
+    Promise.resolve(value).then(result=>finish(resolve,result),error=>finish(reject,error));
+  });
+}
+function loadQuestionImageElement(image,source,signal){
+  if(signal?.aborted) return Promise.reject(new Error('question_image_render_aborted'));
+  return new Promise((resolve,reject)=>{
+    let settled=false;
+    const cleanup=()=>{
+      image.removeEventListener('load',loaded);
+      image.removeEventListener('error',failed);
+      signal?.removeEventListener('abort',aborted);
+    };
+    const finish=(callback,result)=>{
+      if(settled) return;
+      settled=true; cleanup(); callback(result);
+    };
+    const loaded=()=>Number(image.naturalWidth)>0
+      ?finish(resolve,true):finish(reject,new Error('question_image_render_failed'));
+    const failed=()=>finish(reject,new Error('question_image_render_failed'));
+    const aborted=()=>{
+      image.removeAttribute('src');
+      finish(reject,new Error('question_image_render_aborted'));
+    };
+    image.addEventListener('load',loaded,{once:true});
+    image.addEventListener('error',failed,{once:true});
+    signal?.addEventListener('abort',aborted,{once:true});
+    try{
+      image.src=source;
+      // عند إعادة استخدام مصدر جاهز قد تكون load انتهت قبل رجوع setter؛
+      // naturalWidth هو إثبات أن العنصر المتصل يملك صورة قابلة للعرض.
+      if(image.complete) Promise.resolve().then(loaded);
+    }catch(error){ finish(reject,error); }
+  });
 }
 async function renderQuestionImage(q,{allowFallback=false}={}){
   const requestToken=++questionImageRequestToken;
@@ -4277,50 +5137,70 @@ async function renderQuestionImage(q,{allowFallback=false}={}){
   if(activeQuestionImageUrl){ revokeQuestionImageUrl(activeQuestionImageUrl); activeQuestionImageUrl=''; }
   image.removeAttribute('src'); image.alt=''; fallback.hidden=true; wrap.hidden=true;
   wrap.setAttribute('aria-hidden','true');
+  activeQuestionImageRenderController?.abort();
+  activeQuestionImageRenderController=null;
   if(!q?.image) return true;
+  const controller=new AbortController();
+  activeQuestionImageRenderController=controller;
+  const timeout=setTimeout(()=>controller.abort(),QUESTION_IMAGE_RENDER_TIMEOUT_MS);
   const contentHidden=state.paused===true;
   wrap.hidden=contentHidden;
   wrap.setAttribute('aria-hidden',contentHidden?'true':'false');
   image.alt=q.image.alt;
+  let loadedUrl='';
   try{
     const pendingImage=new Image();
-    const loadedUrl=await window.FatinahImageAssets.loadInto(q,pendingImage);
+    loadedUrl=await waitForQuestionImageOperation(
+      window.FatinahImageAssets.loadInto(q,pendingImage,{signal:controller.signal}),
+      controller.signal,
+    );
     if(requestToken!==questionImageRequestToken){
       revokeQuestionImageUrl(loadedUrl);
+      loadedUrl='';
       return false;
     }
-    image.src=loadedUrl;
-    if(typeof image.decode==='function') await image.decode();
+    // loadInto فكّ المصدر الموثق مسبقاً. هنا ننتظر load + naturalWidth على
+    // عنصر DOM نفسه؛ بعض WKWebView يرفض decode() ثانية رغم أن الصورة ظاهرة.
+    await loadQuestionImageElement(image,loadedUrl,controller.signal);
     if(requestToken!==questionImageRequestToken){
       image.removeAttribute('src');
       revokeQuestionImageUrl(loadedUrl);
+      loadedUrl='';
       return false;
     }
     activeQuestionImageUrl=loadedUrl;
     return true;
   }catch(_){
+    if(loadedUrl){ revokeQuestionImageUrl(loadedUrl); loadedUrl=''; }
     if(requestToken!==questionImageRequestToken) return false;
     image.removeAttribute('src');
     fallback.textContent='الصورة مو متوفرة الحين. الوصف: '+q.image.alt;
     fallback.hidden=false;
     return allowFallback;
+  }finally{
+    clearTimeout(timeout);
+    if(activeQuestionImageRenderController===controller) activeQuestionImageRenderController=null;
   }
 }
 function setQuestionAnswer(q){
   setAdaptiveCopy(document.getElementById('ans-text'),q.answer || (q.o && typeof q.a==='number' ? q.o[q.a] : ''));
   const source=document.getElementById('q-source');
-  const validSource=q && q.source && isHttpsUrl(q.source.url);
-  source.hidden=true;
-  source.style.display='none';
-  if(validSource){
-    source.href=q.source.url;
+  const sourceUrl=safeHttpsUrl(q?.source?.url);
+  source.hidden=true; source.setAttribute('aria-hidden','true');
+  source.dataset.available=sourceUrl?'true':'false';
+  source.removeAttribute('href'); source.textContent='';
+  if(sourceUrl){
+    source.href=sourceUrl;
     source.textContent='المصدر: '+(q.source.title||'مرجع موثوق');
   }
   const rights=document.getElementById('q-image-rights');
   const imageRights=q?.image?.rights;
+  const sourcePageUrl=safeHttpsUrl(imageRights?.sourcePage);
+  const licenseUrl=safeHttpsUrl(imageRights?.licenseUrl);
   const validRights=imageRights?.owner&&imageRights.credit&&imageRights.provider&&imageRights.license
-    &&isHttpsUrl(imageRights.sourcePage)&&isHttpsUrl(imageRights.licenseUrl)&&imageRights.modifications;
-  rights.hidden=true;
+    &&sourcePageUrl&&licenseUrl&&imageRights.modifications;
+  rights.hidden=true; rights.setAttribute('aria-hidden','true');
+  rights.dataset.available=validRights?'true':'false';
   const credit=document.getElementById('q-image-credit');
   const sourcePage=document.getElementById('q-image-source-page');
   const license=document.getElementById('q-image-license');
@@ -4329,9 +5209,9 @@ function setQuestionAnswer(q){
     const attribution=imageRights.credit===imageRights.owner
       ?imageRights.owner:`${imageRights.owner} — ${imageRights.credit}`;
     credit.textContent=`حقوق الصورة: ${attribution} — عبر ${imageRights.provider}`;
-    sourcePage.href=imageRights.sourcePage;
+    sourcePage.href=sourcePageUrl;
     sourcePage.hidden=false;
-    license.href=imageRights.licenseUrl;
+    license.href=licenseUrl;
     license.textContent=`الرخصة: ${imageRights.license}`;
     license.hidden=false;
     modifications.textContent=`معالجة الصورة: ${imageRights.modifications}`;
@@ -4341,6 +5221,9 @@ function setQuestionAnswer(q){
     license.removeAttribute('href'); license.hidden=true;
     modifications.textContent='';
   }
+  updateQuestionAttributionVisibility(
+    state.cur?.phase==='reveal'&&document.getElementById('answer-box')?.classList.contains('show'),
+  );
   const reportButton=document.getElementById('q-report-btn');
   if(reportButton) reportButton.style.display=q&&q.id&&!state.familyRound?'inline-flex':'none';
 }
@@ -4381,10 +5264,7 @@ async function submitQuestionReport(){
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
       body:JSON.stringify({
-        uid,idToken,questionId:q.id,category:current.cat||'',question:q.q||'',
-        answer:q.answer||(q.o&&typeof q.a==='number'?q.o[q.a]:''),
-        sourceTitle:q.source?.title||'',
-        sourceUrl:q.source?.url||'',
+        uid,idToken,questionId:q.id,
         reason:document.getElementById('question-report-reason')?.value||'other',
         details:(document.getElementById('question-report-details')?.value||'').trim(),
         appVersion:APP_VERSION,
@@ -4421,6 +5301,21 @@ function showQuestionExhausted(result){
     `ماكو سؤال ما شفته من قبل بفئة «${displayCategoryName(result.category)}»${level}. ${result.answer}`,false);
   return true;
 }
+function releasePickedQuestion(question){
+  if(question?.id) reservedQuestionIds.delete(question.id);
+}
+function commitPickedQuestion(cat,question){
+  if(!question||question.exhausted) return false;
+  releasePickedQuestion(question);
+  state.usedQ||(state.usedQ=new Set());
+  state.usedQ.add(question.q);
+  if(question.id&&!state.familyRound&&!isFamilyCat(cat)){
+    const sessionIds=state.usedQuestionIds||(state.usedQuestionIds=new Set());
+    sessionIds.add(question.id);
+    rememberQuestion(cat,question);
+  }
+  return true;
+}
 function pickQuestion(cat,d){
   // جولة عائلية: اسحب من أسئلة الفئة العائلية بغضّ النظر عن المستوى، مع منع التكرار
   if(state.familyRound){
@@ -4446,16 +5341,14 @@ function pickQuestion(cat,d){
   const local=questionsForRoundCategory(cat);
   const sessionIds=state.usedQuestionIds||(state.usedQuestionIds=new Set());
   const history=loadQuestionHistory();
-  const exact=local.filter(q=>q.d===d&&!sessionIds.has(q.id)&&!state.usedQ.has(q.q)
+  const exact=local.filter(q=>q.d===d&&!sessionIds.has(q.id)&&!reservedQuestionIds.has(q.id)&&!state.usedQ.has(q.q)
     &&(!q.image||roundImageQuestionIds.has(q.id)||window.FatinahImageAssets?.isReady(q)));
   const pool=window.__FATINAH_IMAGE_FLOW_UI_TEST__===true
     ? exact
     : exact.filter(q=>!questionWasSeen(history,cat,q));
   if(!pool.length) return questionExhausted(cat,d);
   const q=pool[Math.floor(Math.random()*pool.length)];
-  state.usedQ.add(q.q);
-  sessionIds.add(q.id);
-  rememberQuestion(cat,q);
+  if(q.id) reservedQuestionIds.add(q.id);
   return q;
 }
 let questionOpenPending=false;
@@ -4472,7 +5365,7 @@ function openQuestion(col,r,key,cell){
   for(let i=1;i<state.teams.length;i++) stealQueue.push((state.turn+i)%state.teams.length);
   state.cur={col,r,key,cell,cat,d:r,q,points:POINTS[r],
     doubledForTeam:null, searchedForTeam:null,
-    owner, stealQueue, stealPos:-1, eligibleTeams:new Set([owner]), passedToOpp:false, revealed:false,
+    owner, stealQueue, stealPos:-1, eligibleTeams:new Set([owner]), teamChoices:{}, passedToOpp:false, revealed:false,
     resolved:false, token:0};
   const badge=document.getElementById('q-badge');
   badge.textContent=isFamilyCat(cat)?cat:displayCategoryName(cat); badge.style.background=FIRE[r].bg; badge.style.color=FIRE[r].tx;
@@ -4490,6 +5383,7 @@ function openQuestion(col,r,key,cell){
     renderLifelines();
     keepAwakeOn();
     showQuestionScreen();
+    commitPickedQuestion(cat,q);
     persistActiveRound(true);
     return true;
   };
@@ -4497,8 +5391,9 @@ function openQuestion(col,r,key,cell){
   const openingQuestion=state.cur;
   questionOpenPending=true;
   return renderQuestionImage(q).then(ready=>{
-    if(state.cur!==openingQuestion) return false;
+    if(state.cur!==openingQuestion){ releasePickedQuestion(q); return false; }
     if(ready) return begin();
+    releasePickedQuestion(q);
     state.cur=null;
     showToast('🖼️','الصورة مو جاهزة','ما بدأنا السؤال ولا شغّلنا العداد. تأكد من الإنترنت وجرّب مرة ثانية.',false);
     return false;
@@ -4511,6 +5406,7 @@ function startPhase(phase){
   setQuestionPhaseLayout(phase);
   const c=state.cur;
   c.token=(c.token||0)+1; // يميّز هذه المرحلة تحديداً عن أي مشغّل (مؤقّت/زر) تابع لمرحلة سابقة
+  updateQuestionOptionButtons();
   const dt=DIFF_TIMES[state.difficulty]||DIFF_TIMES.normal;
   if(c.isBomb){
     if(phase==='bomb'){
@@ -4520,7 +5416,10 @@ function startPhase(phase){
       renderLifelines();
       persistActiveRound(true);
     } else if(phase==='reveal'){
-      clearInterval(state.timer);
+      clearInterval(state.timer); state.timer=null; state.paused=false;
+      updateTimerUI();
+      const pauseButton=document.getElementById('pause-btn');
+      pauseButton.disabled=true; pauseButton.style.opacity='0.55';
       setAnswerRevealed(true);
       sfx('correct');
       setPhasePill(-1, 'شنو النتيجة؟');
@@ -4534,7 +5433,7 @@ function startPhase(phase){
   const isSpeed = c.cat==='إجابة سريعة';
   if(phase==='owner'){
     const t=isSpeed?dt.speed:dt.normal;
-    setPhasePill(c.owner, 'دور فريق '+state.teams[c.owner].name+' — يجاوب شفهياً'+(isSpeed?' (سريع!)':''));
+    setPhasePill(c.owner, 'دور فريق '+state.teams[c.owner].name+' — اختار إجابة'+(isSpeed?' بسرعة!':''));
     updateQuestionPoints(c.owner);
     showTimer(t);
     renderFlow();
@@ -4544,17 +5443,22 @@ function startPhase(phase){
     const ti=c.stealQueue[c.stealPos];
     c.eligibleTeams.add(ti);
     const t=isSpeed?Math.round(dt.speed*0.5):dt.steal;
-    setPhasePill(ti, 'سرقة! دور فريق '+state.teams[ti].name+' — '+t+' ثانية');
+    setPhasePill(ti, 'دور فريق '+state.teams[ti].name+' — اختار إجابة خلال '+t+' ثانية');
     updateQuestionPoints(ti);
     showTimer(t);
     renderFlow();
     renderLifelines();
     persistActiveRound(true);
   } else if(phase==='reveal'){
-    clearInterval(state.timer);
+    clearInterval(state.timer); state.timer=null; state.paused=false;
+    updateTimerUI();
+    const pauseButton=document.getElementById('pause-btn');
+    pauseButton.disabled=true; pauseButton.style.opacity='0.55';
     setAnswerRevealed(true);
     sfx('correct');
-    setPhasePill(-1, 'منو جاوب صح؟ اختار الفريق');
+    setPhasePill(-1, window.__FATINAH_LEGACY_SPOKEN_TEST__===true
+      ?'منو جاوب صح؟ اختار الفريق'
+      :'ظهرت الإجابة الصحيحة — اضغط التالي');
     renderFlow();
     renderLifelines();
     focusRevealedAnswer();
@@ -4578,11 +5482,49 @@ function updateQuestionPoints(teamIdx){
 // السرقة بصمت — لأن كليهما يستدعي advanceSteal() لنفس المرحلة القديمة.
 function advanceSteal(token){
   const c=state.cur;
-  if(!c) return;
+  if(!c||c.replacingQuestion===true) return;
   if(typeof token==='number' && token!==c.token) return; // نداء تابع لمرحلة سبق تجاوزها
   c.stealPos++;
   if(c.stealPos < c.stealQueue.length){ startPhase('steal'); }
-  else{ startPhase('reveal'); }
+  else{ void revealCurrentQuestionAnswer(); }
+}
+
+async function revealCurrentQuestionAnswer(){
+  const c=state.cur;
+  if(!c||c.replacingQuestion===true||c.revealPending===true) return;
+  if((Number.isInteger(c.q?.a)||!c.q?.id)&&typeof c.q?.answer==='string'){
+    startPhase('reveal'); return;
+  }
+  const uid=window._currentUid||storeGet('authUid','');
+  const idToken=await getCurrentIdToken();
+  if(!uid||!idToken){
+    showToast('⚠️','تعذر كشف الإجابة','تأكد من اتصال الإنترنت ثم حاول مرة ثانية',false); return;
+  }
+  c.revealPending=true; c.optionInputLocked=true; updateQuestionOptionButtons();
+  try{
+    const teamChoices=state.teams.map((_,index)=>Number.isInteger(c.teamChoices?.[index])?c.teamChoices[index]:-1);
+    const response=await apiFetch('/api/questions/reveal',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+      body:JSON.stringify({uid,idToken,questionId:c.q.id,teamChoices}),
+    });
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok||payload.questionId!==c.q.id||!Number.isInteger(payload.a)
+      ||payload.a<0||payload.a>3||typeof payload.answer!=='string'||c.q.o[payload.a]!==payload.answer){
+      throw new Error(payload.error||'رد الإجابة غير صالح');
+    }
+    if(state.cur!==c) return;
+    // لا نلوّث كائن بنك الجولة المخفي؛ وإلا تُحفظ الإجابة ضمن البنك المحلي
+    // وتفشل استعادة الجولة أو تصبح متاحة قبل وقتها في السؤال الاحتياطي.
+    c.q={...c.q,a:payload.a,answer:payload.answer};
+    setQuestionAnswer(c.q); startPhase('reveal');
+  }catch(error){
+    if(state.cur===c){
+      c.optionInputLocked=false;
+      setPhasePill(-1,'تعذّر كشف الإجابة — حاول مرة ثانية');
+      showToast('⚠️','تعذر كشف الإجابة',error.message||'جرّب مرة ثانية',false);
+      renderFlow(); updateQuestionOptionButtons();
+    }
+  }finally{ if(state.cur===c) c.revealPending=false; }
 }
 function setPhasePill(teamIdx, text){
   const pill=document.getElementById('phase-pill');
@@ -4595,39 +5537,57 @@ function renderFlow(){
   const box=document.getElementById('q-flow');
   const c=state.cur;
   box.innerHTML='';
+  if(c?.replacingQuestion===true){
+    const status=document.createElement('div');
+    status.className='answer-choice-hint';
+    status.textContent='جاري تجهيز السؤال البديل…';
+    box.appendChild(status);
+    return;
+  }
   if(c.isBomb){
     if(c.phase==='bomb'){
-      box.appendChild(btn('ghost','👁️ اكشف الإجابة', ()=>{ sfx('tap'); startPhase('reveal'); }));
+      box.appendChild(btn('ghost','👁️ اكشف الإجابة', ()=>{ sfx('tap'); void revealCurrentQuestionAnswer(); }));
     } else if(c.phase==='reveal'){
       renderVerdict(box);
     }
     return;
   }
+  if(window.__FATINAH_LEGACY_SPOKEN_TEST__===true){
+    if(c.phase==='owner'){
+      if(c.stealQueue.length){
+        const nextName=state.teams[c.stealQueue[0]].name;
+        box.appendChild(btn('primary','⏭️ اطرح على '+nextName,()=>advanceSteal(c.token)));
+      }else box.appendChild(btn('primary','👁️ اكشف الإجابة',()=>void revealCurrentQuestionAnswer()));
+    }else if(c.phase==='steal'){
+      const hasNext=c.stealPos+1<c.stealQueue.length;
+      if(hasNext){
+        const nextName=state.teams[c.stealQueue[c.stealPos+1]].name;
+        box.appendChild(btn('primary','⏭️ اطرح على '+nextName,()=>advanceSteal(c.token)));
+      }else box.appendChild(btn('primary','👁️ اكشف الإجابة',()=>void revealCurrentQuestionAnswer()));
+    }else if(c.phase==='reveal') renderVerdict(box);
+    return;
+  }
   if(c.phase==='owner'){
-    // زر: اطرح على أول فريق في طابور السرقة
-    if(c.stealQueue.length){
-      const nextName=state.teams[c.stealQueue[0]].name;
-      const b=btn('primary','⏭️ اطرح على '+nextName, ()=>{ sfx('tap'); advanceSteal(c.token); });
-      box.appendChild(b);
-    }
-    box.appendChild(btn('ghost','👁️ اكشف الإجابة', ()=>{ sfx('tap'); startPhase('reveal'); }));
+    const hint=document.createElement('div'); hint.className='answer-choice-hint';
+    hint.textContent='اختار إجابة فريق '+state.teams[c.owner].name; box.appendChild(hint);
   } else if(c.phase==='steal'){
-    // زر: اطرح على الفريق التالي في الطابور (إن وُجد) — يدعم أكثر من فريق سارق
-    const hasNext = c.stealPos+1 < c.stealQueue.length;
-    if(hasNext){
-      const nextName=state.teams[c.stealQueue[c.stealPos+1]].name;
-      box.appendChild(btn('primary','⏭️ اطرح على '+nextName, ()=>{ sfx('tap'); advanceSteal(c.token); }));
+    const teamIndex=c.stealQueue[c.stealPos];
+    if(!Number.isInteger(teamIndex)){
+      const hint=document.createElement('div'); hint.className='answer-choice-hint';
+      hint.textContent='جاوبت كل الفرق — نحتاج اتصال عشان نكشف الإجابة'; box.appendChild(hint);
+      box.appendChild(btn('primary','🔄 إعادة محاولة كشف الإجابة',()=>void revealCurrentQuestionAnswer()));
+      return;
     }
-    box.appendChild(btn(hasNext?'ghost':'primary','👁️ اكشف الإجابة', ()=>{ sfx('tap'); startPhase('reveal'); }));
+    const hint=document.createElement('div'); hint.className='answer-choice-hint';
+    hint.textContent='اختار إجابة فريق '+state.teams[teamIndex].name; box.appendChild(hint);
   } else if(c.phase==='reveal'){
-    // أزرار الحكم: نقاط لأي فريق
-    renderVerdict(box);
+    box.appendChild(btn('primary','التالي',awardSelectedAnswers));
   }
 }
 function btn(kind,label,fn){
   const b=document.createElement('button');
   b.className='btn '+(kind==='primary'?'btn-primary':'btn-ghost');
-  b.textContent=label; b.onclick=fn; return b;
+  b.textContent=label; b.addEventListener('click',fn); return b;
 }
 function renderVerdict(box){
   const c=state.cur;
@@ -4653,12 +5613,35 @@ function renderVerdict(box){
     const st=TEAM_STYLES[state.teams[ti].idx];
     const vb=document.createElement('button'); vb.className='vb';
     vb.style.background=st.solid; vb.textContent='✅ '+state.teams[ti].name;
-    vb.onclick=()=>awardTo(ti); row.appendChild(vb);
+    vb.addEventListener('click',()=>awardTo(ti)); row.appendChild(vb);
   });
   box.appendChild(row);
   const none=document.createElement('button'); none.className='vb vb-none';
-  none.textContent='❌ محد جاوب صح'; none.onclick=()=>awardTo(-1);
+  none.textContent='❌ محد جاوب صح'; none.addEventListener('click',()=>awardTo(-1));
   box.appendChild(none);
+}
+function awardSelectedAnswers(){
+  const c=state.cur;
+  if(!c||c.resolved||c.replacingQuestion===true||c.phase!=='reveal') return;
+  c.resolved=true;
+  const winners=[];
+  for(const [teamText,choice] of Object.entries(c.teamChoices||{})){
+    const teamIndex=Number(teamText);
+    if(choice!==c.q.a||!state.teams[teamIndex]) continue;
+    let points=c.points;
+    if(c.doubledForTeam===teamIndex) points*=2;
+    if(c.searchedForTeam===teamIndex) points=Math.round(points/2);
+    state.teams[teamIndex].score+=points; winners.push(teamIndex);
+  }
+  stats.totalQ++;
+  if(winners.length){
+    sfx('correct'); vibrate([15,10,15]); stats.correct++;
+    state.roundCorrect=(state.roundCorrect||0)+1;
+  }else{
+    sfx('wrong'); vibrate([40,30,40]); state.roundIncorrect=(state.roundIncorrect||0)+1;
+  }
+  markBoardCellUsed(c.cell,c.key);
+  state.answered++; renderTeamsBar(); closeQuestion();
 }
 function markBoardCellUsed(cell,key){
   cell.classList.add('used');
@@ -4668,7 +5651,7 @@ function markBoardCellUsed(cell,key){
 }
 function awardTo(teamIdx){
   const c=state.cur;
-  if(!c || c.resolved) return; // حارس ضد نقر مزدوج على أزرار الحكم
+  if(!c || c.resolved || c.replacingQuestion===true) return; // حارس ضد نقر مزدوج على أزرار الحكم
   c.resolved=true;
   stats.totalQ++;
   if(teamIdx>=0){
@@ -4708,6 +5691,7 @@ function updateTimerUI(){
 }
 function togglePause(){
   if(state.cur&&state.cur.searching) return;
+  if(state.cur&&state.cur.replacingQuestion===true) return;
   if(state.cur&&state.cur.phase==='reveal') return;
   sfx('tap'); state.paused=!state.paused;
   const pauseButton=document.getElementById('pause-btn');
@@ -4719,6 +5703,7 @@ function togglePause(){
 }
 function setQuestionHidden(hide){
   const qt=document.getElementById('q-text');
+  const qo=document.getElementById('q-options');
   const pv=document.getElementById('q-paused');
   const imageWrap=document.getElementById('q-image-wrap');
   const questionDialog=document.getElementById('q-wrap');
@@ -4726,6 +5711,8 @@ function setQuestionHidden(hide){
   const fl=document.getElementById('q-flow');
   qt.classList.toggle('blurred',hide);
   qt.setAttribute('aria-hidden',hide?'true':'false');
+  qo.classList.toggle('blurred',hide);
+  if(!qo.hidden) qo.setAttribute('aria-hidden',hide?'true':'false');
   const hasImage=Boolean(state.cur?.q?.image);
   imageWrap.hidden=hide||!hasImage;
   imageWrap.setAttribute('aria-hidden',hide||!hasImage?'true':'false');
@@ -4738,10 +5725,10 @@ function setQuestionHidden(hide){
 function timeUp(token){
   // انتهى وقت المرحلة الحالية — ننتقل تلقائياً للفريق التالي في طابور السرقة، أو للكشف
   const c=state.cur;
-  if(!c || (typeof token==='number' && token!==c.token)) return; // مؤقّت قديم تابع لمرحلة تجاوزناها فعلاً
+  if(!c || c.replacingQuestion===true || (typeof token==='number' && token!==c.token)) return; // مؤقّت قديم تابع لمرحلة تجاوزناها فعلاً
   vibrate([40,30,40]);
   if(c.isBomb){
-    if(c.phase==='bomb') startPhase('reveal');
+    if(c.phase==='bomb') void revealCurrentQuestionAnswer();
     return;
   }
   if(c.phase==='owner' || c.phase==='steal'){
@@ -4751,6 +5738,7 @@ function timeUp(token){
 
 function closeQuestion(){
   hideQuestionScreen(true);
+  clearActiveQuestionImage();
   keepAwakeOff();
   // مؤقّت وسيلة "بحث بالجوال" مستقل عن state.timer — إن أُغلق السؤال قبل
   // انتهائه (45 ثانية) يبقى شغّالاً ويكتب state.paused=false على سؤال لاحق
@@ -4789,11 +5777,21 @@ function renderLifelines(){
     b.setAttribute('aria-label',`${ll.label} — فريق ${team.name}`);
     const noBudget=team.ll<=0&&!team.used.has(ll.id);
     b.disabled=team.used.has(ll.id)||noBudget||!inActionPhase||c.replacingQuestion===true||c.searching===true;
-    b.onclick=()=>useLifeline(ll.id,activeTeamIdx); box.appendChild(b);
+    b.addEventListener('click',()=>useLifeline(ll.id,activeTeamIdx)); box.appendChild(b);
   });
   const note=document.createElement('div'); note.className='ll-note';
   note.textContent=`باقي لفريق ${team.name}: ${team.ll} وسائل`;
   box.appendChild(note);
+}
+function setQuestionReplacementPending(pending){
+  const pauseButton=document.getElementById('pause-btn');
+  pauseButton.disabled=pending;
+  pauseButton.style.opacity=pending?'0.55':'1';
+  if(pending){
+    pauseButton.textContent='⏳';
+    pauseButton.setAttribute('aria-label','جاري تجهيز السؤال البديل');
+    document.getElementById('countdown-timer').classList.add('paused');
+  }
 }
 function useLifeline(id, teamIdx){
   const c=state.cur;
@@ -4801,7 +5799,10 @@ function useLifeline(id, teamIdx){
   const team=state.teams[teamIdx];
   if(!team) return false;
   if(team.used.has(id)||team.ll<=0) return;
-  sfx('tap'); vibrate(15); team.used.add(id); team.ll--;
+  sfx('tap'); vibrate(15);
+  // «تغيير السؤال» مع صورة عملية غير متزامنة؛ لا نستهلك الوسيلة إلا بعد
+  // نجاح الصورة البديلة حتى تكون اللقطة المحفوظة قابلة للاستعادة بأمان.
+  if(id!=='skip'){ team.used.add(id); team.ll--; }
   if(id==='pass'){
     // مرّر السؤال لأول فريق في طابور السرقة — المالك يخسر حق السرقة، وبقية الطابور يستمر بعده
     c.passedToOpp=true;
@@ -4811,45 +5812,88 @@ function useLifeline(id, teamIdx){
   } else if(id==='skip'){
     const nq=pickQuestion(c.cat,c.d);
     if(nq.exhausted){
-      // لم تُستهلك الوسيلة فعلياً: أبقِ السؤال الحالي وردّ رصيد الفريق،
+      // لم تُستهلك الوسيلة فعلياً: أبقِ السؤال الحالي،
       // واعرض سبب عدم وجود بديل بدلاً من تحويل رسالة النفاد إلى سؤال وهمي.
-      team.used.delete(id); team.ll++;
       showQuestionExhausted(nq);
       renderLifelines();
       return nq;
     }
-    const applyReplacement=()=>{
+    const applyReplacement=(frozenPhase=null)=>{
+      if(frozenPhase){
+        c.phase=frozenPhase.phase;
+        c.stealPos=frozenPhase.stealPos;
+      }
+      c.replacingQuestion=false;
+      setQuestionReplacementPending(false);
       c.q=nq;
       // السؤال البديل لم يُطرح على الفرق التي أجابت النسخة السابقة. يبدأ حق
       // الحكم من الفريق الذي استهلك وسيلة التغيير، ثم تُضاف الفرق اللاحقة فقط.
       c.eligibleTeams=new Set([teamIdx]);
+      // اختيارات السؤال السابق لا يجوز تقييمها على مفتاح إجابة البديل.
+      c.teamChoices={};
+      c.revealed=false;
+      c.resolved=false;
+      // أي مؤقّت قديم وصل للطابور قبل التبديل لا يتقدم بمرحلة السؤال الجديد.
+      c.token=(c.token||0)+1;
       setQuestionPrompt(nq);
       setQuestionAnswer(nq);
+      setAnswerRevealed(false);
+      setQuestionHidden(false);
       const dt2=DIFF_TIMES[state.difficulty]||DIFF_TIMES.normal;
       const isSpd=c.cat==='إجابة سريعة';
       showTimer(c.phase==='steal'?(isSpd?Math.round(dt2.speed*0.5):dt2.steal):(isSpd?dt2.speed:dt2.normal));
+      renderFlow();
+      commitPickedQuestion(c.cat,nq);
     };
     if(nq.image){
+      const frozenPhase={
+        phase:c.phase,stealPos:c.stealPos,
+        timeLeft:Math.max(1,Number(state.timeLeft)||1),
+        maxTime:Math.max(1,Number(state.maxTime)||Number(state.timeLeft)||1),
+        paused:Boolean(state.paused),
+      };
       c.replacingQuestion=true;
+      // أوقف المرحلة وأبطل token المؤقّت القديم قبل أي await. بذلك لا يستطيع
+      // timeUp أو زر قديم نقل الدور بينما صورة البديل قيد التجهيز.
+      clearInterval(state.timer); state.timer=null;
+      c.token=(c.token||0)+1;
+      setQuestionReplacementPending(true);
+      updateQuestionOptionButtons();
+      renderFlow();
       renderLifelines();
-      void renderQuestionImage(nq).then(ready=>{
-        if(state.cur!==c) return;
-        c.replacingQuestion=false;
+      persistActiveRound(true);
+      void renderQuestionImage(nq).then(async ready=>{
+        if(state.cur!==c){ releasePickedQuestion(nq); return; }
         if(!ready){
-          team.used.delete(id); team.ll++;
-          void renderQuestionImage(c.q,{allowFallback:true});
+          releasePickedQuestion(nq);
+          // أبقِ التحكم مجمداً حتى تعود صورة السؤال الأصلي (أو وصفه
+          // الاحتياطي)؛ بعدها فقط نعيد نفس المرحلة والوقت المتبقي.
+          await renderQuestionImage(c.q,{allowFallback:true});
+          if(state.cur!==c) return;
+          c.phase=frozenPhase.phase;
+          c.stealPos=frozenPhase.stealPos;
+          c.replacingQuestion=false;
+          c.token=(c.token||0)+1;
+          setQuestionPhaseLayout(c.phase);
+          setQuestionReplacementPending(false);
+          showTimer(frozenPhase.timeLeft,{maxTime:frozenPhase.maxTime,paused:frozenPhase.paused});
+          setQuestionHidden(frozenPhase.paused);
           showToast('🖼️','الصورة البديلة مو جاهزة','خلّينا السؤال الحالي وما استهلكنا وسيلة التغيير.',false);
+          updateQuestionOptionButtons();
+          renderFlow();
           renderLifelines();
           persistActiveRound(true);
           return;
         }
-        applyReplacement();
+        team.used.add(id); team.ll--;
+        applyReplacement(frozenPhase);
         renderLifelines();
         persistActiveRound(true);
       });
       return nq;
     }
     void renderQuestionImage(nq);
+    team.used.add(id); team.ll--;
     applyReplacement();
   } else if(id==='double'){
     c.doubledForTeam=teamIdx;
@@ -4906,6 +5950,8 @@ function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.rand
 
 // ────────── النهاية
 function endGame(){
+  clearActiveQuestionImage();
+  reservedQuestionIds.clear();
   state.roundActive=false; state.cur=null;
   clearActiveRound();
   const sorted=[...state.teams].sort((a,b)=>b.score-a.score);
@@ -5030,8 +6076,8 @@ async function renderAccountLinks(){
       ? '<span style="color:#7CFC7C;font-size:12px;">✓ مربوط</span>'
       : '<span style="color:var(--muted);font-size:12px;">مو مربوط</span>';
     const action = isLinked
-      ? `<button class="btn btn-ghost" style="padding:6px 14px;font-size:13px;width:auto;" onclick="unlinkProvider('${pid}')">فك الربط</button>`
-      : `<button class="btn btn-primary" style="padding:6px 14px;font-size:13px;width:auto;" onclick="linkProvider('${pid}')">ربط</button>`;
+      ? `<button class="btn btn-ghost" style="padding:6px 14px;font-size:13px;width:auto;" data-action="unlink-provider" data-provider="${pid}">فك الربط</button>`
+      : `<button class="btn btn-primary" style="padding:6px 14px;font-size:13px;width:auto;" data-action="link-provider" data-provider="${pid}">ربط</button>`;
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);">
       <span>${info.icon} ${info.label} ${status}</span>
       ${action}
@@ -5204,7 +6250,7 @@ function renderManualOpts(){
   box.innerHTML='';
   for(let i=0;i<4;i++){
     const row=document.createElement('div'); row.className='fm-opt-row';
-    row.innerHTML=`<div class="fm-radio ${i===manualDraft.correct?'on':''}" role="radio" tabindex="0" aria-checked="${i===manualDraft.correct}" aria-label="خل الخيار ${i+1} هو الإجابة الصح" onclick="setManualCorrect(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();setManualCorrect(${i})}"></div>
+    row.innerHTML=`<div class="fm-radio ${i===manualDraft.correct?'on':''}" role="radio" tabindex="0" aria-checked="${i===manualDraft.correct}" aria-label="خل الخيار ${i+1} هو الإجابة الصح" data-action="set-manual-correct" data-option-index="${i}" data-key-activate></div>
       <input class="team-input" id="fm-o-${i}" aria-label="الخيار ${i+1}" placeholder="خيار ${i+1}" maxlength="60" style="flex:1;">`;
     box.appendChild(row);
   }
@@ -5234,7 +6280,7 @@ function addManualQuestion(){
   // زر حفظ يظهر بعد أول سؤال
   if(manualDraft.questions.length===1){
     const b=document.createElement('button'); b.className='btn btn-primary'; b.style.marginTop='12px';
-    b.textContent='💾 احفظ الفئة'; b.id='fm-save-btn'; b.onclick=saveManualCategory;
+    b.textContent='💾 احفظ الفئة'; b.id='fm-save-btn'; b.addEventListener('click',saveManualCategory);
     document.getElementById('family-manual').appendChild(b);
   }
 }
@@ -5264,8 +6310,8 @@ function renderSavedFamily(){
       return `<div class="fsaved-chip">
       <div><div class="fc-info">👨‍👩‍👧‍👦 ${esc(c.name)}</div><div class="fc-sub">${esc(sub)}</div></div>
       <div class="fsaved-actions">
-        <button class="mini-btn play" onclick="playFamilyRound(${i})" style="${ready?'':'opacity:.5;'}">▶ العب</button>
-        <button class="mini-btn danger" onclick="deleteFamily(${i})">حذف</button>
+        <button class="mini-btn play" data-action="play-family-round" data-family-index="${i}" style="${ready?'':'opacity:.5;'}">▶ العب</button>
+        <button class="mini-btn danger" data-action="delete-family" data-family-index="${i}">حذف</button>
       </div></div>`;
     }).join('');
 }
@@ -5297,7 +6343,7 @@ function doDeleteFamily(){
 const FAMILY_MIN_QUESTIONS = 6;
 let _startFamilyRoundPending=false;
 async function playFamilyRound(i){
-  if(_startFamilyRoundPending) return false;
+  if(_startFamilyRoundPending||state.roundActive) return false;
   if(!canStartRound()) return;
   const cat=familyCats[i];
   if(cat.questions.length<FAMILY_MIN_QUESTIONS){
@@ -5310,10 +6356,14 @@ async function playFamilyRound(i){
   const startsAsFreeRound=!_hasActiveSubscription;
   if(startsAsFreeRound){
     const uid=window._currentUid||storeGet('authUid','');
-    const claimed=await claimFreeRound(uid);
-    if(claimed!==true){
+    const claimState=await claimFreeRound(uid,{
+      startKind:'family',startCategories:[cat.name],
+    });
+    if(claimState!=='ready'){
       _startFamilyRoundPending=false;
-      if(claimed===false) go('s-paywall');
+      if(claimState==='used') go('s-paywall');
+      else if(claimState==='locked') showToast('🔒','جولتك السابقة محفوظة',
+        'كمّل نفس الجولة اللي بدأت فيها أولاً؛ ما نقدر نفتح جولة مجانية ثانية.',false);
       else showToast('⚠️','ما قدرنا نثبت الجولة','تأكد من الإنترنت وجرّب مرة ثانية',false);
       return false;
     }
@@ -5330,6 +6380,7 @@ async function playFamilyRound(i){
   state.cats=[cat.name];
   state.familyRound=cat; // علامة لسحب الأسئلة من الفئة العائلية
   state.usedQ=new Set(); state.usedQuestionIds=new Set();
+  reservedQuestionIds.clear();
   state.turn=0; state.answered=0; state.cells={};
   state.startedAt=Date.now(); state.roundCorrect=0; state.roundIncorrect=0;
   state.isFreeRound=startsAsFreeRound;
@@ -5337,6 +6388,9 @@ async function playFamilyRound(i){
   state.roundActive=true; state.cur=null; state.searchTimeLeft=0;
   buildBoard(); renderTeamsBar(); renderTurn(); go('s-board');
   persistActiveRound(true);
+  if(startsAsFreeRound&&!isLocalWebPreview()){
+    await clearPendingFreeRoundStart(window._currentUid||storeGet('authUid',''));
+  }
   void trackMetric('game_started',{
     difficulty:state.difficulty,teams:state.teams.length,
     categoryCount:1,freeRound:state.isFreeRound,familyRound:true,
@@ -5351,6 +6405,158 @@ function shakeField(id){
   vibrate([30,20,30]);
   setTimeout(()=>{ el.style.borderColor=''; el.classList.remove('shake-x'); },500);
 }
+
+// ---- إجراءات الواجهة بلا JavaScript مضمّن ----
+// القائمة الصريحة تبقي data-action مجرد بيانات؛ لا eval ولا تحويل لنص
+// إلى اسم دالة. التفويض يغطي أيضاً العناصر التي تُنشأ بعد بدء اللعبة.
+function boundedActionInteger(element,key,minimum,maximum){
+  const raw=element?.dataset?.[key];
+  if(typeof raw!=='string'||!/^-?\d+$/.test(raw)) return null;
+  const value=Number(raw);
+  return Number.isSafeInteger(value)&&value>=minimum&&value<=maximum?value:null;
+}
+function navigateFromAction(element){
+  const screen=String(element?.dataset?.screen||'');
+  const destination=document.getElementById(screen);
+  if(destination?.classList.contains('screen')) go(screen);
+}
+function providerFromAction(element){
+  const provider=String(element?.dataset?.provider||'');
+  return Object.prototype.hasOwnProperty.call(PROVIDER_INFO,provider)?provider:'';
+}
+const UI_CLICK_ACTIONS=new Map([
+  ['apple-sign-in',()=>appleSignIn()],
+  ['google-sign-in',()=>googleSignIn()],
+  ['toggle-email-form',()=>toggleEmailForm()],
+  ['toggle-phone-sign-in-form',()=>togglePhoneSignInForm()],
+  ['start-phone-sign-in',()=>startPhoneSignIn()],
+  ['confirm-phone-sign-in',()=>confirmPhoneSignIn()],
+  ['email-auth',element=>{
+    const mode=element.dataset.authMode;
+    if(mode==='signup'||mode==='signin') return emailAuth(mode);
+  }],
+  ['forgot-password',()=>forgotPassword()],
+  ['forgot-email',()=>forgotEmail()],
+  ['skip-auth',()=>skipAuth()],
+  ['close-paywall',()=>closePaywall()],
+  ['start-checkout',()=>startCheckout()],
+  ['redeem-apple-offer-code',()=>redeemAppleOfferCode()],
+  ['restore-purchases',()=>rcRestore()],
+  ['retry-free-round',()=>retryFreeRoundVerification()],
+  ['navigate',element=>navigateFromAction(element)],
+  ['onboarding-next',()=>onbNext()],
+  ['onboarding-finish',()=>onbFinish()],
+  ['open-stats',()=>openStats()],
+  ['toggle-sound',()=>toggleSound()],
+  ['sound-navigate',element=>{ if(element.dataset.sound==='tap') sfx('tap'); navigateFromAction(element); }],
+  ['sound-open-family',()=>{ sfx('tap'); openFamily(); }],
+  ['sound-open-stats',()=>{ sfx('tap'); openStats(); }],
+  ['sound-open-account',()=>{ sfx('tap'); openAccountSettings(); }],
+  ['set-team-count',element=>{
+    const count=boundedActionInteger(element,'n',2,3);
+    if(count!==null) setTeamCount(count);
+  }],
+  ['set-category-count',element=>{
+    const count=boundedActionInteger(element,'n',2,8);
+    if(count!==null) updateCatCount(count);
+  }],
+  ['set-difficulty',element=>{
+    const difficulty=element.dataset.d;
+    if(['easy','normal','hard'].includes(difficulty)) setDifficulty(difficulty);
+  }],
+  ['sound-to-categories',()=>{ sfx('tap'); return toCats(); }],
+  ['sound-start-game',()=>{ sfx('start'); return startGame(); }],
+  ['confirm-exit',()=>confirmExit()],
+  ['start-bomb',()=>startBomb()],
+  ['sound-result-primary',()=>{ sfx('start'); afterResultPrimary(); }],
+  ['result-home',()=>afterResultHome()],
+  ['save-player-name',()=>savePlayerName()],
+  ['send-email-verification',()=>sendEmailVerificationMessage()],
+  ['refresh-email-verification',()=>refreshEmailVerificationStatus()],
+  ['start-phone-verification',()=>startPhoneVerification()],
+  ['confirm-phone-verification',()=>confirmPhoneVerification()],
+  ['enable-push-notifications',()=>enablePushNotifications()],
+  ['sign-out',()=>signOut()],
+  ['confirm-delete-account',()=>confirmDeleteAccount()],
+  ['add-manual-question',()=>addManualQuestion()],
+  ['save-family-category',()=>saveFamilyCategory()],
+  ['toggle-pause',()=>togglePause()],
+  ['open-question-report',()=>openQuestionReport()],
+  ['finish-search-early',()=>finishSearchEarly()],
+  ['close-exit-modal',()=>closeExitModal()],
+  ['exit-round',()=>doExit()],
+  ['close-delete-family-modal',()=>closeDeleteFamilyModal()],
+  ['delete-family-confirmed',()=>doDeleteFamily()],
+  ['close-bomb-target-picker',()=>closeBombTargetPicker()],
+  ['close-question-report',()=>closeQuestionReport()],
+  ['submit-question-report',()=>submitQuestionReport()],
+  ['adjust-score',element=>{
+    const teamIndex=boundedActionInteger(element,'teamIndex',0,2);
+    const delta=boundedActionInteger(element,'scoreDelta',-100,100);
+    if(state.teams[teamIndex]&&[-100,100].includes(delta)) adjustScore(teamIndex,delta);
+  }],
+  ['select-question-option',element=>{
+    const optionIndex=boundedActionInteger(element,'optionIndex',0,3);
+    const token=boundedActionInteger(element,'questionToken',0,Number.MAX_SAFE_INTEGER);
+    const team=boundedActionInteger(element,'answerTeam',0,2);
+    const phase=String(element.dataset.answerPhase||'');
+    if(optionIndex!==null&&token!==null&&team!==null&&(phase==='owner'||phase==='steal')){
+      selectQuestionOption(optionIndex,{token,team,phase});
+    }
+  }],
+  ['link-provider',element=>{
+    const provider=providerFromAction(element);
+    if(provider) linkProvider(provider);
+  }],
+  ['unlink-provider',element=>{
+    const provider=providerFromAction(element);
+    if(provider) return unlinkProvider(provider);
+  }],
+  ['set-manual-correct',element=>{
+    const optionIndex=boundedActionInteger(element,'optionIndex',0,3);
+    if(optionIndex!==null) setManualCorrect(optionIndex);
+  }],
+  ['play-family-round',element=>{
+    const familyIndex=boundedActionInteger(element,'familyIndex',0,familyCats.length-1);
+    if(familyIndex!==null&&familyCats[familyIndex]) return playFamilyRound(familyIndex);
+  }],
+  ['delete-family',element=>{
+    const familyIndex=boundedActionInteger(element,'familyIndex',0,familyCats.length-1);
+    if(familyIndex!==null&&familyCats[familyIndex]) deleteFamily(familyIndex);
+  }],
+]);
+function invokeUIAction(element,event){
+  const handler=UI_CLICK_ACTIONS.get(element.dataset.action);
+  if(!handler) return;
+  if(element.matches('a[href]')) event.preventDefault();
+  try{
+    const pending=handler(element,event);
+    if(pending?.catch) pending.catch(error=>recordNonFatal(error,'ui.action'));
+  }catch(error){
+    recordNonFatal(error,'ui.action');
+  }
+}
+(function installDeclarativeUIActions(){
+  document.addEventListener('click',event=>{
+    const element=event.target?.closest?.('[data-action]');
+    if(element) invokeUIAction(element,event);
+  });
+  document.addEventListener('input',event=>{
+    const action=event.target?.dataset?.inputAction;
+    if(action==='filter-categories') filterCats();
+    else if(action==='update-category-split') updateCatSplitPreview();
+  });
+  document.addEventListener('submit',event=>{
+    if(event.target?.dataset?.submitAction==='prevent') event.preventDefault();
+  });
+  document.addEventListener('keydown',event=>{
+    if(event.key!=='Enter'&&event.key!==' ') return;
+    const element=event.target?.closest?.('[data-key-activate][data-action]');
+    if(!element) return;
+    event.preventDefault();
+    element.click();
+  });
+})();
 
 // ---- مؤشر وضع دون اتصال ----
 (function initConnectivity(){
@@ -5375,6 +6581,10 @@ function shakeField(id){
     bar.setAttribute('aria-hidden','false');
     bar.classList.add('show');
     if(!offline){
+      if(wasOffline&&_freeRoundVerificationState==='unknown'
+        &&window.Capacitor?.isNativePlatform?.()===true){
+        void retryFreeRoundVerification({silent:true});
+      }
       hideTimer=setTimeout(()=>{
         bar.classList.remove('show','online');
         bar.setAttribute('aria-hidden','true');
@@ -5398,6 +6608,14 @@ function shakeField(id){
 })();
 
 // ---- تهيئة ----
+function buildGameFlowUITestFixture(){
+  const fixture=window.__FATINAH_GAME_FLOW_UI_TEST_FIXTURE__;
+  const categories=fixture?.catalog?.categories?.map(item=>item.name).slice(0,2)||[];
+  if(categories.length!==2||!validRemoteRoundPayload(fixture?.round,categories)){
+    throw new Error('بيانات اختبار جولة الخادم غير صالحة');
+  }
+  return {categories,questions:fixture.round.questions};
+}
 async function startGameFlowUITest(){
   await ensureQuestionBank();
   const uid='ui-test-player';
@@ -5413,7 +6631,7 @@ async function startGameFlowUITest(){
     name:style.name,score:0,ll:3,used:new Set(),idx,bombUsed:false,
   }));
   state.catCount=2;
-  const imageCategories=ALL_CATS.filter(category=>(QUESTION_BANK[category]||[]).some(question=>question.image));
+  const imageCategories=[];
   if(window.__FATINAH_IMAGE_FLOW_UI_TEST__===true){
     const primary=imageCategories.includes('تعرف على الصورة')?'تعرف على الصورة':imageCategories[0];
     state.cats=[primary,...imageCategories.filter(category=>category!==primary)].slice(0,2);
@@ -5421,12 +6639,15 @@ async function startGameFlowUITest(){
     const ready=await window.FatinahImageAssets.prepareCategory(QUESTION_BANK[primary]||[]);
     for(const ids of ready.values()) ids.forEach(id=>roundImageQuestionIds.add(id));
   }else{
-    state.cats=ALL_CATS.slice(0,2);
+    const fixture=buildGameFlowUITestFixture();
+    state.cats=fixture.categories;
+    roundQuestionBank=fixture.questions;
   }
   state.difficulty='normal';
   state.familyRound=null;
   state.usedQ=new Set();
   state.usedQuestionIds=new Set();
+  reservedQuestionIds.clear();
   state.turn=0;
   state.answered=0;
   state.cells={};
@@ -5448,6 +6669,8 @@ async function startGameFlowUITest(){
 }
 
 (async function startApplication(){
+const previewEnvironmentBanner=document.getElementById('preview-environment-banner');
+if(previewEnvironmentBanner) previewEnvironmentBanner.hidden=!isLocalWebPreview();
 const restoredPreferences=await hydrateNativePreferences();
 if(restoredPreferences>0 && sessionStorage.getItem('fatinah_preferences_hydrated')!=='1'){
   sessionStorage.setItem('fatinah_preferences_hydrated','1');
@@ -5483,7 +6706,8 @@ if(!(window.Capacitor && window.Capacitor.isNativePlatform())){
 // ⚠️ SCREENSHOT MODE — يُحذف بعد أخذ اللقطات
 const __SCREENSHOT_SCREEN = null; // home | teams | board | paywall | result
 initCrashReporting();
-await initAppIntegrity();
+// لا نترك شاشة التحميل معلّقة إذا لم تعد إضافة App Check الأصلية.
+await initAppIntegrityWithin(APP_INTEGRITY_ATTEMPT_TIMEOUT_MS);
 void initPushMessaging().catch(error=>recordNonFatal(error,'firebase.messaging'));
 (async function bootAuth(){
   hideSplash();

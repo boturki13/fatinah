@@ -1,0 +1,325 @@
+{
+  "schemaVersion": 1,
+  "bankVersion": "v2-curated-5afe5076e3ce95d3",
+  "generatedAt": "2026-09-04T20:10:02.085Z",
+  "sha256": "5afe5076e3ce95d3787c4275bda31c0e3412dedf16e565e080d2726525d81a22",
+  "questionCount": 12,
+  "targetBankSize": 12,
+  "ready": true,
+  "categories": {
+    "تاريخ": [
+      {
+        "id": "gq-9d40fbce7eb5abd6b537",
+        "d": 1,
+        "band": "easy",
+        "q": "ما المدينة التي فتحها العثمانيون عام 1453؟",
+        "o": [
+          "القسطنطينية",
+          "روما",
+          "أثينا",
+          "هامبورغ"
+        ],
+        "a": 0,
+        "answer": "القسطنطينية",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      },
+      {
+        "id": "gq-6121cf2f1c81390d4e48",
+        "d": 1,
+        "band": "easy",
+        "q": "ألقت الولايات المتحدة قنبلتين ذريتين على هيروشيما وأي مدينة يابانية أخرى عام 1945؟",
+        "o": [
+          "ناغازاكي",
+          "طوكيو",
+          "كاواساكي",
+          "كاغوشيما"
+        ],
+        "a": 0,
+        "answer": "ناغازاكي",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      },
+      {
+        "id": "gq-905bac805e5c41e56c86",
+        "d": 2,
+        "band": "easy",
+        "q": "كم سنة استمرت الحرب العالمية الثانية؟",
+        "o": [
+          "أربع سنوات",
+          "خمس سنوات",
+          "ست سنوات",
+          "سبع سنوات"
+        ],
+        "a": 2,
+        "answer": "ست سنوات",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      },
+      {
+        "id": "gq-2c4f20ea093bc35931e4",
+        "d": 2,
+        "band": "easy",
+        "q": "بماذا تحتفل الولايات المتحدة في الرابع من يوليو؟",
+        "o": [
+          "توقيع إعلان الاستقلال",
+          "نهاية الحرب الأهلية",
+          "اعتماد الدستور",
+          "تأسيس مدينة واشنطن"
+        ],
+        "a": 0,
+        "answer": "توقيع إعلان الاستقلال",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      },
+      {
+        "id": "gq-10a18a1c9430f720bf9c",
+        "d": 3,
+        "band": "medium",
+        "q": "ما الدولة التي انضمت إلى الاتحاد الأوروبي عام 2013؟",
+        "o": [
+          "كرواتيا",
+          "بلغاريا",
+          "سلوفينيا",
+          "تركيا"
+        ],
+        "a": 0,
+        "answer": "كرواتيا",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      },
+      {
+        "id": "gq-613e3a6f3f0f3d2b1b2e",
+        "d": 3,
+        "band": "medium",
+        "q": "من الإمبراطور الروماني الذي بلغت الإمبراطورية في عهده أكبر امتداد جغرافي؟",
+        "o": [
+          "تراجان",
+          "يوليوس قيصر",
+          "كلوديوس",
+          "قسطنطين الأكبر"
+        ],
+        "a": 0,
+        "answer": "تراجان",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      },
+      {
+        "id": "gq-35ef7f043d4264558b45",
+        "d": 4,
+        "band": "medium",
+        "q": "في أي عام نالت جامايكا استقلالها عن بريطانيا؟",
+        "o": [
+          "1949",
+          "1962",
+          "1963",
+          "1987"
+        ],
+        "a": 1,
+        "answer": "1962",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      },
+      {
+        "id": "gq-175d1f23df3dc54f1287",
+        "d": 4,
+        "band": "medium",
+        "q": "ما اسم زعيم الأباتشي الشهير الذي توفي عام 1909؟",
+        "o": [
+          "جيرونيمو",
+          "سيتينغ بول",
+          "ريد كلاود",
+          "كريزي هورس"
+        ],
+        "a": 0,
+        "answer": "جيرونيمو",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      },
+      {
+        "id": "gq-bef7d487d4b0f5cd1308",
+        "d": 5,
+        "band": "hard",
+        "q": "إلى أي معسكر سياسي انضم فرانسيسكو فرانكو خلال الحرب الأهلية الإسبانية؟",
+        "o": [
+          "القوميون",
+          "الجمهوريون",
+          "الجبهة الشعبية",
+          "الدولة البابوية"
+        ],
+        "a": 0,
+        "answer": "القوميون",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      },
+      {
+        "id": "gq-4fbcfd5fc1d810a30bf2",
+        "d": 5,
+        "band": "hard",
+        "q": "في أي عام وقع هجوم غاز السارين في مترو طوكيو؟",
+        "o": [
+          "1991",
+          "1995",
+          "2001",
+          "2011"
+        ],
+        "a": 1,
+        "answer": "1995",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      },
+      {
+        "id": "gq-b83a47e8aceb0fb0fac6",
+        "d": 6,
+        "band": "hard",
+        "q": "أي واحد من هؤلاء الحكام لم ينتمِ إلى أسرة هابسبورغ؟",
+        "o": [
+          "شارل الخامس",
+          "فيليب الثاني",
+          "فيليب الخامس",
+          "فرانتس يوزف"
+        ],
+        "a": 2,
+        "answer": "فيليب الخامس",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      },
+      {
+        "id": "gq-965f3d99fce266aeea3d",
+        "d": 6,
+        "band": "hard",
+        "q": "كم يومًا استمرت انتفاضة وارسو خلال الحرب العالمية الثانية؟",
+        "o": [
+          "20 يومًا",
+          "55 يومًا",
+          "63 يومًا",
+          "224 يومًا"
+        ],
+        "a": 2,
+        "answer": "63 يومًا",
+        "source": {
+          "title": "Open Trivia DB — History",
+          "url": "https://opentdb.com/api_config.php",
+          "publisher": "Open Trivia Database",
+          "license": "CC BY-SA 4.0"
+        },
+        "review": {
+          "status": "approved",
+          "reviewer": "Fatinah curated import",
+          "reviewedAt": "2026-09-04T20:10:02.080Z",
+          "basis": "curated_opentdb_translation"
+        }
+      }
+    ]
+  }
+}

@@ -1,8 +1,13 @@
 node_modules/
 .DS_Store
-subscriptions.db
-subscriptions.db-shm
-subscriptions.db-wal
+
+# Runtime databases and journals may contain account or purchase identifiers.
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
 firebase-debug.log
 .env.local
 __pycache__/
@@ -12,6 +17,11 @@ __pycache__/
 
 # Local review artifacts and generated screenshots
 work/
+
+# Raw pasted diagnostics may contain authentication or SDK identity payloads.
+# Commit a deliberately redacted fixture elsewhere when a log is needed by a test.
+attached_assets/Pasted-*.txt
+attached_assets/*.log
 
 # Xcode build products and local archives
 DerivedData/

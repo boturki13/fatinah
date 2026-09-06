@@ -1,0 +1,1007 @@
+{
+  "schemaVersion": 1,
+  "endpoint": "https://query.wikidata.org/sparql",
+  "retrievedAt": "2026-09-04T23:48:01.752Z",
+  "records": [
+    {
+      "item": "http://www.wikidata.org/entity/Q6534",
+      "itemLabel": "الثورة الفرنسية",
+      "date": "1789-05-05T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q33761",
+      "itemLabel": "الربيع العربي",
+      "date": "2010-12-17T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q46362",
+      "itemLabel": "مؤتمر فيينا",
+      "date": "1815-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q48314",
+      "itemLabel": "معركة واترلو",
+      "date": "1815-06-18T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q52418",
+      "itemLabel": "الهجوم على بيرل هاربر",
+      "date": "1941-12-07T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q131969",
+      "itemLabel": "معركة ترموبيل",
+      "date": "-0479-07-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q131969",
+      "itemLabel": "معركة ترموبيل",
+      "date": "-0479-08-06T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q199820",
+      "itemLabel": "مؤتمر باريس للسلام 1919",
+      "date": "1919-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q129864",
+      "itemLabel": "ثورة الهند سنة 1857",
+      "date": "1857-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q162401",
+      "itemLabel": "ربيع براغ",
+      "date": "1968-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q164348",
+      "itemLabel": "الثورة المجرية 1956",
+      "date": "1956-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q486124",
+      "itemLabel": "غزوة بدر",
+      "date": "0624-03-15T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q83224",
+      "itemLabel": "موقعة هاستنجز",
+      "date": "1066-10-20T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q171416",
+      "itemLabel": "معركة الطرف الأغر",
+      "date": "1805-10-21T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q25906338",
+      "itemLabel": "محاولة انقلاب 2016 في تركيا",
+      "date": "2016-07-16T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q154720",
+      "itemLabel": "معركة بريطانيا",
+      "date": "1940-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q31900",
+      "itemLabel": "معركة ماراثون",
+      "date": "-0489-09-07T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q134114",
+      "itemLabel": "معركة أوسترليتز",
+      "date": "1805-12-02T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q104705419",
+      "itemLabel": "اقتحام كابيتول الولايات المتحدة 2021",
+      "date": "2021-01-06T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q130861",
+      "itemLabel": "معركة كورسك",
+      "date": "1943-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q51628",
+      "itemLabel": "ميلاد يسوع",
+      "date": "-0004-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q33570",
+      "itemLabel": "معركة جرونفالد",
+      "date": "1410-07-24T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q165425",
+      "itemLabel": "معركة ليبانت",
+      "date": "1571-10-17T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q173077",
+      "itemLabel": "معركة بلاط الشهداء",
+      "date": "0732-10-14T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q119860532",
+      "itemLabel": "تمرد مجموعة فاغنر",
+      "date": "2023-06-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q117716414",
+      "itemLabel": "محاولة الانقلاب واستلام السلطة 2023",
+      "date": "2023-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q192408",
+      "itemLabel": "تمرد تايبينغ",
+      "date": "1850-12-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q178510",
+      "itemLabel": "معركة موهاج",
+      "date": "1526-08-29T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q179591",
+      "itemLabel": "معركة كاناي",
+      "date": "-0215-07-29T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q160387",
+      "itemLabel": "معركة أكتيوم",
+      "date": "-0030-08-31T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q178850",
+      "itemLabel": "معركة سالاميس",
+      "date": "-0479-09-24T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q200855",
+      "itemLabel": "معركة فيينا",
+      "date": "1683-09-12T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q137612545",
+      "itemLabel": "احتجاجات إيران 2025-2026",
+      "date": "2020-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q87779",
+      "itemLabel": "معركة غابة تويتوبورغ",
+      "date": "0009-09-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q151290",
+      "itemLabel": "معركة موسكو",
+      "date": "1941-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1402078",
+      "itemLabel": "انتفاضة وارسو",
+      "date": "1944-10-02T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q488278",
+      "itemLabel": "غزوة أحد",
+      "date": "0625-03-23T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q179670",
+      "itemLabel": "معركة غوغميلا",
+      "date": "-0330-09-26T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q184320",
+      "itemLabel": "معركة بورودينو",
+      "date": "1812-09-07T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q200032",
+      "itemLabel": "معركة ملاذكرد",
+      "date": "1071-09-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q36749",
+      "itemLabel": "انقلاب بير هول",
+      "date": "1923-11-09T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q188495",
+      "itemLabel": "معركة أجينكور",
+      "date": "1415-11-03T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q626058",
+      "itemLabel": "معركة كربلاء",
+      "date": "0680-10-10T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q152486",
+      "itemLabel": "معركة بولتافا",
+      "date": "1709-07-08T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q6539",
+      "itemLabel": "اقتحام سجن الباستيل",
+      "date": "1789-07-14T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q193689",
+      "itemLabel": "ثورة عيد الفصح",
+      "date": "1916-04-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q179288",
+      "itemLabel": "معركة قوصوة",
+      "date": "1389-07-06T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q689128",
+      "itemLabel": "الثورة الهايتية",
+      "date": "1804-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q139808",
+      "itemLabel": "معركة سهول كاتالونيا",
+      "date": "0451-06-21T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q208300",
+      "itemLabel": "تمرد كرونشتات",
+      "date": "1921-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q192660",
+      "itemLabel": "معركة أوكيناوا",
+      "date": "1945-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q203233",
+      "itemLabel": "معركة بلاسي",
+      "date": "1757-06-23T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q105570",
+      "itemLabel": "مؤامرة 20 يوليو",
+      "date": "1944-07-20T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q3266633",
+      "itemLabel": "النكبة",
+      "date": "1948-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q239060",
+      "itemLabel": "الثورة العربية الكبرى",
+      "date": "1918-10-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q200056",
+      "itemLabel": "معركة زامة",
+      "date": "-0201-10-15T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q911972",
+      "itemLabel": "انسحاب دونكيرك",
+      "date": "1940-06-04T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q203225",
+      "itemLabel": "معركة جسر ستامفورد",
+      "date": "1066-09-25T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q826083",
+      "itemLabel": "غزوة الخندق",
+      "date": "0627-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q203729",
+      "itemLabel": "معركة قادش",
+      "date": "-1273-05-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q209387",
+      "itemLabel": "معركة أنقرة",
+      "date": "1402-07-29T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q201526",
+      "itemLabel": "معركة إسوس",
+      "date": "-0332-10-31T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q114065797",
+      "itemLabel": "الاحتجاجات الإيرانية 2022",
+      "date": "2022-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q163730",
+      "itemLabel": "هدنة عيد الميلاد",
+      "date": "1914-12-25T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q253224",
+      "itemLabel": "هدنة كومبيين الأولى",
+      "date": "1918-11-11T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q210354",
+      "itemLabel": "معركة كوليكوفو",
+      "date": "1380-09-16T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q201692",
+      "itemLabel": "معركة بواتييه",
+      "date": "1356-09-19T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q204636",
+      "itemLabel": "معركة بلاتيا",
+      "date": "-0478-08-22T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q214148",
+      "itemLabel": "قضايا هايماركت",
+      "date": "1886-05-04T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q192473",
+      "itemLabel": "معركة أدرنة",
+      "date": "0378-08-10T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q200716",
+      "itemLabel": "معركة خيرونيا",
+      "date": "-0337-08-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q27759",
+      "itemLabel": "معركة كريسي",
+      "date": "1346-09-03T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q734004",
+      "itemLabel": "يناير الأسود",
+      "date": "1990-01-20T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q108102583",
+      "itemLabel": "تسليم كابل",
+      "date": "2021-08-15T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q213074",
+      "itemLabel": "معركة هيداسبس",
+      "date": "-0325-05-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q328499",
+      "itemLabel": "هدنة مودروس",
+      "date": "1918-10-30T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q244356",
+      "itemLabel": "معركة عين جالوت",
+      "date": "1260-09-10T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q4373",
+      "itemLabel": "معركة الجبل الأبيض",
+      "date": "1620-11-08T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q162665",
+      "itemLabel": "تمرد نيكا",
+      "date": "0532-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q205422",
+      "itemLabel": "معركة لتل بيج هورن",
+      "date": "1876-06-25T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q205887",
+      "itemLabel": "معركة كارهاي",
+      "date": "-0052-06-07T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q154426",
+      "itemLabel": "معركة يينا-أويرشتيد",
+      "date": "1806-10-14T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q570204",
+      "itemLabel": "معركة نهر كالكا",
+      "date": "1223-06-07T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q154031",
+      "itemLabel": "حرب الفلاحين الألمانية",
+      "date": "1524-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q212220",
+      "itemLabel": "معركة نيقوبوليس",
+      "date": "1396-09-25T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q192938",
+      "itemLabel": "معركة الغرانيكوس",
+      "date": "-0333-05-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q32832",
+      "itemLabel": "معركة فارنا",
+      "date": "1444-11-10T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q482407",
+      "itemLabel": "مؤتمر جنيف 1954",
+      "date": "1954-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q126306",
+      "itemLabel": "ثورة الديسمبريين",
+      "date": "1825-12-26T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q219697",
+      "itemLabel": "معركة العقاب",
+      "date": "1212-07-23T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q234188",
+      "itemLabel": "معركة سيكيغاهارا",
+      "date": "1600-10-21T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q821283",
+      "itemLabel": "معركة وارسو (1920)",
+      "date": "1920-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q273011",
+      "itemLabel": "معركة مارنجو",
+      "date": "1800-06-14T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q14689",
+      "itemLabel": "معركة الثلج",
+      "date": "1242-04-12T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q605321",
+      "itemLabel": "معركة باني بت",
+      "date": "1526-05-11T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q749811",
+      "itemLabel": "تمرد على السفينة باونتي",
+      "date": "1789-04-28T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q243979",
+      "itemLabel": "معركة أبي قير البحرية",
+      "date": "1798-08-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q498871",
+      "itemLabel": "ثورة الفلاحين",
+      "date": "1381-11-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q255352",
+      "itemLabel": "البسمجية",
+      "date": "1916-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q222013",
+      "itemLabel": "معركة بوسوورث",
+      "date": "1485-08-22T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q203681",
+      "itemLabel": "معركة فارسالوس",
+      "date": "-0047-06-04T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q203681",
+      "itemLabel": "معركة فارسالوس",
+      "date": "-0047-06-27T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q203681",
+      "itemLabel": "معركة فارسالوس",
+      "date": "-0047-08-07T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q339321",
+      "itemLabel": "معركة جسر ميلفيو",
+      "date": "0312-10-29T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q392538",
+      "itemLabel": "معركة الزلاقة",
+      "date": "1086-10-23T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q459447",
+      "itemLabel": "حصار يوركتاون",
+      "date": "1781-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q302519",
+      "itemLabel": "معركة عدوة",
+      "date": "1896-03-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q332543",
+      "itemLabel": "معركة إمبابة",
+      "date": "1798-07-21T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q15715792",
+      "itemLabel": "مؤتمر الأمم المتحدة للتغير المناخي 2015",
+      "date": "2015-11-30T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q595321",
+      "itemLabel": "ثورة الغناء",
+      "date": "1987-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q113857620",
+      "itemLabel": "تتويج تشارلز الثالث",
+      "date": "2023-05-06T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q207250",
+      "itemLabel": "معركة بحيرة تراسمانيا",
+      "date": "-0216-06-17T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q849176",
+      "itemLabel": "انتفاضة تاديوش",
+      "date": "1794-11-16T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q504172",
+      "itemLabel": "معركة وادي لكة",
+      "date": "0711-07-19T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q270517",
+      "itemLabel": "إنزال دياب",
+      "date": "1942-08-19T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q957186",
+      "itemLabel": "معركة كوفادونجا",
+      "date": "0718-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q957186",
+      "itemLabel": "معركة كوفادونجا",
+      "date": "0722-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q745110",
+      "itemLabel": "معركة جالديران",
+      "date": "1514-09-02T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1639459",
+      "itemLabel": "غزوة مؤتة",
+      "date": "0629-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q170360",
+      "itemLabel": "هدنة 22 يونيو 1940",
+      "date": "1940-06-22T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q241108",
+      "itemLabel": "معركة فريدلند",
+      "date": "1807-06-14T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q162284",
+      "itemLabel": "معركة كييف",
+      "date": "1941-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q499626",
+      "itemLabel": "معركة جسر ستيرلينغ",
+      "date": "1297-09-11T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q521799",
+      "itemLabel": "معركة نيفا",
+      "date": "1240-07-22T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2649081",
+      "itemLabel": "معركة هولندا",
+      "date": "1940-05-14T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q589318",
+      "itemLabel": "معركة فالكيرك",
+      "date": "1298-07-29T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1133574",
+      "itemLabel": "موقعة الجمل",
+      "date": "0656-11-10T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1133574",
+      "itemLabel": "موقعة الجمل",
+      "date": "0656-12-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q238440",
+      "itemLabel": "معركة نافارين",
+      "date": "1827-10-20T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q641479",
+      "itemLabel": "انتفاضة خميلينتسكي",
+      "date": "1648-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1145682",
+      "itemLabel": "انتفاضة إيليندن–بريوبراجينيه",
+      "date": "1903-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q155726",
+      "itemLabel": "معركة نارفا",
+      "date": "1700-11-30T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q159512",
+      "itemLabel": "معركة لغنيتسا",
+      "date": "1241-04-16T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q543165",
+      "itemLabel": "معركة فورت سمتر",
+      "date": "1861-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q565661",
+      "itemLabel": "غزوة خيبر",
+      "date": "0628-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q324916",
+      "itemLabel": "معركة سولفرينو",
+      "date": "1859-06-24T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q163780",
+      "itemLabel": "الانتفاضة الوطنية السلوفاكية",
+      "date": "1944-10-28T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q154635",
+      "itemLabel": "معركة بلاينام",
+      "date": "1704-08-13T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q271873",
+      "itemLabel": "معركة تريبيا",
+      "date": "-0217-12-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q273069",
+      "itemLabel": "معركة ليشفيلد",
+      "date": "0955-08-10T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q651919",
+      "itemLabel": "معركة كلودين",
+      "date": "1746-04-27T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q111012552",
+      "itemLabel": "معركة جزيرة الثعبان",
+      "date": "2022-02-24T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q713529",
+      "itemLabel": "معركة نهر لابلاتا",
+      "date": "1939-12-13T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q476855",
+      "itemLabel": "انتفاضة ماو ماو",
+      "date": "1952-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q482456",
+      "itemLabel": "سقوط سايغون",
+      "date": "1975-04-30T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q162357",
+      "itemLabel": "معركة سمولينسك",
+      "date": "1941-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q461599",
+      "itemLabel": "معركة ليوكترا",
+      "date": "-0370-07-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q464512",
+      "itemLabel": "معركة بالاكلافا",
+      "date": "1854-10-25T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1259218",
+      "itemLabel": "معركة باني بت الثالثة",
+      "date": "1761-01-14T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q4411",
+      "itemLabel": "معركة فالمي",
+      "date": "1792-09-20T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q719252",
+      "itemLabel": "معركة أنتيتام",
+      "date": "1862-09-17T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q44732",
+      "itemLabel": "معركة الرماح الذهبية",
+      "date": "1302-07-19T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q379433",
+      "itemLabel": "عملية تن غو",
+      "date": "1945-04-07T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q153081",
+      "itemLabel": "اضطرابات سويتو",
+      "date": "1976-06-16T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q210005",
+      "itemLabel": "ثورة الشباب اليمنية",
+      "date": "2012-02-27T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q154942",
+      "itemLabel": "معركة كونيغراتس",
+      "date": "1866-07-03T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q155103",
+      "itemLabel": "حصار بودابست",
+      "date": "1944-12-24T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q503982",
+      "itemLabel": "معركة ميكالي",
+      "date": "-0478-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q778010",
+      "itemLabel": "معارك ليكسينغتون وكونكورد",
+      "date": "1775-04-19T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q851504",
+      "itemLabel": "معركة فويلي",
+      "date": "0507-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q705874",
+      "itemLabel": "معركة موهي",
+      "date": "1241-04-18T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q644960",
+      "itemLabel": "معركة بوين",
+      "date": "1690-07-11T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q63468",
+      "itemLabel": "معركة بافيا 1525",
+      "date": "1525-03-06T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q154100",
+      "itemLabel": "تمرد بوغاتشيف",
+      "date": "1773-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q871366",
+      "itemLabel": "معركة سلايس",
+      "date": "1340-07-02T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q116142348",
+      "itemLabel": "اقتحام الكونجرس البرازيلي 2023",
+      "date": "2023-01-08T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q160011",
+      "itemLabel": "معركة جزر فوكلاند",
+      "date": "1914-12-08T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q69163529",
+      "itemLabel": "سقوط جدار برلين",
+      "date": "1989-11-09T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q368689",
+      "itemLabel": "الانتفاضة الصربية الأولى",
+      "date": "1813-10-07T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q334029",
+      "itemLabel": "معركة بانكر هيل",
+      "date": "1775-06-17T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q167259",
+      "itemLabel": "معركة لوتسن",
+      "date": "1632-11-16T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q830059",
+      "itemLabel": "معركة المنحدرات الحمراء",
+      "date": "0208-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q847287",
+      "itemLabel": "معركة تل الجزر",
+      "date": "1177-11-25T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q733364",
+      "itemLabel": "معركة مجدو",
+      "date": "-1456-04-03T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q161141",
+      "itemLabel": "انقلاب كاب",
+      "date": "1920-03-13T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q817137",
+      "itemLabel": "هجوم كومانوفو",
+      "date": "2001-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q221469",
+      "itemLabel": "معركة بول رن الأولى",
+      "date": "1861-07-21T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q101429497",
+      "itemLabel": "اتفاق وقف إطلاق النار في مرتفعات قره باغ 2020",
+      "date": "2020-11-09T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q391087",
+      "itemLabel": "معركة كينوسكيفالاي",
+      "date": "-0196-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q846674",
+      "itemLabel": "معارك ساراتوجا",
+      "date": "1777-10-07T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q319124",
+      "itemLabel": "معركة إبسوس",
+      "date": "-0300-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q939570",
+      "itemLabel": "معركة ماريتسا",
+      "date": "1371-09-26T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q2300090",
+      "itemLabel": "غزوة حنين",
+      "date": "0630-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q244444",
+      "itemLabel": "مؤتمر الأمم المتحدة للتغير المناخي 2009",
+      "date": "2009-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q47465940",
+      "itemLabel": "عملية غصن الزيتون",
+      "date": "2019-08-09T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q46057",
+      "itemLabel": "الثورة العربية في فلسطين 1936-1939",
+      "date": "1936-04-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q517486",
+      "itemLabel": "معركة زانطة",
+      "date": "1697-09-11T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1233475",
+      "itemLabel": "معركة ممر رونسفال",
+      "date": "0778-08-19T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q841278",
+      "itemLabel": "معركة سان جاسينتو",
+      "date": "1836-04-21T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q917811",
+      "itemLabel": "معركة مغنيسيا",
+      "date": "-0189-01-01T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q327061",
+      "itemLabel": "معركة بياليستوك - مينسك",
+      "date": "1941-07-09T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q940026",
+      "itemLabel": "معركة أرسوف",
+      "date": "1191-09-14T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q609030",
+      "itemLabel": "معركة بيليليو",
+      "date": "1944-11-27T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q696217",
+      "itemLabel": "تمرد شيمبارا",
+      "date": "1637-12-17T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q111012383",
+      "itemLabel": "معركة تشيرنوبل",
+      "date": "2022-02-24T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q1054975",
+      "itemLabel": "معركة بروزة",
+      "date": "1538-10-08T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q696802",
+      "itemLabel": "اتفاقية باريس للسلام",
+      "date": "1973-01-27T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q504739",
+      "itemLabel": "معركة بيدنا",
+      "date": "-0167-06-19T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q205379",
+      "itemLabel": "معركة برايتنفلد",
+      "date": "1631-09-17T00:00:00Z"
+    },
+    {
+      "item": "http://www.wikidata.org/entity/Q584047",
+      "itemLabel": "معركة كليديون",
+      "date": "1014-07-29T00:00:00Z"
+    }
+  ]
+}

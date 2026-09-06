@@ -5,6 +5,8 @@ export const FAMILY_SAFETY_BLOCKED_REASONS = Object.freeze({
   'civilization-mughal': 'explicit_weapon_dagger',
   'generalx-q32489': 'explicit_weapon_knife',
   'treasurex-q2002185': 'preserved_human_remains',
+  // معرّف ثابت يمنع عودة السجل حتى لو تغيرت بيانات الحقوق في المصدر.
+  'treasurex-q145780': 'prohibited_israel_reference',
 });
 
 export const FAMILY_SAFETY_BLOCKED_CATALOG_IDS = Object.freeze(
@@ -13,6 +15,8 @@ export const FAMILY_SAFETY_BLOCKED_CATALOG_IDS = Object.freeze(
 
 export const EVERYDAY_NONVIOLENT_CONTEXT = 'everyday_nonviolent_kitchen_tool';
 export const EVERYDAY_CONTEXT_ALLOWED_IDS = Object.freeze(['objectx-q599312']);
+
+const BLOCKED_TEXT_CONTENT = /(?:إسرائيل|اسرائيل|إسرائيلي|اسرائيلي|تل[\s_-]+أبيب|تل[\s_-]+ابيب|(?:^|[^\p{L}])israel(?:i)?(?=$|[^\p{L}])|tel[\s_-]+aviv|ישראל|إباحي|اباحي|علاقة\s+جنسية|sexual\s+(?:intercourse|act)|porn(?:o|ographic|ography)?)/iu;
 
 export function catalogId(value) {
   return String(value?.id || value || '').replace(/^img-v2-/, '');
@@ -31,6 +35,9 @@ function safetyContext(value) {
 
 export function familySafetyDecision(category, value) {
   const id = catalogId(value);
+  if (BLOCKED_TEXT_CONTENT.test(JSON.stringify(value || ''))) {
+    return { allowed: false, reason: 'blocked_text_content' };
+  }
   if (isOfficialCountryFlag(category, id)) {
     return { allowed: true, reason: 'official_country_flag' };
   }

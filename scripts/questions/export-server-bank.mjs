@@ -19,7 +19,7 @@ import { buildRuntimeAuditManifest } from './runtime-audit-manifest-lib.mjs';
 
 const policy = loadPolicy();
 const religiousSourcePackets = loadReligiousSourcePackets();
-// بنك الخادم مستقل عن بنك fallback الصغير المضمّن في التطبيق.
+// بنك الخادم هو مصدر أسئلة الإصدار 1.4 الوحيد؛ لا يُضمّن بنك احتياطي في التطبيق.
 const candidates = readJson(CANDIDATES_PATH, []).filter(candidate => candidate.status === 'approved');
 const bankPlan = readJson(path.join(ROOT, 'content', 'questions', 'bank-plan-5000.json'), null);
 const bank = {};

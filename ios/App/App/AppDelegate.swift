@@ -15,14 +15,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // في هذه النقطة يكون UIApplication.shared.delegate معيّنًا، وهذا مطلوب
         // لعمل Firebase AppDelegate Swizzler بطريقة صحيحة.
-        if FirebaseApp.app() == nil {
-            #if DEBUG
-            AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
-            #else
-            AppCheck.setAppCheckProviderFactory(FatinahAppCheckProviderFactory())
-            #endif
-            FirebaseApp.configure()
-        }
+        #if DEBUG
+        AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
+        #else
+        AppCheck.setAppCheckProviderFactory(FatinahAppCheckProviderFactory())
+        #endif
+        FirebaseApp.configure()
         FatinahMetricKitService.shared.start()
         // تسجيل الإشعارات البعيدة — مطلوب لتفعيل Firebase Phone Auth على iOS
         UIApplication.shared.registerForRemoteNotifications()

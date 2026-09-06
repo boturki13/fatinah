@@ -7098,14 +7098,6 @@
           "factUrl": "https://www.wikidata.org/wiki/Q170544"
         },
         {
-          "id": "objectx-q214638",
-          "difficulty": 6,
-          "answer": "كيس نوم",
-          "file": "Israel 2 021 Sleeping Rucksack-Tourist.jpg",
-          "alt": "صورة واضحة لشيء يومي ملموس، مع إبقاء اسمه مخفياً أثناء السؤال",
-          "factUrl": "https://www.wikidata.org/wiki/Q214638"
-        },
-        {
           "id": "objectx-q862454",
           "difficulty": 6,
           "answer": "فانوس",
@@ -7403,15 +7395,6 @@
           "factUrl": "https://www.metmuseum.org/art/collection/search/444408"
         },
         {
-          "id": "treasurex-q145780",
-          "difficulty": 1,
-          "answer": "مخطوطات البحر الميت",
-          "file": "Temple Scroll.png",
-          "alt": "صورة واضحة لقطعة تاريخية أو أثر محفوظ، مع إبقاء اسم الإجابة مخفياً أثناء السؤال",
-          "prompt": "شنو اسم هالكنز أو الأثر الظاهر بالصورة؟",
-          "factUrl": "https://www.wikidata.org/wiki/Q145780"
-        },
-        {
           "id": "treasurex-q179492",
           "difficulty": 1,
           "answer": "مخطوطة فوينيتش",
@@ -7602,7 +7585,7 @@
         },
         {
           "id": "treasurex-q107701",
-          "difficulty": 2,
+          "difficulty": 1,
           "answer": "بيني بلاك",
           "file": "Penny black.jpg",
           "alt": "صورة واضحة لقطعة تاريخية أو أثر محفوظ، مع إبقاء اسم الإجابة مخفياً أثناء السؤال",
@@ -7773,7 +7756,7 @@
         },
         {
           "id": "treasurex-q733492",
-          "difficulty": 3,
+          "difficulty": 2,
           "answer": "مخطوطة ليننغراد",
           "file": "LeningradCodex text.jpg",
           "alt": "صورة واضحة لقطعة تاريخية أو أثر محفوظ، مع إبقاء اسم الإجابة مخفياً أثناء السؤال",
@@ -7944,7 +7927,7 @@
         },
         {
           "id": "treasurex-q310301",
-          "difficulty": 4,
+          "difficulty": 3,
           "answer": "بردية إيبرس",
           "file": "Ebers7766.jpg",
           "alt": "صورة واضحة لقطعة تاريخية أو أثر محفوظ، مع إبقاء اسم الإجابة مخفياً أثناء السؤال",
@@ -8115,7 +8098,7 @@
         },
         {
           "id": "treasurex-q1770470",
-          "difficulty": 5,
+          "difficulty": 4,
           "answer": "طرسية أرخميدس",
           "file": "ArPalimTypPage.jpg",
           "alt": "صورة واضحة لقطعة تاريخية أو أثر محفوظ، مع إبقاء اسم الإجابة مخفياً أثناء السؤال",
@@ -8286,7 +8269,7 @@
         },
         {
           "id": "treasurex-q260985",
-          "difficulty": 6,
+          "difficulty": 5,
           "answer": "مخطوطة روهونسي",
           "file": "Rohonczi Codex 7.JPG",
           "alt": "صورة واضحة لقطعة تاريخية أو أثر محفوظ، مع إبقاء اسم الإجابة مخفياً أثناء السؤال",

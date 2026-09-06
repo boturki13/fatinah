@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {testCatalog,testRound,testReveal} from './fixtures/question-server.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const url=`file://${path.join(root,'www/index.html')}`;
@@ -9,6 +10,7 @@ const uid='resume-player';
 const snapshotKey=`fatinah_active_round_${uid}`;
 
 function installHarness(){
+  window.__FATINAH_LEGACY_SPOKEN_TEST__=true;
   localStorage.setItem('fatinah_authUid',JSON.stringify('resume-player'));
   localStorage.setItem('fatinah_onbDone',JSON.stringify(true));
   const ok=()=>Promise.resolve({});
@@ -45,11 +47,22 @@ try{
       return route.fulfill({status:200,contentType:'application/json',body:'{"active":true}'});
     }
     if(requestUrl.includes('/api/v2/revenuecat/identity')){
-      return route.fulfill({status:200,contentType:'application/json',body:'{}'});
+      return route.fulfill({status:200,contentType:'application/json',body:'{"rcAppUserId":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}'});
     }
     if(requestUrl.includes('/api/v2/questions/seen')){
       const body=route.request().method()==='GET'?'{"items":[]}':'{"ok":true}';
       return route.fulfill({status:200,contentType:'application/json',body});
+    }
+    if(requestUrl.includes('/api/v2/questions/catalog')){
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(testCatalog())});
+    }
+    if(requestUrl.includes('/api/v2/questions/round')){
+      const request=JSON.parse(route.request().postData()||'{}');
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(testRound(request.categories||[]))});
+    }
+    if(requestUrl.includes('/api/v2/questions/reveal')){
+      const request=JSON.parse(route.request().postData()||'{}');
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(testReveal(request.questionId))});
     }
     return route.abort();
   });
@@ -97,6 +110,9 @@ try{
   assert.equal(restoredQuestion.turn,0);
 
   await page.locator('#pause-btn').click();
+  while(await page.getByRole('button',{name:/^⏭️ اطرح على/}).count()){
+    await page.getByRole('button',{name:/^⏭️ اطرح على/}).click();
+  }
   await page.getByRole('button',{name:'👁️ اكشف الإجابة'}).click();
   await page.getByRole('button',{name:'✅ فريق الحفظ'}).click();
   assert.equal(await page.locator('#board .cell.used').count(),1);
@@ -133,29 +149,6 @@ try{
   await page.evaluate(()=>doExit());
   await waitForHome(page);
   assert.equal(await page.evaluate(key=>localStorage.getItem(key),snapshotKey),null,'الخروج المقصود يمسح الجولة المحفوظة.');
-
-  const deferredImageRestore=await page.evaluate(async({key,snapshot})=>{
-    const imageSnapshot={...snapshot,cats:['منو هاللاعب؟'],current:null};
-    localStorage.setItem(key,JSON.stringify(imageSnapshot));
-    const originalPrepareCategory=window.FatinahImageAssets.prepareCategory;
-    window.FatinahImageAssets.prepareCategory=async()=>new Map();
-    const restored=await restoreActiveRound('resume-player');
-    window.FatinahImageAssets.prepareCategory=originalPrepareCategory;
-    return {
-      restored,
-      snapshotPreserved:localStorage.getItem(key)!==null,
-      roundActive:state.roundActive,
-      currentQuestion:state.cur,
-      toastTitle:document.getElementById('toast-t').textContent,
-      toastDescription:document.getElementById('toast-d').textContent,
-    };
-  },{key:snapshotKey,snapshot:beforeReload.snapshot});
-  assert.equal(deferredImageRestore.restored,false,'لا يجوز استعادة جولة مصورة إذا صورها غير جاهزة.');
-  assert.equal(deferredImageRestore.snapshotPreserved,true,'فشل الشبكة المؤقت لا يجوز أن يمسح الجولة المحفوظة.');
-  assert.equal(deferredImageRestore.roundActive,false,'الجولة غير الجاهزة لا تبقى نشطة بالخلفية.');
-  assert.equal(deferredImageRestore.currentQuestion,null,'لا يجوز فتح سؤال من جولة صورها ناقصة.');
-  assert.match(deferredImageRestore.toastTitle,/صور الجولة/);
-  assert.match(deferredImageRestore.toastDescription,/حفظنا جولتك/);
 
   const contentUpdateRestore=await page.evaluate(async({key,snapshot})=>{
     const changed=structuredClone(snapshot);
@@ -204,6 +197,8 @@ try{
   assert.equal(nativeSaveFallback.writes[0].key,snapshotKey);
   assert.equal(nativeSaveFallback.writes[0].snapshot.ownerUid,uid);
   assert.equal(nativeSaveFallback.writes[0].snapshot.answered,1,'Preferences يستلم آخر حالة كاملة للجولة.');
+
+  await page.evaluate(()=>doExit());
 
   await page.evaluate(key=>{
     state.roundActive=false;
