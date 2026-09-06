@@ -111,6 +111,7 @@ final class AppLaunchUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
         app.launchArguments += ["-FatinahGameFlowUITests", "-FatinahImageFlowUITests"]
+        app.launchEnvironment["FATINAH_IMAGE_FLOW_UI_TEST"] = "1"
         app.launch()
 
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 12), "يجب ظهور WKWebView")

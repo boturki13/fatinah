@@ -202,11 +202,14 @@ final class FatinahTelemetryIdentityPlugin: CAPPlugin, CAPBridgedPlugin {
 
 @objc(FatinahBridgeViewController)
 final class FatinahBridgeViewController: CAPBridgeViewController {
+    private var didReloadForGameFlowUITests = false
+
     override func capacitorDidLoad() {
         #if DEBUG
         if CommandLine.arguments.contains("-FatinahGameFlowUITests") {
             var source = "Object.defineProperty(window, '__FATINAH_GAME_FLOW_UI_TEST__', { value: true });"
-            if CommandLine.arguments.contains("-FatinahImageFlowUITests") {
+            if CommandLine.arguments.contains("-FatinahImageFlowUITests")
+                || ProcessInfo.processInfo.environment["FATINAH_IMAGE_FLOW_UI_TEST"] == "1" {
                 source += "Object.defineProperty(window, '__FATINAH_IMAGE_FLOW_UI_TEST__', { value: true });"
             }
             if CommandLine.arguments.contains("-FatinahDynamicTypeUITests") {
@@ -215,6 +218,13 @@ final class FatinahBridgeViewController: CAPBridgeViewController {
             webView?.configuration.userContentController.addUserScript(
                 WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true)
             )
+            // On physical devices the initial Capacitor document can begin before
+            // capacitorDidLoad installs the test-only user script. Reload exactly
+            // once so the fixture flags are present at document start.
+            if !didReloadForGameFlowUITests {
+                didReloadForGameFlowUITests = true
+                webView?.reload()
+            }
         }
         #endif
         installDynamicTypeBridge()
