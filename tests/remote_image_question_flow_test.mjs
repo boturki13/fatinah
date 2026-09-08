@@ -150,7 +150,7 @@ try{
         blockedId:validRemoteRoundBank(permanentlyBlockedId,[imageCategory,textCategory]),
         extra:validRemoteRoundBank(unexpectedCategory,[imageCategory,textCategory]),
         level:validRemoteRoundBank(shortLevel,[imageCategory,textCategory]),
-        weakCatalog:validRemoteQuestionCatalog(weakCatalog),
+        lowInventoryCatalog:validRemoteQuestionCatalog(weakCatalog),
       },
     };
   });
@@ -178,8 +178,8 @@ try{
     'فلتر محلي قديم لا يعيد فئات غير موجودة في الكتالوج.');
   assert.deepEqual(audit.rejected,{
     review:false,asset:false,rights:false,choices:false,id:false,version:false,blockedId:false,
-    extra:false,level:false,weakCatalog:false,
-  },'يرفض العميل أي تلاعب بالمراجعة أو الحقوق أو الأصول أو عقد الجولة.');
+    extra:false,level:false,lowInventoryCatalog:true,
+  },'يرفض العميل التلاعب بالمحتوى، ويبقي فئة المخزون المنخفض ظاهرة.');
 
   await page.close();
   const imageCategory='تعرف على الصورة';
@@ -234,6 +234,9 @@ try{
     if(requestUrl.includes('/api/v2/questions/seen')){
       return route.fulfill({status:200,contentType:'application/json',
         body:route.request().method()==='GET'?'{"items":[]}':'{"ok":true}'});
+    }
+    if(requestUrl.includes('/api/v2/questions/reservations/release')){
+      return route.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"released":12}'});
     }
     if(requestUrl.includes('/api/v2/questions/catalog')){
       const levels={'1':2,'2':2,'3':2,'4':2,'5':2,'6':2};

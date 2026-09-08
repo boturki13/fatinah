@@ -60,8 +60,10 @@ function validRemoteQuestionCatalog(payload){
     const levels=item?.levels;
     if(!name||name.length>80||/[\u0000-\u001f]/u.test(name)||names.has(name)
       ||RETIRED_REMOTE_CATEGORIES.has(name)) return false;
-    if(!Number.isInteger(item.questionCount)||item.questionCount<12||!levels) return false;
-    if(![1,2,3,4,5,6].every(level=>Number.isInteger(levels[level])&&levels[level]>=ROUND_QUESTIONS_PER_LEVEL)) return false;
+    if(!Number.isInteger(item.questionCount)||item.questionCount<1||!levels) return false;
+    // المخزون المنخفض لا يخفي الفئة. الخادم يراقبه وينبه المطور، بينما
+    // يبقى فشل تكوين الجولة مصنفاً بوضوح إذا وصل لاعب إلى نهاية مخزونه.
+    if(![1,2,3,4,5,6].every(level=>Number.isInteger(levels[level])&&levels[level]>=0)) return false;
     if([1,2,3,4,5,6].reduce((sum,level)=>sum+levels[level],0)!==item.questionCount) return false;
     if(item.kind!==undefined&&!['text','image','mixed'].includes(item.kind)) return false;
     const presentationFields=['group','groupIcon','icon','tone','groupOrder','displayOrder'];
@@ -2102,6 +2104,7 @@ function doExit(){
   hideQuestionScreen(false);
   clearActiveQuestionImage();
   reservedQuestionIds.clear();
+  void releaseRemoteRoundReservations();
   state.roundActive=false; state.cur=null;
   clearActiveRound();
   closeAccessibleModal('exit-modal',{restoreFocus:false});
@@ -4580,6 +4583,7 @@ let roundQuestionBank=Object.create(null);
 let roundQuestionToken=0;
 let roundImageQuestionIds=new Set();
 let remoteRoundPreparationFailure=null;
+let roundReservationReleasePromise=null;
 // السؤال المختار يبقى محجوزاً محلياً إلى أن يصبح جاهزاً للعرض فعلياً. هذا
 // يمنع طلبين متزامنين من اختيار السؤال نفسه، من دون تسجيل سؤال لم يره اللاعب
 // في سجل الحساب إذا فشل تحميل صورته.
@@ -4588,8 +4592,60 @@ const ROUND_QUESTIONS_PER_LEVEL=2;
 const ROUND_QUESTION_REQUEST_TIMEOUT_MS=18000;
 const ROUND_IMAGE_PREPARE_TIMEOUT_MS=Number(window.FatinahImageAssets?.CATEGORY_PREPARE_TIMEOUT_MS)||28000;
 
-function setRemoteRoundPreparationFailure(code,status=0){
-  remoteRoundPreparationFailure={code:String(code||'unknown'),status:Number(status)||0};
+function roundReservationReleaseKey(){
+  return scopedAccessKey('question_reservation_release',
+    window._currentUid||storeGet('authUid',''));
+}
+function queuedRoundReservationIds(){
+  const value=storeGet(roundReservationReleaseKey(),[]);
+  return Array.isArray(value)
+    ?[...new Set(value.filter(id=>typeof id==='string'&&id.length<=128))].slice(-100)
+    :[];
+}
+async function flushRoundReservationRelease(){
+  if(roundReservationReleasePromise) return roundReservationReleasePromise;
+  const ids=queuedRoundReservationIds();
+  if(!ids.length) return true;
+  const uid=window._currentUid||storeGet('authUid','');
+  if(!uid) return false;
+  roundReservationReleasePromise=(async()=>{
+    const idToken=await getCurrentIdToken();
+    if(!idToken) return false;
+    try{
+      const response=await apiFetch('/api/questions/reservations/release',{
+        method:'POST',timeoutMs:12000,
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+        body:JSON.stringify({uid,idToken,questionIds:ids}),
+      });
+      if(!response.ok) return false;
+      const sent=new Set(ids);
+      storeSet(roundReservationReleaseKey(),
+        queuedRoundReservationIds().filter(id=>!sent.has(id)));
+      return true;
+    }catch(error){
+      recordNonFatal(error,'question-reservation.release');
+      return false;
+    }
+  })();
+  try{ return await roundReservationReleasePromise; }
+  finally{ roundReservationReleasePromise=null; }
+}
+function releaseRemoteRoundReservations(){
+  const ids=[...new Set(Object.values(roundQuestionBank).flat()
+    .map(question=>question?.id).filter(Boolean))].slice(0,100);
+  roundQuestionBank=Object.create(null);
+  roundImageQuestionIds.clear();
+  if(!ids.length) return Promise.resolve(true);
+  storeSet(roundReservationReleaseKey(),
+    [...new Set([...queuedRoundReservationIds(),...ids])].slice(-100));
+  return flushRoundReservationRelease();
+}
+
+function setRemoteRoundPreparationFailure(code,status=0,details={}){
+  remoteRoundPreparationFailure={
+    code:String(code||'unknown'),status:Number(status)||0,
+    category:typeof details?.category==='string'?details.category.trim():'',
+  };
   return false;
 }
 
@@ -4627,6 +4683,15 @@ function remoteRoundFailureCopy(failure,{freeRound=false}={}){
     icon:'🗂️',title:'تعذّر فحص سجل أسئلتك',
     message:'الخادم ما قدر يتأكد من الأسئلة السابقة الآن. جرّب بعد لحظات حتى ما نكرر عليك سؤالًا.',
   };
+  if(code==='question_pool_incomplete'){
+    const category=String(failure?.category||'').trim();
+    return {
+      icon:'📚',title:'هذه الفئة تحتاج أسئلة جديدة',
+      message:category
+        ?`مخزون «${displayCategoryName(category)}» ما يكفي لإكمال الجولة من دون تكرار. اختر فئة ثانية مؤقتاً؛ سجّل الخادم تنبيهاً للمطور تلقائياً.`
+        :'إحدى الفئات المختارة ما فيها أسئلة جديدة تكفي لجولة كاملة من دون تكرار. اختر فئة ثانية مؤقتاً؛ سجّل الخادم تنبيهاً للمطور تلقائياً.',
+    };
+  }
   if(code==='question_bank_unavailable'||code==='invalid_round_payload'
     ||code==='question_bank_disabled'||code==='invalid_categories') return {
     icon:'📚',title:'بنك الأسئلة غير جاهز',
@@ -4734,10 +4799,13 @@ async function prepareRemoteRoundQuestionBank(uid,{freeRoundGrant=false}={}){
       return true;
     }
     if(response.ok) return setRemoteRoundPreparationFailure('invalid_round_payload',response.status);
+    const missingCategory=Array.isArray(payload?.missing)
+      ?String(payload.missing[0]?.category||'').trim():'';
     return setRemoteRoundPreparationFailure(
       typeof payload?.code==='string'&&payload.code?payload.code
         :(response.status===429?'rate_limited':`http_${response.status}`),
       response.status,
+      {category:missingCategory},
     );
   }catch(error){
     recordNonFatal(error,'question-bank.load');
@@ -4868,6 +4936,11 @@ async function startGame(){
     const provider=storeGet('authProvider','local');
     if(provider!=='local' && !(await syncQuestionHistory())){
       showToast('⚠️','ما قدرنا نزامن أسئلتك','تأكد من الإنترنت وجرّب مرة ثانية حتى ما نكرر عليك سؤالاً',false);
+      return false;
+    }
+    if(queuedRoundReservationIds().length&&!(await flushRoundReservationRelease())){
+      showToast('🔄','ما اكتمل إنهاء الجولة السابقة',
+        'الخادم ما قدر يحرر الأسئلة الاحتياطية للحين. جرّب «يلا نبدأ!» مرة ثانية بعد لحظات.',false);
       return false;
     }
     // نجهّز هنا فقط صور fallback غير الموجودة في كتالوج الخادم، قبل تثبيت
@@ -6191,6 +6264,7 @@ function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.rand
 function endGame(){
   clearActiveQuestionImage();
   reservedQuestionIds.clear();
+  void releaseRemoteRoundReservations();
   state.roundActive=false; state.cur=null;
   clearActiveRound();
   const sorted=[...state.teams].sort((a,b)=>b.score-a.score);

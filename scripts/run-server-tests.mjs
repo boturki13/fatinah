@@ -22,7 +22,7 @@ export const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 // turning deterministic tests into live Firestore calls. Production behavior
 // remains covered explicitly by test_production_release_gate.py and the
 // distributed limiter suite.
-const applicationEnvironmentName = /^(?:FATINAH_|FIREBASE_|FIRESTORE_|APPLE_|REVENUECAT_|SMTP_|GOOGLE_API_KEY$|GOOGLE_APPLICATION_CREDENTIALS$|GOOGLE_CLOUD_PROJECT$|ADMIN_SECRET$|REPORT_EMAIL_TO$|SESSION_SECRET$|REPLIT_DEPLOYMENT$|PORT$|OPENAI_API_KEY$|ANTHROPIC_API_KEY$)/;
+const applicationEnvironmentName = /^(?:FATINAH_|FIREBASE_|FIRESTORE_|APPLE_|REVENUECAT_|SMTP_|GOOGLE_API_KEY$|GOOGLE_APPLICATION_CREDENTIALS$|GOOGLE_CLOUD_PROJECT$|ADMIN_SECRET$|REPORT_EMAIL_TO$|INVENTORY_ALERT_EMAIL_TO$|SESSION_SECRET$|REPLIT_DEPLOYMENT$|PORT$|OPENAI_API_KEY$|ANTHROPIC_API_KEY$)/;
 
 export function createTestEnvironment(environment = process.env) {
   const testEnvironment = Object.fromEntries(
@@ -86,6 +86,7 @@ function createSuites(python) {
     [python, 'tests/test_revenuecat_webhook.py'],
     [python, 'tests/test_revenuecat_status_refresh.py'],
     [python, 'tests/test_question_history.py'],
+    [python, 'tests/test_question_inventory_alerts.py'],
     [python, 'tests/test_remote_question_bank.py'],
     [python, 'tests/test_account_delete.py'],
     [python, 'tests/test_free_round_reports_metrics.py'],

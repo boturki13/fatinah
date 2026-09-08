@@ -54,6 +54,9 @@ async function createGame(browser, teamNames) {
       const body = route.request().method() === 'GET' ? '{"items":[]}' : '{"ok":true}';
       return route.fulfill({ status: 200, contentType: 'application/json', body });
     }
+    if(requestUrl.includes('/api/v2/questions/reservations/release')){
+      return route.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"released":12}'});
+    }
     if(requestUrl.includes('/api/v2/questions/catalog')){
       return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(testCatalog())});
     }

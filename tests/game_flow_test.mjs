@@ -28,6 +28,7 @@ function installNativeTestHarness() {
 }
 
 const testCategories=['من أنا؟','كرتون وأنمي'];
+const releasedReservationRequests=[];
 function remoteRoundPayload(categories){
   return {schemaVersion:1,bankVersion:'game-flow-test-bank',questions:Object.fromEntries(categories.map((category,categoryIndex)=>[
     category,Array.from({length:6},(_,levelIndex)=>[1,2].map(variant=>{
@@ -60,6 +61,10 @@ try {
     if (requestUrl.includes('/api/v2/questions/seen')) {
       const body = route.request().method() === 'GET' ? '{"items":[]}' : '{"ok":true}';
       return route.fulfill({ status: 200, contentType: 'application/json', body });
+    }
+    if(requestUrl.includes('/api/v2/questions/reservations/release')){
+      releasedReservationRequests.push(JSON.parse(route.request().postData()||'{}'));
+      return route.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"released":12}'});
     }
     if(requestUrl.includes('/api/v2/questions/catalog')){
       const categories=testCategories.map(name=>({name,questionCount:90,
@@ -175,6 +180,10 @@ try {
     await page.getByRole('button', { name: '❌ محد جاوب صح' }).click();
   }
   await page.locator('#s-result.active').waitFor({ state: 'visible', timeout: 5000 });
+  await page.waitForFunction(()=>localStorage.getItem('fatinah_question_reservation_release_e2e-player')==='[]');
+  assert.equal(releasedReservationRequests.length,1,'يحرر احتياطيات الجولة مرة واحدة عند نهايتها.');
+  assert.equal(new Set(releasedReservationRequests[0].questionIds).size,24,
+    'يرسل كل حجوزات الجولة، والخادم يحتفظ بالأسئلة المفتوحة فقط.');
   assert.equal(seenQuestions.size, 12, 'يجب أن تكون أسئلة الجولة الاثنا عشر فريدة.');
   assert.match(await page.locator('#winner-line').textContent(), /الفريق الأول/);
   assert.deepEqual(pageErrors, [], `أخطاء JavaScript صامتة خلال الجولة: ${pageErrors.join(' | ')}`);

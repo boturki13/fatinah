@@ -68,6 +68,9 @@ async function createQuestion(browser, teamCount, networkControl = {}) {
       const body = route.request().method() === 'GET' ? '{"items":[]}' : '{"ok":true}';
       return route.fulfill({ status: 200, contentType: 'application/json', body });
     }
+    if(requestUrl.includes('/api/v2/questions/reservations/release')){
+      return route.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"released":6}'});
+    }
     if (requestUrl.includes('/api/v2/questions/catalog')) {
       const categories=['من أنا؟','كرتون وأنمي'].map(name=>({
         name,questionCount:90,

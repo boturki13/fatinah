@@ -132,6 +132,9 @@ try{
     if(requestUrl.includes('/api/v2/questions/seen')){
       return route.fulfill({status:200,contentType:'application/json',body:request.method()==='GET'?'{"items":[]}':'{"ok":true}'});
     }
+    if(requestUrl.includes('/api/v2/questions/reservations/release')){
+      return route.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"released":6}'});
+    }
     if(requestUrl.includes('/api/v2/metrics/event')){
       return route.fulfill({status:202,contentType:'application/json',body:'{"ok":true}'});
     }
