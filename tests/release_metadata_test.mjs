@@ -9,6 +9,7 @@ const podfile = fs.readFileSync(new URL('../ios/App/Podfile', import.meta.url), 
 const iosGitignore = fs.readFileSync(new URL('../ios/.gitignore', import.meta.url), 'utf8');
 const iosReleaseWorkflow = fs.readFileSync(new URL('../.github/workflows/ios-release-gate.yml', import.meta.url), 'utf8');
 const coreWorkflow = fs.readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+const replitConfig = fs.readFileSync(new URL('../.replit', import.meta.url), 'utf8');
 
 assert.equal(metadata.schemaVersion, 1);
 assert.equal(packageJson.version, metadata.packageVersion, 'package.json must match release/current.json');
@@ -21,6 +22,13 @@ assert.match(metadata.releaseBranch, /^codex\/release-/);
 assert.match(metadata.releaseTag, /^v\d+\.\d+\.\d+-build\.\d+$/);
 assert.match(metadata.productionApiUrl, /^https:\/\/[a-z0-9.-]+$/);
 assert.ok(metadata.replitUrl === null || /^https:\/\/[a-z0-9-]+\.replit\.app$/.test(metadata.replitUrl));
+assert.doesNotMatch(replitConfig, /^FATINAH_ENVIRONMENT\s*=\s*["'](?:staging|production)["']/m,
+  'The shared Replit config must not hardcode an environment that can leak between projects');
+assert.match(replitConfig,
+  /^run = "FATINAH_ENVIRONMENT=\$\{FATINAH_ENVIRONMENT:-staging\} python3 server\.py"$/m,
+  'Interactive Replit runs must default safely to staging when the project has no explicit environment');
+assert.match(replitConfig, /\[deployment\][\s\S]*?run = \["python3", "server\.py"\]/,
+  'Deployments must use the project environment instead of an interactive staging fallback');
 if (metadata.serverDeploymentState === 'pending') {
   assert.equal(metadata.replitEnvironment, 'staging');
   assert.equal(metadata.replitUrl, null, 'لا يجوز توثيق رابط staging غير متحقق منه.');
