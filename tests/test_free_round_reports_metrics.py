@@ -400,6 +400,17 @@ try:
     assert data['events']['game_completed'] == 1
     assert data['questionReports']['sent'] == 1
 
+    status, data = request('GET', '/api/admin/question-inventory')
+    assert status == 403
+    status, data = request(
+        'GET', '/api/admin/question-inventory', admin=True)
+    assert status == 200
+    assert data['thresholds'] == [50, 25, 10]
+    assert data['bankVersion'].startswith('combined-')
+    assert data['categories'] and all(
+        set(item) == {'remainingRounds', 'levels'}
+        for item in data['categories'].values())
+
     os.environ['FATINAH_V2_APP_CHECK_ENFORCE'] = 'true'
     status, data = request('GET', f'/api/free-round/status?uid={uid}')
     assert status == 404 and data.get('code') == 'v2_route_required'

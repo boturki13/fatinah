@@ -196,15 +196,16 @@ with tempfile.TemporaryDirectory() as directory:
     incomplete_document['questionCount'] += 1
     srv.load_combined_server_question_bank = lambda: incomplete_document
     try:
-        filtered_catalog = srv.server_question_catalog()
+        complete_catalog = srv.server_question_catalog()
     finally:
         srv.load_combined_server_question_bank = original_combined_loader
-    assert 'فئة مستقبلية ناقصة' not in {
-        item['name'] for item in filtered_catalog['categories']
+    assert 'فئة مستقبلية ناقصة' in {
+        item['name'] for item in complete_catalog['categories']
     }
-    assert filtered_catalog['questionCount'] == sum(
-        item['questionCount'] for item in filtered_catalog['categories'])
-    assert filtered_catalog['bankQuestionCount'] == catalog['questionCount'] + 1
+    assert complete_catalog['questionCount'] == sum(
+        item['questionCount'] for item in complete_catalog['categories'])
+    assert complete_catalog['questionCount'] == catalog['questionCount'] + 1
+    assert complete_catalog['bankQuestionCount'] == catalog['questionCount'] + 1
     status, legacy_payload = srv.select_remote_round_questions({
         'categories': ['علوم وتقنية'], 'excludeQuestionIds': [],
     })
@@ -523,6 +524,7 @@ assert round_handler.index('select_remote_round_questions') < round_handler.inde
 assert 'select_free_round_question_payload' in round_handler
 assert "'/api/questions/round'" in server_source.split('APP_CHECK_PROTECTED_PATHS', 1)[1]
 assert "'/api/questions/catalog': 'question_bank'" in server_source
+assert "'/api/questions/reservations/release': 'question_history'" in server_source
 
 srv.QUESTION_BANK_FILE = str(ROOT / 'server-assets/question-bank/v1/bank.json')
 srv.IMAGE_QUESTION_BANK_FILE = str(REAL_IMAGE_BANK_PATH)

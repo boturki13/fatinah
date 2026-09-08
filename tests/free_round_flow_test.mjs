@@ -160,6 +160,9 @@ try{
     if(requestUrl.includes('/api/v2/questions/seen')){
       return route.fulfill({status:200,contentType:'application/json',body:request.method()==='GET'?'{"items":[],"bankVersion":3}':'{"ok":true}'});
     }
+    if(requestUrl.includes('/api/v2/questions/reservations/release')){
+      return route.fulfill({status:200,contentType:'application/json',body:'{"ok":true,"released":12}'});
+    }
     if(requestUrl.includes('/api/v2/revenuecat/identity')){
       return route.fulfill({status:200,contentType:'application/json',body:'{"rcAppUserId":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}'});
     }

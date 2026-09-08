@@ -103,8 +103,13 @@ _image_question_bank_cache = {
 _image_question_bank_cache_lock = threading.Lock()
 _question_round_local_locks = tuple(threading.Lock() for _ in range(64))
 _QUESTION_ROUND_LEASE_SECONDS = 45
+_QUESTION_RESERVATION_TTL_SECONDS = 30 * 24 * 60 * 60
 _FREE_ROUND_PAYLOAD_MAX_BYTES = 512 * 1024
 _IMAGE_ASSET_MAX_BYTES = 450 * 1024
+# One complete board consumes one actually-opened question from each of the six
+# technical levels. Inventory alerts are operational warnings, not a gameplay
+# gate: categories remain visible even after a threshold is crossed.
+QUESTION_INVENTORY_ALERT_THRESHOLDS = (50, 25, 10)
 _IMAGE_BLOCKED_CATALOG_IDS = frozenset({
     'object-crossbow',
     'object-compass-flask',
@@ -611,24 +616,24 @@ def server_question_catalog() -> dict:
                 'easy' if level <= 2 else 'medium' if level <= 4 else 'hard'))
             if band in bands:
                 bands[band] += 1
-        # لا نعلن فئة غير قادرة على تكوين جولة كاملة.
-        if all(levels[str(level)] >= 2 for level in range(1, 7)):
-            display = presentation['categories'].get(name, {})
-            group_name = str(display.get('group') or 'فئات جديدة').strip()
-            group = presentation['groups'].get(group_name, {})
-            category_rows.append({
-                'name': name,
-                'kind': document['categoryKinds'].get(name, 'text'),
-                'questionCount': len(questions),
-                'levels': levels,
-                'bands': bands,
-                'group': group_name,
-                'groupIcon': str(group.get('icon') or '🧠').strip(),
-                'groupOrder': int(group.get('order') or 999),
-                'icon': str(display.get('icon') or '🧠').strip(),
-                'tone': str(display.get('tone') or 'purple').strip(),
-                'displayOrder': int(display.get('order') or 999),
-            })
+        # الفئة المنشورة تبقى ظاهرة دائماً. نقص المخزون لا يغيّر الكتالوج
+        # الذي يراه اللاعب؛ نظام المراقبة الإداري ينبه المطور بصورة مستقلة.
+        display = presentation['categories'].get(name, {})
+        group_name = str(display.get('group') or 'فئات جديدة').strip()
+        group = presentation['groups'].get(group_name, {})
+        category_rows.append({
+            'name': name,
+            'kind': document['categoryKinds'].get(name, 'text'),
+            'questionCount': len(questions),
+            'levels': levels,
+            'bands': bands,
+            'group': group_name,
+            'groupIcon': str(group.get('icon') or '🧠').strip(),
+            'groupOrder': int(group.get('order') or 999),
+            'icon': str(display.get('icon') or '🧠').strip(),
+            'tone': str(display.get('tone') or 'purple').strip(),
+            'displayOrder': int(display.get('order') or 999),
+        })
     category_rows.sort(key=lambda item: (
         item['groupOrder'], item['displayOrder'], item['name']))
     return {
@@ -636,8 +641,7 @@ def server_question_catalog() -> dict:
         'questionSchemaVersion': int(document.get('questionSchemaVersion') or 1),
         'bankVersion': document.get('bankVersion'),
         'bankSha256': document.get('sha256'),
-        # يطابق العدد الفئات المعلنة فقط. لو وصلت فئة مستقبلية ناقصة إلى
-        # أثر مرحلي فلن تكسر تحقق العميل ولا تظهر قبل اكتمال مستوياته الستة.
+        # يطابق كل الفئات المنشورة؛ المراقبة لا تخفي أي فئة بسبب المخزون.
         'questionCount': sum(item['questionCount'] for item in category_rows),
         'bankQuestionCount': document.get('questionCount'),
         'releaseReady': True,
@@ -971,6 +975,7 @@ def init_db():
             category    TEXT NOT NULL,
             seen_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
             reserved_by_round INTEGER NOT NULL DEFAULT 0,
+            reserved_until_epoch INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY (uid, question_id)
         )
     ''')
@@ -980,7 +985,33 @@ def init_db():
             'reserved_by_round INTEGER NOT NULL DEFAULT 0')
     except sqlite3.OperationalError:
         pass  # العمود موجود
+    try:
+        conn.execute(
+            'ALTER TABLE question_seen ADD COLUMN '
+            'reserved_until_epoch INTEGER NOT NULL DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # العمود موجود
     conn.execute('CREATE INDEX IF NOT EXISTS idx_question_seen_uid_time ON question_seen(uid, seen_at)')
+    # تنبيهات مخزون المحتوى منفصلة عن بيانات اللاعبين. المفتاح الفريد يمنع
+    # تكرار التنبيه لنفس نسخة البنك والفئة والحد حتى مع إعادة تشغيل الخادم.
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS question_inventory_alerts (
+            alert_id         TEXT PRIMARY KEY,
+            bank_version     TEXT NOT NULL,
+            category         TEXT NOT NULL,
+            threshold        INTEGER NOT NULL,
+            remaining_rounds INTEGER NOT NULL,
+            level_counts     TEXT NOT NULL DEFAULT '{}',
+            email_status     TEXT NOT NULL DEFAULT 'pending',
+            email_error      TEXT,
+            email_attempts   INTEGER NOT NULL DEFAULT 0,
+            created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+            emailed_at       DATETIME,
+            UNIQUE(bank_version, category, threshold)
+        )
+    ''')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_question_inventory_alerts_status '
+                 'ON question_inventory_alerts(email_status, created_at)')
     # جولة تعريفية واحدة لكل حساب. تسجيل الإكمال في الخادم يمنع إعادة فتحها
     # بمجرد مسح تخزين التطبيق أو الانتقال إلى جهاز آخر.
     conn.execute('''
@@ -1428,6 +1459,7 @@ V2_ROUTE_FEATURES = {
     '/api/revenuecat/identity': None,
     '/api/admin/db-status': None,
     '/api/admin/metrics': None,
+    '/api/admin/question-inventory': None,
     '/api/generate': None,  # tombstone v2؛ لا يصل إلى AI
     '/api/app-attest/status': 'app_attest',
     '/api/app-attest/challenge': 'app_attest',
@@ -1435,6 +1467,7 @@ V2_ROUTE_FEATURES = {
     '/api/free-round/status': 'free_round',
     '/api/free-round/complete': 'free_round',
     '/api/questions/seen': 'question_history',
+    '/api/questions/reservations/release': 'question_history',
     '/api/questions/round': 'question_bank',
     '/api/questions/reveal': 'question_bank',
     '/api/questions/catalog': 'question_bank',
@@ -1455,6 +1488,7 @@ V2_ONLY_ROUTES = {
     '/api/free-round/status',
     '/api/free-round/complete',
     '/api/questions/seen',
+    '/api/questions/reservations/release',
     '/api/questions/round',
     '/api/questions/reveal',
     '/api/questions/catalog',
@@ -1491,7 +1525,8 @@ APP_CHECK_PROTECTED_PATHS = {
     '/api/app-attest/status', '/api/app-attest/challenge',
     '/api/app-attest/attest',
     '/api/free-round/complete', '/api/free-round/status',
-    '/api/questions/seen', '/api/questions/round', '/api/questions/reveal', '/api/questions/report',
+    '/api/questions/seen', '/api/questions/reservations/release',
+    '/api/questions/round', '/api/questions/reveal', '/api/questions/report',
     '/api/metrics/event', '/api/ios-diagnostics',
     '/api/revenuecat/identity', '/api/subscription/status',
 }
@@ -2099,6 +2134,368 @@ def _question_report_email_worker():
         try: deliver_pending_question_reports()
         except Exception as exc:
             print(f'[Question Reports] retry error: {exception_kind(exc)}')
+
+
+def question_inventory_snapshot(uid: str | None = None,
+                                categories=None, *,
+                                refresh_history: bool = True) -> dict:
+    """احسب الجولات الكاملة المتبقية من الأسئلة التي فُتحت فعلياً.
+
+    السؤال الاحتياطي المحجوز لا يُحسب كمشاهَد. لذلك تعني النتيجة عدد لوحات
+    اللعب الكاملة الممكنة (سؤال واحد من كل مستوى تقني) قبل نفاد مستوى واحد.
+    """
+    document = load_combined_server_question_bank()
+    requested = None
+    if categories is not None:
+        requested = {
+            str(category).strip() for category in categories
+            if isinstance(category, str) and str(category).strip()
+        }
+    played_ids = set()
+    if uid:
+        # حدّث الكاش من Firestore أولاً في الإنتاج، ثم استبعد فقط الأسئلة
+        # المفتوحة فعلياً. الحجوزات تبقى للحماية من طلبين متزامنين.
+        if refresh_history:
+            load_all_question_seen_ids(uid)
+        conn = db_connect()
+        try:
+            played_ids = {
+                str(row[0]) for row in conn.execute(
+                    'SELECT question_id FROM question_seen '
+                    'WHERE uid=? AND reserved_by_round=0',
+                    (uid,),
+                ).fetchall() if row and row[0]
+            }
+        finally:
+            conn.close()
+
+    result = {}
+    available_categories = set(document.get('categories', {}))
+    if requested is None:
+        names = sorted(available_categories)
+    else:
+        names = sorted(
+            (requested & available_categories)
+            | ({'إسلاميات'} if 'إسلاميات' in requested else set()))
+    for category in names:
+        level_counts = {str(level): 0 for level in range(1, 7)}
+        source_categories = (ISLAMIC_REMOTE_SOURCE_CATEGORIES
+                             if category == 'إسلاميات' else (category,))
+        questions = [
+            question
+            for source_category in source_categories
+            for question in document['categories'].get(source_category, [])
+        ]
+        for question in questions:
+            if (not isinstance(question, dict)
+                    or question.get('review', {}).get('status') != 'approved'
+                    or question.get('id') in played_ids):
+                continue
+            level = question.get('d')
+            if isinstance(level, int) and not isinstance(level, bool) \
+                    and 1 <= level <= 6:
+                level_counts[str(level)] += 1
+        result[category] = {
+            'remainingRounds': min(level_counts.values()),
+            'levels': level_counts,
+        }
+    return {
+        'bankVersion': str(document.get('bankVersion') or ''),
+        'categories': result,
+    }
+
+
+def _inventory_alert_threshold(remaining_rounds: int):
+    """أعد أشد حد وصل إليه المخزون، أو None إذا كان فوق 50 جولة."""
+    for threshold in reversed(QUESTION_INVENTORY_ALERT_THRESHOLDS):
+        if remaining_rounds <= threshold:
+            return threshold
+    return None
+
+
+def _claim_question_inventory_alert(bank_version: str, category: str,
+                                    threshold: int,
+                                    remaining_rounds: int,
+                                    level_counts: dict) -> str | None:
+    """احجز تنبيهاً واحداً لكل فئة/نسخة بنك وبأشد حد جديد فقط."""
+    state_key = hashlib.sha256(
+        f'{bank_version}\0{category}'.encode('utf-8')).hexdigest()
+    alert_id = hashlib.sha256(
+        f'{bank_version}\0{category}\0{threshold}'.encode('utf-8')).hexdigest()
+    now_iso = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    state_record = {
+        'bank_version': bank_version,
+        'category': category,
+        'threshold': threshold,
+        'remaining_rounds': remaining_rounds,
+        'level_counts': level_counts,
+        'updated_at': now_iso,
+    }
+
+    claimed = False
+    if firestore_durable_available():
+        state_path = f'question_inventory_state/{state_key}'
+        for _ in range(3):
+            existing = firestore_get_document(state_path)
+            if not existing:
+                claimed = bool(firestore_create_document_if_absent(
+                    state_path, state_record))
+                if claimed:
+                    break
+                continue
+            try:
+                previous_threshold = int(existing.get('threshold') or 0)
+            except (TypeError, ValueError):
+                previous_threshold = 0
+            # الأرقام الأصغر أشد: 10 بعد 25 بعد 50.
+            if previous_threshold and previous_threshold <= threshold:
+                return None
+            update_time = str(existing.get('_update_time') or '').strip()
+            if update_time and firestore_set_document_if_update_time(
+                    state_path, state_record, update_time):
+                claimed = True
+                break
+        if not claimed:
+            return None
+    else:
+        conn = db_connect()
+        try:
+            row = conn.execute('''
+                SELECT MIN(threshold) FROM question_inventory_alerts
+                WHERE bank_version=? AND category=?
+            ''', (bank_version, category)).fetchone()
+            previous_threshold = int(row[0]) if row and row[0] is not None else 0
+            if previous_threshold and previous_threshold <= threshold:
+                return None
+            claimed = True
+        finally:
+            conn.close()
+
+    alert_record = {
+        'alert_id': alert_id,
+        **state_record,
+        'email_status': 'pending',
+        'email_attempts': 0,
+        'created_at': now_iso,
+    }
+    # سجل الحد نفسه بصورة مستقلة حتى يمكن استعادة البريد المعلّق بعد restart.
+    if firestore_durable_available():
+        firestore_set_document(
+            f'question_inventory_alerts/{alert_id}', alert_record, merge=False)
+    conn = db_connect()
+    try:
+        conn.execute('''
+            INSERT OR IGNORE INTO question_inventory_alerts
+                (alert_id, bank_version, category, threshold,
+                 remaining_rounds, level_counts)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            alert_id, bank_version, category, threshold, remaining_rounds,
+            json.dumps(level_counts, ensure_ascii=False,
+                       separators=(',', ':')),
+        ))
+        conn.commit()
+    finally:
+        conn.close()
+    return alert_id
+
+
+def monitor_question_inventory(uid: str | None = None, categories=None, *,
+                               refresh_history: bool = True) -> int:
+    """راقب مخزون لاعب أو المخزون الأساسي، من دون التأثير في اللعب."""
+    snapshot = question_inventory_snapshot(
+        uid, categories, refresh_history=refresh_history)
+    queued = 0
+    for category, inventory in snapshot['categories'].items():
+        remaining = int(inventory['remainingRounds'])
+        threshold = _inventory_alert_threshold(remaining)
+        if threshold is None:
+            continue
+        if _claim_question_inventory_alert(
+                snapshot['bankVersion'], category, threshold, remaining,
+                inventory['levels']):
+            queued += 1
+    return queued
+
+
+def _send_question_inventory_alert_email(rows) -> str:
+    """أرسل تنبيهات المخزون كملخص واحد، بلا أي هوية أو بيانات لاعب."""
+    host = os.environ.get('SMTP_HOST', '').strip()
+    from_address = os.environ.get('SMTP_FROM', '').strip()
+    if not host or not from_address:
+        return 'pending_configuration'
+    to_address = os.environ.get(
+        'INVENTORY_ALERT_EMAIL_TO',
+        os.environ.get('REPORT_EMAIL_TO', REPORT_EMAIL_TO),
+    ).strip() or REPORT_EMAIL_TO
+    port = int(os.environ.get('SMTP_PORT', '587'))
+    username = os.environ.get('SMTP_USERNAME', '').strip()
+    password = os.environ.get('SMTP_PASSWORD', '')
+    use_ssl = os.environ.get('SMTP_USE_SSL', '').lower() in ('1', 'true', 'yes')
+    use_tls = os.environ.get('SMTP_USE_TLS', 'true').lower() not in ('0', 'false', 'no')
+    if not use_ssl and not use_tls and (
+            username or deployment_environment() == 'production'):
+        return 'pending_configuration'
+
+    lines = [
+        'تنبيه آلي من مراقبة بنك أسئلة فطنة.',
+        'لا يحتوي هذا التنبيه أي هوية أو بيانات لاعب.',
+        '',
+    ]
+    for row in rows:
+        (_alert_id, bank_version, category, threshold, remaining,
+         level_counts, _created_at) = row
+        try:
+            levels = json.loads(level_counts)
+        except (TypeError, ValueError):
+            levels = {}
+        levels_text = '، '.join(
+            f'{level}:{int(levels.get(str(level), 0))}' for level in range(1, 7))
+        lines.extend((
+            f'الفئة: {category}',
+            f'الجولات الكاملة المتبقية: {remaining}',
+            f'حد التنبيه: {threshold}',
+            f'المتبقي حسب المستويات 1–6: {levels_text}',
+            f'نسخة البنك: {bank_version}',
+            '',
+        ))
+
+    message = EmailMessage()
+    message['From'] = from_address
+    message['To'] = to_address
+    message['Subject'] = f'[فطنة] تنبيه مخزون الأسئلة — {len(rows)} فئة'
+    message.set_content('\n'.join(lines))
+    context = ssl.create_default_context()
+    if use_ssl:
+        client = smtplib.SMTP_SSL(host, port, timeout=12, context=context)
+    else:
+        client = smtplib.SMTP(host, port, timeout=12)
+    try:
+        if not use_ssl and use_tls:
+            client.starttls(context=context)
+        if username:
+            client.login(username, password)
+        client.send_message(message)
+    finally:
+        try:
+            client.quit()
+        except Exception:
+            client.close()
+    return 'sent'
+
+
+def deliver_pending_question_inventory_alerts(limit: int = 100) -> int:
+    """سلّم التنبيهات المعلقة في رسالة مجمعة وحدّث أثرها الدائم."""
+    conn = db_connect()
+    updates = []
+    try:
+        rows = conn.execute('''
+            SELECT alert_id, bank_version, category, threshold,
+                   remaining_rounds, level_counts, created_at
+            FROM question_inventory_alerts
+            WHERE email_status IN ('pending','failed','pending_configuration')
+              AND (email_status='pending_configuration' OR email_attempts < 20)
+            ORDER BY created_at, category LIMIT ?
+        ''', (max(1, min(int(limit), 500)),)).fetchall()
+        if not rows:
+            return 0
+        try:
+            status = _send_question_inventory_alert_email(rows)
+            for row in rows:
+                conn.execute('''
+                    UPDATE question_inventory_alerts
+                    SET email_status=?, email_error=NULL,
+                        email_attempts=email_attempts +
+                            CASE WHEN ?='pending_configuration' THEN 0 ELSE 1 END,
+                        emailed_at=CASE WHEN ?='sent' THEN CURRENT_TIMESTAMP ELSE emailed_at END
+                    WHERE alert_id=?
+                ''', (status, status, status, row[0]))
+                updates.append((row[0], status, None))
+        except Exception as exc:
+            error_kind = exception_kind(exc)
+            for row in rows:
+                conn.execute('''
+                    UPDATE question_inventory_alerts
+                    SET email_status='failed', email_error=?,
+                        email_attempts=email_attempts+1
+                    WHERE alert_id=?
+                ''', (error_kind, row[0]))
+                updates.append((row[0], 'failed', error_kind))
+        conn.commit()
+    finally:
+        conn.close()
+    if firestore_durable_available():
+        for alert_id, status, error in updates:
+            try:
+                firestore_set_document(
+                    f'question_inventory_alerts/{alert_id}', {
+                        'email_status': status,
+                        'email_error': error,
+                        'email_updated_at': time.strftime(
+                            '%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                    })
+            except Exception as exc:
+                print('[Question Inventory] Firestore status sync failed '
+                      f'ref={safe_log_reference(alert_id)}: '
+                      f'{exception_kind(exc)}')
+    return sum(1 for _, status, _ in updates if status == 'sent')
+
+
+def restore_pending_question_inventory_alerts() -> int:
+    """استعد التنبيهات غير المرسلة من Firestore بعد إعادة تشغيل الخادم."""
+    if not firestore_durable_available():
+        return 0
+    documents = firestore_list_documents('question_inventory_alerts')
+    pending = [document for document in documents
+               if document.get('email_status') != 'sent']
+    if not pending:
+        return 0
+    conn = db_connect()
+    restored = 0
+    try:
+        for document in pending:
+            alert_id = str(document.get('alert_id') or
+                           document.get('_document_id') or '').strip()
+            if not re.fullmatch(r'[0-9a-f]{64}', alert_id):
+                continue
+            level_counts = document.get('level_counts')
+            if not isinstance(level_counts, dict):
+                level_counts = {}
+            changed = conn.execute('''
+                INSERT OR IGNORE INTO question_inventory_alerts
+                    (alert_id, bank_version, category, threshold,
+                     remaining_rounds, level_counts, email_status,
+                     email_attempts, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                alert_id, str(document.get('bank_version') or ''),
+                str(document.get('category') or ''),
+                int(document.get('threshold') or 0),
+                int(document.get('remaining_rounds') or 0),
+                json.dumps(level_counts, ensure_ascii=False,
+                           separators=(',', ':')),
+                str(document.get('email_status') or 'pending'),
+                int(document.get('email_attempts') or 0),
+                str(document.get('created_at') or time.strftime(
+                    '%Y-%m-%dT%H:%M:%SZ', time.gmtime())),
+            )).rowcount
+            restored += int(changed == 1)
+        conn.commit()
+    finally:
+        conn.close()
+    return restored
+
+
+def _question_inventory_email_worker():
+    while True:
+        time.sleep(60)
+        try:
+            deliver_pending_question_inventory_alerts()
+        except Exception as exc:
+            print('[Question Inventory] retry error: '
+                  f'{exception_kind(exc)}')
+
+
 def get_revenuecat_secret():
     """مفتاح تحقق ويبهوك RevenueCat — يُقارَن مع رأس Authorization الوارد."""
     return os.environ.get('REVENUECAT_WEBHOOK_SECRET', '')
@@ -2597,6 +2994,40 @@ def firestore_batch_set_documents(records):
         raise RuntimeError(_firestore_http_error(exc, 'batchWrite')) from exc
 
 
+def firestore_batch_delete_documents(document_paths):
+    """احذف وثائق معلومة في طلب واحد؛ لا يعمل شيئاً للقائمة الفارغة."""
+    paths = [str(path).strip('/') for path in document_paths if str(path).strip('/')]
+    if not paths:
+        return
+    if len(paths) > 500:
+        raise ValueError('دفعة حذف Firestore تتجاوز 500 وثيقة')
+    project_id, token = _firestore_credentials()
+    writes = [{
+        'delete': (
+            f'projects/{project_id}/databases/{firestore_database_name()}'
+            f'/documents/{path}'
+        )
+    } for path in paths]
+    url = (
+        f'https://firestore.googleapis.com/v1/projects/{project_id}'
+        f'/databases/{firestore_database_path()}/documents:batchWrite'
+    )
+    req = urllib.request.Request(
+        url,
+        data=json.dumps({'writes': writes}, ensure_ascii=False).encode(),
+        method='POST',
+        headers={
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json; charset=utf-8',
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=25) as response:
+            response.read()
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(_firestore_http_error(exc, 'batch delete')) from exc
+
+
 class QuestionHistoryUnavailableError(RuntimeError):
     """تعذّرت قراءة/كتابة سجل الأسئلة الملزم لمنع التكرار."""
 
@@ -2700,22 +3131,26 @@ def load_all_question_seen_ids(uid: str) -> set:
             'سجل الأسئلة الدائم غير مهيأ')
 
     if durable_documents:
+        now_epoch = int(time.time())
         try:
             conn = db_connect()
             try:
                 conn.executemany('''
                     INSERT INTO question_seen (
-                        uid, question_id, category, seen_at, reserved_by_round)
-                    VALUES (?, ?, ?, ?, ?)
+                        uid, question_id, category, seen_at, reserved_by_round,
+                        reserved_until_epoch)
+                    VALUES (?, ?, ?, ?, ?, ?)
                     ON CONFLICT(uid, question_id) DO UPDATE SET
                         category=excluded.category,
                         seen_at=excluded.seen_at,
-                        reserved_by_round=excluded.reserved_by_round
+                        reserved_by_round=excluded.reserved_by_round,
+                        reserved_until_epoch=excluded.reserved_until_epoch
                 ''', [(
                     uid, document.get('question_id') or document.get('_document_id'),
                     document.get('category') or 'غير مصنف',
                     document.get('seen_at') or time.strftime('%Y-%m-%d %H:%M:%S'),
                     1 if document.get('reserved_by_round') is True else 0,
+                    int(document.get('reserved_until_epoch') or 0),
                 ) for document in durable_documents
                     if document.get('question_id') or document.get('_document_id')])
                 conn.commit()
@@ -2724,13 +3159,42 @@ def load_all_question_seen_ids(uid: str) -> set:
         except Exception as exc:
             raise QuestionHistoryUnavailableError(
                 'تعذّر تحديث كاش سجل الأسئلة') from exc
+        # إغلاق التطبيق لا يترك حجوزات أبدية. الوثائق القديمة التي سبقت
+        # إضافة مدة الحجز تعامل كمنتهية أيضاً وتُنظف بأفضل جهد.
+        expired_reservations = [
+            str(document.get('question_id') or document.get('_document_id') or '')
+            for document in durable_documents
+            if document.get('reserved_by_round') is True
+            and int(document.get('reserved_until_epoch') or 0) <= now_epoch
+        ]
+        for offset in range(0, len(expired_reservations), 500):
+            try:
+                firestore_batch_delete_documents([
+                    f'users/{uid}/question_seen/{question_id}'
+                    for question_id in expired_reservations[offset:offset + 500]
+                    if question_id
+                ])
+            except Exception as exc:
+                print('[Question Reservations] expiry cleanup failed '
+                      f'uid_ref={safe_log_reference(uid)}: '
+                      f'{exception_kind(exc)}')
 
     try:
         conn = db_connect()
         try:
-            rows = conn.execute(
-                'SELECT question_id FROM question_seen WHERE uid=?', (uid,)
-            ).fetchall()
+            now_epoch = int(time.time())
+            conn.execute('''
+                DELETE FROM question_seen
+                WHERE uid=? AND reserved_by_round=1
+                  AND reserved_until_epoch<=?
+            ''', (uid, now_epoch))
+            rows = conn.execute('''
+                SELECT question_id FROM question_seen
+                WHERE uid=? AND (
+                    reserved_by_round=0 OR reserved_until_epoch>?
+                )
+            ''', (uid, now_epoch)).fetchall()
+            conn.commit()
         finally:
             conn.close()
     except Exception as exc:
@@ -2742,6 +3206,7 @@ def load_all_question_seen_ids(uid: str) -> set:
 def reserve_question_round(uid: str, questions: dict) -> None:
     """احجز كل الأسئلة المُرجعة قبل إرسالها للعميل."""
     now_iso = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    reserved_until_epoch = int(time.time()) + _QUESTION_RESERVATION_TTL_SECONDS
     items = []
     for category, rows in (questions or {}).items():
         for question in rows or []:
@@ -2759,6 +3224,7 @@ def reserve_question_round(uid: str, questions: dict) -> None:
                     'category': category,
                     'seen_at': now_iso,
                     'reserved_by_round': True,
+                    'reserved_until_epoch': reserved_until_epoch,
                 }) for question_id, category, _ in items
             ])
         except Exception as exc:
@@ -2772,13 +3238,15 @@ def reserve_question_round(uid: str, questions: dict) -> None:
         try:
             conn.executemany('''
                 INSERT INTO question_seen (
-                    uid, question_id, category, seen_at, reserved_by_round)
-                VALUES (?, ?, ?, ?, 1)
+                    uid, question_id, category, seen_at, reserved_by_round,
+                    reserved_until_epoch)
+                VALUES (?, ?, ?, ?, 1, ?)
                 ON CONFLICT(uid, question_id) DO UPDATE SET
                     category=excluded.category,
                     seen_at=excluded.seen_at,
-                    reserved_by_round=1
-            ''', [(uid, question_id, category, seen_at)
+                    reserved_by_round=1,
+                    reserved_until_epoch=excluded.reserved_until_epoch
+            ''', [(uid, question_id, category, seen_at, reserved_until_epoch)
                   for question_id, category, seen_at in items])
             conn.commit()
         finally:
@@ -2786,6 +3254,56 @@ def reserve_question_round(uid: str, questions: dict) -> None:
     except Exception as exc:
         raise QuestionHistoryUnavailableError(
             'تعذّر حفظ حجز الجولة محلياً') from exc
+
+
+def release_question_round_reservations(uid: str, question_ids) -> int:
+    """حرّر احتياطيات جولة انتهت، ولا تحذف أي سؤال فُتح فعلياً."""
+    clean_ids = {
+        str(question_id).strip() for question_id in (question_ids or [])
+        if re.fullmatch(r'[A-Za-z0-9._-]{1,128}', str(question_id).strip())
+    }
+    if not clean_ids:
+        return 0
+    if len(clean_ids) > 100:
+        raise ValueError('قائمة حجوزات الجولة كبيرة جداً')
+
+    durable_released = None
+    if firestore_durable_available():
+        try:
+            documents = firestore_list_documents(f'users/{uid}/question_seen')
+            releasable = {
+                str(document.get('question_id') or document.get('_document_id') or '')
+                for document in documents
+                if document.get('reserved_by_round') is True
+                and str(document.get('question_id') or
+                        document.get('_document_id') or '') in clean_ids
+            }
+            firestore_batch_delete_documents([
+                f'users/{uid}/question_seen/{question_id}'
+                for question_id in sorted(releasable)
+            ])
+            durable_released = len(releasable)
+        except Exception as exc:
+            raise QuestionHistoryUnavailableError(
+                'تعذّر تحرير حجوزات الجولة الدائمة') from exc
+    elif deployment_environment() == 'production' or durable_storage_required():
+        raise QuestionHistoryUnavailableError(
+            'تحرير حجوزات الجولة يحتاج Firestore')
+
+    conn = db_connect()
+    try:
+        placeholders = ','.join('?' for _ in clean_ids)
+        cursor = conn.execute(
+            'DELETE FROM question_seen '
+            f'WHERE uid=? AND reserved_by_round=1 '
+            f'AND question_id IN ({placeholders})',
+            (uid, *sorted(clean_ids)),
+        )
+        local_released = max(0, int(cursor.rowcount or 0))
+        conn.commit()
+    finally:
+        conn.close()
+    return durable_released if durable_released is not None else local_released
 
 def durable_write(document_path: str, data: dict, *, merge: bool = True) -> bool:
     """اكتب إلى المخزن الدائم أو ارفع خطأ في النشر ذي التخزين الإلزامي."""
@@ -5253,17 +5771,20 @@ class Handler(BaseHTTPRequestHandler):
                         try:
                             conn.executemany('''
                                 INSERT INTO question_seen (
-                                    uid, question_id, category, seen_at, reserved_by_round)
-                                VALUES (?, ?, ?, ?, ?)
+                                    uid, question_id, category, seen_at,
+                                    reserved_by_round, reserved_until_epoch)
+                                VALUES (?, ?, ?, ?, ?, ?)
                                 ON CONFLICT(uid, question_id) DO UPDATE SET
                                     category=excluded.category,
                                     seen_at=excluded.seen_at,
-                                    reserved_by_round=excluded.reserved_by_round
+                                    reserved_by_round=excluded.reserved_by_round,
+                                    reserved_until_epoch=excluded.reserved_until_epoch
                             ''', [(
                                 uid, document.get('question_id') or document['_document_id'],
                                 document.get('category') or 'غير مصنف',
                                 document.get('seen_at') or time.strftime('%Y-%m-%d %H:%M:%S'),
                                 1 if document.get('reserved_by_round') is True else 0,
+                                int(document.get('reserved_until_epoch') or 0),
                             ) for document in documents])
                             conn.commit()
                         finally:
@@ -5488,6 +6009,45 @@ class Handler(BaseHTTPRequestHandler):
                 'questionReports': {status: count for status, count in report_rows},
             })
 
+        elif path == '/api/admin/question-inventory':
+            admin_secret = os.environ.get('ADMIN_SECRET', '')
+            auth_header = self.headers.get('X-Admin-Secret', '')
+            if not admin_secret or not secrets.compare_digest(auth_header, admin_secret):
+                self.send_json(403, {'error': 'غير مصرح'}); return
+            try:
+                snapshot = question_inventory_snapshot()
+                conn = db_connect()
+                try:
+                    rows = conn.execute('''
+                        SELECT bank_version, category, threshold,
+                               remaining_rounds, email_status, created_at,
+                               emailed_at
+                        FROM question_inventory_alerts
+                        ORDER BY created_at DESC LIMIT 500
+                    ''').fetchall()
+                finally:
+                    conn.close()
+                self.send_json(200, {
+                    **snapshot,
+                    'thresholds': list(QUESTION_INVENTORY_ALERT_THRESHOLDS),
+                    'alerts': [{
+                        'bankVersion': row[0],
+                        'category': row[1],
+                        'threshold': row[2],
+                        'remainingRounds': row[3],
+                        'emailStatus': row[4],
+                        'createdAt': row[5],
+                        'emailedAt': row[6],
+                    } for row in rows],
+                })
+            except (FileNotFoundError, ValueError, OSError) as exc:
+                print('[Question Inventory] admin snapshot unavailable: '
+                      f'{exception_kind(exc)}')
+                self.send_json(503, {
+                    'error': 'تعذّر حساب مخزون الأسئلة الآن',
+                    'code': 'question_inventory_unavailable',
+                })
+
         else:
             self.send_response(404); self.end_headers()
 
@@ -5501,6 +6061,7 @@ class Handler(BaseHTTPRequestHandler):
         '/api/app-attest/challenge':     4_096,
         '/api/app-attest/attest':      262_144,  # CBOR x5c + receipt بصيغة Base64
         '/api/questions/seen':          32_768,  # حتى 100 معرّف في دفعة مزامنة
+        '/api/questions/reservations/release': 16_384,
         '/api/questions/round':       1_048_576, # حتى 10 آلاف معرّف سابق مع فئات الجولة
         '/api/questions/reveal':          4_096,
         '/api/free-round/complete':     64_000,  # DeviceCheck + App Attest assertion
@@ -5704,7 +6265,21 @@ class Handler(BaseHTTPRequestHandler):
             finally:
                 if round_guard is not None:
                     release_question_round_guard(round_guard)
-            self.send_json(status, result); return
+            self.send_json(status, result)
+            # الرد يصل للاعب أولاً. بعدها نراقب مرة واحدة عند تجهيز الجولة،
+            # لا عند كل سؤال، لتقليل قراءات Firestore وتكلفة autoscale.
+            if (status == 200 or
+                    (status == 409 and
+                     result.get('code') == 'question_pool_incomplete')):
+                try:
+                    monitor_question_inventory(
+                        uid, data.get('categories'),
+                        refresh_history=not subscribed)
+                except Exception as exc:
+                    print('[Question Inventory] round monitor unavailable '
+                          f'uid_ref={safe_log_reference(uid)}: '
+                          f'{exception_kind(exc)}')
+            return
 
         # لا تُضمّن الإجابة في حمولة الجولة. بعد انتهاء أدوار جميع الفرق
         # يرسل العميل اختياراتهم (أو -1 عند انتهاء الوقت) ويستلم الحل فقط.
@@ -6347,6 +6922,7 @@ class Handler(BaseHTTPRequestHandler):
                             # لا يصبح الحجز «مشاهداً» إلا بعد أن يفتح العميل
                             # السؤال فعلياً ويرسله عبر هذا المسار.
                             'reserved_by_round': False,
+                            'reserved_until_epoch': 0,
                         })
                         for _, question_id, category in clean_items
                     ])
@@ -6360,17 +6936,63 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 conn.executemany('''
                     INSERT INTO question_seen (
-                        uid, question_id, category, reserved_by_round)
-                    VALUES (?, ?, ?, 0)
+                        uid, question_id, category, reserved_by_round,
+                        reserved_until_epoch)
+                    VALUES (?, ?, ?, 0, 0)
                     ON CONFLICT(uid, question_id) DO UPDATE SET
                         category=excluded.category,
                         seen_at=CURRENT_TIMESTAMP,
-                        reserved_by_round=0
+                        reserved_by_round=0,
+                        reserved_until_epoch=0
                 ''', clean_items)
                 conn.commit()
             finally:
                 conn.close()
             self.send_json(200, {'ok': True, 'saved': len(clean_items)})
+
+        elif path == '/api/questions/reservations/release':
+            try:
+                data = json.loads(body)
+            except Exception:
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
+            if not isinstance(data, dict):
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
+            uid = str(data.get('uid') or '').strip()
+            id_token = str(
+                data.get('idToken') or bearer_token(self.headers) or '').strip()
+            question_ids = data.get('questionIds')
+            if not uid or not uid_matches_token(uid, id_token):
+                self.send_json(401, {
+                    'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى',
+                }); return
+            if (not isinstance(question_ids, list)
+                    or not 1 <= len(question_ids) <= 100
+                    or any(not isinstance(question_id, str)
+                           or not re.fullmatch(
+                               r'[A-Za-z0-9._-]{1,128}', question_id)
+                           for question_id in question_ids)):
+                self.send_json(400, {
+                    'error': 'قائمة حجوزات الجولة غير صالحة',
+                    'code': 'invalid_question_reservations',
+                }); return
+            if rate_limited(
+                    f'question-reservation-release:{safe_log_reference(uid)}',
+                    60, 600):
+                self.send_json(429, {
+                    'error': 'طلبات كثيرة جداً — حاول بعد قليل',
+                }); return
+            try:
+                released = release_question_round_reservations(
+                    uid, question_ids)
+            except QuestionHistoryUnavailableError as exc:
+                print('[Question Reservations] release unavailable '
+                      f'uid_ref={safe_log_reference(uid)}: '
+                      f'{exception_kind(exc)}')
+                self.send_json(503, {
+                    'error': 'تعذّر إنهاء حجز الجولة الآن',
+                    'code': 'question_reservation_release_unavailable',
+                }); return
+            self.send_json(200, {'ok': True, 'released': released})
 
         # ─── حذف الحساب: إزالة كل بيانات المستخدم المرتبطة بالـ uid ──────────
         elif path == '/api/account/delete':
@@ -7188,6 +7810,14 @@ def _run_startup_recovery():
     except Exception as exc:
         print('[STARTUP] تعذّرت استعادة بلاغات البريد: '
               f'{exception_kind(exc)}')
+    try:
+        restored_inventory_alerts = restore_pending_question_inventory_alerts()
+        if restored_inventory_alerts:
+            print('[STARTUP] استعيد '
+                  f'{restored_inventory_alerts} تنبيهاً لمخزون الأسئلة.')
+    except Exception as exc:
+        print('[STARTUP] تعذّرت استعادة تنبيهات مخزون الأسئلة: '
+              f'{exception_kind(exc)}')
 
 # ─── تشغيل ───────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
@@ -7196,6 +7826,8 @@ if __name__ == '__main__':
     _run_startup_recovery()
     _threading.Thread(target=_outbox_worker, daemon=True).start()
     _threading.Thread(target=_question_report_email_worker, daemon=True).start()
+    _threading.Thread(
+        target=_question_inventory_email_worker, daemon=True).start()
     server = ThreadedHTTPServer(('0.0.0.0', PORT), Handler)
     print(f'فطنة تعمل على http://0.0.0.0:{PORT}')
     server.serve_forever()

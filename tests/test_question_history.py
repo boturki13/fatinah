@@ -76,6 +76,46 @@ try:
     assert [item['id'] for item in result['items']] == [
         'gq-aaaaaaaaaaaaaaaaaaaa']
 
+    # نهاية الجولة تحرر الاحتياطي فقط، ولا تمس السؤال الذي فُتح فعلياً.
+    srv.reserve_question_round('question-user', {
+        'علوم': [{'id': 'gq-bbbbbbbbbbbbbbbbbbbb'}],
+    })
+    status, result = request(
+        'POST', '/api/v2/questions/reservations/release', {
+            'uid': 'question-user', 'idToken': 'TEST_ID_TOKEN',
+            'questionIds': [
+                'gq-aaaaaaaaaaaaaaaaaaaa',
+                'gq-bbbbbbbbbbbbbbbbbbbb',
+            ],
+        })
+    assert status == 200 and result['released'] == 1
+    assert srv.load_all_question_seen_ids('question-user') == {
+        'gq-aaaaaaaaaaaaaaaaaaaa'}
+
+    # إذا أُغلق التطبيق ولم يصل طلب التحرير، تنتهي الحجوزات القديمة تلقائياً
+    # ولا تتحول إلى استهلاك دائم للمخزون.
+    expired_id = 'gq-eeeeeeeeeeeeeeeeeeee'
+    srv.reserve_question_round('question-user', {
+        'علوم': [{'id': expired_id}],
+    })
+    conn = srv.db_connect()
+    try:
+        conn.execute('''
+            UPDATE question_seen SET reserved_until_epoch=?
+            WHERE uid='question-user' AND question_id=?
+        ''', (int(time.time()) - 1, expired_id))
+        conn.commit()
+    finally:
+        conn.close()
+    assert expired_id not in srv.load_all_question_seen_ids('question-user')
+
+    status, _ = request(
+        'POST', '/api/v2/questions/reservations/release', {
+            'uid': 'question-user', 'idToken': 'WRONG',
+            'questionIds': ['gq-bbbbbbbbbbbbbbbbbbbb'],
+        }, token='WRONG')
+    assert status == 401
+
     status, _ = request('POST', '/api/v2/questions/seen', {
         'uid': 'question-user', 'idToken': 'WRONG',
         'items': [{'id': 'q2-alpha', 'category': 'علوم'}],
