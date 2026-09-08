@@ -44,6 +44,9 @@ if (metadata.appStoreState === 'testflight_ready_to_submit') {
 } else if (metadata.appStoreState === 'testflight_internal_testing') {
   assert.match(nextReleasePlan, /البناء في اختبار TestFlight الداخلي، ولم يُنشأ tag أو يُنشر خادم 1\.4 بعد/,
     'مرشح 1.4 يجب أن يفصل بين اختبار TestFlight ونشر الخادم');
+} else if (metadata.appStoreState === 'testflight_uploaded_processing') {
+  assert.match(nextReleasePlan, /رُفع البناء إلى App Store Connect وهو بانتظار معالجة TestFlight/,
+    'يجب أن يوثق مرشح 1.4 أن البناء رُفع وينتظر معالجة Apple');
 } else {
   assert.equal(metadata.appStoreState, 'not_submitted');
   assert.match(nextReleasePlan, /لم يُنشأ tag ولم يُرفع التطبيق بعد/,

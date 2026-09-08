@@ -7,7 +7,7 @@
   "bundleIdentifier": "com.fatinah.game",
   "releaseBranch": "codex/release-1.4.0",
   "releaseTag": "v1.4.0-build.16",
-  "appStoreState": "testflight_ready_to_submit",
+  "appStoreState": "testflight_uploaded_processing",
   "replitEnvironment": "production",
   "replitUrl": "https://fatinah-next-1-3-security-review.replit.app",
   "productionApiUrl": "https://ata20.com",
