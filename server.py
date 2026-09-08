@@ -12,6 +12,11 @@ import re
 
 # ─── ثوابت ─────────────────────────────────────────────────────────────────
 PORT      = int(os.environ.get('PORT', 5000))
+APPLICATION_RELEASE = '1.4.0'
+API_CONTRACT_REVISION = 'fatinah-v2-2026-09-08'
+RETIRED_QUESTION_CATEGORIES = frozenset({
+    'رتّبها صح', 'رياضيات وحساب', 'ألغاز بوليسية',
+})
 WWW_DIR   = os.path.join(os.path.dirname(__file__), 'www')
 HTML_FILE = os.path.join(WWW_DIR, 'index.html')
 QUESTION_IMAGE_DIR = os.path.join(
@@ -194,6 +199,9 @@ def load_server_question_bank():
                 not isinstance(document.get('categories'), dict)):
             raise ValueError('مخطط بنك الأسئلة غير صالح')
         categories = document['categories']
+        retired_categories = RETIRED_QUESTION_CATEGORIES.intersection(categories)
+        if retired_categories:
+            raise ValueError('بنك الأسئلة يحتوي فئة ملغاة')
         questions = []
         for category, rows in categories.items():
             if (not isinstance(category, str) or not category.strip() or
@@ -962,9 +970,16 @@ def init_db():
             question_id TEXT NOT NULL,
             category    TEXT NOT NULL,
             seen_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+            reserved_by_round INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY (uid, question_id)
         )
     ''')
+    try:
+        conn.execute(
+            'ALTER TABLE question_seen ADD COLUMN '
+            'reserved_by_round INTEGER NOT NULL DEFAULT 0')
+    except sqlite3.OperationalError:
+        pass  # العمود موجود
     conn.execute('CREATE INDEX IF NOT EXISTS idx_question_seen_uid_time ON question_seen(uid, seen_at)')
     # جولة تعريفية واحدة لكل حساب. تسجيل الإكمال في الخادم يمنع إعادة فتحها
     # بمجرد مسح تخزين التطبيق أو الانتقال إلى جهاز آخر.
@@ -2689,15 +2704,18 @@ def load_all_question_seen_ids(uid: str) -> set:
             conn = db_connect()
             try:
                 conn.executemany('''
-                    INSERT INTO question_seen (uid, question_id, category, seen_at)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO question_seen (
+                        uid, question_id, category, seen_at, reserved_by_round)
+                    VALUES (?, ?, ?, ?, ?)
                     ON CONFLICT(uid, question_id) DO UPDATE SET
                         category=excluded.category,
-                        seen_at=excluded.seen_at
+                        seen_at=excluded.seen_at,
+                        reserved_by_round=excluded.reserved_by_round
                 ''', [(
                     uid, document.get('question_id') or document.get('_document_id'),
                     document.get('category') or 'غير مصنف',
                     document.get('seen_at') or time.strftime('%Y-%m-%d %H:%M:%S'),
+                    1 if document.get('reserved_by_round') is True else 0,
                 ) for document in durable_documents
                     if document.get('question_id') or document.get('_document_id')])
                 conn.commit()
@@ -2753,11 +2771,13 @@ def reserve_question_round(uid: str, questions: dict) -> None:
         conn = db_connect()
         try:
             conn.executemany('''
-                INSERT INTO question_seen (uid, question_id, category, seen_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO question_seen (
+                    uid, question_id, category, seen_at, reserved_by_round)
+                VALUES (?, ?, ?, ?, 1)
                 ON CONFLICT(uid, question_id) DO UPDATE SET
                     category=excluded.category,
-                    seen_at=excluded.seen_at
+                    seen_at=excluded.seen_at,
+                    reserved_by_round=1
             ''', [(uid, question_id, category, seen_at)
                   for question_id, category, seen_at in items])
             conn.commit()
@@ -3692,6 +3712,10 @@ class RevenueCatV1BootstrapDisabledError(RuntimeError):
     """v1 يحاول إنشاء ربط جديد بمعرّف يختاره العميل."""
 
 
+class RevenueCatStatusUnavailableError(RuntimeError):
+    """تعذّر جلب الحالة الموثوقة من RevenueCat."""
+
+
 def local_revenuecat_identity(uid: str):
     """اقرأ الربط المحلي السابق كدليل ترقية موثوق من الخادم."""
     conn = db_connect()
@@ -4280,6 +4304,145 @@ def replay_pending_revenuecat_events(rc_app_user_id: str) -> int:
                   f'{exception_kind(exc)}')
     return replayed
 
+
+def _parse_revenuecat_datetime(value):
+    """حوّل تاريخ RevenueCat إلى UTC؛ القيمة غير الصالحة لا تُعامل كاشتراك."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    normalized = value.strip()
+    if normalized.endswith('Z'):
+        normalized = normalized[:-1] + '+00:00'
+    try:
+        parsed = datetime.datetime.fromisoformat(normalized)
+    except ValueError as exc:
+        raise RevenueCatStatusUnavailableError(
+            'تاريخ استحقاق RevenueCat غير صالح') from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+    return parsed.astimezone(datetime.timezone.utc)
+
+
+def _revenuecat_entitlement_snapshot(payload: dict) -> tuple[bool, str | None]:
+    """استخرج حالة premium من Customer Info كما أعادتها RevenueCat."""
+    subscriber = payload.get('subscriber') if isinstance(payload, dict) else None
+    entitlements = subscriber.get('entitlements') if isinstance(subscriber, dict) else None
+    entitlement_id = (
+        os.environ.get('REVENUECAT_ENTITLEMENT_ID', 'premium').strip()
+        or 'premium')
+    entitlement = entitlements.get(entitlement_id) if isinstance(entitlements, dict) else None
+    if not isinstance(entitlement, dict):
+        return False, None
+
+    expires_raw = entitlement.get('expires_date')
+    grace_raw = entitlement.get('grace_period_expires_date')
+    if expires_raw is None and grace_raw is None:
+        # RevenueCat يمثل الاستحقاق الدائم بتاريخ انتهاء null.
+        return True, None
+    boundaries = [
+        parsed for parsed in (
+            _parse_revenuecat_datetime(expires_raw),
+            _parse_revenuecat_datetime(grace_raw),
+        ) if parsed is not None
+    ]
+    if not boundaries:
+        raise RevenueCatStatusUnavailableError(
+            'استحقاق RevenueCat بلا تاريخ انتهاء قابل للتحقق')
+    effective_expiration = max(boundaries)
+    active = effective_expiration > datetime.datetime.now(datetime.timezone.utc)
+    return active, effective_expiration.strftime('%Y-%m-%d %H:%M:%S')
+
+
+def _authoritative_revenuecat_identity(uid: str) -> str:
+    """اقرأ App User ID من الربط الخادمي فقط، ولا تقبل قيمة من العميل."""
+    if firestore_durable_available():
+        reverse = firestore_get_document(f'revenuecat_users/{uid}') or {}
+        rc_app_user_id = str(reverse.get('rc_app_user_id') or '').strip().lower()
+    else:
+        rc_app_user_id = str(local_revenuecat_identity(uid) or '').strip().lower()
+    return rc_app_user_id if is_valid_rc_app_user_id(rc_app_user_id) else ''
+
+
+def _persist_verified_revenuecat_subscription(uid: str, active: bool,
+                                               expires_at=None) -> None:
+    """احفظ نتيجة REST الموثوقة في Firestore والكاش المحلي بصورة متطابقة."""
+    status = 'active' if active else 'inactive'
+    verified_at = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    record = {
+        'uid': uid,
+        'status': status,
+        'expires_at': expires_at,
+        'revenuecat_verified_at': verified_at,
+        'updated_at': verified_at,
+    }
+    if firestore_durable_available():
+        firestore_set_document(f'subscriptions/{uid}', record)
+    elif durable_storage_required():
+        raise RevenueCatStatusUnavailableError(
+            'التخزين الدائم غير متاح لحفظ حالة RevenueCat')
+
+    conn = db_connect()
+    try:
+        conn.execute('''INSERT INTO subscriptions (uid, status, expires_at)
+            VALUES (?,?,?)
+            ON CONFLICT(uid) DO UPDATE SET
+            status=excluded.status,
+            expires_at=excluded.expires_at,
+            updated_at=CURRENT_TIMESTAMP''', (uid, status, expires_at))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def refresh_revenuecat_subscription(uid: str):
+    """زامن الاستحقاق مباشرة من RevenueCat عند تأخر أو فقدان webhook.
+
+    الاستعلام يستخدم UUID المثبت في الخادم ومفتاح API من البيئة. لا يثق بأي
+    حالة اشتراك أو App User ID قادمة من التطبيق.
+    """
+    api_key = (
+        os.environ.get('REVENUECAT_SECRET_API_KEY', '').strip()
+        or os.environ.get('REVENUECAT_IOS_API_KEY', '').strip())
+    if not api_key:
+        return None
+    rc_app_user_id = _authoritative_revenuecat_identity(uid)
+    if not rc_app_user_id:
+        return None
+    url = (
+        'https://api.revenuecat.com/v1/subscribers/'
+        + urllib.parse.quote(rc_app_user_id, safe=''))
+    request = urllib.request.Request(url, method='GET', headers={
+        'Authorization': f'Bearer {api_key}',
+        'Accept': 'application/json',
+        'X-Platform': 'ios',
+    })
+    try:
+        with urllib.request.urlopen(request, timeout=6) as response:
+            raw = response.read(262_145)
+            if response.status != 200 or len(raw) > 262_144:
+                raise RevenueCatStatusUnavailableError(
+                    f'RevenueCat HTTP {response.status}')
+        payload = json.loads(raw.decode('utf-8'))
+    except urllib.error.HTTPError as exc:
+        raise RevenueCatStatusUnavailableError(
+            f'RevenueCat HTTP {exc.code}') from exc
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError,
+            UnicodeDecodeError) as exc:
+        raise RevenueCatStatusUnavailableError(
+            'تعذّر الاتصال بخدمة RevenueCat') from exc
+    active, expires_at = _revenuecat_entitlement_snapshot(payload)
+    _persist_verified_revenuecat_subscription(uid, active, expires_at)
+    return active
+
+
+def try_refresh_revenuecat_subscription(uid: str):
+    """مزامنة best-effort لمسار الوصول مع سجل آمن بلا معرفات مباشرة."""
+    try:
+        return refresh_revenuecat_subscription(uid)
+    except Exception as exc:
+        print('[RevenueCat] status refresh failed '
+              f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
+        return None
+
 # ─── قراءة index.html ────────────────────────────────────────────────────────
 def read_html():
     with open(HTML_FILE, 'rb') as f:
@@ -4828,6 +4991,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/api/version':
             self.send_json(200, {
                 'apiVersion': self._api_version,
+                'applicationRelease': APPLICATION_RELEASE,
+                'contractRevision': API_CONTRACT_REVISION,
                 'environment': deployment_environment(),
                 'unversionedDefault': '1',
                 'supportedVersions': ['1', '2'],
@@ -4950,6 +5115,11 @@ class Handler(BaseHTTPRequestHandler):
                     active = False
             finally:
                 conn.close()
+            if not active:
+                refreshed = try_refresh_revenuecat_subscription(uid)
+                if refreshed is not None:
+                    active = refreshed is True
+                    source = 'revenuecat'
             self.send_json(200, {'active': active, 'source': source})
 
         elif path == '/api/free-round/status':
@@ -5082,15 +5252,18 @@ class Handler(BaseHTTPRequestHandler):
                         conn = db_connect()
                         try:
                             conn.executemany('''
-                                INSERT INTO question_seen (uid, question_id, category, seen_at)
-                                VALUES (?, ?, ?, ?)
+                                INSERT INTO question_seen (
+                                    uid, question_id, category, seen_at, reserved_by_round)
+                                VALUES (?, ?, ?, ?, ?)
                                 ON CONFLICT(uid, question_id) DO UPDATE SET
                                     category=excluded.category,
-                                    seen_at=excluded.seen_at
+                                    seen_at=excluded.seen_at,
+                                    reserved_by_round=excluded.reserved_by_round
                             ''', [(
                                 uid, document.get('question_id') or document['_document_id'],
                                 document.get('category') or 'غير مصنف',
                                 document.get('seen_at') or time.strftime('%Y-%m-%d %H:%M:%S'),
+                                1 if document.get('reserved_by_round') is True else 0,
                             ) for document in documents])
                             conn.commit()
                         finally:
@@ -5104,7 +5277,8 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 rows = conn.execute(
                     'SELECT question_id, category, seen_at FROM question_seen '
-                    'WHERE uid=? ORDER BY seen_at DESC LIMIT 10000',
+                    'WHERE uid=? AND reserved_by_round=0 '
+                    'ORDER BY seen_at DESC LIMIT 10000',
                     (uid,)
                 ).fetchall()
             finally:
@@ -5478,9 +5652,15 @@ class Handler(BaseHTTPRequestHandler):
                     'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى',
                     'code': 'question_bank_auth_required',
                 }); return
-            subscribed = subscription_is_active(uid)
             if rate_limited(f'question-round:{safe_log_reference(uid)}', 30, 600):
                 self.send_json(429, {'error': 'طلبات كثيرة جداً — حاول بعد قليل'}); return
+            subscribed = subscription_is_active(uid)
+            if not subscribed:
+                # Webhooks تبقى المسار الفوري المعتاد، لكن لا نرفض مشتركاً
+                # صحيحاً إذا تأخر webhook أو فُقد. القرار الاحتياطي يأتي من
+                # RevenueCat مباشرة وبهوية UUID المثبتة في الخادم.
+                refreshed = try_refresh_revenuecat_subscription(uid)
+                subscribed = refreshed is True or subscription_is_active(uid)
             round_guard = None
             try:
                 round_guard = acquire_question_round_guard(uid)
@@ -6164,6 +6344,9 @@ class Handler(BaseHTTPRequestHandler):
                             'question_id': question_id,
                             'category': category,
                             'seen_at': now_iso,
+                            # لا يصبح الحجز «مشاهداً» إلا بعد أن يفتح العميل
+                            # السؤال فعلياً ويرسله عبر هذا المسار.
+                            'reserved_by_round': False,
                         })
                         for _, question_id, category in clean_items
                     ])
@@ -6176,11 +6359,13 @@ class Handler(BaseHTTPRequestHandler):
             conn = db_connect()
             try:
                 conn.executemany('''
-                    INSERT INTO question_seen (uid, question_id, category)
-                    VALUES (?, ?, ?)
+                    INSERT INTO question_seen (
+                        uid, question_id, category, reserved_by_round)
+                    VALUES (?, ?, ?, 0)
                     ON CONFLICT(uid, question_id) DO UPDATE SET
                         category=excluded.category,
-                        seen_at=CURRENT_TIMESTAMP
+                        seen_at=CURRENT_TIMESTAMP,
+                        reserved_by_round=0
                 ''', clean_items)
                 conn.commit()
             finally:

@@ -115,6 +115,19 @@ try{
     weakCatalog.categories[0].questionCount=11;
     weakCatalog.questionCount=23;
 
+    // يحجز الخادم كامل حمولة الجولة قبل الرد. إذا وصلت مزامنة متأخرة
+    // وسجلت هذه المعرفات محلياً، تبقى حصة الجولة الحالية قابلة للعب.
+    window._currentUid='reservation-race-player';
+    storeSet('authUid',window._currentUid);
+    saveQuestionHistory(Object.fromEntries(Object.entries(remoteBank).map(
+      ([category,questions])=>[category,questions.map(question=>question.id)])));
+    state.usedQ=new Set(); state.usedQuestionIds=new Set();
+    reservedQuestionIds.clear();
+    const reservationStockIssue=findRoundStockIssue();
+    const reservationRacePick=pickQuestion(textCategory,3);
+    const reservationRacePlayable=!reservationRacePick?.exhausted&&reservationRacePick?.d===3;
+    releasePickedQuestion(reservationRacePick);
+
     activeFilter='علوم وتقنية';
     const filteredCategories=catsForFilter();
     return {
@@ -125,6 +138,7 @@ try{
       roundImageIds:[...roundImageQuestionIds],preparedIds,
       imageQuestionCount:questionsForRoundCategory(imageCategory).length,
       textQuestionCount:questionsForRoundCategory(textCategory).length,
+      reservationStockIssue,reservationRacePlayable,
       futureVisual:categoryVisual(imageCategory),filteredCategories,
       rejected:{
         review:validRemoteRoundBank(tamperedReview,[imageCategory,textCategory]),
@@ -153,6 +167,10 @@ try{
   assert.equal(audit.imagesPrepared,true);
   assert.equal(audit.imageQuestionCount,12);
   assert.equal(audit.textQuestionCount,12);
+  assert.equal(audit.reservationStockIssue,null,
+    'حجوزات الجولة المتزامنة لا تجعل لوحة الجولة الحالية تبدو نافدة.');
+  assert.equal(audit.reservationRacePlayable,true,
+    'يبقى سؤال 300 قابلاً للفتح حتى لو وصلت مزامنة حجز الجولة متأخرة.');
   assert.equal(audit.preparedIds.length,12,'يهيّئ أسئلة الصور من roundQuestionBank لا من البنك المحلي.');
   assert.equal(audit.roundImageIds.length,12,'يوجد سؤالان صورة جاهزان لكل مستوى.');
   assert.equal(audit.futureVisual.icon,'🧠','الفئة الخادمية الجديدة لها fallback عام ولا تظهر كأنها فئة عائلية.');

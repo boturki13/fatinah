@@ -55,6 +55,27 @@ try:
     status, result = request('GET', f'/api/v2/questions/seen?uid={uid}')
     assert status == 200 and result['items'] == []
 
+    # حجز أسئلة الجولة يمنع خادماً أو جهازاً آخر من اختيارها، لكنه لا يعني
+    # أن اللاعب شاهدها. يجب ألا يعيد GET الحجوزات إلى العميل كسجل مشاهدة.
+    srv.reserve_question_round('question-user', {
+        'علوم': [{'id': 'gq-aaaaaaaaaaaaaaaaaaaa'}],
+    })
+    assert 'gq-aaaaaaaaaaaaaaaaaaaa' in srv.load_all_question_seen_ids(
+        'question-user')
+    status, result = request('GET', f'/api/v2/questions/seen?uid={uid}')
+    assert status == 200 and result['items'] == []
+
+    # عندما يعرض العميل السؤال فعلياً يتحول الحجز إلى مشاهدة عادية.
+    status, result = request('POST', '/api/v2/questions/seen', {
+        'uid': 'question-user', 'idToken': 'TEST_ID_TOKEN',
+        'items': [{'id': 'gq-aaaaaaaaaaaaaaaaaaaa', 'category': 'علوم'}],
+    })
+    assert status == 200 and result['saved'] == 1
+    status, result = request('GET', f'/api/v2/questions/seen?uid={uid}')
+    assert status == 200
+    assert [item['id'] for item in result['items']] == [
+        'gq-aaaaaaaaaaaaaaaaaaaa']
+
     status, _ = request('POST', '/api/v2/questions/seen', {
         'uid': 'question-user', 'idToken': 'WRONG',
         'items': [{'id': 'q2-alpha', 'category': 'علوم'}],
@@ -83,6 +104,7 @@ try:
     status, result = request('GET', f'/api/v2/questions/seen?uid={uid}')
     assert status == 200
     assert {(item['id'], item['category']) for item in result['items']} == {
+        ('gq-aaaaaaaaaaaaaaaaaaaa', 'علوم'),
         ('q2-alpha', 'علوم'),
         ('gq-1234567890abcdefabcd', 'القرآن الكريم'),
     }

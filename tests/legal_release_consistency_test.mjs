@@ -38,8 +38,17 @@ for (const currentReleaseMarker of [
   );
 }
 assert.match(nextReleasePlan, /مرشح إصدار فطنة 1\.4\.0/);
-assert.match(nextReleasePlan, /لم يُنشأ tag ولم يُرفع التطبيق بعد/,
-  'مرشح 1.4 يجب ألا يدّعي إنشاء tag أو رفعاً لم يحدث');
+if (metadata.appStoreState === 'testflight_ready_to_submit') {
+  assert.match(nextReleasePlan, /بناء TestFlight جاهز للإرسال، ولم يُنشأ tag أو يُنشر خادم 1\.4 بعد/,
+    'مرشح 1.4 يجب أن يوثق حالة TestFlight والخادم بدقة');
+} else if (metadata.appStoreState === 'testflight_internal_testing') {
+  assert.match(nextReleasePlan, /البناء في اختبار TestFlight الداخلي، ولم يُنشأ tag أو يُنشر خادم 1\.4 بعد/,
+    'مرشح 1.4 يجب أن يفصل بين اختبار TestFlight ونشر الخادم');
+} else {
+  assert.equal(metadata.appStoreState, 'not_submitted');
+  assert.match(nextReleasePlan, /لم يُنشأ tag ولم يُرفع التطبيق بعد/,
+    'مرشح 1.4 يجب ألا يدّعي إنشاء tag أو رفعاً لم يحدث');
+}
 
 for (const [name, document] of [
   ['سياسة الخصوصية داخل التطبيق', bundledPrivacy],
@@ -60,5 +69,5 @@ for (const [name, document] of [
 assert.match(publicPrivacy, /not directed at children under 13 \(or under 16 where required\)/i);
 assert.match(publicTerms, /must be at least 13 years old to use the app/i);
 
-console.log(`✓ بيانات مرشح الإصدار ${metadata.packageVersion} (${metadata.iosBuild}) متسقة ولم تدّعِ رفعاً غير منفذ`);
+console.log(`✓ بيانات مرشح الإصدار ${metadata.packageVersion} (${metadata.iosBuild}) متسقة مع حالة TestFlight والخادم`);
 console.log('✓ حدود العمر متسقة بين السياسات والشروط المدمجة والعامة');

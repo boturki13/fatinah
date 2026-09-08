@@ -2,25 +2,20 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 import { assertNoSimilarOptions, normalizeArabic } from '../scripts/questions/categories/common.mjs';
+import {
+  CATEGORY_ORDER, CATEGORY_QUESTION_COUNTS, EXPECTED_QUESTION_COUNT,
+  expectedBandCount, expectedLevelCount, expectedQuestionPlacement,
+} from '../scripts/questions/release-contract.mjs';
 import { verifyWorldScienceCategories } from '../scripts/questions/categories/world-science.mjs';
 import { verifyProverbCategory } from '../scripts/questions/categories/proverbs.mjs';
 import { assertNoLegacyFacts, loadLegacyQuestionRecords } from '../scripts/questions/legacy-question-policy.mjs';
 
 const read = relative => JSON.parse(fs.readFileSync(new URL(`../${relative}`, import.meta.url), 'utf8'));
 const bank = read('server-assets/question-bank/v1/bank.json');
-const expectedCategories = [
-  'من أنا؟', 'كرتون وأنمي', 'تقنية وإنترنت', 'اختر العبارة الصحيحة', 'سينما وأفلام عربية',
-  'كرة القدم', 'علوم وطبيعة', 'اختراعات واكتشافات', 'الكويت', 'دول الخليج',
-  'شخصيات تاريخية', 'مدن وعواصم', 'عملات العالم', 'فيزياء وكيمياء',
-  'شعراء وأدباء عرب', 'روايات عالمية', 'مسرحيات خليجية', 'طيران ومطارات',
-  'أندية ومنتخبات', 'ألغاز بوليسية', 'اكتشف الكلمة', 'أحداث غيرت العالم', 'منظمات دولية',
-  'كرة القدم العالمية', 'معلومات عامة', 'تاريخ وتراث الخليج', 'الفن الخليجي والعربي',
-  'ألعاب الفيديو', 'تاريخ وحضارات', 'جسم الإنسان والصحة', 'مطابخ العالم',
-  'سيارات ومركبات', 'اللغة العربية والأمثال',
-];
+const expectedCategories = [...CATEGORY_ORDER];
 const worldScienceCategories = [
   'اختر العبارة الصحيحة', 'كرة القدم', 'علوم وطبيعة', 'مدن وعواصم',
-  'عملات العالم', 'فيزياء وكيمياء', 'ألغاز بوليسية',
+  'عملات العالم', 'فيزياء وكيمياء',
 ];
 const MEDIA_EASY_CURATION_CATEGORIES = new Set([
   'كرتون وأنمي', 'تقنية وإنترنت', 'سينما وأفلام عربية',
@@ -36,22 +31,24 @@ const previouslyAmbiguousIds=new Set([
 const repeatedLegacyFactIds=new Set(['gq-fd6d751d599a64fca7e7']);
 
 assert.equal(bank.releaseReady, true, 'بنك الإصدار يجب أن يكون معتمدًا.');
-assert.equal(bank.questionCount, 2970);
-assert.equal(bank.categoryCount, 33);
+assert.equal(bank.questionCount, EXPECTED_QUESTION_COUNT);
+assert.equal(bank.categoryCount, CATEGORY_ORDER.length);
 assert.deepEqual(Object.keys(bank.categories), expectedCategories, 'ترتيب فئات الإصدار غير مطابق.');
 assert.equal(Object.hasOwn(bank.categories, 'رتّبها صح'), false, 'فئة رتّبها صح محذوفة.');
 assert.equal(Object.hasOwn(bank.categories, 'رياضيات وحساب'), false, 'فئة رياضيات وحساب محذوفة نهائيًا.');
+assert.equal(Object.hasOwn(bank.categories, 'ألغاز بوليسية'), false, 'فئة ألغاز بوليسية محذوفة نهائيًا.');
 
 const seenIds = new Set();
 const seenQuestions = new Set();
 const seenFacts = new Set();
 for (const category of expectedCategories) {
   const rows = bank.categories[category];
-  assert.equal(rows.length, 90, `${category}: يجب أن يحتوي 90 سؤالًا.`);
+  const expectedCount = CATEGORY_QUESTION_COUNTS[category];
+  assert.equal(rows.length, expectedCount, `${category}: عدد الأسئلة غير مطابق.`);
   for (const [position, question] of rows.entries()) {
-    const expectedBand = ['easy', 'medium', 'hard'][Math.floor(position / 30)];
-    assert.equal(question.band, expectedBand, `${question.id}: ترتيب الصعوبة غير صحيح.`);
-    assert.equal(question.d, Math.floor(position / 30) * 2 + 1 + (position % 2));
+    const placement = expectedQuestionPlacement(category, position);
+    assert.equal(question.band, placement.band, `${question.id}: ترتيب الصعوبة غير صحيح.`);
+    assert.equal(question.d, placement.level);
     assert.equal(question.review?.status, 'approved', `${question.id}: سؤال غير معتمد.`);
     assert.ok(String(question.review?.reviewer || '').trim(), `${question.id}: اسم مدقق الاعتماد مفقود.`);
     assert.match(String(question.review?.reviewedAt || ''), /^\d{4}-\d{2}-\d{2}/u,
@@ -81,19 +78,29 @@ for (const category of expectedCategories) {
   }
   for (const band of ['easy', 'medium', 'hard']) {
     const subset = rows.filter(question => question.band === band);
-    assert.equal(subset.length, 30, `${category}/${band}: يجب أن يحتوي 30 سؤالًا.`);
+    assert.equal(subset.length, expectedBandCount(category),
+      `${category}/${band}: عدد الأسئلة غير مطابق.`);
     const slots = [0, 1, 2, 3].map(index => subset.filter(question => question.a === index).length);
     assert.ok(Math.max(...slots) - Math.min(...slots) <= 1,
       `${category}/${band}: مواضع الإجابة منحازة (${slots.join('/')}).`);
   }
   for (let level = 1; level <= 6; level += 1) {
-    assert.equal(rows.filter(question => question.d === level).length, 15,
-      `${category}: المستوى ${level} يجب أن يحتوي 15 سؤالًا.`);
+    assert.equal(rows.filter(question => question.d === level).length,
+      expectedLevelCount(category),
+      `${category}: عدد أسئلة المستوى ${level} غير مطابق.`);
   }
 }
-assert.equal(seenIds.size, 2970);
-assert.equal(seenQuestions.size, 2970);
-assert.equal(seenFacts.size, 2970);
+assert.equal(seenIds.size, EXPECTED_QUESTION_COUNT);
+assert.equal(seenQuestions.size, EXPECTED_QUESTION_COUNT);
+assert.equal(seenFacts.size, EXPECTED_QUESTION_COUNT);
+
+for (const question of bank.categories['القرآن الكريم']) {
+  assert.equal(question.templateId, 'quran-foundation-verse-to-surah-v1');
+  assert.equal(question.verification?.provider, 'Quran.Foundation Content API v4');
+  assert.equal(question.verification?.result?.verdict, 'pass');
+  assert.equal(question.review?.religiousHumanReviewComplete, true);
+  assert.match(question.sourceRecordId, /^quran-pilot-/u);
+}
 
 const trueFalse = bank.categories['اختر العبارة الصحيحة'];
 assert.deepEqual([...new Set(trueFalse.map(question => question.templateId))].sort(), [
@@ -144,22 +151,6 @@ for (const question of cities) {
     `${question.id}: نص سؤال المدينة يكشف الإجابة.`);
 }
 
-const detective = bank.categories['ألغاز بوليسية'];
-const evaluate = (statement, culprit) => {
-  if (statement.kind === 'guilty') return statement.subject === culprit;
-  if (statement.kind === 'innocent') return statement.subject !== culprit;
-  if (statement.kind === 'oneOf') return statement.first === culprit || statement.second === culprit;
-  return statement.first !== culprit && statement.second !== culprit;
-};
-for (const question of detective) {
-  const claim = question.verification.claim;
-  const solutions = [0, 1, 2, 3].filter(culprit => claim.statements.reduce(
-    (count, statement) => count + Number(evaluate(statement, culprit)), 0,
-  ) === claim.requiredTrueStatements);
-  assert.deepEqual(solutions, [claim.solution], `${question.id}: اللغز لا يملك حلًا وحيدًا.`);
-  assert.equal(question.answer, claim.suspects[claim.solution]);
-}
-
 assert.equal(verifyWorldScienceCategories(Object.fromEntries(
   worldScienceCategories.map(category => [category, bank.categories[category]]),
 )), true, 'مدقق وحدة العالم والعلوم رفض البنك.');
@@ -171,4 +162,4 @@ const legacyCategories = Object.fromEntries([
 ].map(category => [category, bank.categories[category]]));
 assertNoLegacyFacts(legacyCategories, loadLegacyQuestionRecords());
 
-console.log('✅ 2970 سؤالًا: خيارات منطقية، صعوبة متدرجة، حلول قابلة للإعادة، ولا تكرار نصي');
+console.log(`✅ ${EXPECTED_QUESTION_COUNT} سؤالًا: خيارات منطقية، ومنها فئة قرآن موثقة عبر Quran.Foundation`);

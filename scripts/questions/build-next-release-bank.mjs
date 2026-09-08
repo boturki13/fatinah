@@ -22,22 +22,17 @@ import {
 import { buildProverbCategory, verifyProverbCategory, verifyProverbQuestion } from './categories/proverbs.mjs';
 import { assertNoLegacyFacts, loadLegacyQuestionRecords } from './legacy-question-policy.mjs';
 import { approveVerifiedQuestions, verifyQuestionBankFacts } from './factual-verifier.mjs';
+import { BASE_CATEGORY_ORDER, REGULAR_CATEGORY_QUESTION_COUNT } from './release-contract.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const OUT_DIR = path.join(ROOT, 'server-assets/question-bank/v1');
 const LEDGER_PATH = path.join(ROOT, 'content/questions/next-release-factual-ledger.json');
-const CATEGORY_ORDER = Object.freeze([
-  'من أنا؟', 'كرتون وأنمي', 'تقنية وإنترنت', 'اختر العبارة الصحيحة', 'سينما وأفلام عربية',
-  'كرة القدم', 'علوم وطبيعة', 'اختراعات واكتشافات', 'الكويت', 'دول الخليج',
-  'شخصيات تاريخية', 'مدن وعواصم', 'عملات العالم', 'فيزياء وكيمياء',
-  'شعراء وأدباء عرب', 'روايات عالمية', 'مسرحيات خليجية', 'طيران ومطارات',
-  'أندية ومنتخبات', 'ألغاز بوليسية', 'اكتشف الكلمة', 'أحداث غيرت العالم',
-  'منظمات دولية',
-]);
-const TARGET_PER_CATEGORY = 90;
+const CATEGORY_ORDER = BASE_CATEGORY_ORDER;
+const TARGET_PER_CATEGORY = REGULAR_CATEGORY_QUESTION_COUNT;
 const TARGET_BANK_SIZE = CATEGORY_ORDER.length * TARGET_PER_CATEGORY;
 const BANNED = /(?:إسرائيل|اسرائيل|إسرائيلي|اسرائيلي|Israel|Israeli|Tel Aviv|تل أبيب|تل ابيب|إباحي|اباحي|إباحية|اباحية|porn|hentai|ecchi|محتوى جنسي|علاقة جنسية|عارٍ|عارية)/iu;
 const OPAQUE_WORDING = /(?:حسب السجل|في السجل|المعرّف(?=\s|:)|المعرف(?=\s|:)|Q\d{3,})/iu;
+const INCOMPLETE_WORDING = /(?:قال أربعة مشتبهين في سرقة|\b(?:إلخ|الخ)\b|وما إلى ذلك)/iu;
 
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const readJson = relativePath => JSON.parse(fs.readFileSync(path.join(ROOT, relativePath), 'utf8'));
@@ -107,11 +102,14 @@ function validateBankShape(categories, sourcePolicy) {
       if (!/^gq-[a-f0-9]{20}$/u.test(String(question.id || '')) || ids.has(question.id)) {
         throw new Error(`${category}: معرّف سؤال مفقود أو مكرر ${question.id || ''}`);
       }
-      if (typeof question.q !== 'string' || question.q.trim().length < 12 || question.q.trim().length > 220
-          || OPAQUE_WORDING.test(question.q)) throw new Error(`${question.id}: صياغة غير مفهومة أو غير صالحة`);
+      const maximumQuestionLength = 220;
+      if (typeof question.q !== 'string' || question.q.trim().length < 12 || question.q.trim().length > maximumQuestionLength
+          || OPAQUE_WORDING.test(question.q) || INCOMPLETE_WORDING.test(question.q)) {
+        throw new Error(`${question.id}: صياغة غير مفهومة أو غير صالحة`);
+      }
       if (geographicAnswerLeak(question)) throw new Error(`${question.id}: نص سؤال الموقع يكشف الإجابة`);
       const normalizedAnswer=normalizeArabic(question.answer);
-      const answerMayAppearInChoices=['animal-group-choice-v1','detective-unique-solution-v3'].includes(question.templateId)
+      const answerMayAppearInChoices=question.templateId==='animal-group-choice-v1'
         || /final-score-v1$/u.test(String(question.templateId||''));
       if(!answerMayAppearInChoices&&normalizedAnswer.length>=3
         &&normalizeArabic(question.q).includes(normalizedAnswer)){

@@ -50,6 +50,7 @@ function selectableRuntimeCategories(categories){
   if(!inserted&&ISLAMIC_SOURCE_CATEGORIES.some(category=>QUESTION_BANK?.[category])) visible.push(ISLAMIC_CATEGORY);
   return visible;
 }
+const RETIRED_REMOTE_CATEGORIES=new Set(['رتّبها صح','رياضيات وحساب','ألغاز بوليسية']);
 function validRemoteQuestionCatalog(payload){
   if(!payload||payload.schemaVersion!==1||payload.questionSchemaVersion!==1||payload.releaseReady!==true||!Array.isArray(payload.categories)) return false;
   if(payload.categories.length<1||payload.categories.length>500) return false;
@@ -57,7 +58,8 @@ function validRemoteQuestionCatalog(payload){
   const valid=payload.categories.every(item=>{
     const name=String(item?.name||'').trim();
     const levels=item?.levels;
-    if(!name||name.length>80||/[\u0000-\u001f]/u.test(name)||names.has(name)) return false;
+    if(!name||name.length>80||/[\u0000-\u001f]/u.test(name)||names.has(name)
+      ||RETIRED_REMOTE_CATEGORIES.has(name)) return false;
     if(!Number.isInteger(item.questionCount)||item.questionCount<12||!levels) return false;
     if(![1,2,3,4,5,6].every(level=>Number.isInteger(levels[level])&&levels[level]>=ROUND_QUESTIONS_PER_LEVEL)) return false;
     if([1,2,3,4,5,6].reduce((sum,level)=>sum+levels[level],0)!==item.questionCount) return false;
@@ -104,12 +106,47 @@ function installRemoteQuestionCatalog(payload){
   ALL_CATS=names;
   return true;
 }
+let remoteQuestionCatalogFailure=null;
+function setRemoteQuestionCatalogFailure(code,status=0){
+  remoteQuestionCatalogFailure={code:String(code||'unknown'),status:Number(status)||0};
+  return false;
+}
+function remoteQuestionCatalogFailureCopy(){
+  const code=String(remoteQuestionCatalogFailure?.code||'unknown');
+  if(code==='offline') return ['ماكو اتصال بالإنترنت','رجّع الاتصال وجرّب مرة ثانية.'];
+  if(code==='timeout') return ['الخادم تأخر بالرد','انتظر لحظات وجرّب مرة ثانية.'];
+  if(code==='server_contract_outdated') return [
+    'تحديث الخادم غير مكتمل',
+    'نسخة خادم الأسئلة لا تطابق تحديث 1.4. ما بدأنا الجولة؛ بلّغ الدعم لتحديث الخادم.',
+  ];
+  if(code==='question_catalog_unavailable'||code==='invalid_catalog_payload') return [
+    'بنك الأسئلة غير جاهز',
+    'الخادم متصل، لكن بنك الأسئلة لم يجتز التحقق. ما بدأنا الجولة.',
+  ];
+  return ['تعذّر الوصول لخادم الأسئلة','الخادم ما أكمل الطلب. جرّب مرة ثانية، وإذا استمرت المشكلة بلّغ الدعم.'];
+}
 async function refreshRemoteQuestionCatalog(){
+  remoteQuestionCatalogFailure=null;
   try{
     const response=await apiFetch('/api/questions/catalog',{timeoutMs:8000});
     const payload=await response.json().catch(()=>null);
-    return response.ok&&installRemoteQuestionCatalog(payload);
-  }catch(_){ return false; }
+    if(response.ok&&installRemoteQuestionCatalog(payload)) return true;
+    if(response.status===404||payload?.code==='unsupported_v2_route'){
+      return setRemoteQuestionCatalogFailure('server_contract_outdated',response.status);
+    }
+    if(response.ok) return setRemoteQuestionCatalogFailure('invalid_catalog_payload',response.status);
+    return setRemoteQuestionCatalogFailure(
+      typeof payload?.code==='string'&&payload.code?payload.code:`http_${response.status}`,
+      response.status,
+    );
+  }catch(error){
+    // لا رجوع إلى بنك أو كاش محلي: فشل الخادم يبقى ظاهرًا ومصنفًا بدقة.
+    if(!navigator.onLine) return setRemoteQuestionCatalogFailure('offline');
+    if(error?.code==='api/timeout'||error?.name==='AbortError'){
+      return setRemoteQuestionCatalogFailure('timeout');
+    }
+    return setRemoteQuestionCatalogFailure('transport_error');
+  }
 }
 function ensureQuestionBank(){
   if(_questionBankReady) return _questionBankReady;
@@ -196,7 +233,9 @@ async function settleWithin(promise,timeoutMs,fallbackValue){
   try{ return await Promise.race([Promise.resolve(promise),deadline]); }
   finally{ clearTimeout(timer); }
 }
-const APP_INTEGRITY_ATTEMPT_TIMEOUT_MS=1500;
+// App Attest may need a few seconds on the first TestFlight launch while iOS
+// creates/loads the key and exchanges it for a Firebase App Check token.
+const APP_INTEGRITY_ATTEMPT_TIMEOUT_MS=6000;
 const APP_INTEGRITY_RETRY_DELAY_MS=30000;
 let _appIntegrityReady=false;
 let _appIntegrityAttempt=null;
@@ -241,17 +280,19 @@ async function initAppIntegrityWithin(timeoutMs=APP_INTEGRITY_ATTEMPT_TIMEOUT_MS
   }
   return result===true;
 }
-async function getAppIntegrityTokenWithin(timeoutMs=APP_INTEGRITY_ATTEMPT_TIMEOUT_MS){
-  if(Date.now()<_appIntegrityTokenRetryAfter) return '';
+async function getAppIntegrityTokenWithin(timeoutMs=APP_INTEGRITY_ATTEMPT_TIMEOUT_MS,{forceRefresh=false}={}){
+  if(!forceRefresh&&Date.now()<_appIntegrityTokenRetryAfter) return '';
   const appCheck=getFirebaseAppCheck();
   if(!appCheck?.getToken) return '';
-  let attempt=_appIntegrityTokenAttempt;
+  let attempt=forceRefresh?null:_appIntegrityTokenAttempt;
   if(!attempt){
-    attempt=Promise.resolve().then(()=>appCheck.getToken({forceRefresh:false}));
-    _appIntegrityTokenAttempt=attempt;
-    void attempt.finally(()=>{
-      if(_appIntegrityTokenAttempt===attempt) _appIntegrityTokenAttempt=null;
-    }).catch(()=>{});
+    attempt=Promise.resolve().then(()=>appCheck.getToken({forceRefresh}));
+    if(!forceRefresh){
+      _appIntegrityTokenAttempt=attempt;
+      void attempt.finally(()=>{
+        if(_appIntegrityTokenAttempt===attempt) _appIntegrityTokenAttempt=null;
+      }).catch(()=>{});
+    }
   }
   const timedOut=Symbol('app-integrity-token-timeout');
   try{
@@ -264,7 +305,9 @@ async function getAppIntegrityTokenWithin(timeoutMs=APP_INTEGRITY_ATTEMPT_TIMEOU
       recordNonFatal(error,'firebase.app-check.token');
       return '';
     }
-    return String(result?.token||'');
+    const token=String(result?.token||'');
+    if(token) _appIntegrityTokenRetryAfter=0;
+    return token;
   }catch(error){
     _appIntegrityTokenRetryAfter=Date.now()+APP_INTEGRITY_RETRY_DELAY_MS;
     recordNonFatal(error,'firebase.app-check.token');
@@ -317,7 +360,7 @@ async function apiFetch(path, options={}){
     headers.set('X-Fatinah-API-Version',API_CONTRACT_VERSION);
     const integrityBudget=Math.min(
       APP_INTEGRITY_ATTEMPT_TIMEOUT_MS,
-      Math.max(25,Math.floor(timeoutMs/4)),
+      Math.max(25,Math.floor(timeoutMs/2)),
     );
     if(await initAppIntegrityWithin(integrityBudget)){
       // الخادم يبدأ بوضع المراقبة؛ فشل/تعليق App Check لا يوقف الشبكة.
@@ -325,11 +368,25 @@ async function apiFetch(path, options={}){
       if(appCheckToken) headers.set('X-Firebase-AppCheck',appCheckToken);
     }
     if(controller.signal.aborted) throw controller.signal.reason;
-    const response=await fetch(apiUrl(path),{...fetchOptions,headers,signal:controller.signal});
-    const method=String(fetchOptions.method||'GET').toUpperCase();
-    const hasBody=method!=='HEAD'&&![204,205,304].includes(response.status);
-    const body=hasBody?await response.arrayBuffer():null;
-    return bufferApiResponse(response,body,method);
+    const performFetch=async()=>{
+      const response=await fetch(apiUrl(path),{...fetchOptions,headers,signal:controller.signal});
+      const method=String(fetchOptions.method||'GET').toUpperCase();
+      const hasBody=method!=='HEAD'&&![204,205,304].includes(response.status);
+      const body=hasBody?await response.arrayBuffer():null;
+      return bufferApiResponse(response,body,method);
+    };
+    let response=await performFetch();
+    if([401,403].includes(response.status)){
+      const failure=await response.clone().json().catch(()=>null);
+      if(failure?.code==='app_check_failed'){
+        const refreshedToken=await getAppIntegrityTokenWithin(integrityBudget,{forceRefresh:true});
+        if(refreshedToken){
+          headers.set('X-Firebase-AppCheck',refreshedToken);
+          response=await performFetch();
+        }
+      }
+    }
+    return response;
   })();
   try{
     return await Promise.race([request,deadline]);
@@ -351,6 +408,8 @@ let _freeRoundVerificationState='unknown'; // unknown | eligible | used
 let _freeRoundVerificationPending=false;
 let _freeRoundVerificationAttempt=0;
 let _subscriptionResolved=false;
+let _subscriptionCheckFlight=null;
+let _subscriptionCheckGeneration=0;
 const TEAM_STYLES=[
   {name:"النجوم", color:"var(--t1)", bg:"var(--t1b)", dot:"#B794FF", solid:"#7C3AED"},
   {name:"الصقور", color:"var(--t2)", bg:"var(--t2b)", dot:"#4FE3C4", solid:"#10B9A4"},
@@ -413,7 +472,7 @@ const CAT_VISUALS={
   "عملات العالم":{icon:"💱",tone:"gold"},"فيزياء وكيمياء":{icon:"⚛️",tone:"cyan"},
   "شعراء وأدباء عرب":{icon:"🪶",tone:"sand"},"روايات عالمية":{icon:"📕",tone:"coral"},
   "مسرحيات خليجية":{icon:"🎭",tone:"purple"},"طيران ومطارات":{icon:"✈️",tone:"blue"},
-  "أندية ومنتخبات":{icon:"🏆",tone:"indigo"},"ألغاز بوليسية":{icon:"🔍",tone:"purple"},
+  "أندية ومنتخبات":{icon:"🏆",tone:"indigo"},
   "اكتشف الكلمة":{icon:"🔤",tone:"orange"},"أحداث غيرت العالم":{icon:"🌍",tone:"gold"},
   "منظمات دولية":{icon:"🤝",tone:"teal"},
 };
@@ -427,7 +486,7 @@ function categoryVisual(category){
 }
 // تصنيف الفئات إلى مجموعات للفلترة
 const CAT_GROUPS={
-  "ألغاز وذكاء":["من أنا؟","اختر العبارة الصحيحة","ألغاز بوليسية","اكتشف الكلمة"],
+  "ألغاز وذكاء":["من أنا؟","اختر العبارة الصحيحة","اكتشف الكلمة"],
   "علوم وتقنية":["تقنية وإنترنت","علوم وطبيعة","اختراعات واكتشافات","فيزياء وكيمياء"],
   "الكويت والخليج":["الكويت","دول الخليج","مسرحيات خليجية"],
   "تاريخ وعالم":["شخصيات تاريخية","مدن وعواصم","عملات العالم","أحداث غيرت العالم","منظمات دولية"],
@@ -2580,6 +2639,7 @@ function afterAuthSuccess(name, provider, uid, email){
 // نشارك طلب الرمز القصير بين العمليات المتزامنة عند الإقلاع. كانت تهيئة
 // RevenueCat والتحقق من الاشتراك تطلبان الرمز نفسه في الوقت نفسه من iOS.
 const _idTokenCache = { token:'', validUntil:0, pending:null };
+const FIREBASE_ID_TOKEN_TIMEOUT_MS=5000;
 function clearIdTokenCache(){
   _idTokenCache.token='';
   _idTokenCache.validUntil=0;
@@ -2587,12 +2647,15 @@ function clearIdTokenCache(){
 }
 
 // جلب ID token للمستخدم الحالي (لإثبات الهوية للخادم)
-async function getCurrentIdToken(forceRefresh=false){
+async function getCurrentIdToken(forceRefresh=false,requestedTimeoutMs=FIREBASE_ID_TOKEN_TIMEOUT_MS){
   if(!forceRefresh && _idTokenCache.token && Date.now() < _idTokenCache.validUntil){
     return _idTokenCache.token;
   }
   if(!forceRefresh && _idTokenCache.pending) return _idTokenCache.pending;
-  const request = (async ()=>{
+  const timeoutMs=Number.isFinite(requestedTimeoutMs)&&requestedTimeoutMs>0
+    ?Math.floor(requestedTimeoutMs):FIREBASE_ID_TOKEN_TIMEOUT_MS;
+  const timedOut=Object.freeze({timedOut:true});
+  const tokenAttempt=(async ()=>{
     try{
       const FA=getFirebaseAuth();
       if(FA){
@@ -2610,6 +2673,13 @@ async function getCurrentIdToken(forceRefresh=false){
     }catch(e){}
     return '';
   })();
+  const request=settleWithin(tokenAttempt,timeoutMs,timedOut).then(result=>{
+    if(result!==timedOut) return result;
+    const error=new Error('Firebase ID token request timed out');
+    error.code='FIREBASE_ID_TOKEN_TIMEOUT';
+    recordNonFatal(error,'firebase.auth.id-token');
+    return '';
+  });
   if(forceRefresh) return request;
   _idTokenCache.pending=request;
   try{
@@ -2724,6 +2794,7 @@ function getCrashlytics(){
 // التطبيق وكود أصلي ثابت راجعناه مسبقاً.
 const CRASH_SOURCE_ALLOWLIST=new Set([
   'firebase.app-check.initialize','firebase.app-check.token',
+  'firebase.auth.id-token',
   'preferences.hydrate','device-check.token','app-attest.reset',
   'app-attest.enroll','app-attest.assertion.free_round_status',
   'app-attest.assertion.free_round_complete','free-round.claim',
@@ -2738,6 +2809,7 @@ const CRASH_CODE_ALLOWLIST=new Set([
   'APP_ATTEST_KEYCHAIN_LOCKED','APP_ATTEST_KEYCHAIN_FAILED',
   'APP_ATTEST_SERVER_UNAVAILABLE','APP_ATTEST_INVALID_KEY',
   'APP_ATTEST_INVALID_INPUT','APP_ATTEST_FAILED','APP_ATTEST_KEY_RESET',
+  'FIREBASE_ID_TOKEN_TIMEOUT',
 ]);
 function safeCrashSource(source){
   return typeof source==='string'&&CRASH_SOURCE_ALLOWLIST.has(source)
@@ -3634,16 +3706,9 @@ let RC_CONFIGURED = false;
 async function loadRcKey(){
   if(RC_API_KEY) return RC_API_KEY;
   const keyStore=window.Capacitor?.Plugins?.RevenueCatKeyStore;
-  if(keyStore){
-    try{
-      const saved=await keyStore.get();
-      if(saved && saved.value){
-        RC_API_KEY=saved.value;
-        RC_CONFIGURED=true;
-        return RC_API_KEY;
-      }
-    }catch(e){ logClientEvent('warn','revenuecat.keychain-read'); }
-  }
+  // الخادم هو المصدر الأساسي للمفتاح العام. قد يبقى في Keychain مفتاح مشروع
+  // قديم بعد تحديث TestFlight أو حتى بعد إعادة تثبيت التطبيق، لذلك لا نعطي
+  // النسخة المحفوظة أولوية على إعداد الخادم الحالي.
   try{
     const r = await apiFetch('/api/rc-config');
     if(r.ok){
@@ -3652,9 +3717,20 @@ async function loadRcKey(){
         RC_API_KEY = d.apiKey;
         RC_CONFIGURED = true;
         if(keyStore) await keyStore.set({value:d.apiKey});
+        return RC_API_KEY;
       }
     }
   }catch(e){ logClientEvent('error','revenuecat.configure'); }
+  // عند انقطاع الشبكة فقط نستخدم آخر مفتاح صالح حُفظ بنجاح.
+  if(keyStore){
+    try{
+      const saved=await keyStore.get();
+      if(saved && saved.value){
+        RC_API_KEY=saved.value;
+        RC_CONFIGURED=true;
+      }
+    }catch(e){ logClientEvent('warn','revenuecat.keychain-read'); }
+  }
   return RC_API_KEY;
 }
 // امسح أي نسخة تركتها الإصدارات القديمة في تخزين JavaScript.
@@ -3708,6 +3784,8 @@ function clearRevenueCatAccessState(){
   _freeRoundVerificationPending=false;
   _freeRoundVerificationAttempt+=1;
   _subscriptionResolved=false;
+  _subscriptionCheckGeneration+=1;
+  _subscriptionCheckFlight=null;
 }
 
 // لا يكفي وجود UID في localStorage لقبول اشتراك مخزّن. لا تُعد الهوية مؤكدة
@@ -3744,7 +3822,17 @@ async function resetRevenueCatIdentity(){
 }
 
 function rcReady(){
-  if(!_rcReady) _rcReady = initRevenueCat();
+  if(!_rcReady){
+    const attempt=initRevenueCat();
+    _rcReady=attempt;
+    // فشل الشبكة أو عدم توافق الخادم لا يسمّم الجلسة كلها. كل المتصلين
+    // الحاليين يشتركون في محاولة واحدة، ثم يسمح النظام بمحاولة جديدة لاحقًا.
+    void attempt.then(ready=>{
+      if(!ready&&_rcReady===attempt) _rcReady=null;
+    },()=>{
+      if(_rcReady===attempt) _rcReady=null;
+    });
+  }
   return _rcReady;
 }
 
@@ -4032,45 +4120,89 @@ async function rcRestore(){
   }catch(e){ showToast('⚠️','ما قدرنا نستعيد المشتريات', e.message||'', false); }
 }
 
-async function checkSubscriptionAndRoute(uid, {showLoading=true,revenueCatTimeoutMs=8000} = {}){
-  if(showLoading) go('s-loading');
+function subscriptionCheckIsCurrent(uid,generation){
+  const currentUid=String(window._currentUid||storeGet('authUid','')||'');
+  return generation===_subscriptionCheckGeneration && String(uid||'')===currentUid;
+}
+
+async function fetchServerSubscriptionStatus(uid,idToken,timeoutMs){
+  const resp=await apiFetch(`/api/subscription/status?uid=${encodeURIComponent(uid||'')}`,{
+    headers:{'Authorization':'Bearer '+idToken},
+    timeoutMs,
+  });
+  if(!resp.ok) throw new Error(`subscription status HTTP ${resp.status}`);
+  const data=await resp.json();
+  return data.active===true;
+}
+
+async function performSubscriptionCheck(uid, generation, {
+  showLoading=true,
+  serverTimeoutMs=15000,
+  revenueCatTimeoutMs=12000,
+} = {}){
+  if(showLoading && subscriptionCheckIsCurrent(uid,generation)) go('s-loading');
   // الخادم هو المصدر الأول. إن تأخر webhook بعد شراء صحيح، نستخدم
   // CustomerInfo الموقّع من RevenueCat حتى لا يبقى العميل عالقاً في paywall.
+  // نبدأ المصدرين معاً: الخادم النشط يحسم فوراً، وبقية الحالات تنتظر فقط
+  // أبطأ المصدرين بدلاً من جمع مهلتيهما الواحدة بعد الأخرى.
+  const revenueCatCheck=rcIsActiveWithin(revenueCatTimeoutMs);
   try{
     const idToken=await getCurrentIdToken();
     if(!idToken) throw new Error('لا توجد جلسة Firebase موثّقة');
-    const ctrl = new AbortController();
-    const timer = setTimeout(()=>ctrl.abort(), 8000); // 8 ثوانٍ حد أقصى
-    let resp;
-    try{
-      resp = await apiFetch(`/api/subscription/status?uid=${encodeURIComponent(uid||'')}`,{
-        headers:{'Authorization':'Bearer '+idToken},
-        signal: ctrl.signal
-      });
-    }finally{ clearTimeout(timer); }
-    if(!resp.ok) throw new Error('status error');
-    const data = await resp.json();
-    if(data.active === true || await rcIsActiveWithin(revenueCatTimeoutMs) === true){
+    const serverActive=await fetchServerSubscriptionStatus(uid,idToken,serverTimeoutMs);
+    if(!subscriptionCheckIsCurrent(uid,generation)) return;
+    if(serverActive===true || await revenueCatCheck===true){
+      if(!subscriptionCheckIsCurrent(uid,generation)) return;
       _hasActiveSubscription=true; setFreeRoundAvailability(false); _subscriptionResolved=true;
       await routeAfterAccessCheck(uid); return;
     }
+    if(!subscriptionCheckIsCurrent(uid,generation)) return;
     _hasActiveSubscription=false;
     setFreeRoundAvailability(await freeRoundIsAvailable(uid));
+    if(!subscriptionCheckIsCurrent(uid,generation)) return;
     _subscriptionResolved=true;
     // لا نفاجئ المستخدم بشاشة الاشتراك عند كل تشغيل. بعد استهلاك الجولة
     // المجانية يبقى في الرئيسية، وتظهر شاشة الاشتراك عندما يطلب جولة جديدة.
     await routeAfterAccessCheck(uid);
   }catch(e){
-    if(await rcIsActiveWithin(revenueCatTimeoutMs) === true){
+    if(await revenueCatCheck===true){
+      if(!subscriptionCheckIsCurrent(uid,generation)) return;
       _hasActiveSubscription=true; setFreeRoundAvailability(false); _subscriptionResolved=true;
       await routeAfterAccessCheck(uid); return;
     }
+    if(!subscriptionCheckIsCurrent(uid,generation)) return;
     _hasActiveSubscription=false;
     setFreeRoundAvailability(isLocalWebPreview()
       ?true:(localFreeRoundCompleted(uid)?false:null));
     _subscriptionResolved=true;
     await routeAfterAccessCheck(uid);
   }
+}
+
+function checkSubscriptionAndRoute(uid, options={}){
+  const normalizedUid=String(uid||'');
+  if(_subscriptionCheckFlight?.uid===normalizedUid) return _subscriptionCheckFlight.promise;
+  const generation=++_subscriptionCheckGeneration;
+  const promise=performSubscriptionCheck(normalizedUid,generation,options).finally(()=>{
+    if(_subscriptionCheckFlight?.promise===promise) _subscriptionCheckFlight=null;
+  });
+  _subscriptionCheckFlight={uid:normalizedUid,promise};
+  return promise;
+}
+
+function firstActiveSubscriptionResult(checks){
+  return new Promise(resolve=>{
+    let remaining=checks.length;
+    if(!remaining){ resolve(false); return; }
+    checks.forEach(check=>Promise.resolve(check).then(active=>{
+      if(active===true){ resolve(true); return; }
+      remaining-=1;
+      if(remaining===0) resolve(false);
+    }).catch(()=>{
+      remaining-=1;
+      if(remaining===0) resolve(false);
+    }));
+  });
 }
 
 async function redeemAppleOfferCode(){
@@ -4133,17 +4265,16 @@ async function startCheckout(){
       const purchaseConfirmed = await rcPurchase(_pwPlan);
       if(!purchaseConfirmed) throw new Error('اكتمل الدفع بس الاشتراك ما ظهر للحين — استخدم استعادة المشتريات');
       const uid=window._currentUid || storeGet('authUid','');
-      let serverActive=false;
-      for(let attempt=0; attempt<12 && !serverActive; attempt++){
-        if(attempt) await new Promise(resolve=>setTimeout(resolve,1500));
-        try{
-          const idToken=await getCurrentIdToken();
-          const check=await apiFetch(`/api/subscription/status?uid=${encodeURIComponent(uid)}`,
-            {headers:idToken ? {'Authorization':'Bearer '+idToken} : {}});
-          if(check.ok) serverActive=(await check.json()).active===true;
-        }catch(e){}
-      }
-      if(serverActive || await rcIsActive() === true){
+      const serverConfirmation=(async()=>{
+        const idToken=await getCurrentIdToken();
+        if(!idToken) return false;
+        return fetchServerSubscriptionStatus(uid,idToken,15000);
+      })();
+      const subscriptionConfirmed=await firstActiveSubscriptionResult([
+        serverConfirmation,
+        rcIsActiveWithin(12000),
+      ]);
+      if(subscriptionConfirmed){
         _hasActiveSubscription=true; _freeRoundAvailable=false; _subscriptionResolved=true;
         void trackMetric('purchase_completed',{plan:_pwPlan});
         go('s-home');
@@ -4258,7 +4389,8 @@ async function toCats(){
   }catch(error){
     logClientEvent('error','question-bank.load');
     go('s-teams');
-    toast('ما قدرنا نحمّل الأسئلة، جرّب مرة ثانية');
+    const [title,message]=remoteQuestionCatalogFailureCopy();
+    showToast('⚠️',title,message,false);
   }
 }
 
@@ -4447,12 +4579,75 @@ function advancePickTurn(){
 let roundQuestionBank=Object.create(null);
 let roundQuestionToken=0;
 let roundImageQuestionIds=new Set();
+let remoteRoundPreparationFailure=null;
 // السؤال المختار يبقى محجوزاً محلياً إلى أن يصبح جاهزاً للعرض فعلياً. هذا
 // يمنع طلبين متزامنين من اختيار السؤال نفسه، من دون تسجيل سؤال لم يره اللاعب
 // في سجل الحساب إذا فشل تحميل صورته.
 let reservedQuestionIds=new Set();
 const ROUND_QUESTIONS_PER_LEVEL=2;
+const ROUND_QUESTION_REQUEST_TIMEOUT_MS=18000;
 const ROUND_IMAGE_PREPARE_TIMEOUT_MS=Number(window.FatinahImageAssets?.CATEGORY_PREPARE_TIMEOUT_MS)||28000;
+
+function setRemoteRoundPreparationFailure(code,status=0){
+  remoteRoundPreparationFailure={code:String(code||'unknown'),status:Number(status)||0};
+  return false;
+}
+
+function remoteRoundFailureCopy(failure,{freeRound=false}={}){
+  const code=String(failure?.code||'unknown');
+  if(code==='offline') return {
+    icon:'📶',title:'ماكو اتصال بالإنترنت',
+    message:'رجّع الاتصال واضغط «يلا نبدأ!» مرة ثانية. جولتك محفوظة.',
+  };
+  if(code==='timeout') return {
+    icon:'⏳',title:'الخادم تأخر بالرد',
+    message:'ما فقدنا جولتك. انتظر لحظات واضغط «يلا نبدأ!» مرة ثانية.',
+  };
+  if(code==='app_check_failed'||code.startsWith('app_attest_')) return {
+    icon:'🛡️',title:'تعذّر التحقق من سلامة التطبيق',
+    message:'سكر فطنة وافتحه مرة ثانية. إذا استمرت المشكلة حدّث التطبيق من TestFlight.',
+  };
+  if(code==='question_bank_auth_required'||code==='missing_id_token') return {
+    icon:'🔐',title:'انتهت جلسة تسجيل الدخول',
+    message:'سجّل دخولك مرة ثانية ثم ابدأ الجولة.',
+  };
+  if(code==='free_round_categories_locked') return {
+    icon:'🔄',title:'اشتراكك يحتاج مزامنة',
+    message:'الخادم ما طابق اشتراك Apple مع الحساب للحين. ارجع للرئيسية واضغط «إعادة التحقق»، أو استخدم «استعادة المشتريات».',
+  };
+  if(code==='subscription_or_free_round_required') return {
+    icon:'🔒',title:'الجولة تحتاج اشتراكًا فعالًا',
+    message:'استخدم «استعادة المشتريات» إذا سبق واشتركت، أو افتح صفحة الاشتراك.',
+  };
+  if(code==='question_round_busy') return {
+    icon:'⏳',title:'قاعد نجهّز جولتك',
+    message:'انتظر لحظات واضغط «يلا نبدأ!» مرة ثانية.',
+  };
+  if(code==='question_history_unavailable') return {
+    icon:'🗂️',title:'تعذّر فحص سجل أسئلتك',
+    message:'الخادم ما قدر يتأكد من الأسئلة السابقة الآن. جرّب بعد لحظات حتى ما نكرر عليك سؤالًا.',
+  };
+  if(code==='question_bank_unavailable'||code==='invalid_round_payload'
+    ||code==='question_bank_disabled'||code==='invalid_categories') return {
+    icon:'📚',title:'بنك الأسئلة غير جاهز',
+    message:'ما بدأنا الجولة. جرّب بعد لحظات، وإذا استمرت المشكلة بلّغ الدعم.',
+  };
+  if(code==='rate_limited'||failure?.status===429) return {
+    icon:'⏱️',title:'طلبات كثيرة خلال وقت قصير',
+    message:'انتظر دقيقة ثم جرّب مرة ثانية.',
+  };
+  return {
+    icon:'⚠️',title:'تعذّر الاتصال بخادم الجولة',
+    message:freeRound
+      ?'جولتك محفوظة وما راح تضيع. جرّب مرة ثانية بعد لحظات.'
+      :'الخادم ما أكمل الطلب. جرّب مرة ثانية، وإذا استمرت المشكلة بلّغ الدعم.',
+  };
+}
+
+function showRemoteRoundPreparationFailure(startsAsFreeRound){
+  const copy=remoteRoundFailureCopy(remoteRoundPreparationFailure,{freeRound:startsAsFreeRound});
+  showToast(copy.icon,copy.title,copy.message,false);
+}
 function questionsForRoundCategory(category){
   return Object.prototype.hasOwnProperty.call(roundQuestionBank,category)
     ? roundQuestionBank[category]
@@ -4515,35 +4710,43 @@ function validRemoteRoundPayload(payload,categories){
 }
 async function prepareRemoteRoundQuestionBank(uid,{freeRoundGrant=false}={}){
   roundQuestionBank=Object.create(null);
+  remoteRoundPreparationFailure=null;
   if(state.familyRound) return true;
-  if(!CURATED_REMOTE_QUESTION_BANK_ENABLED) return false;
+  if(!CURATED_REMOTE_QUESTION_BANK_ENABLED) return setRemoteRoundPreparationFailure('question_bank_disabled');
   const remoteCategories=state.cats.filter(category=>CURATED_REMOTE_CATEGORIES.has(category));
-  if(remoteCategories.length!==state.cats.length) return false;
+  if(remoteCategories.length!==state.cats.length) return setRemoteRoundPreparationFailure('invalid_categories');
   const idToken=await getCurrentIdToken();
-  if(!idToken) return false;
+  if(!idToken) return setRemoteRoundPreparationFailure('missing_id_token',401);
   const history=loadQuestionHistory();
   const excludeQuestionIds=[...new Set(Object.values(history).flat().filter(id=>typeof id==='string'))].slice(-10000);
   try{
-    const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),10000);
-    let response;
-    try{
-      response=await apiFetch('/api/questions/round',{
-        method:'POST',signal:controller.signal,
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
-        body:JSON.stringify({
-          uid,idToken,categories:remoteCategories,excludeQuestionIds,
-          questionsPerLevel:ROUND_QUESTIONS_PER_LEVEL,
-        }),
-      });
-    }finally{ clearTimeout(timeout); }
+    const response=await apiFetch('/api/questions/round',{
+      method:'POST',timeoutMs:ROUND_QUESTION_REQUEST_TIMEOUT_MS,
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+idToken},
+      body:JSON.stringify({
+        uid,idToken,categories:remoteCategories,excludeQuestionIds,
+        questionsPerLevel:ROUND_QUESTIONS_PER_LEVEL,
+      }),
+    });
     const payload=await response.json().catch(()=>({}));
     if(response.ok&&validRemoteRoundPayload(payload,remoteCategories)){
       roundQuestionBank=Object.assign(Object.create(null),payload.questions);
       return true;
     }
-  }catch(_){ /* لا رجوع إلى بنك أو كاش محلي */ }
-  return false;
+    if(response.ok) return setRemoteRoundPreparationFailure('invalid_round_payload',response.status);
+    return setRemoteRoundPreparationFailure(
+      typeof payload?.code==='string'&&payload.code?payload.code
+        :(response.status===429?'rate_limited':`http_${response.status}`),
+      response.status,
+    );
+  }catch(error){
+    recordNonFatal(error,'question-bank.load');
+    if(!navigator.onLine) return setRemoteRoundPreparationFailure('offline');
+    if(error?.code==='api/timeout'||error?.name==='AbortError'){
+      return setRemoteRoundPreparationFailure('timeout');
+    }
+    return setRemoteRoundPreparationFailure('transport_error');
+  }
 }
 async function prepareSelectedImageCategories({includeRemote=true}={}){
   roundImageQuestionIds=new Set();
@@ -4587,7 +4790,6 @@ async function prepareSelectedImageCategories({includeRemote=true}={}){
   }
 }
 function findRoundStockIssue(){
-  const history=loadQuestionHistory();
   for(const category of state.cats){
     const familyCategory=(familyCats||[]).find(item=>item.name===category);
     if(familyCategory){
@@ -4598,8 +4800,10 @@ function findRoundStockIssue(){
     }
     const questions=questionsForRoundCategory(category);
     for(let difficulty=1;difficulty<=6;difficulty++){
+      // أسئلة roundQuestionBank اختارها الخادم بعد استبعاد سجل الحساب ثم
+      // حجزها ذرياً للجولة الحالية. قد تصل مزامنة الحجز أثناء اللعب؛ لذلك
+      // لا نعيد تصنيف السؤال المحجوز لهذه الجولة على أنه سؤال قديم.
       const hasUnseenQuestion=questions.some(question=>question.d===difficulty
-        &&!questionWasSeen(history,category,question)
         &&(!question.image||roundImageQuestionIds.has(question.id)||window.FatinahImageAssets?.isReady(question)));
       if(!hasUnseenQuestion) return {category,difficulty};
     }
@@ -4632,6 +4836,12 @@ async function startGame(){
   if(_startGamePending||state.roundActive) return false;
   if(!canStartRound()) return;
   _startGamePending=true;
+  const startButton=document.getElementById('start-btn');
+  if(startButton){
+    startButton.disabled=true;
+    startButton.setAttribute('aria-busy','true');
+    startButton.textContent='ثواني ونجهّز الجولة…';
+  }
   try{
     const uid=window._currentUid||storeGet('authUid','');
     const startsAsFreeRound=!_hasActiveSubscription;
@@ -4695,9 +4905,7 @@ async function startGame(){
     if(!(await prepareRemoteRoundQuestionBank(uid,{
       freeRoundGrant:startsAsFreeRound&&!isLocalWebPreview(),
     }))){
-      showToast('⚠️','ما قدرنا ننزّل أسئلة الجولة',startsAsFreeRound
-        ?'جولتك محفوظة وما راح تضيع. تأكد من الإنترنت واضغط «يلا نبدأ!» مرة ثانية.'
-        :'تأكد من الإنترنت وجرّب مرة ثانية. إذا سبق وحمّلنا جولة محفوظة راح نستخدمها تلقائياً.',false);
+      showRemoteRoundPreparationFailure(startsAsFreeRound);
       return false;
     }
     // بعد التنزيل يكون roundQuestionBank هو المصدر؛ نتحقق من حقوق الصور
@@ -4741,7 +4949,13 @@ async function startGame(){
     categoryCount:state.cats.length,freeRound:state.isFreeRound,
   });
     return true;
-  }finally{ _startGamePending=false; }
+  }finally{
+    _startGamePending=false;
+    if(startButton){
+      startButton.removeAttribute('aria-busy');
+      if(!state.roundActive) updatePickTurn();
+    }
+  }
 }
 function buildBoard(){
   const n=state.cats.length;
@@ -4946,28 +5160,22 @@ function hideQuestionScreen(restoreBoardFocus=true){
   questionFocusOrigin=null;
 }
 function updateQuestionAttributionVisibility(revealed){
-  // نسب المصدر جزء من الحل، لذلك لا يظهر بصرياً أو لقارئ الشاشة إلا بعد
-  // دخول السؤال فعلياً في مرحلة الكشف.
-  const canReveal=revealed===true&&state.cur?.phase==='reveal';
+  // كل مصادر الحقيقة وبيانات حقوق الصور مخصصة للتدقيق الداخلي فقط. لا
+  // تظهر داخل شاشة السؤال أو الإجابة للاعب، قبل الكشف أو بعده.
   const attribution=document.getElementById('q-attribution');
   const source=document.getElementById('q-source');
   const rights=document.getElementById('q-image-rights');
-  let sourceVisible=false;
-  let rightsVisible=false;
   if(source){
-    sourceVisible=canReveal&&source.dataset.available==='true';
-    source.hidden=!sourceVisible;
-    source.setAttribute('aria-hidden',sourceVisible?'false':'true');
+    source.hidden=true;
+    source.setAttribute('aria-hidden','true');
   }
   if(rights){
-    rightsVisible=canReveal&&rights.dataset.available==='true';
-    rights.hidden=!rightsVisible;
-    rights.setAttribute('aria-hidden',rightsVisible?'false':'true');
+    rights.hidden=true;
+    rights.setAttribute('aria-hidden','true');
   }
   if(attribution){
-    const visible=sourceVisible||rightsVisible;
-    attribution.hidden=!visible;
-    attribution.setAttribute('aria-hidden',visible?'false':'true');
+    attribution.hidden=true;
+    attribution.setAttribute('aria-hidden','true');
   }
 }
 function setAnswerRevealed(revealed){
@@ -5216,14 +5424,9 @@ async function renderQuestionImage(q,{allowFallback=false}={}){
 function setQuestionAnswer(q){
   setAdaptiveCopy(document.getElementById('ans-text'),q.answer || (q.o && typeof q.a==='number' ? q.o[q.a] : ''));
   const source=document.getElementById('q-source');
-  const sourceUrl=safeHttpsUrl(q?.source?.url);
   source.hidden=true; source.setAttribute('aria-hidden','true');
-  source.dataset.available=sourceUrl?'true':'false';
+  source.dataset.available='false';
   source.removeAttribute('href'); source.textContent='';
-  if(sourceUrl){
-    source.href=sourceUrl;
-    source.textContent='المصدر: '+(q.source.title||'مرجع موثوق');
-  }
   const rights=document.getElementById('q-image-rights');
   const imageRights=q?.image?.rights;
   const sourcePageUrl=safeHttpsUrl(imageRights?.sourcePage);
@@ -5371,12 +5574,12 @@ function pickQuestion(cat,d){
   // شاهده سابقاً؛ عند نفاد المستوى تتعامل الواجهة مع الحالة الصريحة.
   const local=questionsForRoundCategory(cat);
   const sessionIds=state.usedQuestionIds||(state.usedQuestionIds=new Set());
-  const history=loadQuestionHistory();
   const exact=local.filter(q=>q.d===d&&!sessionIds.has(q.id)&&!reservedQuestionIds.has(q.id)&&!state.usedQ.has(q.q)
     &&(!q.image||roundImageQuestionIds.has(q.id)||window.FatinahImageAssets?.isReady(q)));
-  const pool=window.__FATINAH_IMAGE_FLOW_UI_TEST__===true
-    ? exact
-    : exact.filter(q=>!questionWasSeen(history,cat,q));
+  // البنك الموجود في الذاكرة هو حصة هذه الجولة الموثقة من الخادم. منع
+  // التكرار داخل الجولة يتم بـ sessionIds/reservedQuestionIds، أما التاريخ
+  // المحلي فقد يحتوي حجوزات الجولة بسبب مزامنة متأخرة ولا يصح أن يحجبها.
+  const pool=exact;
   if(!pool.length) return questionExhausted(cat,d);
   const q=pool[Math.floor(Math.random()*pool.length)];
   if(q.id) reservedQuestionIds.add(q.id);
@@ -6822,8 +7025,8 @@ void initPushMessaging().catch(error=>recordNonFatal(error,'firebase.messaging')
       void checkSubscriptionAndRoute(uid, {showLoading:false});
     }, 450);
     afterFirstPaint(()=>{
-      _rcReady = initRevenueCat();
-      void _rcReady.then(ready=>{
+      const startupRevenueCat=rcReady();
+      void startupRevenueCat.then(ready=>{
         if(ready && document.getElementById('s-paywall')?.classList.contains('active')){
           return loadPaywallPrices();
         }

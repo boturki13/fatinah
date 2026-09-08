@@ -22,6 +22,7 @@ const expandedCategories = new Set([
   'كرة القدم العالمية', 'معلومات عامة', 'تاريخ وتراث الخليج', 'الفن الخليجي والعربي',
   'ألعاب الفيديو', 'تاريخ وحضارات', 'جسم الإنسان والصحة', 'مطابخ العالم',
   'سيارات ومركبات', 'اللغة العربية والأمثال',
+  'القرآن الكريم',
 ]);
 const baseCategories = Object.fromEntries(Object.entries(document.categories)
   .filter(([category]) => !expandedCategories.has(category)));
@@ -104,12 +105,6 @@ const rejectsVerification = (label, category, question) => {
   const question = sample(category);
   question.truthClaims[0].presentedValue = '__tampered__';
   rejectsVerification('تغيير برهان الزوج الصحيح', category, question);
-}
-{
-  const category = 'ألغاز بوليسية';
-  const question = sample(category);
-  question.logicStatements[0].subject = (question.logicStatements[0].subject + 1) % 4;
-  rejectsVerification('تغيير بنية اللغز بعد حله', category, question);
 }
 {
   const category = 'اكتشف الكلمة';

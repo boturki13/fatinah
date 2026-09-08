@@ -26,12 +26,18 @@ function snapshot() {
   ]));
 }
 
-run(process.execPath, ['scripts/questions/build-next-release-bank.mjs']);
+function buildReleaseBank() {
+  run(process.execPath, ['scripts/questions/build-next-release-bank.mjs']);
+  run(process.execPath, ['scripts/questions/expand-v14-categories.mjs']);
+  run(process.execPath, ['scripts/questions/add-quran-foundation-category.mjs']);
+}
+
+buildReleaseBank();
 run(process.execPath, ['scripts/questions/audit-next-release-bank.mjs']);
 const first = snapshot();
 const firstManifest = JSON.parse(first['server-assets/question-bank/v1/manifest.json'].toString('utf8'));
 
-run(process.execPath, ['scripts/questions/build-next-release-bank.mjs']);
+buildReleaseBank();
 run(process.execPath, ['scripts/questions/audit-next-release-bank.mjs']);
 for (const [relativePath, firstBytes] of Object.entries(first)) {
   const secondBytes = fs.readFileSync(path.join(ROOT, relativePath));

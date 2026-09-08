@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
-  "bankVersion": "v3-curated-expanded-043b20d3614a2969",
-  "bankSha256": "043b20d3614a29696c81f0fe70105fbc6be728e821f9e4cd122948dba2c121a8",
-  "auditedAt": "2026-09-06T01:56:45.677Z",
-  "questionCount": 2970,
+  "bankVersion": "v3-quran-foundation-c18237f168c29c66",
+  "bankSha256": "c18237f168c29c66052d48ad59397e226dd7a13536d84859c343cd22607d7ab9",
+  "auditedAt": "2026-09-05T00:00:00.000Z",
+  "questionCount": 2892,
   "categoryCount": 33,
   "passed": true,
   "releaseReady": true,
   "factualVerification": {
-    "verified": 2970,
-    "required": 2970
+    "verified": 2892,
+    "required": 2892
   },
   "legacyQuestionRecordsChecked": 5029,
   "moduleReports": {
@@ -305,7 +305,8 @@
     "family_content_policy",
     "trusted_source_binding",
     "deterministic_factual_ledger",
-    "tamper_resistant_category_verifiers"
+    "tamper_resistant_category_verifiers",
+    "gulf_plain_language_and_complete_context"
   ],
   "issueCount": 0,
   "byCode": {},

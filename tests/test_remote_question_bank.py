@@ -147,6 +147,20 @@ with tempfile.TemporaryDirectory() as directory:
 
     write_bank(bank_path, ready=True)
     srv._question_bank_cache.update(mtime_ns=None, document=None)
+    retired_document = json.loads(bank_path.read_text(encoding='utf-8'))
+    retired_document['categories']['ألغاز بوليسية'] = []
+    retired_document['sha256'] = hashlib.sha256(json.dumps(
+        retired_document['categories'], ensure_ascii=False,
+        separators=(',', ':')).encode('utf-8')).hexdigest()
+    bank_path.write_text(json.dumps(retired_document, ensure_ascii=False), encoding='utf-8')
+    srv._question_bank_cache.update(mtime_ns=None, document=None)
+    try:
+        srv.load_server_question_bank()
+        raise AssertionError('قُبلت فئة ملغاة داخل بنك الخادم')
+    except ValueError:
+        pass
+    write_bank(bank_path, ready=True)
+    srv._question_bank_cache.update(mtime_ns=None, document=None)
     catalog = srv.server_question_catalog()
     assert catalog['schemaVersion'] == 1
     assert catalog['questionSchemaVersion'] == 1
@@ -516,8 +530,8 @@ srv._question_bank_cache.update(mtime_ns=None, document=None)
 reset_image_bank_cache()
 release_bank = srv.load_server_question_bank()
 release_image_bank = srv.load_server_image_question_bank()
-assert release_bank['questionCount'] == 2970
-assert release_bank['targetBankSize'] == 2970
+assert release_bank['questionCount'] == 2892
+assert release_bank['targetBankSize'] == 2892
 assert release_bank['ready'] is True
 assert release_bank['releaseReady'] is True
 assert release_bank['factuallyVerifiedCount'] == release_bank['questionCount']
@@ -525,13 +539,16 @@ assert release_bank['releaseBlockers'] == []
 assert len(release_bank['categories']) == 33
 assert 'رتّبها صح' not in release_bank['categories']
 assert 'رياضيات وحساب' not in release_bank['categories']
+assert 'ألغاز بوليسية' not in release_bank['categories']
 assert {'الكويت', 'دول الخليج', 'من أنا؟', 'منظمات دولية'} <= set(release_bank['categories'])
-assert sum(len(rows) for rows in release_bank['categories'].values()) == 2970
-assert all(len(rows) == 90 for rows in release_bank['categories'].values())
+assert sum(len(rows) for rows in release_bank['categories'].values()) == 2892
+assert all(len(rows) == (12 if name == 'القرآن الكريم' else 90)
+           for name, rows in release_bank['categories'].items())
 assert all({band: sum(question['band'] == band for question in rows)
             for band in ('easy', 'medium', 'hard')} ==
-           {'easy': 30, 'medium': 30, 'hard': 30}
-           for rows in release_bank['categories'].values())
+           ({'easy': 4, 'medium': 4, 'hard': 4} if name == 'القرآن الكريم'
+            else {'easy': 30, 'medium': 30, 'hard': 30})
+           for name, rows in release_bank['categories'].items())
 assert all({question['d'] for question in rows} == set(range(1, 7))
            for rows in release_bank['categories'].values())
 assert all(len(question['o']) == 4 and question['o'][question['a']] == question['answer']
@@ -556,7 +573,7 @@ assert all(len(question['o']) == 4 and
            for question in rows)
 release_catalog = srv.server_question_catalog()
 assert release_catalog['releaseReady'] is True
-assert release_catalog['questionCount'] == 3270
+assert release_catalog['questionCount'] == 3192
 assert len(release_catalog['categories']) == 40
 catalog_by_name = {item['name']: item for item in release_catalog['categories']}
 assert set(release_image_bank['categories']) <= set(catalog_by_name)
@@ -628,7 +645,8 @@ projected_bytes = len(json.dumps(
     separators=(',', ':')).encode('utf-8'))
 assert projected_bytes < 512 * 1024
 client_source = (ROOT / 'www/app.js').read_text(encoding='utf-8')
-assert "'unsupported_v2_route'" not in client_source
+assert "payload?.code==='unsupported_v2_route'" in client_source
+assert "setRemoteQuestionCatalogFailure('server_contract_outdated'" in client_source
 assert 'لا رجوع إلى بنك أو كاش محلي' in client_source
 assert "img-src 'self' data: blob:;" in srv.WEB_CONTENT_SECURITY_POLICY
 

@@ -6,6 +6,7 @@ import process from 'node:process';
 import {
   createTestEnvironment,
   parseDurationSetting,
+  repositoryRoot,
   runSuite,
 } from '../scripts/run-server-tests.mjs';
 
@@ -38,6 +39,7 @@ assert.deepEqual(sanitizedEnvironment, {
   SAFE_TEST_FLAG: 'preserved',
   FATINAH_ENVIRONMENT: 'test',
   REPLIT_DEPLOYMENT: '0',
+  PYTHONPATH: repositoryRoot,
 });
 assert.equal(parseDurationSetting(undefined, 123, 'TEST_TIMEOUT'), 123);
 assert.equal(parseDurationSetting('456', 123, 'TEST_TIMEOUT'), 456);

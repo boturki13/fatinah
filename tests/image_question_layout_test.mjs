@@ -150,6 +150,13 @@ try{
       const sr=sheet.getBoundingClientRect();
       const ar=document.getElementById('answer-box').getBoundingClientRect();
       const cr=document.getElementById('q-controls').getBoundingClientRect();
+      const attribution=document.getElementById('q-attribution');
+      const rights=document.getElementById('q-image-rights');
+      const ansText=document.getElementById('ans-text');
+      const childRect=element=>{const rect=element.getBoundingClientRect(); return {
+        top:rect.top,bottom:rect.bottom,width:rect.width,height:rect.height,
+        display:getComputedStyle(element).display,
+      };};
       return {
         answerFocused:document.activeElement===document.getElementById('answer-box'),
         answerVisible:ar.top>=sr.top-1&&ar.bottom<=sr.bottom+1,
@@ -158,6 +165,8 @@ try{
         sheet:{top:sr.top,bottom:sr.bottom,height:sr.height,clientHeight:sheet.clientHeight,scrollHeight:sheet.scrollHeight},
         answer:{top:ar.top,bottom:ar.bottom,height:ar.height},
         controls:{top:cr.top,bottom:cr.bottom,height:cr.height},
+        answerChildren:{text:childRect(ansText),attribution:childRect(attribution),rights:childRect(rights)},
+        gridRows:getComputedStyle(document.querySelector('.q-content')).gridTemplateRows,
       };
     });
     assert.equal(revealLayout.answerFocused,true,`${name}: ينتقل التركيز للإجابة الجديدة.`);
@@ -195,18 +204,19 @@ try{
         overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
       };
     });
-    assert.equal(rights.visible,true,`${name}: حقوق الصورة تظهر مع الحل.`);
-    assert.equal(rights.sourceVisible,true,`${name}: مصدر السؤال يظهر مع الحل.`);
-    assert.equal(rights.ariaHidden,'false',`${name}: حقوق الصورة متاحة لقارئ الشاشة بعد الكشف.`);
+    assert.equal(rights.visible,false,`${name}: حقوق الصورة لا تظهر داخل شاشة الحل.`);
+    assert.equal(rights.sourceVisible,false,`${name}: مصدر الإجابة يبقى داخلياً ولا يظهر للاعب.`);
+    assert.equal(rights.ariaHidden,'true',`${name}: حقوق الصورة مخفية عن قارئ الشاشة بعد الكشف.`);
     assert.match(rights.credit,/NASA Images/);
     assert.match(rights.credit,/NASA GSFC/);
     assert.doesNotMatch(rights.credit,/Wikimedia Commons/,'صورة NASA لا تُنسب إلى Commons.');
-    assert.match(rights.questionSourceText,/المصدر: بيانات العنصر ومصدر الصورة/);
-    assert.match(rights.questionSourceHref,/^https:\/\/science\.nasa\.gov\/earth\//);
+    assert.equal(rights.questionSourceText,'');
+    assert.equal(rights.questionSourceHref,'');
     assert.match(rights.sourceHref,/^https:\/\/images\.nasa\.gov\/details\//);
     assert.match(rights.licenseHref,/^https:\/\/www\.nasa\.gov\//);
     assert.match(rights.modifications,/AVIF وWebP/);
-    assert.ok(rights.sourceTapHeight>=44&&rights.licenseTapHeight>=44,`${name}: روابط النسب بمناطق لمس 44 نقطة على الأقل.`);
+    assert.equal(rights.sourceTapHeight,0,`${name}: رابط مصدر الصورة لا يشغل مساحة في الحل.`);
+    assert.equal(rights.licenseTapHeight,0,`${name}: رابط رخصة الصورة لا يشغل مساحة في الحل.`);
     assert.ok(rights.overflow<=1,`${name}: نسب الصورة لا تسبب تجاوزاً أفقياً.`);
     await page.close();
   }
@@ -296,17 +306,19 @@ try{
   });
   assert.equal(afterBothTeams.phase,'reveal');
   assert.equal(afterBothTeams.answerVisible,true);
-  assert.equal(afterBothTeams.sourceVisible,true,'المصدر يظهر بعد إجابة الفريقين فقط.');
-  assert.equal(afterBothTeams.rightsVisible,true,'حقوق الصورة تظهر بعد إجابة الفريقين فقط.');
-  assert.equal(afterBothTeams.sourceAria,'false');
-  assert.equal(afterBothTeams.rightsAria,'false');
-  assert.match(afterBothTeams.sourceHref,/^https:\/\/science\.nasa\.gov\/earth\//);
+  assert.equal(afterBothTeams.sourceVisible,false,'مصدر الإجابة لا يظهر للاعب حتى بعد الكشف.');
+  assert.equal(afterBothTeams.rightsVisible,false,'حقوق الصورة لا تظهر داخل إجابة اللاعب.');
+  assert.equal(afterBothTeams.sourceAria,'true');
+  assert.equal(afterBothTeams.rightsAria,'true');
+  assert.equal(afterBothTeams.sourceHref,'');
   assert.match(afterBothTeams.sourcePageHref,/^https:\/\/images\.nasa\.gov\/details\//);
   assert.match(afterBothTeams.licenseHref,/^https:\/\/www\.nasa\.gov\//);
   assert.match(afterBothTeams.credit,/NASA GSFC.*NASA Images/);
   assert.match(afterBothTeams.modifications,/معالجة الصورة:.*AVIF وWebP/);
-  assert.ok(afterBothTeams.sourceTapHeight>=44&&afterBothTeams.licenseTapHeight>=44,
-    `روابط النسب لها مناطق لمس مناسبة على iPhone. ${JSON.stringify(afterBothTeams)}`);
+  assert.equal(afterBothTeams.sourceTapHeight,0,
+    `رابط مصدر الصورة لا يشغل مساحة على iPhone. ${JSON.stringify(afterBothTeams)}`);
+  assert.equal(afterBothTeams.licenseTapHeight,0,
+    `رابط رخصة الصورة لا يشغل مساحة على iPhone. ${JSON.stringify(afterBothTeams)}`);
   assert.ok(afterBothTeams.overflow<=1,'نسب الصورة لا تسبب تجاوزاً أفقياً على iPhone.');
   await attributionPage.close();
 

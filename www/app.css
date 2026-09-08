@@ -385,9 +385,11 @@ input,select,textarea{min-height:44px;}
   .ans-text{font-size:clamp(19px,2.8vw,27px);}
   .ans-text.text-long{font-size:clamp(16px,2.4vw,23px);}
   .ans-text.text-very-long{font-size:clamp(14px,2vw,19px);}
-  .q-attribution{display:grid; grid-template-columns:minmax(160px,.45fr) minmax(0,1.55fr); align-items:center; gap:6px 10px; margin-top:5px; padding-top:4px;}
+  /* مصدر الإجابة مخفي عن اللاعب؛ امنح حقوق الصورة العرض الكامل حتى لا
+     تُحشر في العمود الأول الضيق وتتمدد عمودياً على iPhone الأفقي. */
+  .q-attribution{display:block; margin-top:5px; padding-top:4px;}
   .q-source{margin:0; padding:2px 6px; font-size:10.5px; line-height:1.25;}
-  .q-image-rights{display:grid; grid-template-columns:minmax(0,.75fr) minmax(260px,1.25fr); grid-template-areas:"credit links" "modifications modifications"; align-items:center; gap:0 6px; margin:0; font-size:10.5px; line-height:1.25;}
+  .q-image-rights{display:grid; width:100%; grid-template-columns:minmax(0,.75fr) minmax(260px,1.25fr); grid-template-areas:"credit links" "modifications modifications"; align-items:center; gap:0 6px; margin:0; font-size:10.5px; line-height:1.25;}
   .q-image-credit{grid-area:credit;}
   .q-image-rights-links{grid-area:links; flex-wrap:nowrap; gap:2px; margin:0;}
   .q-image-rights-links a{padding:2px 5px; font-size:10.5px; line-height:1.2;}

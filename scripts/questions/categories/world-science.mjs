@@ -867,178 +867,6 @@ function buildFootball(legacyRecords) {
   return finalizeCategory('كرة القدم', [...easy, ...medium, ...hard]);
 }
 
-const suspectNames = ['أحمد','بدر','جاسم','خالد','راشد','سالم','طلال','فهد','ناصر','وليد','يوسف','زياد'];
-const permutations = [];
-function buildPermutations(remaining, chosen = []) {
-  if (!remaining.length) permutations.push(chosen);
-  else remaining.forEach((value, index) => buildPermutations(
-    [...remaining.slice(0, index), ...remaining.slice(index + 1)], [...chosen, value],
-  ));
-}
-buildPermutations([0, 1, 2, 3]);
-
-function statementTruth(statement, culprit) {
-  if (statement.kind === 'guilty') return statement.subject === culprit;
-  if (statement.kind === 'innocent') return statement.subject !== culprit;
-  if (statement.kind === 'oneOf') return statement.first === culprit || statement.second === culprit;
-  return statement.first !== culprit && statement.second !== culprit;
-}
-
-function logicSolutions(statements, requiredTrueStatements) {
-  return [0, 1, 2, 3].filter(culprit => statements.reduce((count, statement) =>
-    count + Number(statementTruth(statement, culprit)), 0) === requiredTrueStatements);
-}
-
-function canonicalPuzzle(statements, requiredTrueStatements) {
-  let best = null;
-  for (const mapping of permutations) {
-    const rows = statements.map((statement, speaker) => {
-      if (statement.kind === 'guilty' || statement.kind === 'innocent') {
-        return { speaker: mapping[speaker], text: `${statement.kind}:${mapping[statement.subject]}` };
-      }
-      let first = mapping[statement.first];
-      let second = mapping[statement.second];
-      if (first > second) [first, second] = [second, first];
-      return { speaker: mapping[speaker], text: `${statement.kind}:${first},${second}` };
-    }).sort((left, right) => left.speaker - right.speaker);
-    const signature = `${requiredTrueStatements}|${rows.map(row => row.text).join(';')}`;
-    if (best === null || signature < best) best = signature;
-  }
-  return best;
-}
-
-function statementText(statement, suspects) {
-  if (statement.kind === 'guilty') return `${suspects[statement.subject]} هو السارق`;
-  if (statement.kind === 'innocent') return `${suspects[statement.subject]} بريء`;
-  if (statement.kind === 'oneOf') return `السارق إما ${suspects[statement.first]} وإما ${suspects[statement.second]}`;
-  return `السارق ليس ${suspects[statement.first]} ولا ${suspects[statement.second]}`;
-}
-
-function logicKindCounts(statements) {
-  return Object.fromEntries(['guilty', 'innocent', 'oneOf', 'neither']
-    .map(kind => [kind, statements.filter(statement => statement.kind === kind).length]));
-}
-
-function balancedLogicProfile(puzzle, band) {
-  const counts = logicKindCounts(puzzle.statements);
-  if (band === 'easy') return counts.guilty === 2 && counts.innocent === 2;
-  if (band === 'medium') return Object.values(counts).every(count => count === 1);
-  return counts.oneOf === 2 && counts.neither === 2;
-}
-
-function selectBalancedLogicPuzzles(rows, band) {
-  const requirements = band === 'easy' ? [1, 3] : [1, 2, 3];
-  const solutionPatterns = band === 'easy'
-    ? {
-      1: [0,1,2,3,0,1,2,3,0,1,2,3,0,1,3],
-      3: [0,1,2,3,0,1,2,3,0,1,2,3,1,2,2],
-    }
-    : {
-      1: [0,1,2,3,0,1,2,3,0,1],
-      2: [2,3,0,1,2,3,0,1,2,3],
-      3: [0,3,1,2,0,3,1,2,0,3],
-    };
-  const selectedByRequirement = new Map();
-  for (const required of requirements) {
-    const eligible = rows.filter(puzzle =>
-      puzzle.requiredTrueStatements === required && balancedLogicProfile(puzzle, band));
-    const selected = [];
-    for (const solution of solutionPatterns[required]) {
-      const candidate = eligible.filter(puzzle => puzzle.solution === solution && !selected.includes(puzzle))
-        .sort((left, right) => sha256(`${band}|${required}|${left.canonical}`)
-          .localeCompare(sha256(`${band}|${required}|${right.canonical}`)))[0];
-      if (!candidate) throw new Error(`ألغاز ${band}: لا يوجد مرشح متوازن للشرط ${required} والحل ${solution}`);
-      selected.push(candidate);
-    }
-    selectedByRequirement.set(required, selected);
-  }
-  const interleaved = [];
-  const longest = Math.max(...selectedByRequirement.values().map(group => group.length));
-  for (let index = 0; index < longest; index += 1) {
-    for (const required of requirements) {
-      const puzzle = selectedByRequirement.get(required)[index];
-      if (puzzle) interleaved.push(puzzle);
-    }
-  }
-  if (interleaved.length !== 30 || new Set(interleaved.map(puzzle => puzzle.canonical)).size !== 30) {
-    throw new Error(`ألغاز ${band}: فشل اختيار 30 بنية متوازنة وفريدة`);
-  }
-  return interleaved;
-}
-
-function puzzleCandidates() {
-  const claims = [];
-  for (let subject = 0; subject < 4; subject += 1) claims.push({ kind: 'guilty', subject }, { kind: 'innocent', subject });
-  for (let first = 0; first < 4; first += 1) for (let second = first + 1; second < 4; second += 1) {
-    claims.push({ kind: 'oneOf', first, second }, { kind: 'neither', first, second });
-  }
-  const buckets = { easy: new Map(), medium: new Map(), hard: new Map() };
-  for (const first of claims) for (const second of claims) for (const third of claims) for (const fourth of claims) {
-    const statements = [first, second, third, fourth];
-    if (new Set(statements.map(item => JSON.stringify(item))).size !== 4) continue;
-    const compoundCount = statements.filter(item => item.kind === 'oneOf' || item.kind === 'neither').length;
-    const band = compoundCount === 0 ? 'easy' : compoundCount === 2 ? 'medium' : compoundCount === 4 ? 'hard' : null;
-    if (!band) continue;
-    for (const requiredTrueStatements of [1, 2, 3]) {
-      const solutions = logicSolutions(statements, requiredTrueStatements);
-      if (solutions.length !== 1) continue;
-      const canonical = canonicalPuzzle(statements, requiredTrueStatements);
-      if (!buckets[band].has(canonical)) {
-        buckets[band].set(canonical, { statements, requiredTrueStatements, solution: solutions[0], canonical });
-      }
-    }
-  }
-  return Object.fromEntries(Object.entries(buckets)
-    .map(([band, rows]) => [band, selectBalancedLogicPuzzles([...rows.values()], band)]));
-}
-
-function buildDetectivePuzzles() {
-  const candidates = puzzleCandidates();
-  for (const band of ['easy', 'medium', 'hard']) {
-    if (candidates[band].length !== 30) throw new Error(`ألغاز ${band} غير كافية: ${candidates[band].length}`);
-  }
-  const selected = [...candidates.easy, ...candidates.medium, ...candidates.hard];
-  const questions = selected.map((puzzle, index) => {
-    const suspects = Array.from({ length: 4 }, (_, offset) => suspectNames[(index + offset * 3) % suspectNames.length]);
-    const statements = puzzle.statements.map((statement, speaker) => ({ speaker, ...statement }));
-    const answer = suspects[puzzle.solution];
-    const questionText = detectiveQuestionText(suspects, statements, puzzle.requiredTrueStatements);
-    const kindCounts = logicKindCounts(statements);
-    const logicComplexity = {
-      compoundStatementCount: kindCounts.oneOf + kindCounts.neither,
-      statementKindCounts: kindCounts,
-    };
-    return {
-      q: questionText,
-      answer, answerPool: suspects,
-      factKey: `logic:${sha256(puzzle.canonical).slice(0, 20)}`,
-      sourceRecordId: `logic-${sha256(puzzle.canonical).slice(0, 20)}`,
-      templateId: 'detective-unique-solution-v3',
-      rank: 90 - index,
-      source: source('المنطق القضوي الكلاسيكي', 'https://plato.stanford.edu/entries/logic-classical/', 'Stanford Encyclopedia of Philosophy', 'Reference use'),
-      verification: {
-        profile: 'logic_unique_solution_v1',
-        claim: { suspects, statements, requiredTrueStatements: puzzle.requiredTrueStatements, solution: puzzle.solution },
-      },
-      metadata: {
-        answerSemanticType: 'person-name', optionSemanticGroup: 'logic-suspect',
-        logicSuspects: suspects, logicStatements: statements,
-        requiredTrueStatements: puzzle.requiredTrueStatements,
-        canonicalLogicStructure: puzzle.canonical,
-        logicComplexity,
-      },
-    };
-  });
-  return finalizeCategory('ألغاز بوليسية', questions);
-}
-
-function detectiveQuestionText(suspects, statements, requiredTrueStatements) {
-  const spoken = statements.map(statement => `${suspects[statement.speaker]}: «${statementText(statement, suspects)}»`).join('؛ ');
-  const truthText = requiredTrueStatements === 1 ? 'قول واحد فقط صحيح'
-    : requiredTrueStatements === 2 ? 'قولان فقط صحيحان' : 'ثلاثة أقوال فقط صحيحة';
-  return `قال أربعة مشتبهين في سرقة: ${spoken}. ${truthText}؛ من السارق؟`;
-}
-
 export function buildWorldScienceCategories({ legacyRecords = [], oldQuestions = new Set() } = {}) {
   void oldQuestions;
   const physicsChemistry = buildPhysicsChemistry(legacyRecords);
@@ -1054,7 +882,6 @@ export function buildWorldScienceCategories({ legacyRecords = [], oldQuestions =
     'مدن وعواصم': buildCities(legacyRecords),
     'عملات العالم': buildCurrencies(legacyRecords),
     'فيزياء وكيمياء': physicsChemistry.questions,
-    'ألغاز بوليسية': buildDetectivePuzzles(),
   };
 }
 
@@ -1238,45 +1065,7 @@ export function verifyWorldScienceQuestion(question, record) {
   return null;
 }
 
-function verifyDetectiveQuestion(question) {
-  const claim = question.verification?.claim;
-  const suspects = claim?.suspects;
-  const statements = claim?.statements;
-  if (question.templateId !== 'detective-unique-solution-v3'
-      || question.verification?.profile !== 'logic_unique_solution_v1'
-      || !Array.isArray(suspects) || suspects.length !== 4 || new Set(suspects).size !== 4
-      || !Array.isArray(statements) || statements.length !== 4
-      || ![1, 2, 3].includes(claim.requiredTrueStatements)
-      || statements.some((statement, speaker) => statement.speaker !== speaker)) return false;
-  const solutions = logicSolutions(statements, claim.requiredTrueStatements);
-  if (solutions.length !== 1 || solutions[0] !== claim.solution) return false;
-  const expectedQuestion = detectiveQuestionText(suspects, statements, claim.requiredTrueStatements);
-  const canonical = canonicalPuzzle(statements, claim.requiredTrueStatements);
-  const digest = sha256(canonical).slice(0, 20);
-  const kindCounts = logicKindCounts(statements);
-  const compoundStatementCount = kindCounts.oneOf + kindCounts.neither;
-  const expectedBand = compoundStatementCount === 0 ? 'easy'
-    : compoundStatementCount === 2 ? 'medium' : compoundStatementCount === 4 ? 'hard' : null;
-  return question.q === expectedQuestion
-    && question.id === `gq-${sha256(`next-v2|ألغاز بوليسية|logic:${digest}|${expectedQuestion}`).slice(0, 20)}`
-    && question.answer === suspects[solutions[0]]
-    && question.sourceRecordId === `logic-${digest}`
-    && question.factKey === `logic:${digest}`
-    && sameValue(question.logicSuspects, suspects)
-    && sameValue(question.logicStatements, statements)
-    && question.requiredTrueStatements === claim.requiredTrueStatements
-    && question.canonicalLogicStructure === canonical
-    && question.band === expectedBand
-    && sameValue(question.logicComplexity, { compoundStatementCount, statementKindCounts: kindCounts })
-    && sameValue(question.source, source('المنطق القضوي الكلاسيكي',
-      'https://plato.stanford.edu/entries/logic-classical/',
-      'Stanford Encyclopedia of Philosophy', 'Reference use'));
-}
-
 function resolveWorldQuestionRecord(question) {
-  if (question.verification?.profile === 'logic_unique_solution_v1') {
-    return verifyDetectiveQuestion(question);
-  }
   const artifact = question.verification?.artifact;
   if (!Object.values(ARTIFACTS).includes(artifact)) return false;
   const collection = String(question.verification?.collection || 'records').split('.')
@@ -1308,7 +1097,7 @@ function verifyNatureSelection(question, position) {
 }
 
 export function verifyWorldScienceCategories(categories) {
-  const expected = new Set(['اختر العبارة الصحيحة','كرة القدم','علوم وطبيعة','مدن وعواصم','عملات العالم','فيزياء وكيمياء','ألغاز بوليسية']);
+  const expected = new Set(['اختر العبارة الصحيحة','كرة القدم','علوم وطبيعة','مدن وعواصم','عملات العالم','فيزياء وكيمياء']);
   if (Object.keys(categories).length !== expected.size || Object.keys(categories).some(category => !expected.has(category))) return false;
   const ids = new Set(); const questions = new Set(); const facts = new Set();
   const categoriesValid = Object.entries(categories).every(([category, rows]) => {
@@ -1328,7 +1117,6 @@ export function verifyWorldScienceCategories(categories) {
           || (category === 'علوم وطبيعة' && !verifyNatureSelection(question, position))
           || (category === 'اختر العبارة الصحيحة' && !question.q.startsWith('أي العبارات التالية صحيحة؟'))
           || (category === 'كرة القدم' && /(?:تالوكا|كوبه)/u.test(JSON.stringify({ q: question.q, o: question.o, answer: question.answer })))
-          || (category === 'ألغاز بوليسية' && question.rank !== 90 - position)
           || blocked.test(JSON.stringify({ q: question.q, o: question.o, answer: question.answer }))) return false;
       try { for (let left = 0; left < 4; left += 1) for (let right = left + 1; right < 4; right += 1) {
         if (normalizeArabic(question.o[left]) === normalizeArabic(question.o[right])) return false;
@@ -1355,22 +1143,6 @@ export function verifyWorldScienceCategories(categories) {
       || new Set(trueFalseAnimalTargets).size !== 30
       || trueFalseAnimalTargets.some(id => natureTargetIds.has(id))) return false;
 
-  const logic = categories['ألغاز بوليسية'];
-  const expectedKinds = {
-    easy: { guilty: 60, innocent: 60, oneOf: 0, neither: 0 },
-    medium: { guilty: 30, innocent: 30, oneOf: 30, neither: 30 },
-    hard: { guilty: 0, innocent: 0, oneOf: 60, neither: 60 },
-  };
-  for (const band of ['easy', 'medium', 'hard']) {
-    const rows = logic.filter(question => question.band === band);
-    const kindCounts = logicKindCounts(rows.flatMap(question => question.logicStatements));
-    if (!sameValue(kindCounts, expectedKinds[band])) return false;
-    const requiredCounts = Object.fromEntries([1, 2, 3]
-      .map(required => [required, rows.filter(question => question.requiredTrueStatements === required).length]));
-    if (band === 'easy') {
-      if (requiredCounts[1] !== 15 || requiredCounts[2] !== 0 || requiredCounts[3] !== 15) return false;
-    } else if (requiredCounts[1] !== 10 || requiredCounts[2] !== 10 || requiredCounts[3] !== 10) return false;
-  }
   return true;
 }
 
