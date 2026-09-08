@@ -90,6 +90,7 @@ jobs:
       - name: Refresh and verify generated iOS web bundle
         run: |
           npx cap copy ios
+          node scripts/prune-ios-public.mjs
           node scripts/validate-ios-public.mjs
 
       - name: Run release metadata and static tests

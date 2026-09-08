@@ -51,6 +51,47 @@ try{
     assert.ok(readyLayout.rect.left>=0&&readyLayout.rect.right<=readyLayout.viewport.width,`${name}: الزر لازم ما يتجاوز عرض الشاشة.`);
     assert.ok(readyLayout.rect.bottom>readyLayout.viewport.height/2,`${name}: الزر لازم يظهر بأسفل الشاشة.`);
 
+    const pendingFeedback=await page.evaluate(async()=>{
+      window._currentUid='category-start-cta-user';
+      storeSet('authUid',window._currentUid);
+      storeSet('authProvider','local');
+      _hasActiveSubscription=true;
+      _subscriptionResolved=true;
+      state.roundActive=false;
+      const originalPrepare=prepareRemoteRoundQuestionBank;
+      let releasePrepare;
+      try{
+        prepareRemoteRoundQuestionBank=()=>new Promise(resolve=>{ releasePrepare=resolve; });
+        const startPromise=startGame();
+        await new Promise(resolve=>setTimeout(resolve,0));
+        const button=document.getElementById('start-btn');
+        const busy={
+          disabled:button.disabled,
+          ariaBusy:button.getAttribute('aria-busy'),
+          text:button.textContent,
+        };
+        releasePrepare(false);
+        const result=await startPromise;
+        return {
+          busy,result,
+          restored:{
+            disabled:button.disabled,
+            ariaBusy:button.getAttribute('aria-busy'),
+            text:button.textContent,
+          },
+        };
+      }finally{
+        prepareRemoteRoundQuestionBank=originalPrepare;
+      }
+    });
+    assert.deepEqual(pendingFeedback.busy,{
+      disabled:true,ariaBusy:'true',text:'ثواني ونجهّز الجولة…',
+    },`${name}: الضغط يعطي حالة تحميل واضحة ويمنع الضغط المكرر.`);
+    assert.equal(pendingFeedback.result,false,`${name}: فشل تنزيل الجولة يرجع نتيجة واضحة.`);
+    assert.deepEqual(pendingFeedback.restored,{
+      disabled:false,ariaBusy:null,text:'يلا نبدأ — فئتين',
+    },`${name}: يرجع الزر قابلاً للمحاولة بعد تعذر التنزيل.`);
+
     const removed=await page.evaluate(()=>{
       state.cats.pop(); state.pickedByTeam=[1,0]; updatePickTurn();
       const button=document.getElementById('start-btn');

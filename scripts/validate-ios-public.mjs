@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { excludedQuestionDataFiles } from './ios-public-contract.mjs';
 
 const root = process.cwd();
 const webDirectory = path.join(root, 'www');
@@ -27,6 +28,7 @@ async function filesBelow(directory, relative = '') {
 
 const iosFiles = await filesBelow(iosPublicDirectory);
 const duplicateFiles = iosFiles.filter(file => duplicateSuffix.test(file));
+const excludedFilesStillBundled = excludedQuestionDataFiles.filter(file => iosFiles.includes(file));
 
 if (duplicateFiles.length > 0) {
   throw new Error(
@@ -34,7 +36,14 @@ if (duplicateFiles.length > 0) {
   );
 }
 
-const webFiles = await filesBelow(webDirectory);
+if (excludedFilesStillBundled.length > 0) {
+  throw new Error(
+    `Embedded question data found in the iOS bundle:\n${excludedFilesStillBundled.join('\n')}`,
+  );
+}
+
+const excludedSet = new Set(excludedQuestionDataFiles);
+const webFiles = (await filesBelow(webDirectory)).filter(file => !excludedSet.has(file));
 const mismatches = [];
 
 for (const file of webFiles) {

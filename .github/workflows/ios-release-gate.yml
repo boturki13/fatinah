@@ -114,6 +114,7 @@ jobs:
       - name: Refresh and verify generated iOS web bundle
         run: |
           npx cap copy ios
+          node scripts/prune-ios-public.mjs
           node scripts/validate-ios-public.mjs
 
       - name: Fetch and verify production image assets

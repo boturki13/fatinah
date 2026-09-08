@@ -33,8 +33,9 @@ function normalizedChoice(value) {
 }
 
 function verifyQuestionStructure(question) {
+  const maximumQuestionLength = 220;
   if (!question || !/^gq-[a-f0-9]{20}$/u.test(String(question.id || ''))
-      || typeof question.q !== 'string' || question.q.trim().length < 12 || question.q.trim().length > 220
+      || typeof question.q !== 'string' || question.q.trim().length < 12 || question.q.trim().length > maximumQuestionLength
       || typeof question.answer !== 'string' || !question.answer.trim() || question.answer.trim().length > 140
       || typeof question.sourceRecordId !== 'string' || !question.sourceRecordId
       || typeof question.factKey !== 'string' || !question.factKey
@@ -70,7 +71,7 @@ function trustedHosts() {
     ...(policy.generalTrustedHosts || []),
     'unicode.org', 'www.unicode.org', 'iupac.org', 'www.iupac.org',
     'bipm.org', 'www.bipm.org',
-    'plato.stanford.edu', 'api.fifa.com', 'www.wikidata.org', 'query.wikidata.org',
+    'api.fifa.com', 'www.wikidata.org', 'query.wikidata.org',
     'ar.wikipedia.org', 'www.wikipedia.org', 'ar.wikiquote.org',
   ]);
 }
@@ -195,95 +196,6 @@ function verifyKnownTemplate(question, record) {
   return null;
 }
 
-function verifyLogic(question) {
-  const claim = question.verification?.claim;
-  const suspects = claim?.suspects;
-  const statements = claim?.statements;
-  if (question.templateId !== 'detective-unique-solution-v3'
-      || !Array.isArray(suspects) || suspects.length !== 4 || new Set(suspects).size !== 4
-      || !Array.isArray(statements) || statements.length !== 4
-      || ![1, 2, 3].includes(claim.requiredTrueStatements)) return false;
-  const validIndex = value => Number.isInteger(value) && value >= 0 && value < 4;
-  if (statements.some((statement, speaker) => {
-    if (statement?.speaker !== speaker || !['guilty', 'innocent', 'oneOf', 'neither'].includes(statement?.kind)) return true;
-    if (statement.kind === 'guilty' || statement.kind === 'innocent') return !validIndex(statement.subject);
-    return !validIndex(statement.first) || !validIndex(statement.second) || statement.first >= statement.second;
-  })) return false;
-  const evaluatesTrue = (statement, culprit) => {
-    // v2 single-literal puzzles are retained for backwards compatibility with
-    // archived ledgers; v3 adds explicit compound claim kinds.
-    if (!statement.kind) return statement.claimsGuilty
-      ? statement.subject === culprit : statement.subject !== culprit;
-    if (statement.kind === 'guilty') return statement.subject === culprit;
-    if (statement.kind === 'innocent') return statement.subject !== culprit;
-    if (statement.kind === 'oneOf') return statement.first === culprit || statement.second === culprit;
-    if (statement.kind === 'neither') return statement.first !== culprit && statement.second !== culprit;
-    return false;
-  };
-  const solutions = [0, 1, 2, 3].filter(culprit => statements.reduce((count, statement) =>
-    count + Number(evaluatesTrue(statement, culprit)), 0) === claim.requiredTrueStatements);
-  if (solutions.length !== 1 || solutions[0] !== claim.solution) return false;
-
-  const statementText = statement => {
-    if (statement.kind === 'guilty') return `${suspects[statement.subject]} هو السارق`;
-    if (statement.kind === 'innocent') return `${suspects[statement.subject]} بريء`;
-    if (statement.kind === 'oneOf') return `السارق إما ${suspects[statement.first]} وإما ${suspects[statement.second]}`;
-    return `السارق ليس ${suspects[statement.first]} ولا ${suspects[statement.second]}`;
-  };
-  const spoken = statements.map(statement => `${suspects[statement.speaker]}: «${statementText(statement)}»`).join('؛ ');
-  const truthText = claim.requiredTrueStatements === 1 ? 'قول واحد فقط صحيح'
-    : claim.requiredTrueStatements === 2 ? 'قولان فقط صحيحان' : 'ثلاثة أقوال فقط صحيحة';
-  const expectedQuestion = `قال أربعة مشتبهين في سرقة: ${spoken}. ${truthText}؛ من السارق؟`;
-
-  const mappings = [];
-  const buildMappings = (remaining, chosen = []) => {
-    if (!remaining.length) mappings.push(chosen);
-    else remaining.forEach((value, index) => buildMappings(
-      [...remaining.slice(0, index), ...remaining.slice(index + 1)], [...chosen, value],
-    ));
-  };
-  buildMappings([0, 1, 2, 3]);
-  let canonicalPuzzle = null;
-  for (const mapping of mappings) {
-    const rows = statements.map((statement, speaker) => {
-      if (statement.kind === 'guilty' || statement.kind === 'innocent') {
-        return { speaker: mapping[speaker], text: `${statement.kind}:${mapping[statement.subject]}` };
-      }
-      let first = mapping[statement.first];
-      let second = mapping[statement.second];
-      if (first > second) [first, second] = [second, first];
-      return { speaker: mapping[speaker], text: `${statement.kind}:${first},${second}` };
-    }).sort((left, right) => left.speaker - right.speaker);
-    const signature = `${claim.requiredTrueStatements}|${rows.map(row => row.text).join(';')}`;
-    if (canonicalPuzzle === null || signature < canonicalPuzzle) canonicalPuzzle = signature;
-  }
-  const recordId = `logic-${hash(canonicalPuzzle).slice(0, 20)}`;
-  const factKey = `logic:${hash(canonicalPuzzle).slice(0, 20)}`;
-  const statementKindCounts = Object.fromEntries(['guilty', 'innocent', 'oneOf', 'neither']
-    .map(kind => [kind, statements.filter(statement => statement.kind === kind).length]));
-  const compoundStatementCount = statementKindCounts.oneOf + statementKindCounts.neither;
-  const expectedBand = compoundStatementCount === 0 ? 'easy'
-    : compoundStatementCount === 2 ? 'medium' : compoundStatementCount === 4 ? 'hard' : null;
-  return question.q === expectedQuestion
-    && question.answer === suspects[solutions[0]]
-    && new Set(question.o).size === 4
-    && question.o.every(option => suspects.includes(option))
-    && suspects.every(suspect => question.o.includes(suspect))
-    && question.sourceRecordId === recordId
-    && question.factKey === factKey
-    && question.source?.title === 'المنطق القضوي الكلاسيكي'
-    && question.source?.url === 'https://plato.stanford.edu/entries/logic-classical/'
-    && question.source?.publisher === 'Stanford Encyclopedia of Philosophy'
-    && question.source?.license === 'Reference use'
-    && same(question.logicSuspects, suspects)
-    && same(question.logicStatements, statements)
-    && question.requiredTrueStatements === claim.requiredTrueStatements
-    && question.canonicalLogicStructure === canonicalPuzzle
-    && question.band === expectedBand
-    && same(question.logicComplexity, { compoundStatementCount, statementKindCounts })
-    && same(question.verification, { profile: 'logic_unique_solution_v1', claim });
-}
-
 function contentDigest(categories) {
   return hash(Buffer.from(canonical(Object.entries(categories).flatMap(([category, rows]) => rows.map(question => {
     const payload = { ...question, category };
@@ -330,9 +242,6 @@ function expectedLedgerEvidence(question, artifactHashes) {
     if (!Array.isArray(verification.records)) return null;
     return verification.records.map(evidenceForRecord);
   }
-  if (verification.profile === 'logic_unique_solution_v1') {
-    return [{ url, proof: 'exhaustive_four_candidate_solver' }];
-  }
   const artifacts = Array.isArray(verification.artifacts) ? verification.artifacts : [];
   return artifacts.length ? artifacts.map(artifact => ({
     artifact, artifactSha256: artifactHashes?.[artifact], url,
@@ -378,10 +287,6 @@ export function verifyQuestionBankFacts(categories, { customVerifier = null, ver
         recordId: specification.recordId,
         url: evidenceUrl,
       }));
-    } else if (question.verification?.profile === 'logic_unique_solution_v1') {
-      const custom = customVerifier ? customVerifier(question, null) : null;
-      verified = verifyLogic(question) && custom !== false;
-      evidence = [{ url: evidenceUrl, proof: 'exhaustive_four_candidate_solver' }];
     } else if (customVerifier) {
       verified = customVerifier(question, null) === true;
       for (const relativePath of question.verification?.artifacts || []) {

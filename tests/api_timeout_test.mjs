@@ -184,6 +184,75 @@ try{
     `App Check المعلّق لا يسمّم الشبكة: ${JSON.stringify(appCheckAudit)}`);
   console.log('✓ تعلّق تهيئة/App Check token لا يمنع apiFetch من الوصول للشبكة');
 
+  const appCheckRefreshAudit=await page.evaluate(async()=>{
+    _appIntegrityReady=false;
+    _appIntegrityAttempt=null;
+    _appIntegrityRetryAfter=0;
+    _appIntegrityTokenAttempt=null;
+    _appIntegrityTokenRetryAfter=0;
+    let tokenCalls=0,fetchCalls=0;
+    const sentTokens=[];
+    window.Capacitor.Plugins.FirebaseAppCheck={
+      setTokenAutoRefreshEnabled:()=>Promise.resolve(),
+      getToken:({forceRefresh})=>{
+        tokenCalls++;
+        return Promise.resolve({token:forceRefresh?'fresh-token':'stale-token'});
+      },
+    };
+    const originalFetch=window.fetch;
+    window.fetch=(_url,options={})=>{
+      fetchCalls++;
+      sentTokens.push(new Headers(options.headers).get('X-Firebase-AppCheck'));
+      if(fetchCalls===1){
+        return Promise.resolve(new Response('{"code":"app_check_failed"}',{
+          status:401,headers:{'Content-Type':'application/json'},
+        }));
+      }
+      return Promise.resolve(new Response('{"ok":true}',{
+        status:200,headers:{'Content-Type':'application/json'},
+      }));
+    };
+    try{
+      const response=await apiFetch('/api/app-check-refresh-probe',{timeoutMs:3000});
+      return {ok:response.ok,tokenCalls,fetchCalls,sentTokens};
+    }finally{
+      window.fetch=originalFetch;
+      delete window.Capacitor.Plugins.FirebaseAppCheck;
+    }
+  });
+  assert.deepEqual(appCheckRefreshAudit,{
+    ok:true,tokenCalls:2,fetchCalls:2,sentTokens:['stale-token','fresh-token'],
+  },'رفض App Check يجب أن يجدد الرمز ويعيد الطلب مرة واحدة فقط.');
+  console.log('✓ apiFetch يجدد رمز App Check المرفوض ويعيد الطلب مرة واحدة');
+
+  const idTokenTimeoutAudit=await page.evaluate(async()=>{
+    clearIdTokenCache();
+    const auth=window.Capacitor.Plugins.FirebaseAuthentication;
+    const originalGetCurrentUser=auth.getCurrentUser;
+    const originalGetIdToken=auth.getIdToken;
+    try{
+      auth.getCurrentUser=()=>new Promise(()=>{});
+      const result=await Promise.race([
+        getCurrentIdToken(false,35).then(token=>({settled:true,token,pending:_idTokenCache.pending!==null})),
+        new Promise(resolve=>setTimeout(()=>resolve({settled:false}),250)),
+      ]);
+      if(!result.settled) return result;
+
+      auth.getCurrentUser=()=>Promise.resolve({user:{uid:'timeout-routing-user'}});
+      auth.getIdToken=()=>Promise.resolve({token:'recovered-id-token'});
+      const recovered=await getCurrentIdToken(false,35);
+      return {...result,recovered,pendingAfterRecovery:_idTokenCache.pending!==null};
+    }finally{
+      auth.getCurrentUser=originalGetCurrentUser;
+      auth.getIdToken=originalGetIdToken;
+      clearIdTokenCache();
+    }
+  });
+  assert.deepEqual(idTokenTimeoutAudit,{
+    settled:true,token:'',pending:false,recovered:'recovered-id-token',pendingAfterRecovery:false,
+  },'تعليق Firebase Authentication يجب أن ينتهي بمهلة قصيرة وألا يسمّم المحاولة التالية.');
+  console.log('✓ تعليق Firebase ID token ينتهي بمهلة ويمكن للمحاولة التالية التعافي');
+
   // حاكِ RevenueCat SDK لا يعود أبداً. قرار الإقلاع يجب أن يحسم fallback ولا يترك loading.
   const routing=await page.evaluate(async({uid})=>{
     window._currentUid=uid;

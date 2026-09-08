@@ -3,11 +3,13 @@
   "product": "Fatinah",
   "packageVersion": "1.4.0",
   "iosMarketingVersion": "1.4",
-  "iosBuild": 10,
+  "iosBuild": 16,
   "bundleIdentifier": "com.fatinah.game",
   "releaseBranch": "codex/release-1.4.0",
-  "releaseTag": "v1.4.0-build.10",
-  "appStoreState": "not_submitted",
-  "replitEnvironment": "production",
-  "replitUrl": "https://fatinah-next-1-3-security-review.replit.app"
+  "releaseTag": "v1.4.0-build.16",
+  "appStoreState": "testflight_ready_to_submit",
+  "replitEnvironment": "staging",
+  "replitUrl": null,
+  "productionApiUrl": "https://ata20.com",
+  "serverDeploymentState": "pending"
 }

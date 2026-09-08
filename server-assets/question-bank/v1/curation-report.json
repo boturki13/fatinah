@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "bankVersion": "v3-curated-expanded-043b20d3614a2969",
-  "generatedAt": "2026-09-06T01:56:45.677Z",
-  "sha256": "043b20d3614a29696c81f0fe70105fbc6be728e821f9e4cd122948dba2c121a8",
-  "questionCount": 2970,
+  "bankVersion": "v3-quran-foundation-c18237f168c29c66",
+  "generatedAt": "2026-09-05T00:00:00.000Z",
+  "sha256": "c18237f168c29c66052d48ad59397e226dd7a13536d84859c343cd22607d7ab9",
+  "questionCount": 2892,
   "categoryCount": 33,
-  "targetBankSize": 2970,
+  "targetBankSize": 2892,
   "ready": true,
   "releaseReady": true,
-  "factuallyVerifiedCount": 2970,
+  "factuallyVerifiedCount": 2892,
   "releaseBlockers": [],
   "distribution": {
     "من أنا؟": {
@@ -315,22 +315,6 @@
         "6": 15
       }
     },
-    "ألغاز بوليسية": {
-      "count": 90,
-      "bands": {
-        "easy": 30,
-        "medium": 30,
-        "hard": 30
-      },
-      "levels": {
-        "1": 15,
-        "2": 15,
-        "3": 15,
-        "4": 15,
-        "5": 15,
-        "6": 15
-      }
-    },
     "اكتشف الكلمة": {
       "count": 90,
       "bands": {
@@ -538,6 +522,22 @@
         "5": 15,
         "6": 15
       }
+    },
+    "القرآن الكريم": {
+      "count": 12,
+      "bands": {
+        "easy": 4,
+        "medium": 4,
+        "hard": 4
+      },
+      "levels": {
+        "1": 2,
+        "2": 2,
+        "3": 2,
+        "4": 2,
+        "5": 2,
+        "6": 2
+      }
     }
   },
   "addedCategories": [
@@ -550,10 +550,13 @@
     "جسم الإنسان والصحة",
     "مطابخ العالم",
     "سيارات ومركبات",
-    "اللغة العربية والأمثال"
+    "اللغة العربية والأمثال",
+    "القرآن الكريم"
   ],
   "removedCategories": [
-    "رياضيات وحساب"
+    "رتّبها صح",
+    "رياضيات وحساب",
+    "ألغاز بوليسية"
   ],
   "qualityRules": {
     "fourUniqueOptions": true,
@@ -562,5 +565,11 @@
     "trustedSourceVerification": true,
     "bannedContentFilter": true,
     "duplicateQuestionFilter": true
+  },
+  "quranFoundation": {
+    "category": "القرآن الكريم",
+    "questionCount": 12,
+    "questionsPerLevel": 2,
+    "verifier": "quran-foundation-content-v4"
   }
 }

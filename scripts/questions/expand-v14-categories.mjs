@@ -152,7 +152,9 @@ function selectCategory(name, sourceCategories, candidates, existingQuestions) {
 
 const bank = JSON.parse(fs.readFileSync(BANK_PATH, 'utf8'));
 const candidates = JSON.parse(fs.readFileSync(CANDIDATES_PATH, 'utf8'));
+delete bank.categories['رتّبها صح'];
 delete bank.categories['رياضيات وحساب'];
+delete bank.categories['ألغاز بوليسية'];
 for (const name of Object.keys(DEFINITIONS)) delete bank.categories[name];
 const existingQuestions = new Set(Object.values(bank.categories).flat().map(row => normalizeArabic(row.q)));
 for (const [name, sourceCategories] of Object.entries(DEFINITIONS)) {
@@ -166,7 +168,7 @@ bank.bankVersion = `v3-curated-expanded-${bank.sha256.slice(0, 16)}`;
 bank.questionCount = Object.values(bank.categories).reduce((sum, rows) => sum + rows.length, 0);
 bank.targetBankSize = bank.questionCount;
 bank.categoryCount = Object.keys(bank.categories).length;
-bank.generatedAt = new Date().toISOString();
+// احتفظ بختم البناء الأساسي حتى تكون المخرجات حتمية وقابلة للتحقق في CI.
 bank.factuallyVerifiedCount = bank.questionCount;
 bank.releaseReady = true; bank.ready = true; bank.releaseBlockers = [];
 
@@ -183,5 +185,5 @@ const metadata = {
 };
 fs.writeFileSync(BANK_PATH, `${JSON.stringify(bank, null, 2)}\n`);
 fs.writeFileSync(MANIFEST_PATH, `${JSON.stringify(metadata, null, 2)}\n`);
-fs.writeFileSync(REPORT_PATH, `${JSON.stringify({ ...metadata, addedCategories: Object.keys(DEFINITIONS), removedCategories: ['رياضيات وحساب'], qualityRules: { fourUniqueOptions: true, oneCorrectAnswer: true, thirtyPerBand: true, trustedSourceVerification: true, bannedContentFilter: true, duplicateQuestionFilter: true } }, null, 2)}\n`);
+fs.writeFileSync(REPORT_PATH, `${JSON.stringify({ ...metadata, addedCategories: Object.keys(DEFINITIONS), removedCategories: ['رتّبها صح', 'رياضيات وحساب', 'ألغاز بوليسية'], qualityRules: { fourUniqueOptions: true, oneCorrectAnswer: true, thirtyPerBand: true, trustedSourceVerification: true, bannedContentFilter: true, duplicateQuestionFilter: true } }, null, 2)}\n`);
 console.log(JSON.stringify({ bankVersion: bank.bankVersion, questionCount: bank.questionCount, categoryCount: bank.categoryCount, addedCategories: Object.keys(DEFINITIONS) }, null, 2));

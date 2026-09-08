@@ -38,7 +38,8 @@ for (const category of ['دين وسيرة','السيرة النبوية','ال�
 }
 
 assert.match(app, /questionHistoryOwner\(\)/);
-assert.match(app, /questionWasSeen\(history,cat,q\)/);
+assert.match(app, /function questionWasSeen\(history,cat,question\)/);
+assert.match(app, /questionWasSeen\(history,category,question\)/);
 assert.match(app, /function commitPickedQuestion\(cat,question\)/);
 assert.match(app, /sessionIds\.add\(question\.id\)/);
 assert.match(app, /reservedQuestionIds\.add\(q\.id\)/);
@@ -62,6 +63,8 @@ assert.doesNotMatch(
 assert.match(app, /q:'كم عدد أيام التشريق\؟',answer:'ثلاثة أيام'/);
 const serverBank = JSON.parse(fs.readFileSync(new URL('server-assets/question-bank/v1/bank.json', root), 'utf8'));
 const runtimeQuestions = Object.values(serverBank.categories).flat();
+assert.ok(runtimeQuestions.every(item => !/(?:قال أربعة مشتبهين في سرقة|\b(?:إلخ|الخ)\b|وما إلى ذلك)/u.test(item.q)),
+  'السؤال يجب أن يذكر سياقه كاملًا وألا يعتمد على صياغة ناقصة أو مبهمة.');
 assert.ok(!runtimeQuestions.some(item => /(?:UNESCO|اليونسكو).*?(?:المكوّن|المكون|المعرّف|المعرف)\s*\d/iu.test(item.q)),
   'لا يجوز عرض معرّفات اليونسكو الداخلية للاعب كسؤال معلومات عامة.');
 for (const leakedAnswerQuestion of [

@@ -18,6 +18,64 @@ assert.doesNotMatch(
   'شاشة الاشتراك لا تُفتح تلقائياً عند الإقلاع بعد استهلاك الجولة المجانية.',
 );
 assert.match(appSource, /function canStartRound\(\)[\s\S]*?go\('s-paywall'\)/);
+assert.match(
+  appSource,
+  /const revenueCatCheck=rcIsActiveWithin\(revenueCatTimeoutMs\);[\s\S]*?await fetchServerSubscriptionStatus/,
+  'يجب بدء RevenueCat قبل انتظار نتيجة الخادم حتى لا تتجمع مهلتا المصدرين.',
+);
+assert.match(
+  appSource,
+  /serverTimeoutMs=15000,[\s\S]*?revenueCatTimeoutMs=12000/,
+  'مهلة RevenueCat يجب أن تغطي زمن الاستجابة المرصود على TestFlight.',
+);
+assert.match(
+  appSource,
+  /if\(_subscriptionCheckFlight\?\.uid===normalizedUid\) return _subscriptionCheckFlight\.promise/,
+  'الفحوص المتزامنة للحساب نفسه يجب أن تشترك في طلب واحد.',
+);
+assert.equal(
+  (appSource.match(/const attempt=initRevenueCat\(\)/g) || []).length,
+  1,
+  'تهيئة RevenueCat يجب أن تبدأ من single-flight واحد فقط.',
+);
+assert.doesNotMatch(appSource, /_rcReady\s*=\s*initRevenueCat\(\)/,
+  'لا يجوز تجاوز single-flight باستدعاء تهيئة مباشر.');
+assert.match(appSource, /const startupRevenueCat=rcReady\(\)/,
+  'تهيئة الإقلاع المؤجلة يجب أن تعيد استخدام single-flight نفسه.');
+assert.match(appSource, /if\(!ready&&_rcReady===attempt\) _rcReady=null/,
+  'فشل تهيئة RevenueCat يجب أن يسمح بمحاولة تعافٍ جديدة.');
+assert.match(
+  appSource,
+  /if\(!subscriptionCheckIsCurrent\(uid,generation\)\) return;/,
+  'يجب تجاهل نتيجة اشتراك متأخرة بعد تبديل الحساب.',
+);
+assert.match(
+  appSource,
+  /const subscriptionConfirmed=await firstActiveSubscriptionResult\(\[[\s\S]*?serverConfirmation,[\s\S]*?rcIsActiveWithin\(12000\)/,
+  'تأكيد ما بعد الشراء يجب أن يستفيد من أول مصدر موثوق يؤكد النشاط.',
+);
+assert.doesNotMatch(
+  appSource,
+  /for\(let attempt=0; attempt<12 && !serverActive; attempt\+\+\)/,
+  'لا يجوز إبقاء المستخدم في انتظار حلقة تحقق ثابتة بعد نجاح StoreKit.',
+);
+assert.match(
+  appSource,
+  /typeof payload\?\.code==='string'[\s\S]*?setRemoteRoundPreparationFailure/,
+  'يجب الاحتفاظ بكود خطأ الجولة الذي أعاده الخادم.',
+);
+assert.match(
+  appSource,
+  /code==='free_round_categories_locked'[\s\S]*?اشتراكك يحتاج مزامنة/,
+  'قفل الجولة الناتج عن اختلاف الاشتراك يجب ألا يظهر كخطأ إنترنت.',
+);
+assert.doesNotMatch(
+  appSource,
+  /showToast\('⚠️','ما قدرنا ننزّل أسئلة الجولة',[\s\S]{0,260}تأكد من الإنترنت/,
+  'خطأ تنزيل الجولة يجب أن يستخدم التصنيف الحقيقي لا رسالة إنترنت عامة.',
+);
+assert.match(appSource, /payload\?\.code==='unsupported_v2_route'[\s\S]*?server_contract_outdated/,
+  'الخادم القديم يجب أن يظهر كعدم توافق عقد، لا كخطأ إنترنت.');
 
 async function checkSubscriptionAndRoute(uid, { go, fetchFn, rcIsActive, freeRoundIsAvailable }) {
   go('s-loading');

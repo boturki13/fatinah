@@ -176,7 +176,8 @@ try{
   await page.locator('.cat-pick[data-category="كرتون وأنمي"]').click();
   await page.getByRole('button',{name:'يلا نبدأ!'}).click();
 
-  await page.locator('#toast-t').filter({hasText:'ما قدرنا ننزّل أسئلة الجولة'}).waitFor({state:'visible'});
+  await page.locator('#toast-t').filter({hasText:'تعذّر الاتصال بخادم الجولة'}).waitFor({state:'visible'});
+  await page.locator('#toast-d').filter({hasText:'جولتك محفوظة وما راح تضيع'}).waitFor({state:'visible'});
   assert.equal(freeClaimRequests,1,'لا تُستهلك المطالبة أكثر من مرة عند فشل التنزيل');
   assert.equal(roundRequests,1);
   const pendingStart=await page.evaluate(()=>freeRoundPendingStart('free-player'));

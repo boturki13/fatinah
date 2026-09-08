@@ -174,9 +174,11 @@ assert.match(
 );
 assert.match(
   webLogic,
-  /async function checkSubscriptionAndRoute\(uid, \{showLoading=true,revenueCatTimeoutMs=8000\} = \{\}\)\{\s*if\(showLoading\) go\('s-loading'\);/,
+  /async function performSubscriptionCheck\(uid, generation, \{[\s\S]*?showLoading=true,[\s\S]*?serverTimeoutMs=15000,[\s\S]*?revenueCatTimeoutMs=12000,[\s\S]*?if\(showLoading && subscriptionCheckIsCurrent\(uid,generation\)\) go\('s-loading'\);/,
   'يجب أن يدعم فحص الاشتراك وضع الخلفية عند الإقلاع.'
 );
+assert.match(webLogic, /function subscriptionCheckIsCurrent\(uid,generation\)/,
+  'نتيجة فحص الاشتراك يجب أن تكون مرتبطة بالحساب الحالي فقط.');
 assert.doesNotMatch(webLogic, /const QUESTION_BANK = \{/);
 assert.match(webLogic, /function ensureQuestionBank\(\)[\s\S]*?await refreshRemoteQuestionCatalog\(\)/,
   'بنك 1.4 يجب أن يحمّل كتالوج الخادم ولا يحمّل ملف أسئلة محلياً.');
@@ -264,6 +266,8 @@ assert.match(webLogic, /function rememberQuestion\(cat,question\)/);
 assert.match(webLogic, /state\.usedQuestionIds=new Set\(\)/);
 assert.doesNotMatch(webLogic, /api\.anthropic\.com|AI_BACKEND_URL|aiGenerate\(/);
 assert.match(webApp, /id="q-source"/);
+assert.match(webLogic, /source\.dataset\.available='false'/,
+  'مصدر الإجابة يبقى للتدقيق في البيانات ولا يُعرض للاعب.');
 assert.match(
   cloudFunction,
   /generateQuestionsV1Handler[\s\S]*?FATINAH_V1_AI_GENERATION_ENABLED[\s\S]*?api\.anthropic\.com/,
@@ -282,5 +286,5 @@ console.log('✓ حذف الحساب لا يعلن نجاحاً قبل التح�
 console.log('✓ الهويات المحلية القديمة تُرقّى إلى Firebase عند توفرها');
 console.log('✓ واجهة الإقلاع لا تنتظر الشبكة قبل الظهور');
 console.log('✓ إعدادا Capacitor متطابقان وApp-Bound Domains غير مفعّل بلا قائمة نطاقات');
-console.log('✓ بنك الأسئلة المراجع مؤجل التحميل ومصادره ظاهرة داخل التطبيق');
+console.log('✓ بنك الأسئلة المراجع مؤجل التحميل ومصادر الإجابات مخفية عن اللاعب');
 console.log('✓ تطبيق 1.3 لا يستدعي توليداً حياً، وعقد 1.2 معزول خلف علم توافق');

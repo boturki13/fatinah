@@ -19,7 +19,12 @@ assert.doesNotMatch(packageJson.scripts['questions:next-release-audit'],/--relea
 assert.equal(metadata.bundleIdentifier, 'com.fatinah.game');
 assert.match(metadata.releaseBranch, /^codex\/release-/);
 assert.match(metadata.releaseTag, /^v\d+\.\d+\.\d+-build\.\d+$/);
-assert.match(metadata.replitUrl, /^https:\/\/[a-z0-9-]+\.replit\.app$/);
+assert.match(metadata.productionApiUrl, /^https:\/\/[a-z0-9.-]+$/);
+assert.ok(metadata.replitUrl === null || /^https:\/\/[a-z0-9-]+\.replit\.app$/.test(metadata.replitUrl));
+if (metadata.serverDeploymentState === 'pending') {
+  assert.equal(metadata.replitEnvironment, 'staging');
+  assert.equal(metadata.replitUrl, null, 'لا يجوز توثيق رابط staging غير متحقق منه.');
+}
 
 const marketingMatches = [...project.matchAll(/MARKETING_VERSION = ([^;]+);/g)].map(match => match[1]);
 const buildMatches = [...project.matchAll(/CURRENT_PROJECT_VERSION = (\d+);/g)].map(match => Number(match[1]));
@@ -56,6 +61,8 @@ const syncIosIndex = iosReleaseWorkflow.indexOf('npm run sync:ios');
 const refreshedIosCopyIndex = iosReleaseWorkflow.indexOf('npx cap copy ios', contentGateIndex);
 const refreshedIosValidationIndex = iosReleaseWorkflow.indexOf(
   'node scripts/validate-ios-public.mjs', refreshedIosCopyIndex);
+const refreshedIosPruneIndex = iosReleaseWorkflow.indexOf(
+  'node scripts/prune-ios-public.mjs', refreshedIosCopyIndex);
 assert.match(iosReleaseWorkflow, /push:\s*[\s\S]*?tags:\s*\['v\*'\]/,
   'The iOS release gate must run for release tags');
 assert.match(iosReleaseWorkflow, /workflow_dispatch:/,
@@ -76,7 +83,8 @@ assert.ok(contentDriftIndex > contentGateIndex,
 assert.ok(syncIosIndex >= 0 && syncIosIndex < runtimeReleaseGateIndex,
   'A clean checkout must generate the ignored iOS public bundle before a content gate can read it');
 assert.ok(runtimeReleaseGateIndex < contentGateIndex && contentGateIndex < refreshedIosCopyIndex &&
-  refreshedIosCopyIndex < refreshedIosValidationIndex && refreshedIosValidationIndex < npmTestIndex,
+  refreshedIosCopyIndex < refreshedIosPruneIndex && refreshedIosPruneIndex < refreshedIosValidationIndex &&
+  refreshedIosValidationIndex < npmTestIndex,
   'After generation, CI must recopy and validate the iOS web bundle before running tests');
 assert.ok(fetchAssetsIndex < npmTestIndex,
   'The iOS release gate must fetch production image assets before npm test on a clean checkout');
@@ -89,6 +97,8 @@ const coreSyncIosIndex = coreWorkflow.indexOf('npm run sync:ios');
 const coreRefreshedIosCopyIndex = coreWorkflow.indexOf('npx cap copy ios', coreImageGateIndex);
 const coreRefreshedIosValidationIndex = coreWorkflow.indexOf(
   'node scripts/validate-ios-public.mjs', coreRefreshedIosCopyIndex);
+const coreRefreshedIosPruneIndex = coreWorkflow.indexOf(
+  'node scripts/prune-ios-public.mjs', coreRefreshedIosCopyIndex);
 const coreStaticTestsIndex = coreWorkflow.indexOf('npm run test:static');
 const coreContentTestsIndex = coreWorkflow.indexOf('npm run test:web:content');
 assert.match(coreWorkflow, /name: Checkout\s*[\s\S]*?fetch-depth:\s*0/,
@@ -100,7 +110,8 @@ assert.ok(coreQuestionGateIndex > coreInstallIndex && coreQuestionGateIndex < co
 assert.ok(coreSyncIosIndex > coreInstallIndex && coreSyncIosIndex < coreQuestionGateIndex,
   'Core CI must create the ignored iOS public bundle before clean-checkout content gates');
 assert.ok(coreImageGateIndex < coreRefreshedIosCopyIndex &&
-  coreRefreshedIosCopyIndex < coreRefreshedIosValidationIndex &&
+  coreRefreshedIosCopyIndex < coreRefreshedIosPruneIndex &&
+  coreRefreshedIosPruneIndex < coreRefreshedIosValidationIndex &&
   coreRefreshedIosValidationIndex < coreStaticTestsIndex,
   'Core CI must refresh and validate the final generated native web bundle before static tests');
 for (const workflow of [coreWorkflow, iosReleaseWorkflow]) {

@@ -19,23 +19,16 @@ import {
 import { verifyProverbCategory, verifyProverbQuestion } from './categories/proverbs.mjs';
 import { assertNoLegacyFacts, loadLegacyQuestionRecords } from './legacy-question-policy.mjs';
 import { verifyQuestionBankFacts } from './factual-verifier.mjs';
+import {
+  BASE_CATEGORY_ORDER, CATEGORY_ORDER, CATEGORY_QUESTION_COUNTS,
+  EXPECTED_QUESTION_COUNT,
+  expectedBandCount, expectedLevelCount, expectedQuestionPlacement,
+} from './release-contract.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
-const CATEGORY_ORDER = Object.freeze([
-  'من أنا؟', 'كرتون وأنمي', 'تقنية وإنترنت', 'اختر العبارة الصحيحة', 'سينما وأفلام عربية',
-  'كرة القدم', 'علوم وطبيعة', 'اختراعات واكتشافات', 'الكويت', 'دول الخليج',
-  'شخصيات تاريخية', 'مدن وعواصم', 'عملات العالم', 'فيزياء وكيمياء',
-  'شعراء وأدباء عرب', 'روايات عالمية', 'مسرحيات خليجية', 'طيران ومطارات',
-  'أندية ومنتخبات', 'ألغاز بوليسية', 'اكتشف الكلمة', 'أحداث غيرت العالم',
-  'منظمات دولية',
-  'كرة القدم العالمية', 'معلومات عامة', 'تاريخ وتراث الخليج', 'الفن الخليجي والعربي',
-  'ألعاب الفيديو', 'تاريخ وحضارات', 'جسم الإنسان والصحة', 'مطابخ العالم',
-  'سيارات ومركبات', 'اللغة العربية والأمثال',
-]);
-const EXPANDED_CATEGORIES = new Set(CATEGORY_ORDER.slice(23));
-const EXPECTED_QUESTION_COUNT = CATEGORY_ORDER.length * 90;
 const BANNED = /(?:إسرائيل|اسرائيل|إسرائيلي|اسرائيلي|Israel|Israeli|Tel Aviv|تل أبيب|تل ابيب|إباحي|اباحي|إباحية|اباحية|porn|hentai|ecchi|محتوى جنسي|علاقة جنسية|عارٍ|عارية)/iu;
 const OPAQUE = /(?:حسب السجل|في السجل|المعرّف(?=\s|:)|المعرف(?=\s|:)|Q\d{3,})/iu;
+const INCOMPLETE_WORDING=/(?:قال أربعة مشتبهين في سرقة|\b(?:إلخ|الخ)\b|وما إلى ذلك)/iu;
 const AMBIGUOUS_BROAD_PERSON_CLUE=/(?:نلت|نال|نالت).*«(?:جوائز الغولدن غلوب|جائزة الأوسكار|جائزة غرامي)»|(?:تولت|توليت) منصب «(?:رئيس الوزراء|إمبراطور|عاهل|ملك)»/u;
 const read = relativePath => JSON.parse(fs.readFileSync(path.join(ROOT, relativePath), 'utf8'));
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -47,7 +40,7 @@ const canonical = value => {
   return JSON.stringify(value);
 };
 function answerRevealedByStem(question){
-  if(['animal-group-choice-v1','detective-unique-solution-v3'].includes(question.templateId)
+  if(question.templateId==='animal-group-choice-v1'
     || /final-score-v1$/u.test(String(question.templateId||''))) return false;
   const answer=normalizeArabic(question.answer);
   return answer.length>=3&&normalizeArabic(question.q).includes(answer);
@@ -89,12 +82,12 @@ if (manifest.sha256 !== bank.sha256 || manifest.bankVersion !== bank.bankVersion
 const ids = new Set(); const questionTexts = new Set(); const factKeys = new Set(); const claimKeys = new Set();
 for (const category of CATEGORY_ORDER) {
   const rows = categories[category] || [];
-  if (rows.length !== 90) issue('category_count', category, null, String(rows.length));
+  if (rows.length !== CATEGORY_QUESTION_COUNTS[category]) issue('category_count', category, null, String(rows.length));
   for (let position = 0; position < rows.length; position += 1) {
     const question = rows[position];
-    const bandIndex = Math.floor(position / 30);
-    const expectedBand = ['easy', 'medium', 'hard'][bandIndex];
-    const expectedDifficulty = bandIndex * 2 + 1 + (position % 2);
+    const placement = expectedQuestionPlacement(category, position);
+    const expectedBand = placement.band;
+    const expectedDifficulty = placement.level;
     if (!/^gq-[a-f0-9]{20}$/u.test(String(question.id || '')) || ids.has(question.id)) issue('duplicate_or_invalid_id', category, question);
     ids.add(question.id);
     const normalizedQuestion = normalizeArabic(question.q);
@@ -103,7 +96,9 @@ for (const category of CATEGORY_ORDER) {
     if (!question.factKey || factKeys.has(question.factKey)) issue('duplicate_fact', category, question);
     factKeys.add(question.factKey);
     if (question.band !== expectedBand || question.d !== expectedDifficulty) issue('difficulty_order', category, question);
-    if (typeof question.q !== 'string' || question.q.trim().length < 12 || question.q.trim().length > 220 || OPAQUE.test(question.q)) issue('wording', category, question);
+    const maximumQuestionLength = 220;
+    if (typeof question.q !== 'string' || question.q.trim().length < 12 || question.q.trim().length > maximumQuestionLength || OPAQUE.test(question.q)) issue('wording', category, question);
+    if(INCOMPLETE_WORDING.test(question.q)) issue('incomplete_or_ambiguous_wording',category,question);
     if (geographicAnswerLeak(question)) issue('answer_leaked_in_geographic_question', category, question);
     if (answerRevealedByStem(question)) issue('answer_revealed_by_question_stem', category, question);
     if(AMBIGUOUS_BROAD_PERSON_CLUE.test(question.q)) issue('ambiguous_broad_person_clue',category,question);
@@ -128,12 +123,12 @@ for (const category of CATEGORY_ORDER) {
   for (const band of ['easy', 'medium', 'hard']) {
     const bandRows = rows.filter(question => question.band === band);
     const slots = Array.from({ length: 4 }, (_, slot) => bandRows.filter(question => question.a === slot).length);
-    if (bandRows.length !== 30) issue('band_count', category, null, `${band}:${bandRows.length}`);
+    if (bandRows.length !== expectedBandCount(category)) issue('band_count', category, null, `${band}:${bandRows.length}`);
     if (slots.length && Math.max(...slots) - Math.min(...slots) > 1) issue('answer_position_bias', category, null, `${band}:${slots.join(',')}`);
   }
   for (let difficulty = 1; difficulty <= 6; difficulty += 1) {
     const count = rows.filter(question => question.d === difficulty).length;
-    if (count !== 15) issue('level_count', category, null, `${difficulty}:${count}`);
+    if (count !== expectedLevelCount(category)) issue('level_count', category, null, `${difficulty}:${count}`);
   }
 }
 
@@ -142,7 +137,7 @@ const moduleReports = {
   peopleLiterature: verifyPeopleLiteratureCategories(subset(PEOPLE_LITERATURE_CATEGORIES), { legacyRecords, oldQuestions }),
   mediaTechGlobal: verifyMediaTechGlobalCategories(subset(MEDIA_TECH_GLOBAL_CATEGORIES), { oldRecords, oldQuestions }),
   gulfAviation: verifyGulfAviationCategories(subset(GULF_AVIATION_CATEGORIES)),
-  worldScience: { valid: verifyWorldScienceCategories(subset(['اختر العبارة الصحيحة','كرة القدم','علوم وطبيعة','مدن وعواصم','عملات العالم','فيزياء وكيمياء','ألغاز بوليسية'])) },
+  worldScience: { valid: verifyWorldScienceCategories(subset(['اختر العبارة الصحيحة','كرة القدم','علوم وطبيعة','مدن وعواصم','عملات العالم','فيزياء وكيمياء'])) },
   proverbs: { valid: verifyProverbCategory(categories['اكتشف الكلمة']) },
 };
 for (const [name, report] of Object.entries(moduleReports)) {
@@ -151,7 +146,7 @@ for (const [name, report] of Object.entries(moduleReports)) {
 try {
   assertNoLegacyFacts({
     ...subset(PEOPLE_LITERATURE_CATEGORIES),
-    ...subset(['اختر العبارة الصحيحة','كرة القدم','علوم وطبيعة','مدن وعواصم','عملات العالم','فيزياء وكيمياء','ألغاز بوليسية']),
+    ...subset(['اختر العبارة الصحيحة','كرة القدم','علوم وطبيعة','مدن وعواصم','عملات العالم','فيزياء وكيمياء']),
     'اكتشف الكلمة': categories['اكتشف الكلمة'],
   }, legacyRecords);
 } catch (error) { issue('legacy_fact_reuse', '', null, error.message); }
@@ -172,8 +167,7 @@ const verifierFiles = [
   'scripts/questions/categories/proverbs.mjs',
 ];
 try {
-  const baseCategories = Object.fromEntries(Object.entries(categories)
-    .filter(([category]) => !EXPANDED_CATEGORIES.has(category)));
+  const baseCategories = subset(BASE_CATEGORY_ORDER);
   const recomputed = verifyQuestionBankFacts(baseCategories, { customVerifier, verifierFiles });
   if (canonical(recomputed) !== canonical(ledger)) {
     const topLevel = [...new Set([...Object.keys(recomputed), ...Object.keys(ledger)])]
@@ -184,7 +178,8 @@ try {
     issue('factual_ledger_mismatch', '', null,
       `fields=${topLevel.join(',') || 'questions'}; questionIds=${questionIds.slice(0, 5).join(',')}; count=${questionIds.length}`);
   }
-  if (recomputed.questionCount !== 2070 || recomputed.verifiedQuestionCount !== 2070
+  const expectedBaseCount = BASE_CATEGORY_ORDER.length * 90;
+  if (recomputed.questionCount !== expectedBaseCount || recomputed.verifiedQuestionCount !== expectedBaseCount
       || bank.factuallyVerifiedCount !== EXPECTED_QUESTION_COUNT) issue('factual_verification_incomplete');
 } catch (error) { issue('factual_verification_failed', '', null, error.message); }
 
@@ -208,6 +203,7 @@ const report = {
     'difficulty_distribution', 'duplicate_question_and_claim_filters',
     'published_legacy_fact_exclusion', 'family_content_policy', 'trusted_source_binding',
     'deterministic_factual_ledger', 'tamper_resistant_category_verifiers',
+    'gulf_plain_language_and_complete_context',
   ],
   issueCount: issues.length,
   byCode,

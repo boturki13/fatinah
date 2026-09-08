@@ -249,6 +249,8 @@ try:
     status, headers, explicit_v2 = request('GET', '/api/v2/version')
     assert status == 200 and headers['X-Fatinah-API-Version'] == '2'
     assert explicit_v2['apiVersion'] == '2'
+    assert explicit_v2['applicationRelease'] == '1.4.0'
+    assert explicit_v2['contractRevision'] == 'fatinah-v2-2026-09-08'
     assert explicit_v2['environment'] == 'staging'
     assert explicit_v2['features']['free_round'] is True
 

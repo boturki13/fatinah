@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed production configuration gate for Fatinah 1.3.
+"""Fail-closed production configuration gate for Fatinah 1.4.
 
 The gate intentionally reports check identifiers only. It never prints an
 environment value, parsed credential field, exception text, or secret length.
@@ -525,7 +525,7 @@ def audit_environment(env: Mapping[str, str] | None = None) -> list[GateCheck]:
         )
 
         # These providers are not used by the production server process in
-        # 1.3. Keeping them there expands blast radius; warn without blocking
+        # 1.4. Keeping them there expands blast radius; warn without blocking
         # because the legacy Cloud Function is deployed separately.
         _append(
             checks,

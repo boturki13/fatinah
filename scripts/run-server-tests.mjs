@@ -5,7 +5,10 @@ import process from 'node:process';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 
-export const DEFAULT_SUITE_TIMEOUT_MS = 120_000;
+// Some suites cold-load Firebase/Google SDKs from disk before executing their
+// deterministic checks. Give that initialization enough room on a clean CI
+// runner while retaining a hard, configurable upper bound for genuine hangs.
+export const DEFAULT_SUITE_TIMEOUT_MS = 180_000;
 export const DEFAULT_TERMINATION_GRACE_MS = 1_000;
 const DEFAULT_FORCE_KILL_WAIT_MS = 5_000;
 const WINDOWS_TASKKILL_TIMEOUT_MS = 5_000;
@@ -29,6 +32,11 @@ export function createTestEnvironment(environment = process.env) {
   );
   testEnvironment.FATINAH_ENVIRONMENT = 'test';
   testEnvironment.REPLIT_DEPLOYMENT = '0';
+  // تشغيل ملف Python داخل tests/ يجعل Python يضع مجلد tests فقط في sys.path.
+  // أضف جذر المشروع صراحةً حتى تستورد جميع الاختبارات server بالطريقة نفسها
+  // محليًا وفي CI، من دون اعتماد خفي على إعداد PYTHONPATH في جهاز المطوّر.
+  testEnvironment.PYTHONPATH = [repositoryRoot, testEnvironment.PYTHONPATH]
+    .filter(Boolean).join(path.delimiter);
   return testEnvironment;
 }
 
@@ -76,6 +84,7 @@ function createSuites(python) {
     [process.execPath, 'tests/legacy_generation_content_policy_test.mjs'],
     [python, 'tests/test_legacy_generation_content_policy.py'],
     [python, 'tests/test_revenuecat_webhook.py'],
+    [python, 'tests/test_revenuecat_status_refresh.py'],
     [python, 'tests/test_question_history.py'],
     [python, 'tests/test_remote_question_bank.py'],
     [python, 'tests/test_account_delete.py'],
