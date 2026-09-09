@@ -37,6 +37,25 @@ def image_asset_records(document):
     ]
 
 
+def materialize_sparse_image_assets(document, image_root):
+    """Create deterministic size/path fixtures without downloading release media."""
+    prefix = '/assets/question-images/'
+    for rows in document['categories'].values():
+        for row in rows:
+            for asset in row['image']['assets']:
+                relative_path = asset['url'].split(prefix, 1)[1]
+                local_path = image_root / relative_path
+                local_path.parent.mkdir(parents=True, exist_ok=True)
+                with local_path.open('wb') as handle:
+                    handle.truncate(asset['bytes'])
+
+
+image_fixture_directory = tempfile.TemporaryDirectory()
+image_fixture_root = Path(image_fixture_directory.name) / 'question-images'
+materialize_sparse_image_assets(json.loads(
+    REAL_IMAGE_BANK_PATH.read_text(encoding='utf-8')), image_fixture_root)
+
+
 def write_image_bank(path, mutate=None, *, corrupt_sha=False,
                      corrupt_assets_sha=False):
     document = json.loads(REAL_IMAGE_BANK_PATH.read_text(encoding='utf-8'))
@@ -134,6 +153,7 @@ def write_bank(path, *, ready=True, release_ready=None, review_status='approved'
 with tempfile.TemporaryDirectory() as directory:
     bank_path = Path(directory) / 'bank.json'
     srv.DB_PATH = str(Path(directory) / 'question-history.db')
+    srv.QUESTION_IMAGE_DIR = str(image_fixture_root)
     srv.init_db()
     srv.QUESTION_BANK_FILE = str(bank_path)
     srv.IMAGE_QUESTION_BANK_FILE = str(REAL_IMAGE_BANK_PATH)
@@ -665,4 +685,5 @@ assert "setRemoteQuestionCatalogFailure('server_contract_outdated'" in client_so
 assert 'لا رجوع إلى بنك أو كاش محلي' in client_source
 assert "img-src 'self' data: blob:;" in srv.WEB_CONTENT_SECURITY_POLICY
 
+image_fixture_directory.cleanup()
 print('✓ بنكا النص والصور منشوران ببصمات صحيحة، ويخدمان 12 سؤالاً للفئة بلا تكرار')
