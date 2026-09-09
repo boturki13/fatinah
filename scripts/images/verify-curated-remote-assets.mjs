@@ -32,6 +32,11 @@ if(bank.releaseReady!==true||bank.questionCount!==300||bank.assetCount!==600
 }
 
 const wait=milliseconds=>new Promise(resolve=>setTimeout(resolve,milliseconds));
+function verificationError(message,retryable){
+  const error=new Error(message);
+  error.retryable=retryable;
+  return error;
+}
 
 async function download(asset){
   const url=new URL(asset.url);
@@ -41,22 +46,26 @@ async function download(asset){
   }
   const fetchUrl=new URL(url.pathname,verifyOrigin);
   let lastError;
-  for(let attempt=1;attempt<=3;attempt++){
+  for(let attempt=1;attempt<=5;attempt++){
     try{
       const response=await fetch(fetchUrl,{redirect:'error',signal:AbortSignal.timeout(30_000),
-        headers:{'User-Agent':'FatinahReleaseVerifier/1.3 (https://ata20.com)'}});
-      if(!response.ok) throw new Error(`http_${response.status}`);
+        headers:{'User-Agent':'FatinahReleaseVerifier/1.4 (https://ata20.com)'}});
+      if(!response.ok){
+        const retryable=response.status===408||response.status===429||response.status>=500;
+        throw verificationError(`http_${response.status}`,retryable);
+      }
       const contentType=String(response.headers.get('content-type')||'').split(';')[0].trim().toLowerCase();
-      if(contentType!==asset.mimeType) throw new Error(`content_type_${contentType||'missing'}`);
+      if(contentType!==asset.mimeType) throw verificationError(`content_type_${contentType||'missing'}`,false);
       const declaredBytes=Number(response.headers.get('content-length')||0);
-      if(declaredBytes&&declaredBytes!==asset.bytes) throw new Error(`declared_size_${declaredBytes}`);
+      if(declaredBytes&&declaredBytes!==asset.bytes) throw verificationError(`declared_size_${declaredBytes}`,false);
       const bytes=Buffer.from(await response.arrayBuffer());
-      if(bytes.length!==asset.bytes) throw new Error(`size_${bytes.length}`);
-      if(digest(bytes)!==asset.sha256) throw new Error('sha256_mismatch');
+      if(bytes.length!==asset.bytes) throw verificationError(`size_${bytes.length}`,false);
+      if(digest(bytes)!==asset.sha256) throw verificationError('sha256_mismatch',false);
       return;
     }catch(error){
       lastError=error;
-      if(attempt<3) await wait(500*attempt);
+      if(attempt===5||error?.retryable===false) break;
+      await wait(Math.min(8_000,500*(2**(attempt-1))));
     }
   }
   throw new Error(`${asset.questionId}: ${lastError?.message||'remote_verification_failed'}`);
