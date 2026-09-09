@@ -9,9 +9,17 @@ on:
       - "v*"
   pull_request:
   workflow_dispatch:
+    inputs:
+      verify_origin:
+        description: HTTPS origin to verify (staging before release, ata20.com after release)
+        required: false
+        default: https://ata20.com
 
 permissions:
   contents: read
+
+env:
+  RELEASE_VERIFY_ORIGIN: ${{ inputs.verify_origin || (startsWith(github.ref, 'refs/heads/codex/') && vars.STAGING_RELEASE_ORIGIN) || 'https://ata20.com' }}
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -58,6 +66,8 @@ jobs:
           npx playwright install --with-deps chromium
 
       - name: Prepare generated test assets
+        env:
+          FATINAH_IMAGE_FETCH_ORIGIN: ${{ env.RELEASE_VERIFY_ORIGIN }}
         run: |
           # ios/App/App/public is ignored and absent on a clean checkout.
           npm run sync:ios
@@ -134,10 +144,19 @@ jobs:
         run: npm ci
 
       - name: Fetch and verify production image assets
+        env:
+          FATINAH_IMAGE_FETCH_ORIGIN: ${{ env.RELEASE_VERIFY_ORIGIN }}
         run: npm run images:fetch-release-assets
 
-      - name: Verify curated image assets from production CDN
+      - name: Verify curated image assets from release origin
+        env:
+          FATINAH_IMAGE_VERIFY_ORIGIN: ${{ env.RELEASE_VERIFY_ORIGIN }}
         run: npm run images:verify-curated-remote-assets
+
+      - name: Verify deployed release contract
+        env:
+          FATINAH_VERIFY_ORIGIN: ${{ env.RELEASE_VERIFY_ORIGIN }}
+        run: npm run release:verify-deployment
 
       - name: Run image release tests
         run: npm run test:images
