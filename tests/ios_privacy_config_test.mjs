@@ -23,6 +23,8 @@ const nativeWebApp = await readFile(path.join(root, 'ios/App/App/public/index.ht
 const nativeWebLogic = await readFile(path.join(root, 'ios/App/App/public/app.js'), 'utf8');
 const nativeWebStyles = await readFile(path.join(root, 'ios/App/App/public/app.css'), 'utf8');
 const cloudFunction = await readFile(path.join(root, 'functions/index.js'), 'utf8');
+const generationHandlers = await readFile(
+  path.join(root, 'functions/generation-handlers.js'), 'utf8');
 const appDelegate = await readFile(path.join(root, 'ios/App/App/AppDelegate.swift'), 'utf8');
 const capacitorConfig = await readFile(path.join(root, 'capacitor.config.ts'), 'utf8');
 const capacitorJsonConfig = JSON.parse(
@@ -274,9 +276,9 @@ assert.match(
   'التوافق المؤقت مع 1.2 يجب أن يبقى خلف علم v1 صريح ولا يعمل افتراضياً.',
 );
 assert.match(
-  cloudFunction,
+  generationHandlers,
   /generateQuestionsV2Handler[\s\S]*?status\(410\)[\s\S]*?ai_generation_retired/,
-  'عقد 1.3 يجب ألا يصل إلى مزود توليد حي؛ يستخدم بنكاً مراجعاً مسبقاً.',
+  'عقد 1.4 يجب ألا يصل إلى مزود توليد حي؛ يستخدم بنكاً مراجعاً مسبقاً.',
 );
 
 console.log('✓ لا يوجد طلب تتبع في iOS أو في Privacy Manifest');
@@ -287,4 +289,4 @@ console.log('✓ الهويات المحلية القديمة تُرقّى إل�
 console.log('✓ واجهة الإقلاع لا تنتظر الشبكة قبل الظهور');
 console.log('✓ إعدادا Capacitor متطابقان وApp-Bound Domains غير مفعّل بلا قائمة نطاقات');
 console.log('✓ بنك الأسئلة المراجع مؤجل التحميل ومصادر الإجابات مخفية عن اللاعب');
-console.log('✓ تطبيق 1.3 لا يستدعي توليداً حياً، وعقد 1.2 معزول خلف علم توافق');
+console.log('✓ تطبيق 1.4 لا يستدعي توليداً حياً، وعقد 1.2 معزول خلف علم توافق');

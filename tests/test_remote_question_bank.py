@@ -19,7 +19,8 @@ REAL_IMAGE_BANK_PATH = (
 
 def reset_image_bank_cache():
     srv._image_question_bank_cache.update(
-        path=None, mtime_ns=None, size=None, document=None)
+        path=None, mtime_ns=None, size=None, document=None,
+        asset_check_key=None, assets_ready=None)
 
 
 def image_asset_records(document):
@@ -532,6 +533,18 @@ srv._question_bank_cache.update(mtime_ns=None, document=None)
 reset_image_bank_cache()
 release_bank = srv.load_server_question_bank()
 release_image_bank = srv.load_server_image_question_bank()
+assert srv.local_image_assets_ready(release_image_bank) is True
+original_image_directory = srv.QUESTION_IMAGE_DIR
+with tempfile.TemporaryDirectory() as missing_asset_directory:
+    srv.QUESTION_IMAGE_DIR = missing_asset_directory
+    reset_image_bank_cache()
+    assert srv.local_image_assets_ready(release_image_bank) is False
+    text_only_bank = srv.load_combined_server_question_bank()
+    assert text_only_bank['components']['image'] is None
+    assert text_only_bank['questionCount'] == release_bank['questionCount']
+    assert text_only_bank['releaseReady'] is True
+srv.QUESTION_IMAGE_DIR = original_image_directory
+reset_image_bank_cache()
 assert release_bank['questionCount'] == 2892
 assert release_bank['targetBankSize'] == 2892
 assert release_bank['ready'] is True

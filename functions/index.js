@@ -6,9 +6,12 @@ const { getAuth } = require("firebase-admin/auth");
 const {
   apiVersionAllows,
   configuredDeploymentEnvironment,
-  reportedDeploymentEnvironment,
   validatedSubscriptionStatusUrl,
 } = require("./api-contract");
+const {
+  generateQuestionsV2Handler,
+  prepareResponse,
+} = require("./generation-handlers");
 const { resolvesOnlyToPublicIps } = require("./network-policy");
 const {
   TRUSTED_SOURCE_HOSTS,
@@ -55,12 +58,6 @@ async function checkRateLimit(uid, maxCalls = RATE_LIMIT_MAX_CALLS) {
     transaction.set(ref, { calls: recent }, { merge: true });
     return true;
   });
-}
-
-function prepareResponse(res, version) {
-  res.set("Cache-Control", "no-store");
-  res.set("X-Fatinah-API-Version", version);
-  res.set("X-Fatinah-Environment", reportedDeploymentEnvironment());
 }
 
 async function generateQuestionsV1Handler(req, res) {
@@ -270,20 +267,6 @@ exports.generateQuestions = onRequest(
   { secrets: [anthropicKey], cors: true, timeoutSeconds: FUNCTION_TIMEOUT_SECONDS },
   generateQuestionsV1Handler
 );
-
-async function generateQuestionsV2Handler(req, res) {
-  prepareResponse(res, "2");
-  if (!apiVersionAllows(req, "2")) {
-    return res.status(400).json({
-      error: "نسخة API لا تطابق اسم الدالة",
-      code: "unsupported_api_version",
-    });
-  }
-  return res.status(410).json({
-    error: "يستخدم API v2 بنك أسئلة مراجعاً مسبقاً.",
-    code: "ai_generation_retired",
-  });
-}
 
 // تطبيق 1.3 يستخدم بنك الأسئلة، لذلك اسم v2 منفصل ولا يغيّر سلوك v1.
 exports.generateQuestionsV2 = onRequest(

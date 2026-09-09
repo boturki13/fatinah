@@ -416,6 +416,9 @@ try:
 
     # حماية اسم Cloud Function القديم بعقد ثابت أيضاً.
     functions_source = (ROOT / 'functions' / 'index.js').read_text(encoding='utf-8')
+    generation_handlers_source = (
+        ROOT / 'functions' / 'generation-handlers.js'
+    ).read_text(encoding='utf-8')
     assert 'exports.generateQuestions = onRequest' in functions_source
     assert 'generateQuestionsV1Handler' in functions_source
     assert 'secrets: [anthropicKey]' in functions_source
@@ -440,9 +443,9 @@ try:
     assert 'SUBSCRIPTION_TIMEOUT_MS = 5_000' in functions_source
     assert 'PROVIDER_TIMEOUT_MS = 20_000' in functions_source
     assert 'FUNCTION_TIMEOUT_SECONDS = 40' in functions_source
-    v2_handler = functions_source.split(
+    v2_handler = generation_handlers_source.split(
         'async function generateQuestionsV2Handler', 1)[1].split(
-            'exports.generateQuestionsV2 = onRequest', 1)[0]
+            'module.exports', 1)[0]
     assert 'status(410)' in v2_handler
     assert 'fetch(' not in v2_handler
     assert 'anthropicKey' not in v2_handler
@@ -454,6 +457,7 @@ try:
     sources_to_scan = '\n'.join((
         (ROOT / 'server.py').read_text(encoding='utf-8'),
         functions_source,
+        generation_handlers_source,
         (ROOT / 'functions' / 'api-contract.js').read_text(encoding='utf-8'),
         (ROOT / 'functions' / 'network-policy.js').read_text(encoding='utf-8'),
         (ROOT / 'functions' / 'trusted-source.js').read_text(encoding='utf-8'),

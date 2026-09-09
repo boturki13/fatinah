@@ -93,7 +93,7 @@
     "test:web:core": "npm run test:web:content && npm run test:web:account && npm run test:web:gameplay && npm run test:web:ui",
     "test:web:content": "node tests/question_pipeline_test.mjs && node tests/question_cost_guard_test.mjs && node tests/religious_source_packet_test.mjs && node tests/question_quality_test.mjs && node tests/playable_content_curation_test.mjs && node tests/content_release_visibility_test.mjs && node tests/next_release_semantic_options_test.mjs && node tests/question_bank_factual_tamper_test.mjs && node tests/question_family_content_test.mjs && node tests/world_science_questions_test.mjs && node tests/question_runtime_release_gate_test.mjs && node tests/kuwaiti_localization_test.mjs",
     "test:web:account": "node tests/paywall_prices_test.mjs && node tests/auth_flows_test.mjs && node tests/account_delete_security_test.mjs && node tests/api_timeout_test.mjs && node tests/account_local_data_isolation_test.mjs && node tests/revenuecat_cache_identity_test.mjs",
-    "test:web:gameplay": "node tests/game_flow_test.mjs && node tests/game_choice_flow_test.mjs && node tests/ios_game_flow_fixture_test.mjs && node tests/game_turn_order_test.mjs && node tests/game_resume_test.mjs && node tests/free_round_flow_test.mjs && node tests/free_round_device_identity_test.mjs && node tests/crashlytics_privacy_test.mjs",
+    "test:web:gameplay": "node tests/game_flow_test.mjs && node tests/game_choice_flow_test.mjs && node tests/ios_game_flow_fixture_test.mjs && node tests/image_ui_test_fixture_contract_test.mjs && node tests/ios_image_game_flow_fixture_test.mjs && node tests/game_turn_order_test.mjs && node tests/game_resume_test.mjs && node tests/free_round_flow_test.mjs && node tests/free_round_device_identity_test.mjs && node tests/crashlytics_privacy_test.mjs",
     "test:web:ui": "node tests/responsive_accessibility_test.mjs && node tests/accessibility_semantics_test.mjs && node tests/image_question_layout_test.mjs && node tests/category_start_cta_test.mjs",
     "test:images": "node tests/image_question_assets_test.mjs && node tests/remote_image_question_flow_test.mjs",
     "test:server": "node tests/run_server_tests_runner_test.mjs && node scripts/run-server-tests.mjs"
@@ -117,7 +117,7 @@
   "devDependencies": {
     "@capacitor/cli": "8.4.2",
     "playwright": "^1.62.1",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.4"
   },
   "overrides": {
     "@xmldom/xmldom": "0.9.12",

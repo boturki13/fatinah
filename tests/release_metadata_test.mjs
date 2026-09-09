@@ -11,15 +11,39 @@ const iosReleaseWorkflow = fs.readFileSync(new URL('../.github/workflows/ios-rel
 const coreWorkflow = fs.readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
 const replitConfig = fs.readFileSync(new URL('../.replit', import.meta.url), 'utf8');
 
-assert.equal(metadata.schemaVersion, 1);
+assert.equal(metadata.schemaVersion, 2);
 assert.equal(packageJson.version, metadata.packageVersion, 'package.json must match release/current.json');
 assert.match(packageJson.scripts['questions:next-release-gate'],/--release\b/,
   'The next-bank release command must enforce factual release readiness');
 assert.doesNotMatch(packageJson.scripts['questions:next-release-audit'],/--release\b/,
   'The structural QA command must remain available without claiming release readiness');
 assert.equal(metadata.bundleIdentifier, 'com.fatinah.game');
-assert.match(metadata.releaseBranch, /^codex\/release-/);
-assert.match(metadata.releaseTag, /^v\d+\.\d+\.\d+-build\.\d+$/);
+const appStoreStates = new Set([
+  'not_submitted',
+  'testflight_ready_to_submit',
+  'testflight_uploaded_processing',
+  'testflight_internal_testing',
+]);
+assert.ok(appStoreStates.has(metadata.appStoreState), 'Unknown App Store lifecycle state');
+if (metadata.appStoreState === 'not_submitted') {
+  assert.equal(metadata.releaseBranch, null,
+    'A draft build must not claim a release branch that has not been created');
+  assert.equal(metadata.releaseTag, null,
+    'A draft build must not claim a release tag that has not been created');
+  assert.equal(metadata.sourceCommit, null,
+    'A draft build must not claim a frozen source commit');
+  assert.equal(metadata.artifactSha256, null,
+    'A draft build must not claim an archive fingerprint');
+} else {
+  assert.match(metadata.releaseBranch, /^codex\/release-/);
+  assert.match(metadata.sourceCommit, /^[a-f0-9]{40}$/,
+    'A TestFlight candidate must identify its exact source commit');
+  assert.match(metadata.artifactSha256, /^[a-f0-9]{64}$/,
+    'A TestFlight candidate must identify its archive fingerprint');
+  if (metadata.releaseTag !== null) {
+    assert.match(metadata.releaseTag, /^v\d+\.\d+\.\d+-build\.\d+$/);
+  }
+}
 assert.match(metadata.productionApiUrl, /^https:\/\/[a-z0-9.-]+$/);
 assert.ok(metadata.replitUrl === null || /^https:\/\/[a-z0-9-]+\.replit\.app$/.test(metadata.replitUrl));
 assert.doesNotMatch(replitConfig, /^FATINAH_ENVIRONMENT\s*=\s*["'](?:staging|production)["']/m,

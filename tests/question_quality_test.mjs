@@ -11,6 +11,8 @@ const appTerms = fs.readFileSync(new URL('www/terms-of-service.html', root), 'ut
 const publicTerms = fs.readFileSync(new URL('legal/terms.html', root), 'utf8');
 const approvedBank = fs.readFileSync(new URL('www/approved-question-bank.js', root), 'utf8');
 const cloudFunction = fs.readFileSync(new URL('functions/index.js', root), 'utf8');
+const cloudGenerationHandlers = fs.readFileSync(
+  new URL('functions/generation-handlers.js', root), 'utf8');
 const server = fs.readFileSync(new URL('server.py', root), 'utf8');
 
 const sandbox = { window: {} };
@@ -87,9 +89,9 @@ assert.match(publicTerms, /قوانين دولة الكويت/);
 // عقد v1 يبقى متوافقاً مؤقتاً مع النسخة 1.2 المنشورة. الحظر المطلوب هو أن
 // تطبيق 1.3 وعقد v2 لا يستدعيا أي مزوّد توليد وقت التشغيل.
 assert.match(cloudFunction, /exports\.generateQuestions\s*=\s*onRequest/);
-const cloudFunctionV2Handler = cloudFunction
+const cloudFunctionV2Handler = cloudGenerationHandlers
   .split('async function generateQuestionsV2Handler', 2)[1]
-  ?.split('exports.generateQuestionsV2 = onRequest', 1)[0] || '';
+  ?.split('module.exports', 1)[0] || '';
 const cloudFunctionV2Export = cloudFunction.split('exports.generateQuestionsV2 = onRequest', 2)[1] || '';
 assert.ok(cloudFunctionV2Handler && cloudFunctionV2Export, 'عقد Cloud Function v2 مفقود.');
 assert.doesNotMatch(cloudFunctionV2Handler, /ANTHROPIC|api\.anthropic\.com|defineSecret/);

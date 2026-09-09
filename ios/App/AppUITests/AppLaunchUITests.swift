@@ -111,12 +111,20 @@ final class AppLaunchUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
         app.launchArguments += ["-FatinahGameFlowUITests", "-FatinahImageFlowUITests"]
+        app.launchEnvironment["FATINAH_GAME_FLOW_UI_TEST"] = "1"
         app.launchEnvironment["FATINAH_IMAGE_FLOW_UI_TEST"] = "1"
         app.launch()
 
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 12), "يجب ظهور WKWebView")
         let option = answerOption(for: "النجوم", in: app)
-        XCTAssertTrue(option.waitForExistence(timeout: 75), "يجب فتح السؤال المصوّر بعد تنزيل صورته")
+        guard option.waitForExistence(timeout: 30) else {
+            let marker = app.staticTexts.matching(
+                NSPredicate(format: "label BEGINSWITH %@", "UI_TEST_ERROR:")
+            ).firstMatch
+            let detail = marker.waitForExistence(timeout: 2) ? marker.label : "no JavaScript error marker"
+            XCTFail("يجب فتح السؤال المصوّر من fixture محلي: \(detail)")
+            return
+        }
         let questionImage = app.images.firstMatch
         XCTAssertTrue(questionImage.waitForExistence(timeout: 8), "يجب عرض صورة السؤال")
         XCTAssertFalse(questionImage.label.isEmpty, "يجب أن تحمل الصورة وصفاً صوتياً")
@@ -181,6 +189,7 @@ final class AppLaunchUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
         app.launchArguments += ["-FatinahGameFlowUITests"]
+        app.launchEnvironment["FATINAH_GAME_FLOW_UI_TEST"] = "1"
         app.launch()
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 12), "يجب ظهور WKWebView")
         let firstBoardCell = app.buttons.matching(

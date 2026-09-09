@@ -77,7 +77,9 @@ def raw_status(extra_headers):
     return int(response.split(b' ', 2)[1])
 
 def static_asset(path, headers=None):
-    connection = http.client.HTTPConnection('127.0.0.1', port, timeout=5)
+    # The curated Commons bank is intentionally large. Give cold local/cloud-
+    # synced workspaces enough time to hydrate it without weakening API timeouts.
+    connection = http.client.HTTPConnection('127.0.0.1', port, timeout=20)
     connection.request('GET', path, headers=headers or {})
     response = connection.getresponse()
     result = response.status, dict(response.getheaders()), response.read()

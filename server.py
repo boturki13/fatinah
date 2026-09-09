@@ -99,6 +99,7 @@ _question_bank_cache = {'mtime_ns': None, 'document': None}
 _question_bank_cache_lock = threading.Lock()
 _image_question_bank_cache = {
     'path': None, 'mtime_ns': None, 'size': None, 'document': None,
+    'asset_check_key': None, 'assets_ready': None,
 }
 _image_question_bank_cache_lock = threading.Lock()
 _question_round_local_locks = tuple(threading.Lock() for _ in range(64))
@@ -528,14 +529,69 @@ def load_server_image_question_bank():
         return document
 
 
+def local_image_assets_ready(document: dict) -> bool:
+    """تحقق مرة واحدة من وجود كل أصل معلن وحجمه قبل إعلان فئات الصور."""
+    check_key = (
+        os.path.realpath(QUESTION_IMAGE_DIR),
+        str(document.get('assetsSha256') or ''),
+    )
+    with _image_question_bank_cache_lock:
+        if _image_question_bank_cache.get('asset_check_key') == check_key:
+            return _image_question_bank_cache.get('assets_ready') is True
+
+    ready = True
+    image_root = os.path.realpath(QUESTION_IMAGE_DIR)
+    for rows in document.get('categories', {}).values():
+        for question in rows:
+            for asset in question.get('image', {}).get('assets', []):
+                relative_path = urllib.parse.urlsplit(asset.get('url', '')).path
+                prefix = '/assets/question-images/'
+                if not relative_path.startswith(prefix):
+                    ready = False
+                    break
+                local_path = os.path.realpath(os.path.join(
+                    image_root, relative_path[len(prefix):]))
+                if not local_path.startswith(image_root + os.sep):
+                    ready = False
+                    break
+                try:
+                    if os.path.getsize(local_path) != asset.get('bytes'):
+                        ready = False
+                        break
+                except OSError:
+                    ready = False
+                    break
+            if not ready:
+                break
+        if not ready:
+            break
+
+    with _image_question_bank_cache_lock:
+        _image_question_bank_cache.update(
+            asset_check_key=check_key, assets_ready=ready)
+    return ready
+
+
 def load_combined_server_question_bank():
-    """ادمج بنكي النص والصور ديناميكياً دون قائمة فئات في التطبيق."""
+    """ادمج البنكين مع تدهور آمن إلى النص إذا غابت أصول الصور."""
     text_document = load_server_question_bank()
-    image_document = load_server_image_question_bank()
+    image_document = None
+    try:
+        candidate = load_server_image_question_bank()
+        if local_image_assets_ready(candidate):
+            image_document = candidate
+        else:
+            print('[Question Bank] Image assets unavailable; serving text bank only')
+    except (OSError, ValueError, TypeError) as exc:
+        print('[Question Bank] Image bank unavailable; serving text bank only '
+              f'error={exception_kind(exc)}')
     categories = {}
     category_kinds = {}
     seen_ids = set()
-    for kind, document in (('text', text_document), ('image', image_document)):
+    documents = [('text', text_document)]
+    if image_document is not None:
+        documents.append(('image', image_document))
+    for kind, document in documents:
         for category, rows in document['categories'].items():
             target = categories.setdefault(category, [])
             previous_kind = category_kinds.get(category)
@@ -549,8 +605,8 @@ def load_combined_server_question_bank():
                 target.append(question)
     component_fingerprint = '\0'.join((
         str(text_document.get('sha256') or ''),
-        str(image_document.get('sha256') or ''),
-        str(image_document.get('assetsSha256') or ''),
+        str((image_document or {}).get('sha256') or ''),
+        str((image_document or {}).get('assetsSha256') or ''),
     )).encode('ascii')
     combined_sha256 = hashlib.sha256(component_fingerprint).hexdigest()
     return {
@@ -561,20 +617,21 @@ def load_combined_server_question_bank():
         'questionCount': len(seen_ids),
         'targetBankSize': (
             int(text_document.get('targetBankSize') or 0) +
-            int(image_document.get('targetBankSize') or 0)),
+            int((image_document or {}).get('targetBankSize') or 0)),
         'ready': (text_document.get('ready') is True and
-                  image_document.get('ready') is True),
+                  (image_document is None or image_document.get('ready') is True)),
         'releaseReady': (text_document.get('releaseReady') is True and
-                         image_document.get('releaseReady') is True),
+                         (image_document is None or
+                          image_document.get('releaseReady') is True)),
         'factuallyVerifiedCount': (
             int(text_document.get('factuallyVerifiedCount') or 0) +
-            (int(image_document.get('questionCount') or 0)
-             if image_document.get('releaseReady') is True else 0)),
+            (int((image_document or {}).get('questionCount') or 0)
+             if (image_document or {}).get('releaseReady') is True else 0)),
         'categories': categories,
         'categoryKinds': category_kinds,
         'components': {
             'text': text_document.get('bankVersion'),
-            'image': image_document.get('bankVersion'),
+            'image': (image_document or {}).get('bankVersion'),
         },
     }
 
