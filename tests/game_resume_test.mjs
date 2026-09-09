@@ -8,6 +8,9 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const url=`file://${path.join(root,'www/index.html')}`;
 const uid='resume-player';
 const snapshotKey=`fatinah_active_round_${uid}`;
+// GitHub-hosted runners can take longer to initialize Chromium and hydrate the
+// persisted round. Keep the assertion strict, but allow realistic CI latency.
+const UI_TIMEOUT_MS=20000;
 
 function installHarness(){
   window.__FATINAH_LEGACY_SPOKEN_TEST__=true;
@@ -33,7 +36,7 @@ function installHarness(){
 }
 
 async function waitForHome(page){
-  await page.getByRole('button',{name:'🎯 يلا نلعب'}).waitFor({state:'visible',timeout:8000});
+  await page.getByRole('button',{name:'🎯 يلا نلعب'}).waitFor({state:'visible',timeout:UI_TIMEOUT_MS});
 }
 
 const browser=await chromium.launch();
@@ -96,7 +99,7 @@ try{
   assert.equal(beforeReload.snapshot.teams[0].used.includes('double'),true);
 
   await page.reload();
-  await page.locator('#q-wrap.show').waitFor({state:'visible',timeout:8000});
+  await page.locator('#q-wrap.show').waitFor({state:'visible',timeout:UI_TIMEOUT_MS});
   const restoredQuestion=await page.evaluate(()=>({
     question:document.getElementById('q-text').textContent,
     time:Number(document.getElementById('timer-num').textContent),
@@ -122,7 +125,7 @@ try{
   assert.equal((await page.locator('.team-chip .cs').first().textContent()).trim(),'200');
 
   await page.reload();
-  await page.locator('#s-board.active').waitFor({state:'visible',timeout:8000});
+  await page.locator('#s-board.active').waitFor({state:'visible',timeout:UI_TIMEOUT_MS});
   assert.equal(await page.locator('#q-wrap.show').count(),0,'بين الأسئلة يجب استعادة اللوحة بلا سؤال وهمي.');
   assert.equal(await page.locator('#board .cell.used').count(),1,'الخانة المجابة يجب أن تبقى مستخدمة.');
   assert.match(await page.locator('#turn-pill').textContent(),/فريق الاستكمال/,'يجب استعادة الدور التالي.');
@@ -133,7 +136,7 @@ try{
   await page.locator('.ll-search').click();
   const searchBefore=Number((await page.locator('#search-timer').textContent()).match(/\d+/)?.[0]);
   await page.reload();
-  await page.locator('#q-wrap.show').waitFor({state:'visible',timeout:8000});
+  await page.locator('#q-wrap.show').waitFor({state:'visible',timeout:UI_TIMEOUT_MS});
   const restoredSearch=await page.evaluate(()=>({
     phase:state.cur?.phase,searching:state.cur?.searching,
     searchTimeLeft:state.searchTimeLeft,paused:state.paused,
