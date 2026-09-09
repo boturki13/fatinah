@@ -6,6 +6,13 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const url = 'file://' + path.resolve(__dirname, '..', 'www', 'index.html');
+const ASYNC_STATE_TIMEOUT_MS = 20000;
+
+async function waitForFreeRoundBanner(page, text){
+  await page.locator('#free-round-banner').filter({hasText:text}).waitFor({
+    state:'visible',timeout:ASYNC_STATE_TIMEOUT_MS,
+  });
+}
 
 function installHarness(){
   window.__FATINAH_LEGACY_SPOKEN_TEST__ = true;
@@ -170,6 +177,7 @@ try{
   });
   await page.goto(url);
   await page.locator('#s-home.active').waitFor({state:'visible'});
+  await waitForFreeRoundBanner(page,'أول جولة عليك بالكامل');
   assert.match(await page.locator('#free-round-banner').textContent(),/أول جولة عليك بالكامل/);
 
   await page.getByRole('button',{name:'🎯 يلا نلعب'}).click();
@@ -192,6 +200,7 @@ try{
 
   await page.reload();
   await page.locator('#s-home.active').waitFor({state:'visible'});
+  await waitForFreeRoundBanner(page,'جولتك المجانية محجوزة');
   assert.match(await page.locator('#free-round-banner').textContent(),/جولتك المجانية محجوزة/,
     'تظهر إمكانية استكمال الجولة بعد إعادة تشغيل التطبيق');
   await page.getByRole('button',{name:'🎯 يلا نلعب'}).click();
