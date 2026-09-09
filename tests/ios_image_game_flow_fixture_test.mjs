@@ -11,7 +11,7 @@ const fixtures = {
     path.join(root, 'server-assets/question-images/v2/flagx-q235.avif'),
   ).toString('base64'),
   webp: fs.readFileSync(
-    path.join(root, 'server-assets/question-images/v2/spacex-q13176.webp'),
+    path.join(root, 'server-assets/question-images/v2/flagx-q235.webp'),
   ).toString('base64'),
 };
 

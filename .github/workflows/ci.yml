@@ -78,7 +78,7 @@ jobs:
           npm run sync:ios
           node scripts/images/fetch-release-assets.mjs --asset=v1/fire-extinguisher.avif
           node scripts/images/fetch-release-assets.mjs --asset=v2/flagx-q235.avif
-          node scripts/images/fetch-release-assets.mjs --asset=v2/spacex-q13176.webp
+          node scripts/images/fetch-release-assets.mjs --asset=v2/flagx-q235.webp
 
       - name: Verify 1.4 runtime question-bank release artifacts
         run: npm run questions:release-gate
