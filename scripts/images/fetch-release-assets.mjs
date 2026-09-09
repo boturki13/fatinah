@@ -31,6 +31,13 @@ if (requestedAsset && items.length !== 1) {
 }
 
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+function fetchError(message, retryable) {
+  const error = new Error(message);
+  error.retryable = retryable;
+  return error;
+}
 
 function destinationFor(item) {
   if (!item.relativePath || path.isAbsolute(item.relativePath) || item.relativePath.includes('..')) {
@@ -55,15 +62,38 @@ async function validLocalAsset(item, destination) {
 
 async function fetchAndVerify(item, destination) {
   const canonicalUrl = new URL(item.url);
-  const response = await fetch(new URL(canonicalUrl.pathname, fetchOrigin), { redirect: 'error' });
-  if (!response.ok) throw new Error(`asset_fetch_failed:${response.status}:${item.relativePath}`);
-  const bytes = Buffer.from(await response.arrayBuffer());
-  if (bytes.byteLength !== item.bytes) throw new Error(`asset_size_mismatch:${item.relativePath}`);
-  if (digest(bytes) !== item.sha256) throw new Error(`asset_hash_mismatch:${item.relativePath}`);
-  await fs.mkdir(path.dirname(destination), { recursive: true });
-  const temporary = `${destination}.${process.pid}.tmp`;
-  await fs.writeFile(temporary, bytes, { mode: 0o644 });
-  await fs.rename(temporary, destination);
+  const fetchUrl = new URL(canonicalUrl.pathname, fetchOrigin);
+  let lastError;
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      const response = await fetch(fetchUrl, {
+        redirect: 'error',
+        signal: AbortSignal.timeout(30_000),
+        headers: { 'User-Agent': 'FatinahReleaseFetcher/1.4 (https://ata20.com)' },
+      });
+      if (!response.ok) {
+        const retryable = response.status === 408 || response.status === 429 || response.status >= 500;
+        throw fetchError(`asset_fetch_failed:${response.status}:${item.relativePath}`, retryable);
+      }
+      const bytes = Buffer.from(await response.arrayBuffer());
+      if (bytes.byteLength !== item.bytes) {
+        throw fetchError(`asset_size_mismatch:${item.relativePath}`, false);
+      }
+      if (digest(bytes) !== item.sha256) {
+        throw fetchError(`asset_hash_mismatch:${item.relativePath}`, false);
+      }
+      await fs.mkdir(path.dirname(destination), { recursive: true });
+      const temporary = `${destination}.${process.pid}.tmp`;
+      await fs.writeFile(temporary, bytes, { mode: 0o644 });
+      await fs.rename(temporary, destination);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 5 || error?.retryable === false) break;
+      await wait(Math.min(8_000, 500 * (2 ** (attempt - 1))));
+    }
+  }
+  throw lastError;
 }
 
 let cursor = 0;
