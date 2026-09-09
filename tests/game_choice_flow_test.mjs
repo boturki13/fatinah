@@ -8,6 +8,7 @@ const url = `file://${path.join(root, 'www/index.html')}`;
 // Round restoration performs full app bootstrap and can exceed eight seconds on
 // throttled hosted runners. Assertions still require the exact restored state.
 const RESTORE_UI_TIMEOUT_MS = 20000;
+const ACTIVE_ROUND_KEY = 'fatinah_active_round_choice-flow-player';
 
 function installNativeTestHarness() {
   localStorage.setItem('fatinah_authUid', JSON.stringify('choice-flow-player'));
@@ -239,6 +240,10 @@ try {
       await page.waitForFunction(()=>state.cur?.phase==='reveal');
       await page.getByRole('button', { name: 'التالي' }).click();
       assert.equal(Number((await page.locator('.team-chip .cs').nth(1).textContent()).trim()), 100);
+      await page.waitForFunction(key => {
+        const snapshot = JSON.parse(localStorage.getItem(key) || 'null');
+        return snapshot?.current === null && snapshot?.answered === 2;
+      }, ACTIVE_ROUND_KEY, { timeout: RESTORE_UI_TIMEOUT_MS });
       await page.reload();
       await page.locator('#s-board.active').waitFor({ state: 'visible', timeout: RESTORE_UI_TIMEOUT_MS });
       assert.deepEqual(await page.locator('.team-chip .cs').allTextContents(), ['200', '100']);
