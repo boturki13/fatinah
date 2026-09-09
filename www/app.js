@@ -1444,8 +1444,16 @@ async function flushMetricEvents(){
 async function trackMetric(event,properties={}){
   const uid=window._currentUid||storeGet('authUid','');
   if(!uid) return false;
-  enqueueMetricEvent({uid,event,eventId:metricEventId(),appVersion:APP_VERSION,properties});
-  return flushMetricEvents();
+  const payload={uid,event,eventId:metricEventId(),appVersion:APP_VERSION,properties};
+  enqueueMetricEvent(payload);
+  const flushed=await flushMetricEvents();
+  const remainsQueued=()=>storeGet(metricOutboxKey(uid),[])
+    .some(item=>item.eventId===payload.eventId);
+  // An older in-flight flush may finish successfully without observing an event
+  // enqueued at its tail. Retry once only in that successful race; offline
+  // failures stay queued and are reported as such without a request loop.
+  if(flushed&&remainsQueued()) await flushMetricEvents();
+  return !remainsQueued();
 }
 
 // ────────── هوية الأسئلة ومصادرها وسجل عدم التكرار
