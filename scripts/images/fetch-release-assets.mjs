@@ -12,6 +12,11 @@ const requestedAsset = assetArgument?.slice('--asset='.length);
 const concurrencyArgument = process.argv.find(argument => argument.startsWith('--concurrency='));
 const concurrency = Math.max(1, Math.min(16, Number(concurrencyArgument?.split('=')[1] || 8)));
 const allowedHosts = new Set(['ata20.com']);
+const fetchOrigin = new URL(process.env.FATINAH_IMAGE_FETCH_ORIGIN || 'https://ata20.com');
+if (fetchOrigin.protocol !== 'https:' || fetchOrigin.username || fetchOrigin.password
+    || fetchOrigin.pathname !== '/' || fetchOrigin.search || fetchOrigin.hash) {
+  throw new Error('FATINAH_IMAGE_FETCH_ORIGIN must be a credential-free HTTPS origin');
+}
 const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
 
 if (!Array.isArray(manifest.items) || manifest.items.length === 0) {
@@ -49,7 +54,8 @@ async function validLocalAsset(item, destination) {
 }
 
 async function fetchAndVerify(item, destination) {
-  const response = await fetch(item.url, { redirect: 'error' });
+  const canonicalUrl = new URL(item.url);
+  const response = await fetch(new URL(canonicalUrl.pathname, fetchOrigin), { redirect: 'error' });
   if (!response.ok) throw new Error(`asset_fetch_failed:${response.status}:${item.relativePath}`);
   const bytes = Buffer.from(await response.arrayBuffer());
   if (bytes.byteLength !== item.bytes) throw new Error(`asset_size_mismatch:${item.relativePath}`);
@@ -96,4 +102,5 @@ console.log(JSON.stringify({
   processedAssetCount: items.length,
   verified,
   downloaded,
+  origin: fetchOrigin.origin,
 }, null, 2));

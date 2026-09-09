@@ -115,6 +115,23 @@
     return localWeb?new URL(canonical.pathname,location.origin).href:canonical.href;
   }
 
+  function uiTestFixtureResponse(asset){
+    if(root.__FATINAH_IMAGE_FLOW_UI_TEST__!==true) return null;
+    const fixtures=root.__FATINAH_IMAGE_FLOW_UI_TEST_ASSETS__;
+    if(!fixtures) return null;
+    const encoded=fixtures[asset.url]||fixtures[asset.mimeType];
+    if(!encoded) return null;
+    if(typeof encoded!=='string') throw new Error('image_test_fixture_invalid');
+    const decode=root.atob||(typeof atob==='function'?atob:null);
+    if(typeof decode!=='function') throw new Error('image_test_fixture_invalid');
+    const binary=decode(encoded);
+    const bytes=Uint8Array.from(binary,char=>char.charCodeAt(0));
+    return new Response(bytes,{
+      status:200,
+      headers:{'Content-Type':asset.mimeType,'Content-Length':String(bytes.byteLength)},
+    });
+  }
+
   function validateQuestion(question){
     const image=question&&question.image;
     if(question?.o!==undefined||question?.a!==undefined){
@@ -181,6 +198,11 @@
   async function verifiedResponse(asset,fetcher,{signal}={}){
     throwIfAborted(signal);
     validateAsset(asset);
+    // XCUITest receives immutable fixture bytes from the DEBUG-only native
+    // bridge. They still pass the production size/type/SHA-256 verification,
+    // so the test is deterministic without creating a validation bypass.
+    const fixtureResponse=uiTestFixtureResponse(asset);
+    if(fixtureResponse) return verifyResponseBody(asset,fixtureResponse,{signal});
     const request=fetcher||root.fetch?.bind(root)||(typeof fetch==='function'?fetch:null);
     if(typeof request!=='function') throw new Error('image_fetch_unavailable');
     const schedule=root.setTimeout?.bind(root)||(typeof setTimeout==='function'?setTimeout:null);

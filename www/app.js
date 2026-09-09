@@ -6939,10 +6939,10 @@ function defaultGameFlowUITestFixture({image=false}={}){
       if(image) base.image={
         alt:'مطفأة حريق حمراء مع خرطوم أسود',version:'1',
         factSource:{title:'NFPA — Fire extinguishers',url:'https://www.nfpa.org/education-and-research/home-fire-safety/fire-extinguishers'},
-        rights:{owner:'فطنة',credit:'صورة اختبار أصلية',provider:'فطنة',license:'حقوق استخدام حصرية',licenseUrl:'https://ata20.com/terms',sourcePage:'https://ata20.com'},
+        rights:{owner:'فطنة',credit:'صورة اختبار أصلية',provider:'فطنة',license:'حقوق استخدام حصرية',licenseUrl:'https://ata20.com/terms',sourcePage:'https://ata20.com',modifications:'تصغير وضغط لاختبار الواجهة'},
         assets:[
-          {url:'https://ata20.com/assets/question-images/v1/fire-extinguisher.avif',mimeType:'image/avif',sha256:'9ac8381074077ba557b12bb22dca64cf113d0cc380eed8da6d3ff8def19b983c',bytes:14048},
-          {url:'https://ata20.com/assets/question-images/v1/fire-extinguisher.webp',mimeType:'image/webp',sha256:'a5d26c2cdadefd56f18190387d43714b6865faae99c4dc8b8ad804e0a5aecf9a',bytes:16442},
+          {url:`https://ata20.com/assets/question-images/v1/ui-test-${serial}.avif`,mimeType:'image/avif',sha256:'c4fb48b55836abeb610a89e87385fe436200e79b908dd64977088bdf3a178eaa',bytes:557},
+          {url:`https://ata20.com/assets/question-images/v1/ui-test-${serial}.webp`,mimeType:'image/webp',sha256:'15e1099917be1b6a3af6b4428e75b72d5a6899dea0fe3f3275ffb35f7fd5f083',bytes:600},
         ],
       };
       return base;
@@ -7112,6 +7112,13 @@ void initPushMessaging().catch(error=>recordNonFatal(error,'firebase.messaging')
   recordNonFatal(error,'application.start');
   hideSplash();
   go('s-home');
+  if(window.__FATINAH_GAME_FLOW_UI_TEST__===true){
+    const marker=document.createElement('div');
+    marker.id='ui-test-start-error';
+    marker.setAttribute('role','alert');
+    marker.textContent=`UI_TEST_ERROR:${String(error?.message||error||'unknown')}`;
+    document.body.appendChild(marker);
+  }
 });
 
 // لا نعتمد على معاملات عودة دفع قديمة أو على cache محلي لمنح الصلاحية

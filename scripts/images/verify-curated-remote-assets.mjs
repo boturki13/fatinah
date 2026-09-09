@@ -14,6 +14,11 @@ if(!Number.isInteger(requestedConcurrency)||requestedConcurrency<1||requestedCon
   throw new Error('FATINAH_IMAGE_VERIFY_CONCURRENCY must be an integer from 1 to 16');
 }
 const concurrency=requestedConcurrency;
+const verifyOrigin=new URL(process.env.FATINAH_IMAGE_VERIFY_ORIGIN||'https://ata20.com');
+if(verifyOrigin.protocol!=='https:'||verifyOrigin.username||verifyOrigin.password
+    ||verifyOrigin.pathname!=='/'||verifyOrigin.search||verifyOrigin.hash){
+  throw new Error('FATINAH_IMAGE_VERIFY_ORIGIN must be a credential-free HTTPS origin');
+}
 
 const digest=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const canonicalAssetRecords=assets.map(({questionId,url,mimeType,bytes,sha256})=>(
@@ -34,10 +39,11 @@ async function download(asset){
       ||!url.pathname.startsWith('/assets/question-images/')){
     throw new Error(`${asset.questionId}: untrusted_asset_url`);
   }
+  const fetchUrl=new URL(url.pathname,verifyOrigin);
   let lastError;
   for(let attempt=1;attempt<=3;attempt++){
     try{
-      const response=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(30_000),
+      const response=await fetch(fetchUrl,{redirect:'error',signal:AbortSignal.timeout(30_000),
         headers:{'User-Agent':'FatinahReleaseVerifier/1.3 (https://ata20.com)'}});
       if(!response.ok) throw new Error(`http_${response.status}`);
       const contentType=String(response.headers.get('content-type')||'').split(';')[0].trim().toLowerCase();
@@ -68,4 +74,4 @@ async function worker(){
 
 await Promise.all(Array.from({length:concurrency},()=>worker()));
 console.log(JSON.stringify({ready:true,bankVersion:bank.bankVersion,questionCount:bank.questionCount,
-  assetCount:assets.length,verified},null,2));
+  assetCount:assets.length,verified,origin:verifyOrigin.origin},null,2));

@@ -83,11 +83,26 @@ function recordFinding(rule, filePath, objectId = 'WORKTREE') {
   findings.set(key, { rule, filePath: normalizedPath, objectId });
 }
 
-// Scan exactly what a contributor could commit, including non-ignored untracked files.
-const workingFiles = String(runGit([
+// Check path-sensitive rules for every committable path. Content already
+// reachable from HEAD is scanned below from Git objects, so only read new or
+// modified worktree/index files again. This keeps pre-commit and CI scans fast
+// without reducing history coverage.
+const committableFiles = String(runGit([
   'ls-files', '-z', '--cached', '--others', '--exclude-standard',
 ], { encoding: null })).split('\0').filter(Boolean);
-for (const relativePath of workingFiles) {
+for (const relativePath of committableFiles) {
+  const pathRule = sensitivePathRule(relativePath);
+  if (pathRule) recordFinding(pathRule, relativePath);
+}
+const changedFiles = new Set([
+  ...String(runGit([
+    'ls-files', '-z', '--modified', '--others', '--exclude-standard',
+  ], { encoding: null })).split('\0').filter(Boolean),
+  ...String(runGit([
+    'diff', '--cached', '--name-only', '--diff-filter=ACM', '-z',
+  ], { encoding: null })).split('\0').filter(Boolean),
+]);
+for (const relativePath of changedFiles) {
   const absolutePath = path.join(repositoryRoot, relativePath);
   let stat;
   try {
@@ -96,8 +111,6 @@ for (const relativePath of workingFiles) {
     continue; // A tracked file deleted in the working tree is intentionally absent.
   }
   if (!stat.isFile()) continue;
-  const pathRule = sensitivePathRule(relativePath);
-  if (pathRule) recordFinding(pathRule, relativePath);
   if (stat.size > maximumScannedFileBytes
       || relativePath === scannerPath || relativePath === baselineRepositoryPath) continue;
   const contents = fs.readFileSync(absolutePath).toString('utf8');

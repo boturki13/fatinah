@@ -11,6 +11,7 @@ const require = createRequire(import.meta.url);
 const contract = require('../functions/api-contract.js');
 const networkPolicy = require('../functions/network-policy.js');
 const trustedSource = require('../functions/trusted-source.js');
+const { generateQuestionsV2Handler } = require('../functions/generation-handlers.js');
 const functionSource = readFileSync(
   new URL('../functions/index.js', import.meta.url),
   'utf8',
@@ -24,9 +25,11 @@ if (functionSource.includes('admin.apps')) {
 if (!functionSource.includes('verifyIdToken(idToken, true)')) {
   throw new Error('Cloud Function لا تتحقق من إلغاء Firebase ID token');
 }
-const handlers = require('../functions/index.js');
-if (!handlers.generateQuestions || !handlers.generateQuestionsV2) {
-  throw new Error('تعذر تحميل أسماء Cloud Function المتوقعة');
+for (const exportedName of ['generateQuestions', 'generateQuestionsV2']) {
+  const exportPattern = new RegExp(`exports\\.${exportedName}\\s*=\\s*onRequest\\s*\\(`);
+  if (!exportPattern.test(functionSource)) {
+    throw new Error(`تصدير Cloud Function مفقود: ${exportedName}`);
+  }
 }
 
 function request(version, body = {}) {
@@ -60,6 +63,33 @@ if (!contract.apiVersionAllows(request('2'), '2')) {
 }
 if (contract.apiVersionAllows(request('1'), '2')) {
   throw new Error('اسم v2 قبل رأس v1');
+}
+
+function responseRecorder() {
+  const record = { headers: {}, statusCode: null, body: null };
+  return {
+    record,
+    response: {
+      set(name, value) { record.headers[name] = value; return this; },
+      status(value) { record.statusCode = value; return this; },
+      json(value) { record.body = value; return value; },
+    },
+  };
+}
+
+let recorded = responseRecorder();
+await generateQuestionsV2Handler(request('2'), recorded.response);
+if (recorded.record.statusCode !== 410 ||
+    recorded.record.body?.code !== 'ai_generation_retired' ||
+    recorded.record.headers['Cache-Control'] !== 'no-store' ||
+    recorded.record.headers['X-Fatinah-API-Version'] !== '2') {
+  throw new Error('معالج v2 لم يحافظ على عقد الإيقاف الآمن والرؤوس');
+}
+recorded = responseRecorder();
+await generateQuestionsV2Handler(request('1'), recorded.response);
+if (recorded.record.statusCode !== 400 ||
+    recorded.record.body?.code !== 'unsupported_api_version') {
+  throw new Error('معالج v2 لم يرفض رأس الإصدار غير المطابق');
 }
 
 // لا توجد وجهة production ضمنية إذا لم تُضبط البيئة صراحةً.

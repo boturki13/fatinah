@@ -4,6 +4,7 @@
 
 - [ ] فرع الإصدار منشأ من commit معروف وworktree نظيف.
 - [ ] `release/current.json` مطابق لـ`package.json` وXcode.
+- [ ] `sourceCommit` يطابق commit المرشح و`artifactSha256` تطابق Archive.
 - [ ] `CHANGELOG.md` مكتمل ولا يحتوي عناصر غير منجزة.
 - [ ] لا توجد أسرار أو ملفات أكبر من سياسة المستودع.
 - [ ] CI أخضر والمراجعة معتمدة.
@@ -11,6 +12,7 @@
 ## الاختبار
 
 - [ ] `npm test` ناجح بعد استعادة أصول الصور.
+- [ ] فحص الـ600 أصل من شبكة خارجية ناجح؛ لا تكفي حالة manifest المحلية.
 - [ ] `npm run questions:release-gate` ناجح لبنك التشغيل، و`npm run questions:next-release-gate -- --release` ناجح قبل دمج البنك القادم.
 - [ ] اختبارات Xcode/Swift ناجحة.
 - [ ] Archive Release لجهاز حقيقي ناجح.

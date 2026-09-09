@@ -6,6 +6,11 @@ on:
     branches: [main]
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      verify_origin:
+        description: HTTPS origin to verify (staging for pre-release, ata20.com for production)
+        required: false
+        default: https://ata20.com
 
 permissions:
   contents: read
@@ -19,6 +24,7 @@ env:
   IOS_SDK_MAJOR: '26'
   NODE_VERSION: '22'
   PYTHON_VERSION: '3.13'
+  RELEASE_VERIFY_ORIGIN: ${{ inputs.verify_origin || 'https://ata20.com' }}
 
 jobs:
   verify:
@@ -118,17 +124,25 @@ jobs:
           node scripts/validate-ios-public.mjs
 
       - name: Fetch and verify production image assets
+        env:
+          FATINAH_IMAGE_FETCH_ORIGIN: ${{ env.RELEASE_VERIFY_ORIGIN }}
         run: npm run images:fetch-release-assets
 
-      - name: Verify curated image assets from production CDN
+      - name: Verify curated image assets from release origin
+        env:
+          FATINAH_IMAGE_VERIFY_ORIGIN: ${{ env.RELEASE_VERIFY_ORIGIN }}
         run: npm run images:verify-curated-remote-assets
+
+      - name: Verify deployed release contract
+        env:
+          FATINAH_VERIFY_ORIGIN: ${{ env.RELEASE_VERIFY_ORIGIN }}
+        run: npm run release:verify-deployment
 
       - name: Web, server, security, and content tests
         run: |
           npm test
           npm audit --omit=dev
           npm audit --prefix functions --omit=dev
-          node -e "const handlers=require('./functions/index.js'); if (!handlers.generateQuestions || !handlers.generateQuestionsV2) throw new Error('Cloud Function handlers missing')"
           npm run questions:audit
           npm run questions:runtime-audit
 

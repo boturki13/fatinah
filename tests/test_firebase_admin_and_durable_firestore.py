@@ -4,6 +4,7 @@ import os
 import sqlite3
 import sys
 import tempfile
+import types
 import unittest
 from datetime import datetime, timezone
 from unittest import mock
@@ -47,18 +48,33 @@ class FirebaseAdminAuthenticationTests(unittest.TestCase):
         self.assertEqual(called, [])
 
     def test_admin_verification_checks_revocation_and_user_existence(self):
-        with mock.patch.object(
-                firebase_bridge, '_firebase_app', return_value='test-app'), \
-             mock.patch(
-                'firebase_admin.auth.verify_id_token',
-                return_value={'uid': 'uid-1'},
-             ) as verify:
+        # Keep this unit test hermetic: importing the full Google SDK can perform
+        # expensive plugin discovery and makes correctness depend on local disk
+        # hydration. Deployment dependency installation is enforced separately
+        # by pyproject.toml.
+        fake_package = types.ModuleType('firebase_admin')
+        fake_auth = types.ModuleType('firebase_admin.auth')
+        fake_auth.verify_id_token = mock.Mock(return_value={'uid': 'uid-1'})
+        fake_package.auth = fake_auth
+        with mock.patch.dict(sys.modules, {
+                'firebase_admin': fake_package,
+                'firebase_admin.auth': fake_auth,
+             }), mock.patch.object(
+                firebase_bridge, '_firebase_app', return_value='test-app'):
             self.assertEqual(
                 firebase_bridge.verify_id_token('valid-token')['uid'],
                 'uid-1',
             )
-        verify.assert_called_once_with(
+        fake_auth.verify_id_token.assert_called_once_with(
             'valid-token', app='test-app', check_revoked=True)
+
+    def test_firebase_admin_is_a_declared_runtime_dependency(self):
+        pyproject = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'pyproject.toml',
+        )
+        with open(pyproject, encoding='utf-8') as dependency_file:
+            self.assertIn('firebase-admin>=', dependency_file.read())
 
     def test_server_preserves_signed_recent_auth_and_provider_claims(self):
         os.environ['FIREBASE_PROJECT_ID'] = 'test-project'
