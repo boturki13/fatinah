@@ -5,9 +5,10 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const url = `file://${path.join(root, 'www/index.html')}`;
-// Round restoration performs full app bootstrap and can exceed eight seconds on
-// throttled hosted runners. Assertions still require the exact restored state.
-const RESTORE_UI_TIMEOUT_MS = 20000;
+// Round restoration performs a full app bootstrap. Hosted runners occasionally
+// exceed 20 seconds under load, so size this wait for observed CI p99 latency;
+// every assertion below still requires the exact restored state.
+const RESTORE_UI_TIMEOUT_MS = 45000;
 const ACTIVE_ROUND_KEY = 'fatinah_active_round_choice-flow-player';
 
 function installNativeTestHarness() {

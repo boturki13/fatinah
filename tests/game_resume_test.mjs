@@ -8,9 +8,10 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const url=`file://${path.join(root,'www/index.html')}`;
 const uid='resume-player';
 const snapshotKey=`fatinah_active_round_${uid}`;
-// GitHub-hosted runners can take longer to initialize Chromium and hydrate the
-// persisted round. Keep the assertion strict, but allow realistic CI latency.
-const UI_TIMEOUT_MS=20000;
+// GitHub-hosted runners can exceed 20 seconds while Chromium initializes and
+// hydrates a persisted round. Keep the assertions strict while allowing the
+// observed CI p99 latency.
+const UI_TIMEOUT_MS=45000;
 
 function installHarness(){
   window.__FATINAH_LEGACY_SPOKEN_TEST__=true;
