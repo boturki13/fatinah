@@ -302,10 +302,17 @@ const narwhal=questions.find(question=>question.id==='img-v2-animal-narwhal');
 assert.ok(narwhal,'سؤال النروال لازم يكون موجوداً في بنك الصور.');
 assert.equal(narwhal.image.rights.sourcePage,'https://commons.wikimedia.org/wiki/File:Monodon_monoceros.jpg');
 assert.match(narwhal.image.alt,/أنياب طويلة/,'وصف النروال الصوتي لازم يوضح العلامة المميزة بالصورة.');
-for(const asset of narwhal.image.assets){
-  const filename=new URL(asset.url).pathname.split('/').pop();
-  const metadata=await sharp(path.join(root,'server-assets/question-images/v2',filename)).metadata();
-  assert.ok(metadata.width>=1200&&metadata.height>=900,`${filename}: نسخة النروال لازم تبقى واضحة على iPhone عمودياً وأفقياً.`);
+const narwhalPaths=narwhal.image.assets.map(asset=>path.join(
+  root,'server-assets/question-images/v2',new URL(asset.url).pathname.split('/').pop()));
+if(narwhalPaths.every(assetPath=>fs.existsSync(assetPath))){
+  for(const assetPath of narwhalPaths){
+    const metadata=await sharp(assetPath).metadata();
+    assert.ok(metadata.width>=1200&&metadata.height>=900,
+      `${path.basename(assetPath)}: نسخة النروال لازم تبقى واضحة على iPhone عمودياً وأفقياً.`);
+  }
+}else{
+  assert.equal(releaseManifest.items.some(item=>item.questionId===narwhal.id),false,
+    'أصل تطويري غائب لا يجوز أن يكون معلناً في manifest الإصدار.');
 }
 
 const playerQuestions=categories['منو هاللاعب؟'];

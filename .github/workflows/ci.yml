@@ -152,7 +152,9 @@ jobs:
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
 
       - name: Fetch and verify production image assets
         env:
