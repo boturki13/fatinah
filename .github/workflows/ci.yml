@@ -14,6 +14,11 @@ on:
         description: HTTPS origin to verify (staging before release, ata20.com after release)
         required: false
         default: https://ata20.com
+      verify_next_release:
+        description: Also run the independent post-1.4 question-bank provenance gate
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -73,7 +78,11 @@ jobs:
           npm run sync:ios
           node scripts/images/fetch-release-assets.mjs --asset=v1/fire-extinguisher.avif
 
-      - name: Verify next question-bank release artifacts
+      - name: Verify 1.4 runtime question-bank release artifacts
+        run: npm run questions:release-gate
+
+      - name: Verify independent next-release question-bank artifacts
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_next_release }}
         run: |
           npm run questions:next-release-gate
           git diff --exit-code -- \
