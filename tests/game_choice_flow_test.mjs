@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const url = `file://${path.join(root, 'www/index.html')}`;
+// Round restoration performs full app bootstrap and can exceed eight seconds on
+// throttled hosted runners. Assertions still require the exact restored state.
+const RESTORE_UI_TIMEOUT_MS = 20000;
 
 function installNativeTestHarness() {
   localStorage.setItem('fatinah_authUid', JSON.stringify('choice-flow-player'));
@@ -217,7 +220,7 @@ try {
       });
 
       await page.reload();
-      await page.locator('#q-wrap.show').waitFor({ state: 'visible', timeout: 8000 });
+      await page.locator('#q-wrap.show').waitFor({ state: 'visible', timeout: RESTORE_UI_TIMEOUT_MS });
       assert.equal(await page.locator('#q-text').textContent(), restoredQuestion, 'يُستعاد السؤال نفسه');
       const restored = await snapshot(page);
       assert.equal(restored.phase, 'steal', 'تُستعاد مرحلة إجابة الفريق الثاني');
@@ -237,7 +240,7 @@ try {
       await page.getByRole('button', { name: 'التالي' }).click();
       assert.equal(Number((await page.locator('.team-chip .cs').nth(1).textContent()).trim()), 100);
       await page.reload();
-      await page.locator('#s-board.active').waitFor({ state: 'visible', timeout: 8000 });
+      await page.locator('#s-board.active').waitFor({ state: 'visible', timeout: RESTORE_UI_TIMEOUT_MS });
       assert.deepEqual(await page.locator('.team-chip .cs').allTextContents(), ['200', '100']);
       assert.equal(await page.locator('#board .cell.used').count(), 2);
       assert.equal(await page.evaluate(() => state.turn), 0, 'يبقى الدور التالي محفوظاً بعد حسم السؤال');
