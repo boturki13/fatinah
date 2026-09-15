@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import Security
 import Testing
 @testable import App
@@ -318,6 +319,63 @@ struct RevenueCatKeychainStoreTests {
 
         #expect(throws: FatinahKeychainError(status: errSecInteractionNotAllowed)) {
             try store.set("appl_BLOCKED")
+        }
+    }
+}
+
+@Suite("Encrypted future game packs", .serialized)
+struct GamePackKeyStoreTests {
+    @Test("Creates one device-only key and reuses it")
+    func createsAndReusesKey() throws {
+        let security = InMemorySecItemService()
+        let store = FatinahGamePackKeyStore(
+            service: "com.fatinah.tests.game-packs.\(UUID().uuidString)",
+            security: security
+        )
+
+        let first = try store.key(for: "account-a")
+        let second = try store.key(for: "account-a")
+        #expect(first.withUnsafeBytes { Data($0) } == second.withUnsafeBytes { Data($0) })
+        #expect(security.lastAdd?[kSecAttrAccessible as String] as? String
+                == kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String)
+    }
+
+    @Test("Missing-key clear is idempotent and accounts are isolated")
+    func clearAndAccountIsolation() throws {
+        let security = InMemorySecItemService()
+        let store = FatinahGamePackKeyStore(security: security)
+        try store.clear(context: "missing")
+
+        let first = try store.key(for: "account-a")
+        try store.clear(context: "account-a")
+        let replacement = try store.key(for: "account-a")
+        #expect(first.withUnsafeBytes { Data($0) } != replacement.withUnsafeBytes { Data($0) })
+    }
+
+    @Test("AES-GCM rejects tampering and the wrong account context")
+    func authenticatedEncryptionRejectsTampering() throws {
+        let context = Data("account-a".utf8)
+        let key = SymmetricKey(size: .bits256)
+        let sealed = try AES.GCM.seal(Data("future-pack".utf8), using: key, authenticating: context)
+        let combined = try #require(sealed.combined)
+        let reopened = try AES.GCM.open(
+            AES.GCM.SealedBox(combined: combined), using: key, authenticating: context
+        )
+        #expect(reopened == Data("future-pack".utf8))
+
+        var tampered = combined
+        tampered[tampered.index(before: tampered.endIndex)] ^= 0x01
+        #expect(throws: (any Error).self) {
+            try AES.GCM.open(
+                AES.GCM.SealedBox(combined: tampered), using: key, authenticating: context
+            )
+        }
+        #expect(throws: (any Error).self) {
+            try AES.GCM.open(
+                AES.GCM.SealedBox(combined: combined),
+                using: key,
+                authenticating: Data("account-b".utf8)
+            )
         }
     }
 }

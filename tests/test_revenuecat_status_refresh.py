@@ -104,68 +104,6 @@ class RevenueCatStatusRefreshTests(unittest.TestCase):
                 }}},
             })
 
-    def test_round_rechecks_revenuecat_before_using_free_round(self):
-        selected = {'called': False}
-
-        def select_subscriber_round(_request, **_kwargs):
-            selected['called'] = True
-            return 200, {'schemaVersion': 1, 'questions': {}}
-
-        with mock.patch.dict(os.environ, {
-            'FATINAH_V2_APP_CHECK_ENFORCE': 'false',
-            'FATINAH_V2_FEATURE_QUESTION_BANK_ENABLED': 'true',
-        }, clear=False), mock.patch.object(
-            srv, 'uid_matches_token', return_value=True,
-        ), mock.patch.object(
-            srv, 'rate_limited', return_value=False,
-        ), mock.patch.object(
-            srv, 'subscription_is_active', return_value=False,
-        ), mock.patch.object(
-            srv, 'try_refresh_revenuecat_subscription', return_value=True,
-        ) as refresh, mock.patch.object(
-            srv, 'acquire_question_round_guard', return_value=object(),
-        ), mock.patch.object(
-            srv, 'release_question_round_guard', return_value=None,
-        ), mock.patch.object(
-            srv, 'load_all_question_seen_ids', return_value=set(),
-        ), mock.patch.object(
-            srv, 'select_remote_round_questions', side_effect=select_subscriber_round,
-        ), mock.patch.object(
-            srv, 'reserve_question_round', return_value=None,
-        ), mock.patch.object(
-            srv, 'load_free_round_question_grant',
-        ) as free_round:
-            httpd = HTTPServer(('127.0.0.1', 0), srv.Handler)
-            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-            thread.start()
-            try:
-                body = json.dumps({
-                    'uid': 'firebase-user',
-                    'idToken': 'valid-token',
-                    'categories': ['اختبار'],
-                }).encode('utf-8')
-                request = urllib.request.Request(
-                    f'http://127.0.0.1:{httpd.server_address[1]}/api/v2/questions/round',
-                    data=body,
-                    method='POST',
-                    headers={
-                        'Authorization': 'Bearer valid-token',
-                        'Content-Type': 'application/json',
-                        'X-Fatinah-API-Version': '2',
-                    },
-                )
-                with urllib.request.urlopen(request, timeout=5) as response:
-                    payload = json.loads(response.read())
-                self.assertEqual(response.status, 200)
-                self.assertEqual(payload['schemaVersion'], 1)
-            finally:
-                httpd.shutdown()
-                thread.join(timeout=5)
-                httpd.server_close()
-
-        refresh.assert_called_once_with('firebase-user')
-        self.assertTrue(selected['called'])
-        free_round.assert_not_called()
 
 
 if __name__ == '__main__':

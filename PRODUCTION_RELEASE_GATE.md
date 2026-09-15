@@ -1,13 +1,14 @@
-# بوابة إعداد إنتاج فطنة 1.3
+# بوابة إعداد إنتاج فطنة 1.4
 
-هذه البوابة تفحص **إعدادات عملية خادم production فقط** قبل إتاحة 1.3، ولا تنشر
+هذه البوابة تفحص **إعدادات عملية خادم production فقط** قبل إتاحة 1.4، ولا تنشر
 شيئاً ولا تتصل بـApple أو Firebase أو RevenueCat. لا تقرأ ملف `.env` ولا تقبل
 الأسرار كوسائط سطر أوامر؛ تقرأ متغيرات البيئة المحقونة من مخزن أسرار منصة
 النشر، وتطبع أسماء الفحوص وحالاتها فقط من دون القيم أو أطوالها أو نص الأخطاء.
 
 خادم production يعامل فطنة كتطبيق iOS فقط: المسار العام يعرض صفحة تعريف،
-وتُرفض ملفات اللعبة وبنوك الأسئلة (`app.js` و`question-bank*.js`) كي لا يصبح
-متغير JavaScript محلي حاجز الاشتراك. ملفات الخصوصية والشروط تبقى عامة.
+وتُرفض ملفات اللعبة للمتصفح العام كي لا يصبح JavaScript محلي حاجز الاشتراك.
+البنك القديم غير موجود، أما منصة 1.4 فتعمل من API v2 فقط. ملفات الخصوصية
+والشروط تبقى عامة.
 
 ## مرحلتان إلزاميتان
 
@@ -15,7 +16,7 @@
    هذا يستخدم مفاتيح مؤقتة مولّدة للاختبار، ولا يحتاج أسرار الإنتاج.
 2. انشر أولاً الخادم المتوافق مع v1/v2 وفق الطرح التدريجي في
    `API_VERSIONING.md`. بعد اكتمال تفعيل مسارات 1.3 وقبل إتاحته عبر
-   TestFlight/App Store، افتح shell محمياً داخل **بيئة production نفسها**
+   TestFlight/App Store للإصدار 1.4، افتح shell محمياً داخل **بيئة production نفسها**
    بعد حقن أسرارها وشغّل:
 
    ```bash
@@ -34,7 +35,15 @@
 في الشركات التي تستخدم job نشر محمياً، اربط الأمر ببيئة GitHub Environment
 تتطلب موافقة بشرية ولا تسمح بطباعة environment؛ وإلا شغّله داخل منصة الاستضافة.
 البوابة ليست مانعاً لنشر الخادم المتوافق أول مرة وميزات v2 مغلقة؛ إنها مانع
-الإتاحة النهائية للعميل بعد اكتمال الطرح التدريجي.
+الإتاحة النهائية لعميل 1.4 بعد اكتمال الطرح التدريجي.
+
+### بنك 1.4 النصي
+
+- لا توجد فئات أو صور في هذا الإصدار. بوابة المحتوى مستقلة عن بوابة الإعداد:
+  يجب أن تعرض لوحة الجودة 100 سؤال معتمد لكل مستوى، 600 سؤال إجمالاً.
+- المصادر والمراجعات تبقى داخل منصة الجودة ولا تصل إلى حمولة العرض للاعب.
+- لا يُفعّل `game_packs` للعملاء قبل اختبار الحزمتين المشفرتين ومنع التكرار
+  والبلاغات على staging.
 
 ## ما الذي تمنعه البوابة؟
 
@@ -42,12 +51,11 @@
 
 - تتطلب `FATINAH_ENVIRONMENT=production` صراحةً؛ الاختصارات والأخطاء الإملائية
   مرفوضة.
-- تتطلب استمرار عقد v1 عبر `FATINAH_V1_AI_GENERATION_ENABLED=true` ووجهة
-  HTTPS الإنتاجية المعروفة فقط.
+- تتطلب بقاء مسارات البنك والتوليد القديمة بحالة `410 Gone`.
 - تتطلب `FATINAH_V1_APP_CHECK_ENFORCE=false` طوال وجود تطبيق 1.2 المنشور، كي
   لا ينقطع عميل لا يرسل App Check.
-- تتطلب تفعيل كل مسارات v2 المخطط طرحها: App Attest، الجولة المجانية، تاريخ الأسئلة،
-  بنك الأسئلة المراجع، البلاغات، القياسات، تشخيصات iOS، وRevenueCat webhook.
+- تتطلب تفعيل كل مسارات v2 المخطط طرحها: App Attest، الجولة المجانية، حزم
+  اللعب، لوحة الجودة، البلاغات، القياسات، تشخيصات iOS، وRevenueCat webhook.
 
 ### Firebase والتخزين الدائم
 
@@ -106,7 +114,7 @@
   وتمنع SMTP النصي: يجب أن يكون STARTTLS أو SSL فعالاً. كما تمنع وجود اسم
   مستخدم بلا كلمة مرور أو العكس.
 - تحذّر إذا بقي `OPENAI_API_KEY` أو `ANTHROPIC_API_KEY` داخل **عملية خادم
-  1.3** لأنها لا تحتاجهما. هذا تحذير least-privilege ولا يمنع النشر، لأن
+  1.4** لأنها لا تحتاجهما. هذا تحذير least-privilege ولا يمنع النشر، لأن
   Cloud Function القديم الذي يخدم v1 يُنشر ويدار بأسراره بصورة مستقلة.
 
 ## أسماء الإعدادات التي تُراجع
@@ -116,8 +124,6 @@
 ```text
 FATINAH_ENVIRONMENT
 FATINAH_DURABLE_STORAGE
-FATINAH_V1_AI_GENERATION_ENABLED
-FATINAH_V1_GENERATION_URL
 FATINAH_V1_APP_CHECK_ENFORCE
 FATINAH_V2_APP_CHECK_ENFORCE
 FATINAH_V2_APP_ATTEST_ENFORCE
@@ -128,8 +134,8 @@ FATINAH_DISTRIBUTED_RATE_LIMIT_CONFIGURED
 FATINAH_DISTRIBUTED_RATE_LIMIT_TTL_CONFIGURED
 FATINAH_V2_FEATURE_APP_ATTEST_ENABLED
 FATINAH_V2_FEATURE_FREE_ROUND_ENABLED
-FATINAH_V2_FEATURE_QUESTION_HISTORY_ENABLED
-FATINAH_V2_FEATURE_QUESTION_BANK_ENABLED
+FATINAH_V2_FEATURE_GAME_PACKS_ENABLED
+FATINAH_V2_FEATURE_QUESTION_ADMIN_ENABLED
 FATINAH_V2_FEATURE_QUESTION_REPORTS_ENABLED
 FATINAH_V2_FEATURE_METRICS_ENABLED
 FATINAH_V2_FEATURE_IOS_DIAGNOSTICS_ENABLED
@@ -158,13 +164,12 @@ SMTP_USERNAME
 SMTP_PASSWORD
 SMTP_USE_TLS
 SMTP_USE_SSL
-REPORT_EMAIL_TO
 ```
 
 ## حدود الجاهزية
 
 ظهور `READY` يعني أن **عقد إعداد الخادم** اجتاز الفحص فقط. لا يعني أن إصدار
-1.3 جاهز للرفع. يجب أيضاً نجاح اختبارات المشروع والبناء، وظهور
-`releaseReady: true` من `npm run questions:release-gate`، ثم اختبار الشراء
-والاستعادة وApp Attest وDeviceCheck على TestFlight وجهاز حقيقي وفق
+1.4 جاهز للرفع. يجب أيضاً نجاح اختبارات المشروع والبناء، وبلوغ 100 سؤال
+معتمد في كل مستوى داخل لوحة الجودة، ثم اختبار الشراء والاستعادة والحزم
+المشفرة وApp Attest وDeviceCheck على TestFlight وجهاز حقيقي وفق
 `TESTFLIGHT_CHECKLIST.md`.

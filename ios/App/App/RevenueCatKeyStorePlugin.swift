@@ -1,4 +1,5 @@
 import Capacitor
+import CryptoKit
 import Security
 import WebKit
 
@@ -167,6 +168,174 @@ final class RevenueCatKeyStorePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
+/// مفتاح تشفير مرتبط بهذا الجهاز والحساب. لا يغادر Keychain أبداً،
+/// ولا ينتقل مع نسخة iCloud الاحتياطية.
+struct FatinahGamePackKeyStore {
+    let service: String
+    private let security: any FatinahSecItemServing
+
+    init(
+        service: String = "com.fatinah.game.question-packs",
+        security: any FatinahSecItemServing = FatinahSystemSecItemService()
+    ) {
+        self.service = service
+        self.security = security
+    }
+
+    func key(for context: String) throws -> SymmetricKey {
+        let identity = identityQuery(for: context)
+        var query = identity
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var result: CFTypeRef?
+        let readStatus = security.copyMatching(query, result: &result)
+        switch readStatus {
+        case errSecSuccess:
+            guard let data = result as? Data, data.count == 32 else {
+                throw FatinahKeychainError(status: errSecDecode)
+            }
+            return SymmetricKey(data: data)
+        case errSecItemNotFound:
+            let generated = SymmetricKey(size: .bits256)
+            let keyData = generated.withUnsafeBytes { Data($0) }
+            var add = identity
+            add[kSecValueData as String] = keyData
+            add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            switch security.add(add) {
+            case errSecSuccess:
+                return generated
+            case errSecDuplicateItem:
+                let updateStatus = security.update(
+                    identity,
+                    attributes: [kSecValueData as String: keyData]
+                )
+                guard updateStatus == errSecSuccess else {
+                    throw FatinahKeychainError(status: updateStatus)
+                }
+                return generated
+            case let status:
+                throw FatinahKeychainError(status: status)
+            }
+        case let status:
+            throw FatinahKeychainError(status: status)
+        }
+    }
+
+    func clear(context: String) throws {
+        let status = security.delete(identityQuery(for: context))
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw FatinahKeychainError(status: status)
+        }
+    }
+
+    private func identityQuery(for context: String) -> [String: Any] {
+        let digest = SHA256.hash(data: Data(context.utf8))
+        let account = digest.map { String(format: "%02x", $0) }.joined()
+        return [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+    }
+}
+
+@objc(FatinahSecureGamePackPlugin)
+final class FatinahSecureGamePackPlugin: CAPPlugin, CAPBridgedPlugin {
+    let identifier = "FatinahSecureGamePackPlugin"
+    let jsName = "FatinahSecureGamePack"
+    let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "seal", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "open", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "clear", returnType: CAPPluginReturnPromise),
+    ]
+
+    private let store = FatinahGamePackKeyStore()
+    private let cryptoQueue = DispatchQueue(
+        label: "com.fatinah.game.question-pack-crypto",
+        qos: .userInitiated
+    )
+
+    @objc func seal(_ call: CAPPluginCall) {
+        guard let plaintext = call.getString("plaintext"),
+              let context = validContext(call.getString("context")),
+              plaintext.utf8.count <= 8_000_000 else {
+            call.reject("بيانات حزمة اللعب غير صالحة")
+            return
+        }
+        cryptoQueue.async { [store] in
+            do {
+                let key = try store.key(for: context)
+                // ترك nonce لـ CryptoKit يولّد قيمة عشوائية جديدة لكل كتابة.
+                let box = try AES.GCM.seal(
+                    Data(plaintext.utf8),
+                    using: key,
+                    authenticating: Data(context.utf8)
+                )
+                guard let combined = box.combined else {
+                    throw FatinahKeychainError(status: errSecDecode)
+                }
+                DispatchQueue.main.async {
+                    call.resolve(["sealed": combined.base64EncodedString()])
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    call.reject("تعذر تشفير حزمة اللعب")
+                }
+            }
+        }
+    }
+
+    @objc func open(_ call: CAPPluginCall) {
+        guard let sealed = call.getString("sealed"),
+              sealed.utf8.count <= 12_000_000,
+              let combined = Data(base64Encoded: sealed),
+              let context = validContext(call.getString("context")) else {
+            call.reject("حزمة اللعب المشفرة غير صالحة")
+            return
+        }
+        cryptoQueue.async { [store] in
+            do {
+                let key = try store.key(for: context)
+                let box = try AES.GCM.SealedBox(combined: combined)
+                let plaintext = try AES.GCM.open(
+                    box,
+                    using: key,
+                    authenticating: Data(context.utf8)
+                )
+                guard let value = String(data: plaintext, encoding: .utf8) else {
+                    throw FatinahKeychainError(status: errSecDecode)
+                }
+                DispatchQueue.main.async { call.resolve(["plaintext": value]) }
+            } catch {
+                DispatchQueue.main.async {
+                    call.reject("تعذر فتح حزمة اللعب")
+                }
+            }
+        }
+    }
+
+    @objc func clear(_ call: CAPPluginCall) {
+        guard let context = validContext(call.getString("context")) else {
+            call.reject("سياق الحزمة غير صالح")
+            return
+        }
+        cryptoQueue.async { [store] in
+            do {
+                try store.clear(context: context)
+                DispatchQueue.main.async { call.resolve() }
+            } catch {
+                DispatchQueue.main.async { call.reject("تعذر حذف مفتاح حزمة اللعب") }
+            }
+        }
+    }
+
+    private func validContext(_ value: String?) -> String? {
+        guard let value, !value.isEmpty, value.utf8.count <= 180,
+              value.hasSuffix("|fatinah-game-packs-v1") else { return nil }
+        return value
+    }
+}
+
 /// Compatibility account-boundary bridge. MetricKit and Crashlytics remain
 /// anonymous; these calls only trigger fail-closed cleanup of legacy telemetry
 /// files so existing web logout/delete-account ordering stays safe.
@@ -203,14 +372,32 @@ final class FatinahTelemetryIdentityPlugin: CAPPlugin, CAPBridgedPlugin {
 @objc(FatinahBridgeViewController)
 final class FatinahBridgeViewController: CAPBridgeViewController {
     private var didReloadForGameFlowUITests = false
+    private var didInstallGameFlowUITestBridge = false
 
     override func capacitorDidLoad() {
         #if DEBUG
-        if CommandLine.arguments.contains("-FatinahGameFlowUITests") {
+        let environment = ProcessInfo.processInfo.environment
+        let gameFlowUITest = CommandLine.arguments.contains("-FatinahGameFlowUITests")
+            || environment["FATINAH_GAME_FLOW_UI_TEST"] == "1"
+            || environment["FATINAH_IMAGE_FLOW_UI_TEST"] == "1"
+        if gameFlowUITest && !didInstallGameFlowUITestBridge {
+            didInstallGameFlowUITestBridge = true
             var source = "Object.defineProperty(window, '__FATINAH_GAME_FLOW_UI_TEST__', { value: true });"
             if CommandLine.arguments.contains("-FatinahImageFlowUITests")
-                || ProcessInfo.processInfo.environment["FATINAH_IMAGE_FLOW_UI_TEST"] == "1" {
+                || environment["FATINAH_IMAGE_FLOW_UI_TEST"] == "1" {
                 source += "Object.defineProperty(window, '__FATINAH_IMAGE_FLOW_UI_TEST__', { value: true });"
+                let avifFixture = "AAAAHGZ0eXBhdmlmAAAAAG1pZjFhdmlmbWlhZgAAANZtZXRhAAAAAAAAACFoZGxyAAAAAAAAAABwaWN0AAAAAAAAAAAAAAAAAAAAAA5waXRtAAAAAAABAAAAImlsb2MAAAAAREAAAQABAAAAAAD6AAEAAAAAAAABMwAAACNpaW5mAAAAAAABAAAAFWluZmUCAAAAAAEAAGF2MDEAAAAAVmlwcnAAAAA4aXBjbwAAAAxhdjFDgSgCAAAAABRpc3BlAAAAAAAABQAAAAQAAAAAEHBpeGkAAAAAAwgICAAAABZpcG1hAAAAAAAAAAEAAQOBAgMAAAE7bWRhdBIACgo6Kmf//8oCGg0gMqICHWGgAAIAAUWAACUBx3uIvgpYN0qzl005T6g42+0JNvf3AYzPkgzWYYC+KizLnXz74CQMdaNcghmPBtBy3fxFAguWAMiMtzC4339BDZvibMfZ/jCpu/2uJQHHe4i+Clg3SrOXTTlPqDjb7Qk29/cBjM+SDNZhgL4qLMudfPvgHwx1o1yCGY8G0HLd/EeTd/zedtLMBOo7wZkdvk6LxTrIJuAnrwF+McBkaLNUvDwtRELA/n/NVUzdH4Hkq8/1idKu1w9soANEnCJx7tr6MF+k2Y3fP+J4d57JH55qqtTa3R+B5KvP55tZQRpxQCfgJ68LlfcAZGizVLw8LURCwP5/zVVM3R+B5KvP9Y032/rh7ZQAaJOAce7a+jBfpNmN3z8Y8UA="
+                let webpFixture = "UklGRlACAABXRUJQVlA4IEQCAABQJQCdASqIAUkBPnk8m0skoyIlIHVYCKAPCWlu4XETCmLIs+rzQc+CGqpNlyyghqqS3lp63EOqrqwjlr0VbDCe+/LXoy8Ry16MvEcteyAoIaqdROyYh1VKYCBgCiOap7EEh2uqJHVUmy5ZQQ1Vm1JsmIdVSbJuFBDVUmyddvROOQQ1VJsmIv4o6qk2TEbaGqpNku1AZIo5OB6MIzfr+xBOPFrx7EMCDxtjRHOJxGZzg5XpfuEJk3XDr0ZeI7NI1c85zqZ8dAc2jzjkEL5ClSbM3ZyPOo3E4rW9biYgHWLeJkNVSbIQDr3cvEctejLfk1JsmIdVSbJiHVUmyYh1VJsmIdVSbJiHVUmyYh14OOObW4h1VJsmItrxHLXoy8Ry16M+etxDqqUMd6zgEd/9n9EE3aYAAP7/EyH5KhbgeJJUCaEcQlgFWrEEWH1wkLmmDbXoBFvs1gIDEtY/eecLdV+83I5wZXW9/MjfXGM+jC/SRZHUKYZyugqWZ4VV7VonHltWSRfPNYK9/mRQxJ0Kb4nih3N/LKgT98/yZR3sTvaVZjiXuxwbuqNch6paDyiI1COUWJloThB7HyW7hkrWFoQW/CK//+1u11jQ6A3GVLdl8h/7WobhUWNZpiu0n1dkfH2Pfh87263jsfgQeRezorpSIUBRuFusgB7SDjFZvGx2PHrlGF1FmiLOXFXIlf/6awvuXsLHlM28cl1KOEMUp1f88vXxNzLYAAAXFkqbcD2KgjvB15jMZiyr4tzfccpRfSPHAQAA"
+                source += """
+                Object.defineProperty(window, '__FATINAH_IMAGE_FLOW_UI_TEST_ASSETS__', {
+                  value: Object.freeze({
+                    'image/avif': '\(avifFixture)',
+                    'image/webp': '\(webpFixture)'
+                  }),
+                  writable: false,
+                  configurable: false
+                });
+                """
             }
             if CommandLine.arguments.contains("-FatinahDynamicTypeUITests") {
                 source += "Object.defineProperty(window, '__FATINAH_DYNAMIC_TYPE_UI_TEST__', { value: true });"
@@ -229,6 +416,7 @@ final class FatinahBridgeViewController: CAPBridgeViewController {
         #endif
         installDynamicTypeBridge()
         bridge?.registerPluginInstance(RevenueCatKeyStorePlugin())
+        bridge?.registerPluginInstance(FatinahSecureGamePackPlugin())
         bridge?.registerPluginInstance(FatinahTelemetryIdentityPlugin())
         bridge?.registerPluginInstance(FatinahDeviceIntegrityPlugin())
     }

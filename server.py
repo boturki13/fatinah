@@ -1,40 +1,29 @@
 """
 خادم فطنة — Python خفيف مع Firebase Admin للتحقق المحلي من الرموز.
 يخدم index.html وfirebase-config.js ويدير اشتراكات Apple IAP عبر RevenueCat.
-أسئلة اللعبة تصدر من بنك محتوى ثابت ومراجع؛ لا يوجد توليد آلي للمستخدم.
+أزيلت خدمات الأسئلة والفئات والتوليد من الإصدار 1.4.
 """
-import base64, copy, datetime, gzip, hashlib, io, ipaddress, json, os, secrets, socket, sqlite3, threading, time, unicodedata, urllib.request, urllib.error, urllib.parse, uuid
+import base64, copy, datetime, gzip, hashlib, hmac, io, ipaddress, json, os, secrets, socket, sqlite3, threading, time, unicodedata, urllib.request, urllib.error, urllib.parse, uuid
 import smtplib, ssl
 from email.message import EmailMessage
+from http.cookies import SimpleCookie
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 import re
+
+import question_platform
 
 # ─── ثوابت ─────────────────────────────────────────────────────────────────
 PORT      = int(os.environ.get('PORT', 5000))
 APPLICATION_RELEASE = '1.4.0'
 API_CONTRACT_REVISION = 'fatinah-v2-2026-09-08'
-RETIRED_QUESTION_CATEGORIES = frozenset({
-    'رتّبها صح', 'رياضيات وحساب', 'ألغاز بوليسية',
-})
-WWW_DIR   = os.path.join(os.path.dirname(__file__), 'www')
-HTML_FILE = os.path.join(WWW_DIR, 'index.html')
-QUESTION_IMAGE_DIR = os.path.join(
-    os.path.dirname(__file__), 'server-assets', 'question-images')
-QUESTION_BANK_DIR = os.path.join(
-    os.path.dirname(__file__), 'server-assets', 'question-bank', 'v1')
-QUESTION_BANK_FILE = os.path.join(QUESTION_BANK_DIR, 'bank.json')
-CATEGORY_PRESENTATION_FILE = os.path.join(
-    QUESTION_BANK_DIR, 'category-presentation.json')
-IMAGE_QUESTION_BANK_FILE = os.path.join(
-    QUESTION_IMAGE_DIR, 'curated-question-bank.json')
-DB_PATH   = os.path.join(os.path.dirname(__file__), 'subscriptions.db')
+WWW_DIR   = os.path.join(os.path.dirname(__file__), "www")
+HTML_FILE = os.path.join(WWW_DIR, "index.html")
+DB_PATH   = os.environ.get(
+    'FATINAH_DATABASE_PATH',
+    os.path.join(os.path.dirname(__file__), 'subscriptions.db'),
+)
 IOS_DIAGNOSTIC_RETENTION_DAYS = 30
-QUESTION_IMAGE_ALLOWED_ORIGINS = frozenset({
-    'capacitor://localhost',
-    'ionic://localhost',
-    'https://fatinah-next-1-3-security-review.replit.app',
-})
 # Keep executable code behind explicit origins. Event-handler attributes are
 # intentionally disabled; the client uses an allowlisted addEventListener
 # dispatcher instead of requiring script-src 'unsafe-inline'.
@@ -95,815 +84,6 @@ ACCOUNT_DELETE_MAX_AUTH_AGE_SECONDS = bounded_env_int(
     'FATINAH_ACCOUNT_DELETE_MAX_AUTH_AGE_SECONDS', 300, 60, 900)
 ACCOUNT_DELETE_AUTH_CLOCK_SKEW_SECONDS = 60
 
-_question_bank_cache = {'mtime_ns': None, 'document': None}
-_question_bank_cache_lock = threading.Lock()
-_image_question_bank_cache = {
-    'path': None, 'mtime_ns': None, 'size': None, 'document': None,
-}
-_image_question_bank_cache_lock = threading.Lock()
-_question_round_local_locks = tuple(threading.Lock() for _ in range(64))
-_QUESTION_ROUND_LEASE_SECONDS = 45
-_QUESTION_RESERVATION_TTL_SECONDS = 30 * 24 * 60 * 60
-_FREE_ROUND_PAYLOAD_MAX_BYTES = 512 * 1024
-_IMAGE_ASSET_MAX_BYTES = 450 * 1024
-# One complete board consumes one actually-opened question from each of the six
-# technical levels. Inventory alerts are operational warnings, not a gameplay
-# gate: categories remain visible even after a threshold is crossed.
-QUESTION_INVENTORY_ALERT_THRESHOLDS = (50, 25, 10)
-_IMAGE_BLOCKED_CATALOG_IDS = frozenset({
-    'object-crossbow',
-    'object-compass-flask',
-    'objectx-q39397',
-    'civilization-mughal',
-    'generalx-q32489',
-    'treasurex-q2002185',
-    'treasurex-q145780',
-})
-_IMAGE_BLOCKED_TEXT = re.compile(
-    r'(?:إسرائيل|اسرائيل|إسرائيلي|اسرائيلي|'
-    r'تل[\s_-]*أبيب|تل[\s_-]*ابيب|'
-    r'(?<![A-Za-z])israel(?:i)?(?![A-Za-z])|tel[\s_-]*aviv|ישראל|'
-    r'إباحي|اباحي|علاقة\s+جنسية|'
-    r'sexual\s+(?:intercourse|act)|porn(?:o|ographic|ography)?|hentai|ecchi)',
-    re.IGNORECASE,
-)
-_LEGACY_BLOCKED_PATTERNS = (
-    re.compile(
-        r'(?:^|[^a-z])(?:israel|isreal|israil|israeel)'
-        r'(?:i|is|ite|ites|ian)?(?:[^a-z]|$)', re.IGNORECASE),
-    re.compile(r'(?:^|[^a-z])tel[\s._-]*aviv(?:[^a-z]|$)', re.IGNORECASE),
-    re.compile(
-        r'(?:^|[^a-z])zion(?:ism|ist|ists|istic)(?:[^a-z]|$)',
-        re.IGNORECASE),
-    re.compile(
-        r'(?:اسراي{1,2}ل|اسراءيل|اسري{1,2}ل|'
-        r'تل[\s._-]*ابيب|صهيون|ישראל|🇮🇱)'),
-    re.compile(
-        r'(?:^|[^a-z])(?:porn(?:o|ography|ographic)?|xxx|hentai|ecchi|nsfw)'
-        r'(?:[^a-z]|$)', re.IGNORECASE),
-    re.compile(
-        r'(?:^|[^a-z])(?:adult[\s_-]+content|sexually[\s_-]+explicit|'
-        r'explicit[\s_-]+sex(?:ual)?[\s_-]+content)(?:[^a-z]|$)',
-        re.IGNORECASE),
-    re.compile(
-        r'(?:اباح(?:ي|يه|ه)|بورنو(?:غرافي)?|هنتاي|ايتشي|'
-        r'محتوي\s+جنسي\s+صريح|مواد\s+جنسيه\s+صريحه|'
-        r'افلام?\s+(?:اباحيه|جنسيه|للكبار))'),
-)
-ISLAMIC_REMOTE_SOURCE_CATEGORIES = (
-    'السيرة النبوية', 'فتوحات المسلمين', 'القرآن الكريم', 'الصحابة',
-    'الخلفاء الراشدون', 'دين وسيرة', 'الأنبياء والرسل',
-)
-
-
-def _normalize_legacy_safety_text(value: str) -> str:
-    normalized = unicodedata.normalize('NFKD', value)
-    normalized = ''.join(
-        character for character in normalized
-        if unicodedata.category(character) != 'Mn')
-    return normalized.translate(str.maketrans({
-        'إ': 'ا', 'أ': 'ا', 'آ': 'ا', 'ٱ': 'ا',
-        'ؤ': 'و', 'ئ': 'ي', 'ى': 'ي', 'ة': 'ه', 'ـ': '',
-    })).casefold()
-
-
-def legacy_content_is_blocked(*values) -> bool:
-    """افحص نصوص عقد 1.2 من دون إعادتها أو تسجيلها عند الرفض."""
-    pending = list(values)
-    visited = set()
-    while pending:
-        value = pending.pop()
-        if isinstance(value, str):
-            normalized = _normalize_legacy_safety_text(value)
-            if any(pattern.search(normalized)
-                   for pattern in _LEGACY_BLOCKED_PATTERNS):
-                return True
-            continue
-        if not isinstance(value, (dict, list, tuple, set)):
-            continue
-        reference = id(value)
-        if reference in visited:
-            continue
-        visited.add(reference)
-        pending.extend(value.values() if isinstance(value, dict) else value)
-    return False
-
-
-def load_server_question_bank():
-    """اقرأ نسخة البنك المنشورة فقط وتحقق من بصمتها قبل تقديم أي سؤال."""
-    stat = os.stat(QUESTION_BANK_FILE)
-    with _question_bank_cache_lock:
-        if (_question_bank_cache['document'] is not None and
-                _question_bank_cache['mtime_ns'] == stat.st_mtime_ns):
-            return _question_bank_cache['document']
-        if stat.st_size > 50 * 1024 * 1024:
-            raise ValueError('ملف بنك الأسئلة يتجاوز 50MB')
-        with open(QUESTION_BANK_FILE, 'r', encoding='utf-8') as bank_file:
-            document = json.load(bank_file)
-        if (not isinstance(document, dict) or document.get('schemaVersion') != 1 or
-                not isinstance(document.get('categories'), dict)):
-            raise ValueError('مخطط بنك الأسئلة غير صالح')
-        categories = document['categories']
-        retired_categories = RETIRED_QUESTION_CATEGORIES.intersection(categories)
-        if retired_categories:
-            raise ValueError('بنك الأسئلة يحتوي فئة ملغاة')
-        questions = []
-        for category, rows in categories.items():
-            if (not isinstance(category, str) or not category.strip() or
-                    not isinstance(rows, list)):
-                raise ValueError('فئة غير صالحة في بنك الأسئلة')
-            questions.extend(rows)
-        question_count = document.get('questionCount')
-        target_bank_size = document.get('targetBankSize')
-        if (not isinstance(question_count, int) or isinstance(question_count, bool) or
-                question_count != len(questions)):
-            raise ValueError('عدد أسئلة البنك لا يطابق المحتوى')
-        if (not isinstance(target_bank_size, int) or isinstance(target_bank_size, bool) or
-                target_bank_size < 1 or target_bank_size > 100_000):
-            raise ValueError('هدف بنك الأسئلة غير صالح')
-        expected_ready = question_count == target_bank_size
-        if document.get('ready') is not expected_ready:
-            raise ValueError('حالة جاهزية بنك الأسئلة لا تطابق عدده')
-        if not isinstance(document.get('releaseReady'), bool):
-            raise ValueError('حالة اعتماد بنك الأسئلة للنشر مفقودة')
-        seen_ids = set()
-        for question in questions:
-            review = (question.get('review')
-                      if isinstance(question, dict) else None)
-            if (not isinstance(question, dict) or
-                    not re.fullmatch(r'gq-[a-f0-9]{20}', str(question.get('id') or '')) or
-                    question['id'] in seen_ids or
-                    question.get('d') not in range(1, 7) or
-                    not isinstance(question.get('q'), str) or
-                    not 12 <= len(question['q'].strip()) <= 220 or
-                    not isinstance(question.get('answer'), str) or
-                    not 1 <= len(question['answer'].strip()) <= 140 or
-                    not isinstance(question.get('o'), list) or
-                    len(question['o']) != 4 or
-                    len(set(question['o'])) != 4 or
-                    not all(isinstance(option, str) and option.strip()
-                            for option in question['o']) or
-                    not isinstance(question.get('a'), int) or
-                    isinstance(question.get('a'), bool) or
-                    question['a'] not in range(4) or
-                    question['o'][question['a']] != question['answer'] or
-                    not isinstance(review, dict) or review.get('status') not in {
-                        'approved', 'automated_structure_pass'}) :
-                raise ValueError('سجل غير صالح في بنك الأسئلة')
-            if (document['releaseReady'] is True and
-                    (review.get('status') != 'approved' or
-                     not _is_nonempty_string(
-                         review.get('reviewer'), maximum=200) or
-                     not isinstance(review.get('reviewedAt'), str) or
-                     re.fullmatch(r'\d{4}-\d{2}-\d{2}',
-                                  review['reviewedAt']) is None)):
-                raise ValueError('بنك يدّعي الجاهزية ويحتوي سؤالاً غير معتمد واقعياً')
-            source = question.get('source')
-            if (not isinstance(source, dict) or
-                    not _is_nonempty_string(source.get('title'), maximum=500) or
-                    not _is_https_url(source.get('url'))):
-                raise ValueError('مصدر سؤال غير آمن في بنك الأسئلة')
-            if document['releaseReady'] is True:
-                try:
-                    datetime.date.fromisoformat(review['reviewedAt'])
-                except ValueError as exc:
-                    raise ValueError('تاريخ مراجعة سؤال نصي غير صالح') from exc
-            seen_ids.add(question['id'])
-        canonical = json.dumps(
-            categories, ensure_ascii=False,
-            separators=(',', ':')).encode('utf-8')
-        digest = hashlib.sha256(canonical).hexdigest()
-        if not secrets.compare_digest(digest, str(document.get('sha256') or '')):
-            raise ValueError('بصمة بنك الأسئلة لا تطابق المحتوى')
-        _question_bank_cache.update(mtime_ns=stat.st_mtime_ns, document=document)
-        return document
-
-
-def _reject_duplicate_json_keys(pairs):
-    """ارفض مفاتيح JSON المكررة بدل قبول آخر قيمة بصمت."""
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError('مفتاح JSON مكرر في بنك الصور')
-        result[key] = value
-    return result
-
-
-def _reject_nonfinite_json(value):
-    raise ValueError(f'قيمة JSON رقمية غير صالحة: {value}')
-
-
-def _is_nonempty_string(value, *, maximum=500) -> bool:
-    return (isinstance(value, str) and 1 <= len(value.strip()) <= maximum
-            and not re.search(r'[\x00-\x1f\x7f]', value))
-
-
-def _is_https_url(value, *, asset=False) -> bool:
-    if not _is_nonempty_string(value, maximum=2048):
-        return False
-    try:
-        parsed = urllib.parse.urlsplit(value)
-        port = parsed.port
-    except (TypeError, ValueError):
-        return False
-    if (parsed.scheme != 'https' or not parsed.hostname or
-            parsed.username is not None or parsed.password is not None or
-            port not in (None, 443)):
-        return False
-    if asset:
-        return (parsed.hostname.lower() == 'ata20.com' and port is None and
-                not parsed.query and not parsed.fragment and
-                re.fullmatch(
-                    r'/assets/question-images/v[1-9][0-9]{0,2}/[A-Za-z0-9][A-Za-z0-9._-]*\.(?:avif|webp)',
-                    parsed.path) is not None)
-    return True
-
-
-def _image_question_has_blocked_content(category: str, question: dict) -> bool:
-    question_id = str(question.get('id') or '')
-    catalog_id = re.sub(r'^img-v[1-9][0-9]{0,2}-', '', question_id)
-    if catalog_id in _IMAGE_BLOCKED_CATALOG_IDS:
-        return True
-    serialized = json.dumps(
-        {'category': category, 'question': question},
-        ensure_ascii=False, separators=(',', ':'))
-    return _IMAGE_BLOCKED_TEXT.search(serialized) is not None
-
-
-def _is_blocked_image_asset_path(relative_path: str) -> bool:
-    """Fail closed for retired unsafe assets even if stale files survive a deploy."""
-    match = re.fullmatch(
-        r'v[1-9][0-9]{0,2}/([A-Za-z0-9][A-Za-z0-9._-]*)\.(?:avif|webp)',
-        str(relative_path or ''))
-    return bool(match and match.group(1) in _IMAGE_BLOCKED_CATALOG_IDS)
-
-
-def _validate_image_question(category: str, question: dict,
-                             seen_ids: set, seen_asset_urls: set):
-    """تحقق من سجل صورة كامل قبل أن يغادر الخادم."""
-    if not isinstance(question, dict):
-        raise ValueError('سجل صورة غير صالح')
-    question_id = str(question.get('id') or '')
-    id_match = re.fullmatch(
-        r'img-(v[1-9][0-9]{0,2})-([a-z0-9][a-z0-9_-]{0,119})',
-        question_id)
-    options = question.get('o')
-    answer_index = question.get('a')
-    answer = question.get('answer')
-    review = question.get('review')
-    if (not id_match or len(question_id) > 128 or question_id in seen_ids or
-            question.get('d') not in range(1, 7) or
-            not _is_nonempty_string(question.get('q'), maximum=220) or
-            not _is_nonempty_string(answer, maximum=140) or
-            not isinstance(options, list) or len(options) != 4 or
-            not all(_is_nonempty_string(option, maximum=140)
-                    for option in options) or
-            len({option.strip() for option in options}) != 4 or
-            not isinstance(answer_index, int) or isinstance(answer_index, bool) or
-            answer_index not in range(4) or options[answer_index] != answer or
-            sum(option == answer for option in options) != 1 or
-            not isinstance(review, dict) or review.get('status') != 'approved' or
-            not _is_nonempty_string(review.get('reviewer'), maximum=200) or
-            not isinstance(review.get('reviewedAt'), str) or
-            re.fullmatch(r'\d{4}-\d{2}-\d{2}', review['reviewedAt']) is None):
-        raise ValueError('سجل سؤال صورة غير صالح')
-    try:
-        datetime.date.fromisoformat(review['reviewedAt'])
-    except ValueError as exc:
-        raise ValueError('تاريخ مراجعة سؤال الصورة غير صالح') from exc
-    source = question.get('source')
-    image = question.get('image')
-    if (not isinstance(source, dict) or
-            not _is_nonempty_string(source.get('title'), maximum=500) or
-            not _is_https_url(source.get('url')) or
-            not isinstance(image, dict) or
-            not _is_nonempty_string(image.get('alt'), maximum=500) or
-            not _is_nonempty_string(image.get('version'), maximum=32)):
-        raise ValueError('مصدر أو وصف صورة غير صالح')
-    fact_source = image.get('factSource')
-    rights = image.get('rights')
-    if (not isinstance(fact_source, dict) or
-            not _is_nonempty_string(fact_source.get('title'), maximum=500) or
-            not _is_https_url(fact_source.get('url')) or
-            source['url'] != fact_source['url'] or
-            not isinstance(rights, dict) or
-            not all(_is_nonempty_string(rights.get(field), maximum=4000)
-                    for field in (
-                        'owner', 'credit', 'provider', 'license', 'modifications')) or
-            not _is_https_url(rights.get('licenseUrl')) or
-            not _is_https_url(rights.get('sourcePage'))):
-        raise ValueError('مصدر الحقيقة أو حقوق الصورة غير صالحة')
-    assets = image.get('assets')
-    if not isinstance(assets, list) or len(assets) != 2:
-        raise ValueError('سؤال الصورة لا يحتوي AVIF وWebP بالضبط')
-    expected_version, expected_stem = id_match.groups()
-    seen_mime_types = set()
-    for asset in assets:
-        if not isinstance(asset, dict):
-            raise ValueError('سجل أصل صورة غير صالح')
-        url = asset.get('url')
-        mime_type = asset.get('mimeType')
-        byte_count = asset.get('bytes')
-        sha256 = asset.get('sha256')
-        if (mime_type not in {'image/avif', 'image/webp'} or
-                mime_type in seen_mime_types or not _is_https_url(url, asset=True) or
-                not isinstance(byte_count, int) or isinstance(byte_count, bool) or
-                not 1 <= byte_count <= _IMAGE_ASSET_MAX_BYTES or
-                not isinstance(sha256, str) or
-                re.fullmatch(r'[a-f0-9]{64}', sha256) is None or
-                url in seen_asset_urls):
-            raise ValueError('أصل صورة غير آمن أو غير صالح')
-        parsed_path = urllib.parse.urlsplit(url).path
-        path_match = re.fullmatch(
-            r'/assets/question-images/(v[1-9][0-9]{0,2})/([A-Za-z0-9][A-Za-z0-9._-]*)\.(avif|webp)',
-            parsed_path)
-        expected_extension = mime_type.removeprefix('image/')
-        if (not path_match or path_match.group(1) != expected_version or
-                path_match.group(2) != expected_stem or
-                path_match.group(3) != expected_extension):
-            raise ValueError('مسار أصل الصورة لا يطابق معرفه وصيغته')
-        seen_mime_types.add(mime_type)
-        seen_asset_urls.add(url)
-    if seen_mime_types != {'image/avif', 'image/webp'}:
-        raise ValueError('صيغتا صورة السؤال غير مكتملتين')
-    if _image_question_has_blocked_content(category, question):
-        raise ValueError('محتوى محظور في بنك أسئلة الصور')
-    seen_ids.add(question_id)
-
-
-def load_server_image_question_bank():
-    """اقرأ أثر الصور المولّد وتحقق من المخطط والبصمتين والحقوق."""
-    stat = os.stat(IMAGE_QUESTION_BANK_FILE)
-    with _image_question_bank_cache_lock:
-        if (_image_question_bank_cache['document'] is not None and
-                _image_question_bank_cache['path'] == IMAGE_QUESTION_BANK_FILE and
-                _image_question_bank_cache['mtime_ns'] == stat.st_mtime_ns and
-                _image_question_bank_cache['size'] == stat.st_size):
-            return _image_question_bank_cache['document']
-        if stat.st_size > 50 * 1024 * 1024:
-            raise ValueError('ملف بنك أسئلة الصور يتجاوز 50MB')
-        with open(IMAGE_QUESTION_BANK_FILE, 'r', encoding='utf-8') as bank_file:
-            document = json.load(
-                bank_file, object_pairs_hook=_reject_duplicate_json_keys,
-                parse_constant=_reject_nonfinite_json)
-        if (not isinstance(document, dict) or document.get('schemaVersion') != 1 or
-                document.get('questionSchemaVersion') != 1 or
-                not isinstance(document.get('categories'), dict)):
-            raise ValueError('مخطط بنك أسئلة الصور غير صالح')
-        categories = document['categories']
-        if not 1 <= len(categories) <= 500:
-            raise ValueError('عدد فئات الصور غير صالح')
-        published_categories = document.get('publishedCategories')
-        if (not isinstance(published_categories, list) or
-                not all(_is_nonempty_string(category, maximum=80)
-                        for category in published_categories) or
-                published_categories != list(categories) or
-                len(set(published_categories)) != len(published_categories)):
-            raise ValueError('قائمة فئات الصور المنشورة لا تطابق البنك')
-        if (not _is_nonempty_string(document.get('bankVersion'), maximum=120) or
-                document.get('questionsPerLevel') != 2 or
-                not isinstance(document.get('releaseReady'), bool)):
-            raise ValueError('بيانات إصدار بنك الصور غير صالحة')
-        questions = []
-        seen_ids = set()
-        seen_asset_urls = set()
-        computed_distribution = {}
-        for category, rows in categories.items():
-            if (not _is_nonempty_string(category, maximum=80) or
-                    not isinstance(rows, list)):
-                raise ValueError('فئة غير صالحة في بنك أسئلة الصور')
-            levels = {str(level): 0 for level in range(1, 7)}
-            for question in rows:
-                _validate_image_question(
-                    category, question, seen_ids, seen_asset_urls)
-                levels[str(question['d'])] += 1
-                questions.append(question)
-            if not all(levels[str(level)] >= 2 for level in range(1, 7)):
-                raise ValueError('فئة الصور لا توفر سؤالين لكل مستوى')
-            computed_distribution[category] = {
-                'count': len(rows), 'levels': levels,
-            }
-        question_count = document.get('questionCount')
-        category_count = document.get('categoryCount')
-        asset_count = document.get('assetCount')
-        target_bank_size = document.get('targetBankSize')
-        if (not isinstance(question_count, int) or isinstance(question_count, bool) or
-                question_count != len(questions) or
-                not isinstance(category_count, int) or isinstance(category_count, bool) or
-                category_count != len(categories) or
-                not isinstance(asset_count, int) or isinstance(asset_count, bool) or
-                asset_count != len(seen_asset_urls) or asset_count != question_count * 2 or
-                not isinstance(target_bank_size, int) or
-                isinstance(target_bank_size, bool) or
-                not 1 <= target_bank_size <= 100_000 or
-                document.get('ready') is not (question_count == target_bank_size) or
-                document.get('distribution') != computed_distribution):
-            raise ValueError('إحصاءات بنك أسئلة الصور لا تطابق محتواه')
-        canonical = json.dumps(
-            categories, ensure_ascii=False,
-            separators=(',', ':')).encode('utf-8')
-        digest = hashlib.sha256(canonical).hexdigest()
-        if not secrets.compare_digest(digest, str(document.get('sha256') or '')):
-            raise ValueError('بصمة بنك أسئلة الصور لا تطابق المحتوى')
-        asset_records = [
-            {
-                'questionId': question['id'],
-                'url': asset['url'],
-                'mimeType': asset['mimeType'],
-                'bytes': asset['bytes'],
-                'sha256': asset['sha256'],
-            }
-            for question in questions for asset in question['image']['assets']
-        ]
-        assets_canonical = json.dumps(
-            asset_records, ensure_ascii=False,
-            separators=(',', ':')).encode('utf-8')
-        assets_digest = hashlib.sha256(assets_canonical).hexdigest()
-        if not secrets.compare_digest(
-                assets_digest, str(document.get('assetsSha256') or '')):
-            raise ValueError('بصمة أصول الصور لا تطابق البنك')
-        _image_question_bank_cache.update(
-            path=IMAGE_QUESTION_BANK_FILE, mtime_ns=stat.st_mtime_ns,
-            size=stat.st_size, document=document)
-        return document
-
-
-def load_combined_server_question_bank():
-    """ادمج بنكي النص والصور ديناميكياً دون قائمة فئات في التطبيق."""
-    text_document = load_server_question_bank()
-    image_document = load_server_image_question_bank()
-    categories = {}
-    category_kinds = {}
-    seen_ids = set()
-    for kind, document in (('text', text_document), ('image', image_document)):
-        for category, rows in document['categories'].items():
-            target = categories.setdefault(category, [])
-            previous_kind = category_kinds.get(category)
-            category_kinds[category] = (
-                kind if previous_kind in (None, kind) else 'mixed')
-            for question in rows:
-                question_id = question['id']
-                if question_id in seen_ids:
-                    raise ValueError('معرف سؤال مكرر بين بنكي النص والصور')
-                seen_ids.add(question_id)
-                target.append(question)
-    component_fingerprint = '\0'.join((
-        str(text_document.get('sha256') or ''),
-        str(image_document.get('sha256') or ''),
-        str(image_document.get('assetsSha256') or ''),
-    )).encode('ascii')
-    combined_sha256 = hashlib.sha256(component_fingerprint).hexdigest()
-    return {
-        'schemaVersion': 1,
-        'questionSchemaVersion': 1,
-        'bankVersion': f'combined-{combined_sha256[:20]}',
-        'sha256': combined_sha256,
-        'questionCount': len(seen_ids),
-        'targetBankSize': (
-            int(text_document.get('targetBankSize') or 0) +
-            int(image_document.get('targetBankSize') or 0)),
-        'ready': (text_document.get('ready') is True and
-                  image_document.get('ready') is True),
-        'releaseReady': (text_document.get('releaseReady') is True and
-                         image_document.get('releaseReady') is True),
-        'factuallyVerifiedCount': (
-            int(text_document.get('factuallyVerifiedCount') or 0) +
-            (int(image_document.get('questionCount') or 0)
-             if image_document.get('releaseReady') is True else 0)),
-        'categories': categories,
-        'categoryKinds': category_kinds,
-        'components': {
-            'text': text_document.get('bankVersion'),
-            'image': image_document.get('bankVersion'),
-        },
-    }
-
-
-def canonical_question_by_id(question_id: str):
-    """أعد السؤال الموثق من البنك الحالي؛ لا نثق بنسخة العميل."""
-    document = load_combined_server_question_bank()
-    for category, questions in document.get('categories', {}).items():
-        for question in questions:
-            if question.get('id') == question_id:
-                return category, question
-    return None
-
-
-def server_question_catalog() -> dict:
-    """كتالوج خفيف يسمح بتوسعة البنك والفئات بلا إصدار تطبيق جديد."""
-    document = load_combined_server_question_bank()
-    if document.get('releaseReady') is not True:
-        raise ValueError('بنك الأسئلة لم يجتز التحقق الواقعي المستقل')
-    presentation = {'groups': {}, 'categories': {}}
-    try:
-        with open(CATEGORY_PRESENTATION_FILE, encoding='utf-8') as handle:
-            candidate = json.load(handle)
-        if (isinstance(candidate, dict)
-                and candidate.get('schemaVersion') == 1
-                and isinstance(candidate.get('groups'), dict)
-                and isinstance(candidate.get('categories'), dict)):
-            presentation = candidate
-    except (FileNotFoundError, OSError, ValueError, TypeError):
-        pass
-    category_rows = []
-    for name, questions in document['categories'].items():
-        levels = {str(level): 0 for level in range(1, 7)}
-        bands = {'easy': 0, 'medium': 0, 'hard': 0}
-        for question in questions:
-            level = int(question['d'])
-            levels[str(level)] += 1
-            band = str(question.get('band') or (
-                'easy' if level <= 2 else 'medium' if level <= 4 else 'hard'))
-            if band in bands:
-                bands[band] += 1
-        # الفئة المنشورة تبقى ظاهرة دائماً. نقص المخزون لا يغيّر الكتالوج
-        # الذي يراه اللاعب؛ نظام المراقبة الإداري ينبه المطور بصورة مستقلة.
-        display = presentation['categories'].get(name, {})
-        group_name = str(display.get('group') or 'فئات جديدة').strip()
-        group = presentation['groups'].get(group_name, {})
-        category_rows.append({
-            'name': name,
-            'kind': document['categoryKinds'].get(name, 'text'),
-            'questionCount': len(questions),
-            'levels': levels,
-            'bands': bands,
-            'group': group_name,
-            'groupIcon': str(group.get('icon') or '🧠').strip(),
-            'groupOrder': int(group.get('order') or 999),
-            'icon': str(display.get('icon') or '🧠').strip(),
-            'tone': str(display.get('tone') or 'purple').strip(),
-            'displayOrder': int(display.get('order') or 999),
-        })
-    category_rows.sort(key=lambda item: (
-        item['groupOrder'], item['displayOrder'], item['name']))
-    return {
-        'schemaVersion': 1,
-        'questionSchemaVersion': int(document.get('questionSchemaVersion') or 1),
-        'bankVersion': document.get('bankVersion'),
-        'bankSha256': document.get('sha256'),
-        # يطابق كل الفئات المنشورة؛ المراقبة لا تخفي أي فئة بسبب المخزون.
-        'questionCount': sum(item['questionCount'] for item in category_rows),
-        'bankQuestionCount': document.get('questionCount'),
-        'releaseReady': True,
-        'components': document.get('components'),
-        'categories': category_rows,
-    }
-
-
-def runtime_question_projection(question: dict, *, origin_category=None) -> dict:
-    """حمولة اللعب فقط؛ لا تصل الإجابة للجهاز قبل انتهاء أدوار الفرق."""
-    difficulty = int(question['d'])
-    projected = {
-        'id': question['id'],
-        'd': difficulty,
-        'band': str(question.get('band') or (
-            'easy' if difficulty <= 2 else
-            'medium' if difficulty <= 4 else 'hard')),
-        'q': question['q'],
-        'o': copy.deepcopy(question['o']),
-        'source': copy.deepcopy(question['source']),
-        'review': copy.deepcopy(question['review']),
-    }
-    if isinstance(question.get('image'), dict):
-        projected['image'] = copy.deepcopy(question['image'])
-    selected_origin = origin_category or question.get('originCategory')
-    if _is_nonempty_string(selected_origin, maximum=80):
-        projected['originCategory'] = selected_origin
-    return projected
-
-
-def runtime_round_payload_projection(payload: dict) -> dict:
-    """طبّق عقد الحمولة نفسه قبل الرد وقبل Firestore."""
-    if (not isinstance(payload, dict) or payload.get('schemaVersion') != 1 or
-            not _is_nonempty_string(payload.get('bankVersion'), maximum=120) or
-            not isinstance(payload.get('questionsPerLevel'), int) or
-            isinstance(payload.get('questionsPerLevel'), bool) or
-            payload.get('questionsPerLevel') not in (1, 2) or
-            not isinstance(payload.get('questions'), dict)):
-        raise ValueError('حمولة جولة غير صالحة')
-    projected_questions = {}
-    for category, rows in payload['questions'].items():
-        if (not _is_nonempty_string(category, maximum=80) or
-                not isinstance(rows, list)):
-            raise ValueError('فئة غير صالحة في حمولة الجولة')
-        projected_questions[category] = [
-            runtime_question_projection(question) for question in rows
-        ]
-    projected = {
-        'schemaVersion': 1,
-        'bankVersion': payload['bankVersion'],
-        'questionsPerLevel': payload['questionsPerLevel'],
-        'questions': projected_questions,
-    }
-    encoded_size = len(json.dumps(
-        projected, ensure_ascii=False,
-        separators=(',', ':')).encode('utf-8'))
-    if encoded_size >= _FREE_ROUND_PAYLOAD_MAX_BYTES:
-        raise ValueError('حمولة الجولة تتجاوز الحد الآمن للتخزين')
-    return projected
-
-
-def _current_runtime_questions_for_category(document: dict,
-                                            category: str) -> dict:
-    source_categories = (ISLAMIC_REMOTE_SOURCE_CATEGORIES
-                         if category == 'إسلاميات' else (category,))
-    current = {}
-    for source_category in source_categories:
-        for question in document.get('categories', {}).get(source_category, []):
-            projected = runtime_question_projection(
-                question,
-                origin_category=(source_category
-                                 if category == 'إسلاميات' else None),
-            )
-            current[projected['id']] = projected
-    return current
-
-
-def valid_stored_free_round_payload(payload: dict, request_data: dict,
-                                    document: dict):
-    """اقبل الجولة المثبتة فقط إن كانت نسخة مطابقة من البنك الحالي."""
-    if (document.get('ready') is not True or
-            document.get('releaseReady') is not True or
-            not isinstance(request_data, dict)):
-        return None
-    try:
-        projected = runtime_round_payload_projection(payload)
-    except (KeyError, TypeError, ValueError):
-        return None
-    # Extra server-only verification fields or missing normalized runtime fields
-    # make an old payload stale rather than silently returning it to the client.
-    if projected != payload:
-        return None
-    if not secrets.compare_digest(
-            str(projected.get('bankVersion') or ''),
-            str(document.get('bankVersion') or '')):
-        return None
-    requested_categories = request_data.get('categories')
-    questions_per_level = request_data.get('questionsPerLevel', 1)
-    if (not isinstance(requested_categories, list) or
-            not 1 <= len(requested_categories) <= 8 or
-            any(not isinstance(item, str) or not 1 <= len(item.strip()) <= 80
-                for item in requested_categories) or
-            len({item.strip() for item in requested_categories}) !=
-            len(requested_categories) or
-            not isinstance(questions_per_level, int) or
-            isinstance(questions_per_level, bool) or
-            questions_per_level not in (1, 2)):
-        return None
-    requested_categories = [item.strip() for item in requested_categories]
-    if (set(projected['questions']) != set(requested_categories) or
-            projected['questionsPerLevel'] != questions_per_level):
-        return None
-    seen_ids = set()
-    for category in requested_categories:
-        rows = projected['questions'].get(category)
-        if not isinstance(rows, list) or len(rows) != 6 * questions_per_level:
-            return None
-        current = _current_runtime_questions_for_category(document, category)
-        levels = {level: 0 for level in range(1, 7)}
-        for question in rows:
-            if (not isinstance(question, dict) or
-                    question.get('id') in seen_ids or
-                    current.get(question.get('id')) != question or
-                    question.get('d') not in levels):
-                return None
-            seen_ids.add(question['id'])
-            levels[question['d']] += 1
-        if any(count != questions_per_level for count in levels.values()):
-            return None
-    return projected
-
-
-def reusable_stale_free_round_ids(payload: dict, request_data: dict,
-                                  document: dict) -> set:
-    """اسمح بإعادة المعرفات التي ما زالت ضمن الفئة عند ترقية البنك."""
-    if not isinstance(payload, dict) or not isinstance(request_data, dict):
-        return set()
-    payload_questions = payload.get('questions')
-    categories = request_data.get('categories')
-    if not isinstance(payload_questions, dict) or not isinstance(categories, list):
-        return set()
-    reusable = set()
-    for raw_category in categories:
-        if not isinstance(raw_category, str):
-            continue
-        category = raw_category.strip()
-        current_ids = set(_current_runtime_questions_for_category(
-            document, category))
-        rows = payload_questions.get(category)
-        if not isinstance(rows, list):
-            continue
-        reusable.update(
-            question['id'] for question in rows
-            if isinstance(question, dict) and
-            isinstance(question.get('id'), str) and
-            question['id'] in current_ids)
-    return reusable
-
-
-def select_remote_round_questions(request_data: dict, *, additional_excluded_ids=()):
-    """اختر أسئلة الجولة واحتياط التغيير لكل مستوى من دون كسر العملاء الأقدم."""
-    categories = request_data.get('categories')
-    excluded = request_data.get('excludeQuestionIds', [])
-    questions_per_level = request_data.get('questionsPerLevel', 1)
-    if (not isinstance(categories, list) or not 1 <= len(categories) <= 8 or
-            any(not isinstance(item, str) or not 1 <= len(item.strip()) <= 80
-                for item in categories) or
-            len({item.strip() for item in categories}) != len(categories)):
-        return 400, {'error': 'الفئات غير صالحة', 'code': 'invalid_categories'}
-    if (not isinstance(excluded, list) or len(excluded) > 10000 or
-            any(not isinstance(item, str) or len(item) > 128 for item in excluded)):
-        return 400, {'error': 'قائمة الأسئلة السابقة غير صالحة', 'code': 'invalid_exclusions'}
-    if (not isinstance(questions_per_level, int) or
-            isinstance(questions_per_level, bool) or
-            questions_per_level not in (1, 2)):
-        return 400, {
-            'error': 'عدد أسئلة المستوى غير صالح',
-            'code': 'invalid_questions_per_level',
-        }
-    document = load_combined_server_question_bank()
-    if document.get('ready') is not True:
-        return 503, {
-            'error': 'بنك الأسئلة الجديد لم يكتمل بعد',
-            'code': 'question_bank_not_ready',
-            'questionCount': int(document.get('questionCount') or 0),
-            'targetBankSize': int(document.get('targetBankSize') or 4000),
-        }
-    if document.get('releaseReady') is not True:
-        return 503, {
-            'error': 'بنك الأسئلة الجديد تحت التحقق الواقعي ولا يمكن نشره بعد',
-            'code': 'question_bank_not_release_ready',
-            'questionCount': int(document.get('questionCount') or 0),
-            'factuallyVerifiedCount': int(document.get('factuallyVerifiedCount') or 0),
-        }
-    bank = document['categories']
-    excluded_ids = set(excluded)
-    excluded_ids.update(
-        question_id for question_id in (additional_excluded_ids or ())
-        if isinstance(question_id, str)
-    )
-    selected = {}
-    missing = []
-    for raw_category in categories:
-        category = raw_category.strip()
-        source_categories = (ISLAMIC_REMOTE_SOURCE_CATEGORIES
-                             if category == 'إسلاميات' else (category,))
-        rows = []
-        for source_category in source_categories:
-            source_rows = bank.get(source_category, [])
-            if isinstance(source_rows, list):
-                rows.extend((row, source_category) for row in source_rows)
-        chosen = []
-        for level in range(1, 7):
-            candidates = [(row, origin_category)
-                          for row, origin_category in rows
-                          if isinstance(row, dict) and row.get('d') == level
-                          and isinstance(row.get('id'), str)
-                          and row['id'] not in excluded_ids
-                          and isinstance(row.get('q'), str) and row['q'].strip()
-                          and isinstance(row.get('answer'), str) and row['answer'].strip()
-                          and row.get('review', {}).get('status') == 'approved']
-            if len(candidates) < questions_per_level:
-                missing.append({
-                    'category': category,
-                    'difficulty': level,
-                    'required': questions_per_level,
-                    'available': len(candidates),
-                })
-                continue
-            level_questions = secrets.SystemRandom().sample(
-                candidates, questions_per_level)
-            excluded_ids.update(
-                question['id'] for question, _ in level_questions)
-            chosen.extend(runtime_question_projection(
-                question,
-                origin_category=(origin_category
-                                 if category == 'إسلاميات' else None),
-            ) for question, origin_category in level_questions)
-        selected[category] = chosen
-    if missing:
-        return 409, {
-            'error': 'بنك الجولة لا يحتوي أسئلة جديدة كافية',
-            'code': 'question_pool_incomplete',
-            'missing': missing,
-            'bankVersion': document.get('bankVersion'),
-        }
-    result = {
-        'schemaVersion': 1,
-        'bankVersion': document.get('bankVersion'),
-        'questionsPerLevel': questions_per_level,
-        'questions': selected,
-    }
-    try:
-        result = runtime_round_payload_projection(result)
-    except ValueError:
-        return 503, {
-            'error': 'حمولة الجولة تتجاوز حد التخزين الآمن',
-            'code': 'question_round_payload_too_large',
-            'bankVersion': document.get('bankVersion'),
-        }
-    return 200, result
-
 def safe_log_reference(value) -> str:
     """بصمة قصيرة للسجلات؛ لا تطبع UID أو App User ID أو report ID خاماً."""
     text = str(value or '')
@@ -914,6 +94,218 @@ def safe_log_reference(value) -> str:
 def exception_kind(exc: BaseException) -> str:
     """نوع ثابت قابل للتشخيص من دون message قد تحمل بيانات مستخدم/اعتماد."""
     return type(exc).__name__
+
+
+ADMIN_SESSION_COOKIE = 'fatinah_quality_session'
+ADMIN_SESSION_MAX_AGE_SECONDS = 8 * 60 * 60
+ADMIN_PASSWORD_ITERATIONS = 600_000
+_question_platform_local_locks = tuple(threading.Lock() for _ in range(64))
+_QUESTION_PLATFORM_LEASE_SECONDS = 30
+
+
+def _stored_admin_credential():
+    try:
+        connection = sqlite3.connect(DB_PATH, timeout=5)
+        row = connection.execute('''SELECT password_salt,password_hash,
+            session_secret,iterations FROM admin_credentials WHERE id=1''').fetchone()
+        connection.close()
+        return row
+    except sqlite3.Error:
+        return None
+
+
+def admin_password_configured() -> bool:
+    return bool(os.environ.get('ADMIN_SECRET', '') or _stored_admin_credential())
+
+
+def _admin_session_key() -> bytes:
+    configured = os.environ.get('ADMIN_SECRET', '')
+    if configured:
+        return configured.encode('utf-8')
+    row = _stored_admin_credential()
+    return bytes(row[2]) if row and row[2] else b''
+
+
+def verify_admin_password(password: str) -> bool:
+    supplied = str(password or '')
+    configured = os.environ.get('ADMIN_SECRET', '')
+    if configured:
+        return bool(supplied) and secrets.compare_digest(supplied, configured)
+    row = _stored_admin_credential()
+    if not row or not supplied:
+        return False
+    salt, expected, _, iterations = row
+    actual = hashlib.pbkdf2_hmac(
+        'sha256', supplied.encode('utf-8'), bytes(salt), int(iterations))
+    return secrets.compare_digest(actual, bytes(expected))
+
+
+def admin_password_issues(password: str):
+    value = str(password or '')
+    issues = []
+    if len(value) < 12:
+        issues.append('استخدم 12 خانة على الأقل')
+    if len(value) > 128:
+        issues.append('الحد الأقصى 128 خانة')
+    if not any(character.isalpha() for character in value):
+        issues.append('أضف حرفاً واحداً على الأقل')
+    if not any(character.isdigit() for character in value):
+        issues.append('أضف رقماً واحداً على الأقل')
+    if not any(not character.isalnum() and not character.isspace()
+               for character in value):
+        issues.append('أضف رمزاً مثل ! أو #')
+    return issues
+
+
+def create_local_admin_password(password: str) -> None:
+    """Create the one-time local credential; production stays environment-only."""
+    issues = admin_password_issues(password)
+    if issues:
+        raise ValueError('، '.join(issues))
+    if os.environ.get('ADMIN_SECRET', ''):
+        raise RuntimeError('كلمة الإدارة مضبوطة من إعدادات الخادم')
+    salt = secrets.token_bytes(32)
+    digest = hashlib.pbkdf2_hmac(
+        'sha256', password.encode('utf-8'), salt, ADMIN_PASSWORD_ITERATIONS)
+    connection = sqlite3.connect(DB_PATH, timeout=10)
+    try:
+        connection.execute('BEGIN IMMEDIATE')
+        if connection.execute(
+                'SELECT 1 FROM admin_credentials WHERE id=1').fetchone():
+            raise RuntimeError('تم إعداد كلمة الدخول مسبقاً')
+        connection.execute('''INSERT INTO admin_credentials
+            (id,password_salt,password_hash,session_secret,iterations,updated_at)
+            VALUES (1,?,?,?,?,CURRENT_TIMESTAMP)''',
+            (salt, digest, secrets.token_bytes(32), ADMIN_PASSWORD_ITERATIONS))
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+def client_is_loopback(client_address) -> bool:
+    try:
+        host = str(client_address[0] if client_address else '').split('%', 1)[0]
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def _admin_session_signature(timestamp: str) -> str:
+    secret = _admin_session_key()
+    return hmac.new(secret, f'fatinah-quality:{timestamp}'.encode('utf-8'),
+                    hashlib.sha256).hexdigest()
+
+
+def create_admin_session_cookie() -> str:
+    timestamp = str(int(time.time()))
+    token = f'{timestamp}.{_admin_session_signature(timestamp)}'
+    secure = '; Secure' if deployment_environment() == 'production' else ''
+    return (f'{ADMIN_SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict; '
+            f'Max-Age={ADMIN_SESSION_MAX_AGE_SECONDS}{secure}')
+
+
+def clear_admin_session_cookie() -> str:
+    secure = '; Secure' if deployment_environment() == 'production' else ''
+    return (f'{ADMIN_SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; '
+            f'Max-Age=0{secure}')
+
+
+def admin_session_valid(headers) -> bool:
+    secret = _admin_session_key()
+    if not secret:
+        return False
+    cookie = SimpleCookie()
+    try:
+        cookie.load(headers.get('Cookie', '') or '')
+        token = cookie.get(ADMIN_SESSION_COOKIE).value
+        timestamp, signature = token.split('.', 1)
+        issued_at = int(timestamp)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return False
+    age = int(time.time()) - issued_at
+    return (0 <= age <= ADMIN_SESSION_MAX_AGE_SECONDS
+            and secrets.compare_digest(signature, _admin_session_signature(timestamp)))
+
+
+def admin_origin_valid(headers) -> bool:
+    origin = str(headers.get('Origin') or '').strip()
+    if not origin:
+        return deployment_environment() != 'production'
+    try:
+        parsed = urllib.parse.urlparse(origin)
+    except ValueError:
+        return False
+    return parsed.scheme in {'http', 'https'} and parsed.netloc == headers.get('Host', '')
+
+
+def question_access_allowed(uid: str) -> bool:
+    """Subscribers and the one claimed introductory round may fetch packs."""
+    if subscription_is_active(uid):
+        return True
+    connection = db_connect()
+    try:
+        row = connection.execute(
+            'SELECT 1 FROM free_rounds WHERE uid=? LIMIT 1', (uid,)).fetchone()
+        return bool(row)
+    finally:
+        connection.close()
+
+
+def deliver_question_report_email(report: dict) -> str:
+    """Deliver the complete internal snapshot without returning it to the app."""
+    host = os.environ.get('SMTP_HOST', '').strip()
+    sender = os.environ.get('SMTP_FROM', '').strip()
+    if not host or not sender:
+        return 'pending_configuration'
+    question = report.get('question') or {}
+    sources = question.get('sources') or []
+    lines = [
+        'بلاغ جديد عن سؤال في فطنة', '',
+        f"معرف البلاغ: {report.get('report_id', '')}",
+        f"حساب المبلّغ: {report.get('uid', '')}",
+        f"الاسم: {report.get('reporter_name', '') or 'غير متوفر'}",
+        f"البريد: {report.get('reporter_email', '') or 'غير متوفر'}", '',
+        f"السبب: {report.get('reason', '')}",
+        f"التفاصيل: {report.get('details', '') or 'لا يوجد'}", '',
+        f"السؤال: {question.get('prompt', '')}",
+        f"المستوى: {question.get('level', '')}",
+        f"التصنيف الداخلي: {question.get('topic', '')}",
+    ]
+    for index, option in enumerate(question.get('options') or []):
+        marker = ' (الإجابة الصحيحة)' if index == question.get('correctIndex') else ''
+        lines.append(f'{index + 1}. {option}{marker}')
+    lines.extend(['', f"سبب صحة الإجابة: {question.get('correctReason', '')}",
+                  '', 'المصادر الداخلية:'])
+    for source in sources:
+        lines.append(f"- {source.get('title', '')}: {source.get('url', '')}")
+    lines.extend(['', 'اختيارات اللاعبين:',
+                  json.dumps(report.get('selections') or [], ensure_ascii=False, indent=2)])
+    message = EmailMessage()
+    message['Subject'] = f"بلاغ سؤال فطنة — {question.get('questionId', '')}"
+    message['From'] = sender
+    message['To'] = 'ata@ata20.com'
+    message.set_content('\n'.join(lines))
+    port = int(os.environ.get('SMTP_PORT', '587'))
+    username = os.environ.get('SMTP_USERNAME', '').strip()
+    password = os.environ.get('SMTP_PASSWORD', '')
+    use_ssl = env_flag('SMTP_USE_SSL', False)
+    if use_ssl:
+        client = smtplib.SMTP_SSL(host, port, timeout=15,
+                                  context=ssl.create_default_context())
+    else:
+        client = smtplib.SMTP(host, port, timeout=15)
+    try:
+        if not use_ssl and env_flag('SMTP_USE_TLS', True):
+            client.starttls(context=ssl.create_default_context())
+        if username:
+            client.login(username, password)
+        client.send_message(message)
+    finally:
+        client.quit()
+    return 'sent'
 
 def firestore_database_name():
     """اسم قاعدة Firestore بصيغة REST، مع دعم default القديم."""
@@ -945,6 +337,18 @@ def init_db():
             updated_at             DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    # اعتماد محلي أولي للوحة الجودة. في الإنتاج تبقى ADMIN_SECRET هي
+    # الطريقة الإلزامية وتمنع نقطة الإعداد الذاتي تماماً.
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS admin_credentials (
+            id              INTEGER PRIMARY KEY CHECK (id=1),
+            password_salt   BLOB NOT NULL,
+            password_hash   BLOB NOT NULL,
+            session_secret  BLOB NOT NULL,
+            iterations      INTEGER NOT NULL,
+            updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     # ─── هجرة: أعمدة الهوية الموحّدة (اسم العرض + آخر مزوّد دخول) ─────────────
     # sqlite لا يدعم ADD COLUMN IF NOT EXISTS، فنجرّب ونتجاهل الخطأ إن كان العمود موجوداً
     for ddl in (
@@ -954,111 +358,30 @@ def init_db():
     ):
         try: conn.execute(ddl)
         except sqlite3.OperationalError: pass  # العمود موجود مسبقاً
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS question_bank (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            topic_norm TEXT NOT NULL,
-            q          TEXT NOT NULL,
-            answer     TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(topic_norm, q)
-        )
-    ''')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_bank_topic ON question_bank(topic_norm)')
-    # سجل مركزي للأسئلة التي شاهدها كل حساب. يبقى منفصلاً عن بنك المحتوى
-    # حتى تتمكن الأجهزة المختلفة للحساب نفسه من منع التكرار دون تخزين نصوص
-    # الأسئلة أو أي بيانات شخصية إضافية.
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS question_seen (
-            uid         TEXT NOT NULL,
-            question_id TEXT NOT NULL,
-            category    TEXT NOT NULL,
-            seen_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
-            reserved_by_round INTEGER NOT NULL DEFAULT 0,
-            reserved_until_epoch INTEGER NOT NULL DEFAULT 0,
-            PRIMARY KEY (uid, question_id)
-        )
-    ''')
-    try:
-        conn.execute(
-            'ALTER TABLE question_seen ADD COLUMN '
-            'reserved_by_round INTEGER NOT NULL DEFAULT 0')
-    except sqlite3.OperationalError:
-        pass  # العمود موجود
-    try:
-        conn.execute(
-            'ALTER TABLE question_seen ADD COLUMN '
-            'reserved_until_epoch INTEGER NOT NULL DEFAULT 0')
-    except sqlite3.OperationalError:
-        pass  # العمود موجود
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_question_seen_uid_time ON question_seen(uid, seen_at)')
-    # تنبيهات مخزون المحتوى منفصلة عن بيانات اللاعبين. المفتاح الفريد يمنع
-    # تكرار التنبيه لنفس نسخة البنك والفئة والحد حتى مع إعادة تشغيل الخادم.
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS question_inventory_alerts (
-            alert_id         TEXT PRIMARY KEY,
-            bank_version     TEXT NOT NULL,
-            category         TEXT NOT NULL,
-            threshold        INTEGER NOT NULL,
-            remaining_rounds INTEGER NOT NULL,
-            level_counts     TEXT NOT NULL DEFAULT '{}',
-            email_status     TEXT NOT NULL DEFAULT 'pending',
-            email_error      TEXT,
-            email_attempts   INTEGER NOT NULL DEFAULT 0,
-            created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
-            emailed_at       DATETIME,
-            UNIQUE(bank_version, category, threshold)
-        )
-    ''')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_question_inventory_alerts_status '
-                 'ON question_inventory_alerts(email_status, created_at)')
+    # أزيل محتوى الأسئلة والفئات في 1.4؛ احذف أي بقايا نصوص أو فئات محلية.
+    for removed_table in (
+            "question_bank", "question_seen", "question_inventory_alerts",
+            "question_reports"):
+        conn.execute(f"DROP TABLE IF EXISTS {removed_table}")
     # جولة تعريفية واحدة لكل حساب. تسجيل الإكمال في الخادم يمنع إعادة فتحها
     # بمجرد مسح تخزين التطبيق أو الانتقال إلى جهاز آخر.
     conn.execute('''
         CREATE TABLE IF NOT EXISTS free_rounds (
             uid          TEXT PRIMARY KEY,
-            completed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            question_round_entitled INTEGER NOT NULL DEFAULT 0,
-            question_round_request_hash TEXT,
-            question_round_payload TEXT
+            completed_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    for ddl in (
-        'ALTER TABLE free_rounds ADD COLUMN question_round_entitled INTEGER NOT NULL DEFAULT 0',
-        'ALTER TABLE free_rounds ADD COLUMN question_round_request_hash TEXT',
-        'ALTER TABLE free_rounds ADD COLUMN question_round_payload TEXT',
-    ):
-        try: conn.execute(ddl)
-        except sqlite3.OperationalError: pass  # العمود موجود
-    # البلاغ يُحفظ قبل محاولة البريد، فلا يضيع بسبب تعطل مزوّد SMTP. عامل
-    # الخلفية يعيد إرسال pending/failed بعد إعداد أسرار البريد في الخادم.
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS question_reports (
-            report_id     TEXT PRIMARY KEY,
-            uid           TEXT NOT NULL,
-            question_id   TEXT NOT NULL,
-            category      TEXT NOT NULL,
-            question_text TEXT NOT NULL,
-            answer_text   TEXT,
-            source_title  TEXT,
-            source_url    TEXT,
-            reason        TEXT NOT NULL,
-            details       TEXT,
-            app_version   TEXT,
-            email_status  TEXT DEFAULT 'pending',
-            email_error   TEXT,
-            email_attempts INTEGER DEFAULT 0,
-            created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-            emailed_at    DATETIME
-        )
-    ''')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_question_reports_status ON question_reports(email_status, created_at)')
-    for ddl in (
-        "ALTER TABLE question_reports ADD COLUMN source_title TEXT",
-        "ALTER TABLE question_reports ADD COLUMN source_url TEXT",
-    ):
-        try: conn.execute(ddl)
-        except sqlite3.OperationalError: pass
+    free_round_columns = {
+        row[1] for row in conn.execute('PRAGMA table_info(free_rounds)')
+    }
+    retired_payload_columns = {
+        'question_round_entitled': '0',
+        'question_round_request_hash': 'NULL',
+        'question_round_payload': 'NULL',
+    }
+    for column, value in retired_payload_columns.items():
+        if column in free_round_columns:
+            conn.execute(f'UPDATE free_rounds SET {column}={value}')
     # قياسات منتج محدودة ومقيدة بقائمة أحداث؛ لا نخزن نص السؤال أو البريد.
     conn.execute('''
         CREATE TABLE IF NOT EXISTS game_events (
@@ -1236,6 +559,7 @@ def init_db():
         ''')
     conn.commit()
     conn.close()
+    question_platform.initialize(DB_PATH)
 
 def normalize_topic(topic: str) -> str:
     """توحيد الموضوع: إزالة التشكيل والمسافات الزائدة وأل التعريف للمطابقة."""
@@ -1364,13 +688,6 @@ PRODUCTION_BACKEND_HOSTS = {
     'www.ata20.com',
     'us-central1-fatinah-game.cloudfunctions.net',
 }
-PRODUCTION_GENERATION_HOSTS = {
-    'us-central1-fatinah-game.cloudfunctions.net',
-}
-LEGACY_GENERATION_TIMEOUT_SECONDS = 42
-LEGACY_GENERATION_ALLOWED_HOSTS_ENV = 'FATINAH_V1_GENERATION_ALLOWED_HOSTS'
-
-
 def configured_deployment_environment():
     """يعيد البيئة المصرح بها صراحةً، أو None عند الغياب/الخطأ."""
     raw = os.environ.get('FATINAH_ENVIRONMENT')
@@ -1459,23 +776,42 @@ V2_ROUTE_FEATURES = {
     '/api/revenuecat/identity': None,
     '/api/admin/db-status': None,
     '/api/admin/metrics': None,
-    '/api/admin/question-inventory': None,
-    '/api/generate': None,  # tombstone v2؛ لا يصل إلى AI
+    '/api/admin/session': 'question_admin',
+    '/api/admin/setup-status': 'question_admin',
+    '/api/admin/setup': 'question_admin',
+    '/api/admin/login': 'question_admin',
+    '/api/admin/logout': 'question_admin',
+    '/api/admin/dashboard': 'question_admin',
+    '/api/admin/questions': 'question_admin',
+    '/api/admin/question-status': 'question_admin',
+    '/api/admin/reports': 'question_admin',
+    '/api/admin/report-status': 'question_admin',
+    '/api/admin/audit': 'question_admin',
     '/api/app-attest/status': 'app_attest',
     '/api/app-attest/challenge': 'app_attest',
     '/api/app-attest/attest': 'app_attest',
     '/api/free-round/status': 'free_round',
     '/api/free-round/complete': 'free_round',
-    '/api/questions/seen': 'question_history',
-    '/api/questions/reservations/release': 'question_history',
-    '/api/questions/round': 'question_bank',
-    '/api/questions/reveal': 'question_bank',
-    '/api/questions/catalog': 'question_bank',
-    '/api/questions/report': 'question_reports',
     '/api/metrics/event': 'metrics',
     '/api/ios-diagnostics': 'ios_diagnostics',
     '/api/revenuecat/webhook': 'revenuecat_webhook',
+    '/api/game/packs/readiness': 'game_packs',
+    '/api/game/packs/ensure': 'game_packs',
+    '/api/game/packs/start': 'game_packs',
+    '/api/game/packs/complete': 'game_packs',
+    '/api/game/questions/report': 'question_reports',
 }
+
+REMOVED_CONTENT_ROUTES = frozenset({
+    '/api/generate',
+    '/api/admin/question-inventory',
+    '/api/questions/catalog',
+    '/api/questions/report',
+    '/api/questions/reservations/release',
+    '/api/questions/reveal',
+    '/api/questions/round',
+    '/api/questions/seen',
+})
 
 # هذه المسارات أضيفت لأول مرة في 1.3، ولا يوجد عميل 1.2 يحتاجها. إبقاؤها
 # متاحة بعقد v1 يجعل نسخة API التي يختارها العميل وسيلة لتجاوز App Check أو
@@ -1487,13 +823,10 @@ V2_ONLY_ROUTES = {
     '/api/app-attest/attest',
     '/api/free-round/status',
     '/api/free-round/complete',
-    '/api/questions/seen',
-    '/api/questions/reservations/release',
-    '/api/questions/round',
-    '/api/questions/reveal',
-    '/api/questions/catalog',
-    '/api/questions/report',
     '/api/metrics/event',
+    '/api/game/packs/readiness',
+    '/api/game/packs/ensure', '/api/game/packs/start',
+    '/api/game/packs/complete', '/api/game/questions/report',
 }
 
 
@@ -1502,12 +835,6 @@ def v2_feature_enabled(feature: str) -> bool:
     env_name = f'FATINAH_V2_FEATURE_{feature.upper()}_ENABLED'
     default = deployment_environment() in {'local', 'staging'}
     return env_flag(env_name, default)
-
-
-def legacy_v1_generation_enabled() -> bool:
-    # Opt-in صريح: نشر الكود بلا إعداد مكتمل لا يفعّل تكلفة AI بالخطأ.
-    # لاستمرار 1.2 يجب ضبط القيمة true في بيئة production قبل النشر.
-    return env_flag('FATINAH_V1_AI_GENERATION_ENABLED', False)
 
 
 def v1_revenuecat_bootstrap_enabled() -> bool:
@@ -1525,9 +852,10 @@ APP_CHECK_PROTECTED_PATHS = {
     '/api/app-attest/status', '/api/app-attest/challenge',
     '/api/app-attest/attest',
     '/api/free-round/complete', '/api/free-round/status',
-    '/api/questions/seen', '/api/questions/reservations/release',
-    '/api/questions/round', '/api/questions/reveal', '/api/questions/report',
     '/api/metrics/event', '/api/ios-diagnostics',
+    '/api/game/packs/readiness',
+    '/api/game/packs/ensure', '/api/game/packs/start',
+    '/api/game/packs/complete', '/api/game/questions/report',
     '/api/revenuecat/identity', '/api/subscription/status',
 }
 
@@ -1953,18 +1281,9 @@ def rate_limited(key: str, max_calls: int, window_sec: int) -> bool:
         _log_distributed_rate_limit_failure(key, exc)
         return True
 
-REPORT_EMAIL_TO = 'ata@ata20.com'
-REPORT_REASONS = {
-    'incorrect_answer': 'الإجابة غير صحيحة',
-    'unclear': 'السؤال غير واضح',
-    'outdated': 'المعلومة قديمة',
-    'source': 'مشكلة في المصدر',
-    'duplicate': 'السؤال مكرر',
-    'other': 'سبب آخر',
-}
 METRIC_EVENTS = {
     'game_started', 'game_completed', 'free_round_completed',
-    'paywall_viewed', 'offer_code_opened', 'question_reported',
+    'paywall_viewed', 'offer_code_opened',
     'purchase_started', 'purchase_completed', 'restore_started',
 }
 METRIC_PROPERTY_SCHEMAS = {
@@ -1978,7 +1297,6 @@ METRIC_PROPERTY_SCHEMAS = {
     'free_round_completed': {'questions'},
     'paywall_viewed': {'freeRoundCompleted'},
     'offer_code_opened': set(),
-    'question_reported': {'reason'},
     'purchase_started': {'plan'},
     'purchase_completed': {'plan'},
     'restore_started': set(),
@@ -1999,16 +1317,13 @@ def metric_properties_are_safe(event_name: str, properties: dict) -> bool:
         elif key == 'plan':
             if value not in {'monthly', 'annual'}:
                 return False
-        elif key == 'reason':
-            if value not in REPORT_REASONS:
-                return False
         elif key in {'teams', 'categoryCount', 'questions', 'correct',
                      'incorrect', 'durationSeconds', 'topScore'}:
             if not isinstance(value, int) or isinstance(value, bool):
                 return False
             minimum, maximum = {
-                'teams': (2, 3),
-                'categoryCount': (1, 20),
+                'teams': (1, 3),
+                'categoryCount': (0, 20),
                 'questions': (0, 200),
                 'correct': (0, 200),
                 'incorrect': (0, 200),
@@ -2020,481 +1335,6 @@ def metric_properties_are_safe(event_name: str, properties: dict) -> bool:
         else:
             return False
     return True
-
-def _send_question_report_email(row) -> str:
-    """أرسل بلاغاً محفوظاً عبر SMTP. لا يوجد أي سر داخل تطبيق iOS."""
-    (report_id, _uid, question_id, category, question_text, answer_text,
-     source_title, source_url, reason, details, app_version, _created_at) = row
-    host = os.environ.get('SMTP_HOST', '').strip()
-    from_address = os.environ.get('SMTP_FROM', '').strip()
-    if not host or not from_address:
-        return 'pending_configuration'
-    to_address = os.environ.get('REPORT_EMAIL_TO', REPORT_EMAIL_TO).strip() or REPORT_EMAIL_TO
-    port = int(os.environ.get('SMTP_PORT', '587'))
-    username = os.environ.get('SMTP_USERNAME', '').strip()
-    password = os.environ.get('SMTP_PASSWORD', '')
-    use_ssl = os.environ.get('SMTP_USE_SSL', '').lower() in ('1', 'true', 'yes')
-    use_tls = os.environ.get('SMTP_USE_TLS', 'true').lower() not in ('0', 'false', 'no')
-    if not use_ssl and not use_tls and (
-            username or deployment_environment() == 'production'):
-        # لا نسمح بإرسال البلاغات أو بيانات اعتماد SMTP بنص صريح. نبقي
-        # الرسالة pending_configuration لتُرسل تلقائياً بعد تصحيح الإعداد.
-        return 'pending_configuration'
-
-    message = EmailMessage()
-    message['From'] = from_address
-    message['To'] = to_address
-    message['Subject'] = f'[فطنة] بلاغ سؤال — {category}'
-    message.set_content(
-        'ورد بلاغ جديد من تطبيق فطنة.\n\n'
-        f'رقم البلاغ: {report_id}\n'
-        f'معرف السؤال: {question_id}\n'
-        f'الفئة: {category}\n'
-        f'السبب: {REPORT_REASONS.get(reason, reason)}\n'
-        f'التفاصيل: {details or "—"}\n'
-        f'السؤال: {question_text}\n'
-        f'الإجابة الحالية: {answer_text or "—"}\n'
-        f'عنوان المصدر: {source_title or "—"}\n'
-        f'رابط المصدر: {source_url or "—"}\n'
-        f'إصدار التطبيق: {app_version or "—"}\n'
-    )
-    context = ssl.create_default_context()
-    if use_ssl:
-        client = smtplib.SMTP_SSL(host, port, timeout=12, context=context)
-    else:
-        client = smtplib.SMTP(host, port, timeout=12)
-    try:
-        if not use_ssl and use_tls:
-            client.starttls(context=context)
-        if username:
-            client.login(username, password)
-        client.send_message(message)
-    finally:
-        try: client.quit()
-        except Exception: client.close()
-    return 'sent'
-
-def deliver_pending_question_reports(limit: int = 20) -> int:
-    """يحاول تسليم البلاغات غير المرسلة ويحدّث حالتها دون فقدها."""
-    conn = db_connect()
-    status_updates = []
-    delivered = 0
-    try:
-        rows = conn.execute('''
-            SELECT report_id, uid, question_id, category, question_text,
-                   answer_text, source_title, source_url, reason, details,
-                   app_version, created_at
-            FROM question_reports
-            WHERE email_status IN ('pending','failed','pending_configuration')
-              AND (email_status='pending_configuration' OR email_attempts < 20)
-            ORDER BY created_at LIMIT ?
-        ''', (limit,)).fetchall()
-        for row in rows:
-            try:
-                status = _send_question_report_email(row)
-                conn.execute('''
-                    UPDATE question_reports
-                    SET email_status=?, email_error=NULL,
-                        email_attempts=email_attempts +
-                            CASE WHEN ?='pending_configuration' THEN 0 ELSE 1 END,
-                        emailed_at=CASE WHEN ?='sent' THEN CURRENT_TIMESTAMP ELSE emailed_at END
-                    WHERE report_id=?
-                ''', (status, status, status, row[0]))
-                status_updates.append((row[0], status, None))
-                delivered += int(status == 'sent')
-            except Exception as exc:
-                error_kind = exception_kind(exc)
-                conn.execute('''
-                    UPDATE question_reports
-                    SET email_status='failed', email_error=?,
-                        email_attempts=email_attempts+1
-                    WHERE report_id=?
-                ''', (error_kind, row[0]))
-                status_updates.append((row[0], 'failed', error_kind))
-        conn.commit()
-    finally:
-        conn.close()
-    if firestore_durable_available():
-        for report_id, status, error in status_updates:
-            try:
-                firestore_set_document(f'question_reports/{report_id}', {
-                    'email_status': status,
-                    'email_error': error,
-                    'email_updated_at': time.strftime(
-                        '%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                })
-            except Exception as exc:
-                print('[Question Reports] Firestore status sync failed '
-                      f'ref={safe_log_reference(report_id)}: {exception_kind(exc)}')
-    return delivered
-
-def _question_report_email_worker():
-    while True:
-        time.sleep(60)
-        try: deliver_pending_question_reports()
-        except Exception as exc:
-            print(f'[Question Reports] retry error: {exception_kind(exc)}')
-
-
-def question_inventory_snapshot(uid: str | None = None,
-                                categories=None, *,
-                                refresh_history: bool = True) -> dict:
-    """احسب الجولات الكاملة المتبقية من الأسئلة التي فُتحت فعلياً.
-
-    السؤال الاحتياطي المحجوز لا يُحسب كمشاهَد. لذلك تعني النتيجة عدد لوحات
-    اللعب الكاملة الممكنة (سؤال واحد من كل مستوى تقني) قبل نفاد مستوى واحد.
-    """
-    document = load_combined_server_question_bank()
-    requested = None
-    if categories is not None:
-        requested = {
-            str(category).strip() for category in categories
-            if isinstance(category, str) and str(category).strip()
-        }
-    played_ids = set()
-    if uid:
-        # حدّث الكاش من Firestore أولاً في الإنتاج، ثم استبعد فقط الأسئلة
-        # المفتوحة فعلياً. الحجوزات تبقى للحماية من طلبين متزامنين.
-        if refresh_history:
-            load_all_question_seen_ids(uid)
-        conn = db_connect()
-        try:
-            played_ids = {
-                str(row[0]) for row in conn.execute(
-                    'SELECT question_id FROM question_seen '
-                    'WHERE uid=? AND reserved_by_round=0',
-                    (uid,),
-                ).fetchall() if row and row[0]
-            }
-        finally:
-            conn.close()
-
-    result = {}
-    available_categories = set(document.get('categories', {}))
-    if requested is None:
-        names = sorted(available_categories)
-    else:
-        names = sorted(
-            (requested & available_categories)
-            | ({'إسلاميات'} if 'إسلاميات' in requested else set()))
-    for category in names:
-        level_counts = {str(level): 0 for level in range(1, 7)}
-        source_categories = (ISLAMIC_REMOTE_SOURCE_CATEGORIES
-                             if category == 'إسلاميات' else (category,))
-        questions = [
-            question
-            for source_category in source_categories
-            for question in document['categories'].get(source_category, [])
-        ]
-        for question in questions:
-            if (not isinstance(question, dict)
-                    or question.get('review', {}).get('status') != 'approved'
-                    or question.get('id') in played_ids):
-                continue
-            level = question.get('d')
-            if isinstance(level, int) and not isinstance(level, bool) \
-                    and 1 <= level <= 6:
-                level_counts[str(level)] += 1
-        result[category] = {
-            'remainingRounds': min(level_counts.values()),
-            'levels': level_counts,
-        }
-    return {
-        'bankVersion': str(document.get('bankVersion') or ''),
-        'categories': result,
-    }
-
-
-def _inventory_alert_threshold(remaining_rounds: int):
-    """أعد أشد حد وصل إليه المخزون، أو None إذا كان فوق 50 جولة."""
-    for threshold in reversed(QUESTION_INVENTORY_ALERT_THRESHOLDS):
-        if remaining_rounds <= threshold:
-            return threshold
-    return None
-
-
-def _claim_question_inventory_alert(bank_version: str, category: str,
-                                    threshold: int,
-                                    remaining_rounds: int,
-                                    level_counts: dict) -> str | None:
-    """احجز تنبيهاً واحداً لكل فئة/نسخة بنك وبأشد حد جديد فقط."""
-    state_key = hashlib.sha256(
-        f'{bank_version}\0{category}'.encode('utf-8')).hexdigest()
-    alert_id = hashlib.sha256(
-        f'{bank_version}\0{category}\0{threshold}'.encode('utf-8')).hexdigest()
-    now_iso = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
-    state_record = {
-        'bank_version': bank_version,
-        'category': category,
-        'threshold': threshold,
-        'remaining_rounds': remaining_rounds,
-        'level_counts': level_counts,
-        'updated_at': now_iso,
-    }
-
-    claimed = False
-    if firestore_durable_available():
-        state_path = f'question_inventory_state/{state_key}'
-        for _ in range(3):
-            existing = firestore_get_document(state_path)
-            if not existing:
-                claimed = bool(firestore_create_document_if_absent(
-                    state_path, state_record))
-                if claimed:
-                    break
-                continue
-            try:
-                previous_threshold = int(existing.get('threshold') or 0)
-            except (TypeError, ValueError):
-                previous_threshold = 0
-            # الأرقام الأصغر أشد: 10 بعد 25 بعد 50.
-            if previous_threshold and previous_threshold <= threshold:
-                return None
-            update_time = str(existing.get('_update_time') or '').strip()
-            if update_time and firestore_set_document_if_update_time(
-                    state_path, state_record, update_time):
-                claimed = True
-                break
-        if not claimed:
-            return None
-    else:
-        conn = db_connect()
-        try:
-            row = conn.execute('''
-                SELECT MIN(threshold) FROM question_inventory_alerts
-                WHERE bank_version=? AND category=?
-            ''', (bank_version, category)).fetchone()
-            previous_threshold = int(row[0]) if row and row[0] is not None else 0
-            if previous_threshold and previous_threshold <= threshold:
-                return None
-            claimed = True
-        finally:
-            conn.close()
-
-    alert_record = {
-        'alert_id': alert_id,
-        **state_record,
-        'email_status': 'pending',
-        'email_attempts': 0,
-        'created_at': now_iso,
-    }
-    # سجل الحد نفسه بصورة مستقلة حتى يمكن استعادة البريد المعلّق بعد restart.
-    if firestore_durable_available():
-        firestore_set_document(
-            f'question_inventory_alerts/{alert_id}', alert_record, merge=False)
-    conn = db_connect()
-    try:
-        conn.execute('''
-            INSERT OR IGNORE INTO question_inventory_alerts
-                (alert_id, bank_version, category, threshold,
-                 remaining_rounds, level_counts)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (
-            alert_id, bank_version, category, threshold, remaining_rounds,
-            json.dumps(level_counts, ensure_ascii=False,
-                       separators=(',', ':')),
-        ))
-        conn.commit()
-    finally:
-        conn.close()
-    return alert_id
-
-
-def monitor_question_inventory(uid: str | None = None, categories=None, *,
-                               refresh_history: bool = True) -> int:
-    """راقب مخزون لاعب أو المخزون الأساسي، من دون التأثير في اللعب."""
-    snapshot = question_inventory_snapshot(
-        uid, categories, refresh_history=refresh_history)
-    queued = 0
-    for category, inventory in snapshot['categories'].items():
-        remaining = int(inventory['remainingRounds'])
-        threshold = _inventory_alert_threshold(remaining)
-        if threshold is None:
-            continue
-        if _claim_question_inventory_alert(
-                snapshot['bankVersion'], category, threshold, remaining,
-                inventory['levels']):
-            queued += 1
-    return queued
-
-
-def _send_question_inventory_alert_email(rows) -> str:
-    """أرسل تنبيهات المخزون كملخص واحد، بلا أي هوية أو بيانات لاعب."""
-    host = os.environ.get('SMTP_HOST', '').strip()
-    from_address = os.environ.get('SMTP_FROM', '').strip()
-    if not host or not from_address:
-        return 'pending_configuration'
-    to_address = os.environ.get(
-        'INVENTORY_ALERT_EMAIL_TO',
-        os.environ.get('REPORT_EMAIL_TO', REPORT_EMAIL_TO),
-    ).strip() or REPORT_EMAIL_TO
-    port = int(os.environ.get('SMTP_PORT', '587'))
-    username = os.environ.get('SMTP_USERNAME', '').strip()
-    password = os.environ.get('SMTP_PASSWORD', '')
-    use_ssl = os.environ.get('SMTP_USE_SSL', '').lower() in ('1', 'true', 'yes')
-    use_tls = os.environ.get('SMTP_USE_TLS', 'true').lower() not in ('0', 'false', 'no')
-    if not use_ssl and not use_tls and (
-            username or deployment_environment() == 'production'):
-        return 'pending_configuration'
-
-    lines = [
-        'تنبيه آلي من مراقبة بنك أسئلة فطنة.',
-        'لا يحتوي هذا التنبيه أي هوية أو بيانات لاعب.',
-        '',
-    ]
-    for row in rows:
-        (_alert_id, bank_version, category, threshold, remaining,
-         level_counts, _created_at) = row
-        try:
-            levels = json.loads(level_counts)
-        except (TypeError, ValueError):
-            levels = {}
-        levels_text = '، '.join(
-            f'{level}:{int(levels.get(str(level), 0))}' for level in range(1, 7))
-        lines.extend((
-            f'الفئة: {category}',
-            f'الجولات الكاملة المتبقية: {remaining}',
-            f'حد التنبيه: {threshold}',
-            f'المتبقي حسب المستويات 1–6: {levels_text}',
-            f'نسخة البنك: {bank_version}',
-            '',
-        ))
-
-    message = EmailMessage()
-    message['From'] = from_address
-    message['To'] = to_address
-    message['Subject'] = f'[فطنة] تنبيه مخزون الأسئلة — {len(rows)} فئة'
-    message.set_content('\n'.join(lines))
-    context = ssl.create_default_context()
-    if use_ssl:
-        client = smtplib.SMTP_SSL(host, port, timeout=12, context=context)
-    else:
-        client = smtplib.SMTP(host, port, timeout=12)
-    try:
-        if not use_ssl and use_tls:
-            client.starttls(context=context)
-        if username:
-            client.login(username, password)
-        client.send_message(message)
-    finally:
-        try:
-            client.quit()
-        except Exception:
-            client.close()
-    return 'sent'
-
-
-def deliver_pending_question_inventory_alerts(limit: int = 100) -> int:
-    """سلّم التنبيهات المعلقة في رسالة مجمعة وحدّث أثرها الدائم."""
-    conn = db_connect()
-    updates = []
-    try:
-        rows = conn.execute('''
-            SELECT alert_id, bank_version, category, threshold,
-                   remaining_rounds, level_counts, created_at
-            FROM question_inventory_alerts
-            WHERE email_status IN ('pending','failed','pending_configuration')
-              AND (email_status='pending_configuration' OR email_attempts < 20)
-            ORDER BY created_at, category LIMIT ?
-        ''', (max(1, min(int(limit), 500)),)).fetchall()
-        if not rows:
-            return 0
-        try:
-            status = _send_question_inventory_alert_email(rows)
-            for row in rows:
-                conn.execute('''
-                    UPDATE question_inventory_alerts
-                    SET email_status=?, email_error=NULL,
-                        email_attempts=email_attempts +
-                            CASE WHEN ?='pending_configuration' THEN 0 ELSE 1 END,
-                        emailed_at=CASE WHEN ?='sent' THEN CURRENT_TIMESTAMP ELSE emailed_at END
-                    WHERE alert_id=?
-                ''', (status, status, status, row[0]))
-                updates.append((row[0], status, None))
-        except Exception as exc:
-            error_kind = exception_kind(exc)
-            for row in rows:
-                conn.execute('''
-                    UPDATE question_inventory_alerts
-                    SET email_status='failed', email_error=?,
-                        email_attempts=email_attempts+1
-                    WHERE alert_id=?
-                ''', (error_kind, row[0]))
-                updates.append((row[0], 'failed', error_kind))
-        conn.commit()
-    finally:
-        conn.close()
-    if firestore_durable_available():
-        for alert_id, status, error in updates:
-            try:
-                firestore_set_document(
-                    f'question_inventory_alerts/{alert_id}', {
-                        'email_status': status,
-                        'email_error': error,
-                        'email_updated_at': time.strftime(
-                            '%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                    })
-            except Exception as exc:
-                print('[Question Inventory] Firestore status sync failed '
-                      f'ref={safe_log_reference(alert_id)}: '
-                      f'{exception_kind(exc)}')
-    return sum(1 for _, status, _ in updates if status == 'sent')
-
-
-def restore_pending_question_inventory_alerts() -> int:
-    """استعد التنبيهات غير المرسلة من Firestore بعد إعادة تشغيل الخادم."""
-    if not firestore_durable_available():
-        return 0
-    documents = firestore_list_documents('question_inventory_alerts')
-    pending = [document for document in documents
-               if document.get('email_status') != 'sent']
-    if not pending:
-        return 0
-    conn = db_connect()
-    restored = 0
-    try:
-        for document in pending:
-            alert_id = str(document.get('alert_id') or
-                           document.get('_document_id') or '').strip()
-            if not re.fullmatch(r'[0-9a-f]{64}', alert_id):
-                continue
-            level_counts = document.get('level_counts')
-            if not isinstance(level_counts, dict):
-                level_counts = {}
-            changed = conn.execute('''
-                INSERT OR IGNORE INTO question_inventory_alerts
-                    (alert_id, bank_version, category, threshold,
-                     remaining_rounds, level_counts, email_status,
-                     email_attempts, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                alert_id, str(document.get('bank_version') or ''),
-                str(document.get('category') or ''),
-                int(document.get('threshold') or 0),
-                int(document.get('remaining_rounds') or 0),
-                json.dumps(level_counts, ensure_ascii=False,
-                           separators=(',', ':')),
-                str(document.get('email_status') or 'pending'),
-                int(document.get('email_attempts') or 0),
-                str(document.get('created_at') or time.strftime(
-                    '%Y-%m-%dT%H:%M:%SZ', time.gmtime())),
-            )).rowcount
-            restored += int(changed == 1)
-        conn.commit()
-    finally:
-        conn.close()
-    return restored
-
-
-def _question_inventory_email_worker():
-    while True:
-        time.sleep(60)
-        try:
-            deliver_pending_question_inventory_alerts()
-        except Exception as exc:
-            print('[Question Inventory] retry error: '
-                  f'{exception_kind(exc)}')
-
 
 def get_revenuecat_secret():
     """مفتاح تحقق ويبهوك RevenueCat — يُقارَن مع رأس Authorization الوارد."""
@@ -3028,283 +1868,6 @@ def firestore_batch_delete_documents(document_paths):
         raise RuntimeError(_firestore_http_error(exc, 'batch delete')) from exc
 
 
-class QuestionHistoryUnavailableError(RuntimeError):
-    """تعذّرت قراءة/كتابة سجل الأسئلة الملزم لمنع التكرار."""
-
-
-class QuestionRoundBusyError(RuntimeError):
-    """طلب جولة آخر للحساب نفسه قيد الاختيار."""
-
-
-def _question_round_lock(uid: str):
-    digest = hashlib.sha256(str(uid).encode('utf-8')).digest()
-    return _question_round_local_locks[int.from_bytes(digest[:2], 'big')
-                                       % len(_question_round_local_locks)]
-
-
-def acquire_question_round_guard(uid: str):
-    """سلسل اختيار جولة الحساب وحجزها عبر نسخ الخادم.
-
-    يمنع القفل جهازين من قراءة سجل واحد واختيار السؤال نفسه.
-    في الإنتاج نفشل مغلقاً إذا لم يتوفر Firestore للقفل الموزع.
-    """
-    local_lock = _question_round_lock(uid)
-    if not local_lock.acquire(timeout=5):
-        raise QuestionRoundBusyError('جولة محلية أخرى قيد الاختيار')
-    handle = {'local_lock': local_lock, 'distributed': False,
-              'update_time': '', 'path': ''}
-    try:
-        if not firestore_durable_available():
-            if deployment_environment() == 'production' or durable_storage_required():
-                raise QuestionHistoryUnavailableError(
-                    'قفل الجولة الموزع يحتاج Firestore')
-            return handle
-
-        uid_hash = hashlib.sha256(str(uid).encode('utf-8')).hexdigest()
-        document_path = f'question_round_locks/{uid_hash}'
-        owner = str(uuid.uuid4())
-        for _ in range(2):
-            now = int(time.time())
-            update_time = firestore_create_document_if_absent(document_path, {
-                'owner': owner,
-                'expires_at': now + _QUESTION_ROUND_LEASE_SECONDS,
-                'purpose': 'question_round_selection',
-            })
-            if update_time:
-                handle.update(distributed=True, update_time=update_time,
-                              path=document_path)
-                return handle
-            existing = firestore_get_document(document_path)
-            if not existing:
-                continue
-            try:
-                expires_at = int(existing.get('expires_at') or 0)
-            except (TypeError, ValueError):
-                expires_at = 0
-            existing_update_time = str(existing.get('_update_time') or '').strip()
-            if expires_at > now or not existing_update_time:
-                raise QuestionRoundBusyError('جولة موزعة أخرى قيد الاختيار')
-            if not firestore_delete_document_if_update_time(
-                    document_path, existing_update_time):
-                raise QuestionRoundBusyError('تغيّر مالك قفل الجولة')
-        raise QuestionRoundBusyError('تعذّر الاستحواذ على قفل الجولة')
-    except (QuestionRoundBusyError, QuestionHistoryUnavailableError):
-        local_lock.release()
-        raise
-    except Exception as exc:
-        local_lock.release()
-        raise QuestionHistoryUnavailableError(
-            'تعذّر إنشاء قفل الجولة') from exc
-
-
-def release_question_round_guard(handle) -> None:
-    try:
-        if handle and handle.get('distributed'):
-            try:
-                firestore_delete_document_if_update_time(
-                    str(handle.get('path') or ''),
-                    str(handle.get('update_time') or ''),
-                )
-            except Exception as exc:
-                # الـlease قصير وينتهي تلقائياً إذا تعذر التحرير.
-                print('[Question Round] distributed lock release failed: '
-                      f'{exception_kind(exc)}')
-    finally:
-        local_lock = handle.get('local_lock') if handle else None
-        if local_lock and local_lock.locked():
-            local_lock.release()
-
-
-def load_all_question_seen_ids(uid: str) -> set:
-    """استرجع كل معرفات الحساب بلا حد 10,000 وحدّث الكاش المحلي."""
-    durable_documents = []
-    if firestore_durable_available():
-        try:
-            durable_documents = firestore_list_documents(
-                f'users/{uid}/question_seen')
-        except Exception as exc:
-            if deployment_environment() == 'production' or durable_storage_required():
-                raise QuestionHistoryUnavailableError(
-                    'تعذّرت قراءة سجل الأسئلة الدائم') from exc
-    elif deployment_environment() == 'production' or durable_storage_required():
-        raise QuestionHistoryUnavailableError(
-            'سجل الأسئلة الدائم غير مهيأ')
-
-    if durable_documents:
-        now_epoch = int(time.time())
-        try:
-            conn = db_connect()
-            try:
-                conn.executemany('''
-                    INSERT INTO question_seen (
-                        uid, question_id, category, seen_at, reserved_by_round,
-                        reserved_until_epoch)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(uid, question_id) DO UPDATE SET
-                        category=excluded.category,
-                        seen_at=excluded.seen_at,
-                        reserved_by_round=excluded.reserved_by_round,
-                        reserved_until_epoch=excluded.reserved_until_epoch
-                ''', [(
-                    uid, document.get('question_id') or document.get('_document_id'),
-                    document.get('category') or 'غير مصنف',
-                    document.get('seen_at') or time.strftime('%Y-%m-%d %H:%M:%S'),
-                    1 if document.get('reserved_by_round') is True else 0,
-                    int(document.get('reserved_until_epoch') or 0),
-                ) for document in durable_documents
-                    if document.get('question_id') or document.get('_document_id')])
-                conn.commit()
-            finally:
-                conn.close()
-        except Exception as exc:
-            raise QuestionHistoryUnavailableError(
-                'تعذّر تحديث كاش سجل الأسئلة') from exc
-        # إغلاق التطبيق لا يترك حجوزات أبدية. الوثائق القديمة التي سبقت
-        # إضافة مدة الحجز تعامل كمنتهية أيضاً وتُنظف بأفضل جهد.
-        expired_reservations = [
-            str(document.get('question_id') or document.get('_document_id') or '')
-            for document in durable_documents
-            if document.get('reserved_by_round') is True
-            and int(document.get('reserved_until_epoch') or 0) <= now_epoch
-        ]
-        for offset in range(0, len(expired_reservations), 500):
-            try:
-                firestore_batch_delete_documents([
-                    f'users/{uid}/question_seen/{question_id}'
-                    for question_id in expired_reservations[offset:offset + 500]
-                    if question_id
-                ])
-            except Exception as exc:
-                print('[Question Reservations] expiry cleanup failed '
-                      f'uid_ref={safe_log_reference(uid)}: '
-                      f'{exception_kind(exc)}')
-
-    try:
-        conn = db_connect()
-        try:
-            now_epoch = int(time.time())
-            conn.execute('''
-                DELETE FROM question_seen
-                WHERE uid=? AND reserved_by_round=1
-                  AND reserved_until_epoch<=?
-            ''', (uid, now_epoch))
-            rows = conn.execute('''
-                SELECT question_id FROM question_seen
-                WHERE uid=? AND (
-                    reserved_by_round=0 OR reserved_until_epoch>?
-                )
-            ''', (uid, now_epoch)).fetchall()
-            conn.commit()
-        finally:
-            conn.close()
-    except Exception as exc:
-        raise QuestionHistoryUnavailableError(
-            'تعذّرت قراءة كاش سجل الأسئلة') from exc
-    return {str(row[0]) for row in rows if row and row[0]}
-
-
-def reserve_question_round(uid: str, questions: dict) -> None:
-    """احجز كل الأسئلة المُرجعة قبل إرسالها للعميل."""
-    now_iso = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
-    reserved_until_epoch = int(time.time()) + _QUESTION_RESERVATION_TTL_SECONDS
-    items = []
-    for category, rows in (questions or {}).items():
-        for question in rows or []:
-            question_id = str(question.get('id') or '').strip()
-            if question_id:
-                items.append((question_id, str(category), now_iso))
-    if not items:
-        return
-    if firestore_durable_available():
-        try:
-            firestore_batch_set_documents([
-                (f'users/{uid}/question_seen/{question_id}', {
-                    'uid': uid,
-                    'question_id': question_id,
-                    'category': category,
-                    'seen_at': now_iso,
-                    'reserved_by_round': True,
-                    'reserved_until_epoch': reserved_until_epoch,
-                }) for question_id, category, _ in items
-            ])
-        except Exception as exc:
-            raise QuestionHistoryUnavailableError(
-                'تعذّر حجز أسئلة الجولة') from exc
-    elif deployment_environment() == 'production' or durable_storage_required():
-        raise QuestionHistoryUnavailableError(
-            'حجز أسئلة الجولة يحتاج Firestore')
-    try:
-        conn = db_connect()
-        try:
-            conn.executemany('''
-                INSERT INTO question_seen (
-                    uid, question_id, category, seen_at, reserved_by_round,
-                    reserved_until_epoch)
-                VALUES (?, ?, ?, ?, 1, ?)
-                ON CONFLICT(uid, question_id) DO UPDATE SET
-                    category=excluded.category,
-                    seen_at=excluded.seen_at,
-                    reserved_by_round=1,
-                    reserved_until_epoch=excluded.reserved_until_epoch
-            ''', [(uid, question_id, category, seen_at, reserved_until_epoch)
-                  for question_id, category, seen_at in items])
-            conn.commit()
-        finally:
-            conn.close()
-    except Exception as exc:
-        raise QuestionHistoryUnavailableError(
-            'تعذّر حفظ حجز الجولة محلياً') from exc
-
-
-def release_question_round_reservations(uid: str, question_ids) -> int:
-    """حرّر احتياطيات جولة انتهت، ولا تحذف أي سؤال فُتح فعلياً."""
-    clean_ids = {
-        str(question_id).strip() for question_id in (question_ids or [])
-        if re.fullmatch(r'[A-Za-z0-9._-]{1,128}', str(question_id).strip())
-    }
-    if not clean_ids:
-        return 0
-    if len(clean_ids) > 100:
-        raise ValueError('قائمة حجوزات الجولة كبيرة جداً')
-
-    durable_released = None
-    if firestore_durable_available():
-        try:
-            documents = firestore_list_documents(f'users/{uid}/question_seen')
-            releasable = {
-                str(document.get('question_id') or document.get('_document_id') or '')
-                for document in documents
-                if document.get('reserved_by_round') is True
-                and str(document.get('question_id') or
-                        document.get('_document_id') or '') in clean_ids
-            }
-            firestore_batch_delete_documents([
-                f'users/{uid}/question_seen/{question_id}'
-                for question_id in sorted(releasable)
-            ])
-            durable_released = len(releasable)
-        except Exception as exc:
-            raise QuestionHistoryUnavailableError(
-                'تعذّر تحرير حجوزات الجولة الدائمة') from exc
-    elif deployment_environment() == 'production' or durable_storage_required():
-        raise QuestionHistoryUnavailableError(
-            'تحرير حجوزات الجولة يحتاج Firestore')
-
-    conn = db_connect()
-    try:
-        placeholders = ','.join('?' for _ in clean_ids)
-        cursor = conn.execute(
-            'DELETE FROM question_seen '
-            f'WHERE uid=? AND reserved_by_round=1 '
-            f'AND question_id IN ({placeholders})',
-            (uid, *sorted(clean_ids)),
-        )
-        local_released = max(0, int(cursor.rowcount or 0))
-        conn.commit()
-    finally:
-        conn.close()
-    return durable_released if durable_released is not None else local_released
-
 def durable_write(document_path: str, data: dict, *, merge: bool = True) -> bool:
     """اكتب إلى المخزن الدائم أو ارفع خطأ في النشر ذي التخزين الإلزامي."""
     if firestore_durable_available():
@@ -3313,6 +1876,180 @@ def durable_write(document_path: str, data: dict, *, merge: bool = True) -> bool
     if durable_storage_required():
         raise RuntimeError('التخزين الدائم مطلوب لكن بيانات اعتماد Firestore غير مكتملة')
     return False
+
+
+class QuestionPlatformStorageError(RuntimeError):
+    pass
+
+
+class QuestionPlatformBusyError(RuntimeError):
+    pass
+
+
+def _question_platform_lock(uid: str):
+    digest = hashlib.sha256(str(uid).encode('utf-8')).digest()
+    return _question_platform_local_locks[
+        int.from_bytes(digest[:2], 'big') % len(_question_platform_local_locks)]
+
+
+def acquire_question_platform_guard(uid: str):
+    """Serialize pack allocation for one account across all server replicas."""
+    local_lock = _question_platform_lock(uid)
+    if not local_lock.acquire(timeout=5):
+        raise QuestionPlatformBusyError('طلب جولة آخر قيد التجهيز')
+    handle = {'local_lock': local_lock, 'distributed': False,
+              'path': '', 'update_time': ''}
+    try:
+        if not firestore_durable_available():
+            if deployment_environment() == 'production' or durable_storage_required():
+                raise QuestionPlatformStorageError('قفل الجولات الموزع غير مهيأ')
+            return handle
+        digest = hashlib.sha256(str(uid).encode('utf-8')).hexdigest()
+        path = f'question_platform_locks/{digest}'
+        owner = str(uuid.uuid4())
+        for _ in range(2):
+            now = int(time.time())
+            update_time = firestore_create_document_if_absent(path, {
+                'owner': owner, 'expires_at': now + _QUESTION_PLATFORM_LEASE_SECONDS,
+                'purpose': 'game_pack_allocation',
+            })
+            if update_time:
+                handle.update(distributed=True, path=path, update_time=update_time)
+                return handle
+            existing = firestore_get_document(path)
+            if not existing:
+                continue
+            existing_update = str(existing.get('_update_time') or '')
+            if int(existing.get('expires_at') or 0) > now or not existing_update:
+                raise QuestionPlatformBusyError('جهاز آخر يجهز الجولة')
+            if not firestore_delete_document_if_update_time(path, existing_update):
+                raise QuestionPlatformBusyError('تغير مالك قفل الجولة')
+        raise QuestionPlatformBusyError('تعذر حجز الجولة')
+    except Exception:
+        local_lock.release()
+        raise
+
+
+def release_question_platform_guard(handle) -> None:
+    try:
+        if handle and handle.get('distributed'):
+            try:
+                firestore_delete_document_if_update_time(
+                    str(handle.get('path') or ''),
+                    str(handle.get('update_time') or ''))
+            except Exception as exc:
+                print('[Question Platform] lock release failed: '
+                      f'{exception_kind(exc)}')
+    finally:
+        local_lock = handle.get('local_lock') if handle else None
+        if local_lock and local_lock.locked():
+            local_lock.release()
+
+
+def sync_question_platform_questions() -> None:
+    if firestore_durable_available():
+        try:
+            documents = firestore_list_documents('question_platform_questions')
+            question_platform.cache_questions(DB_PATH, documents)
+            return
+        except Exception as exc:
+            if deployment_environment() == 'production' or durable_storage_required():
+                raise QuestionPlatformStorageError(
+                    'تعذرت قراءة بنك الأسئلة الدائم') from exc
+    if deployment_environment() == 'production' or durable_storage_required():
+        raise QuestionPlatformStorageError('التخزين الدائم للأسئلة غير مهيأ')
+
+
+def sync_question_platform_user(uid: str) -> None:
+    if firestore_durable_available():
+        try:
+            question_platform.cache_user_state(
+                DB_PATH, uid,
+                packs=firestore_list_documents(f'users/{uid}/game_packs'),
+                seen=firestore_list_documents(f'users/{uid}/question_platform_seen'),
+                cycles=firestore_list_documents(f'users/{uid}/question_platform_cycles'),
+            )
+            return
+        except Exception as exc:
+            if deployment_environment() == 'production' or durable_storage_required():
+                raise QuestionPlatformStorageError(
+                    'تعذرت قراءة سجل الجولات الدائم') from exc
+    if deployment_environment() == 'production' or durable_storage_required():
+        raise QuestionPlatformStorageError('سجل الجولات الدائم غير مهيأ')
+
+
+def persist_question_platform_user(uid: str) -> None:
+    snapshot = question_platform.user_state_snapshot(DB_PATH, uid)
+    if not firestore_durable_available():
+        if deployment_environment() == 'production' or durable_storage_required():
+            raise QuestionPlatformStorageError('تعذر حفظ سجل الجولات بشكل دائم')
+        return
+    records = []
+    records.extend((f'users/{uid}/game_packs/{item["packId"]}', item)
+                   for item in snapshot['packs'])
+    records.extend((f'users/{uid}/question_platform_seen/{item["questionId"]}', item)
+                   for item in snapshot['seen'])
+    records.extend((f'users/{uid}/question_platform_cycles/{item["level"]}', item)
+                   for item in snapshot['cycles'])
+    try:
+        for offset in range(0, len(records), 400):
+            firestore_batch_set_documents(records[offset:offset + 400])
+    except Exception as exc:
+        raise QuestionPlatformStorageError('تعذر حفظ سجل الجولات الدائم') from exc
+
+
+def persist_question_platform_question(question: dict) -> None:
+    question_id = str(question.get('questionId') or '')
+    if not question_id:
+        raise QuestionPlatformStorageError('معرف السؤال مفقود')
+    try:
+        durable_write(f'question_platform_questions/{question_id}', question,
+                      merge=False)
+    except Exception as exc:
+        raise QuestionPlatformStorageError('تعذر حفظ السؤال بشكل دائم') from exc
+
+
+def persist_question_platform_metrics(question_ids) -> None:
+    if not firestore_durable_available():
+        if deployment_environment() == 'production' or durable_storage_required():
+            raise QuestionPlatformStorageError('مخزن مؤشرات الأسئلة غير مهيأ')
+        return
+    records = []
+    for question_id in list(dict.fromkeys(str(item) for item in question_ids))[:200]:
+        try:
+            question = question_platform.question_by_id(DB_PATH, question_id)
+        except question_platform.NotFoundError:
+            continue
+        records.append((f'question_platform_questions/{question_id}', question))
+    try:
+        if records:
+            firestore_batch_set_documents(records)
+    except Exception as exc:
+        raise QuestionPlatformStorageError('تعذر حفظ مؤشرات الأسئلة') from exc
+
+
+def persist_question_platform_report(report: dict) -> None:
+    report_id = str(report.get('report_id') or report.get('reportId') or '')
+    if not report_id:
+        return
+    try:
+        durable_write(f'question_platform_reports/{report_id}', report, merge=False)
+    except Exception as exc:
+        if deployment_environment() == 'production' or durable_storage_required():
+            raise QuestionPlatformStorageError('تعذر حفظ البلاغ بشكل دائم') from exc
+
+
+def sync_question_platform_reports() -> None:
+    if firestore_durable_available():
+        try:
+            question_platform.cache_reports(
+                DB_PATH, firestore_list_documents('question_platform_reports'))
+            return
+        except Exception as exc:
+            if deployment_environment() == 'production' or durable_storage_required():
+                raise QuestionPlatformStorageError('تعذرت قراءة البلاغات') from exc
+    if deployment_environment() == 'production' or durable_storage_required():
+        raise QuestionPlatformStorageError('مخزن البلاغات غير مهيأ')
 
 
 def ios_diagnostic_retention_fields(now=None) -> dict:
@@ -3330,164 +2067,27 @@ def ios_diagnostic_retention_fields(now=None) -> dict:
 
 
 def persist_free_round_completion(uid: str) -> None:
-    """ثبّت ملكية الجولة واستحقاق تنزيل أسئلتها مرة واحدة."""
+    """ثبّت إكمال الجولة التعريفية مرة واحدة."""
     completed_at = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
     durable_write(f'free_rounds/{uid}', {
         'uid': uid,
         'completed': True,
         'completed_at': completed_at,
-        'question_round_entitled': True,
     })
     conn = db_connect()
     try:
         conn.execute('''
-            INSERT INTO free_rounds
-                (uid, completed_at, question_round_entitled)
-            VALUES (?, ?, 1)
+            INSERT INTO free_rounds (uid, completed_at)
+            VALUES (?, ?)
             ON CONFLICT(uid) DO UPDATE SET
-                completed_at=excluded.completed_at,
-                question_round_entitled=1
+                completed_at=excluded.completed_at
         ''', (uid, completed_at))
         conn.commit()
     finally:
         conn.close()
 
 
-def free_round_question_request_hash(request_data: dict) -> str:
-    """بصمة طلب ثابتة تجعل الجولة المجانية قابلة للإعادة بلا حصد أسئلة."""
-    canonical = json.dumps({
-        'categories': [str(item).strip()
-                       for item in (request_data.get('categories') or [])],
-        'questionsPerLevel': request_data.get('questionsPerLevel', 1),
-    }, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
-    return hashlib.sha256(canonical).hexdigest()
-
-
-def load_free_round_question_grant(uid: str):
-    """اقرأ الاستحقاق من المخزن الدائم؛ لا تعتمد كاشاً محلياً في الإنتاج."""
-    if firestore_durable_available():
-        try:
-            record = firestore_get_document(f'free_rounds/{uid}') or {}
-        except Exception as exc:
-            raise QuestionHistoryUnavailableError(
-                'تعذّرت قراءة استحقاق الجولة المجانية') from exc
-        return {
-            'entitled': (record.get('completed') is True
-                         and record.get('question_round_entitled') is True),
-            'request_hash': str(record.get('question_round_request_hash') or ''),
-            'payload': record.get('question_round_payload'),
-        }
-    if deployment_environment() == 'production' or durable_storage_required():
-        raise QuestionHistoryUnavailableError(
-            'استحقاق الجولة المجانية يحتاج Firestore')
-    conn = db_connect()
-    try:
-        row = conn.execute('''
-            SELECT question_round_entitled, question_round_request_hash,
-                   question_round_payload
-            FROM free_rounds WHERE uid=?
-        ''', (uid,)).fetchone()
-    finally:
-        conn.close()
-    if not row:
-        return {'entitled': False, 'request_hash': '', 'payload': None}
-    payload = None
-    if row[2]:
-        try:
-            payload = json.loads(row[2])
-        except (TypeError, ValueError):
-            raise QuestionHistoryUnavailableError(
-                'حمولة الجولة المجانية المحفوظة تالفة')
-    return {
-        'entitled': bool(row[0]),
-        'request_hash': str(row[1] or ''),
-        'payload': payload,
-    }
-
-
-def persist_free_round_question_payload(uid: str, request_hash: str,
-                                        payload: dict) -> None:
-    """احفظ جولة واحدة للحساب؛ تعيد المحاولات الحمولة نفسها فقط."""
-    if not re.fullmatch(r'[0-9a-f]{64}', str(request_hash or '')):
-        raise ValueError('بصمة طلب الجولة غير صالحة')
-    runtime_payload = runtime_round_payload_projection(payload)
-    persisted_durably = durable_write(f'free_rounds/{uid}', {
-        'question_round_entitled': True,
-        'question_round_request_hash': request_hash,
-        'question_round_payload': runtime_payload,
-    })
-    encoded = json.dumps(
-        runtime_payload, ensure_ascii=False, separators=(',', ':'))
-    conn = db_connect()
-    try:
-        if persisted_durably:
-            # SQLite is a per-instance cache in autoscale. The Firestore write
-            # above is authoritative, so a fresh instance may legitimately
-            # have no local row yet and must populate it with an upsert.
-            changed = conn.execute('''
-                INSERT INTO free_rounds
-                    (uid, question_round_entitled,
-                     question_round_request_hash, question_round_payload)
-                VALUES (?, 1, ?, ?)
-                ON CONFLICT(uid) DO UPDATE SET
-                    question_round_entitled=1,
-                    question_round_request_hash=excluded.question_round_request_hash,
-                    question_round_payload=excluded.question_round_payload
-            ''', (uid, request_hash, encoded)).rowcount
-        else:
-            # Without a durable authority, preserve the local entitlement gate
-            # and never create a free-round grant merely by calling this helper.
-            changed = conn.execute('''
-                UPDATE free_rounds SET
-                    question_round_request_hash=?, question_round_payload=?
-                WHERE uid=? AND question_round_entitled=1
-            ''', (request_hash, encoded, uid)).rowcount
-        conn.commit()
-    finally:
-        conn.close()
-    if changed != 1:
-        raise QuestionHistoryUnavailableError(
-            'استحقاق الجولة المجانية مفقود')
-
-
-def select_free_round_question_payload(uid: str, request_data: dict,
-                                       free_grant: dict):
-    """أعد الجولة المثبتة، أو استبدلها إن تغير البنك أو سُحب سؤال."""
-    request_hash = free_round_question_request_hash(request_data)
-    stored_payload = free_grant.get('payload')
-    if stored_payload is not None and not secrets.compare_digest(
-            request_hash, str(free_grant.get('request_hash') or '')):
-        return 409, {
-            'error': 'فئات الجولة المجانية تم تثبيتها مسبقاً',
-            'code': 'free_round_categories_locked',
-        }
-    reusable_ids = set()
-    replacement_request = dict(request_data)
-    if stored_payload is not None:
-        current_document = load_combined_server_question_bank()
-        valid_payload = valid_stored_free_round_payload(
-            stored_payload, request_data, current_document)
-        if valid_payload is not None:
-            return 200, valid_payload
-        reusable_ids = reusable_stale_free_round_ids(
-            stored_payload, request_data, current_document)
-        client_excluded = request_data.get('excludeQuestionIds')
-        if isinstance(client_excluded, list):
-            replacement_request['excludeQuestionIds'] = [
-                question_id for question_id in client_excluded
-                if question_id not in reusable_ids
-            ]
-    server_seen_ids = load_all_question_seen_ids(uid)
-    server_seen_ids.difference_update(reusable_ids)
-    status, result = select_remote_round_questions(
-        replacement_request, additional_excluded_ids=server_seen_ids)
-    if status == 200:
-        persist_free_round_question_payload(
-            uid, request_hash, result)
-    return status, result
-
-
-# ─── App Attest: تحديات قصيرة ومفاتيح تثبيت موثقة ───────────────────────────
+# ─── App Attest: تحديات قصيرة ومفاتيح تثبيت موثقة ──────────────────────────
 APP_ATTEST_CHALLENGE_TTL_SECONDS = 300
 APP_ATTEST_PURPOSES = {
     'attest', 'free_round_status', 'free_round_complete',
@@ -4156,13 +2756,18 @@ def firestore_delete_subscription(uid: str) -> None:
 
     # Firestore لا يحذف المجموعات الفرعية عند حذف الوثيقة الأب؛ لذلك نحذفها
     # صراحةً قبل وثائق المستوى الأعلى.
-    for subcollection in ('question_seen', 'game_events', 'ios_diagnostics'):
+    for subcollection in (
+            'question_seen', 'question_platform_seen', 'question_platform_cycles',
+            'game_packs', 'game_events', 'ios_diagnostics'):
         for document in firestore_list_documents(f'users/{uid}/{subcollection}'):
             firestore_delete_document(
                 f'users/{uid}/{subcollection}/{document["_document_id"]}')
 
     for report in firestore_query_documents('question_reports', 'uid', uid):
         firestore_delete_document(f'question_reports/{report["_document_id"]}')
+    for report in firestore_query_documents('question_platform_reports', 'uid', uid):
+        firestore_delete_document(
+            f'question_platform_reports/{report["_document_id"]}')
 
     # تحديات App Attest غير المستخدمة لا تحمل UID خاماً، لكنها تبقى قابلة
     # للربط بالحساب عبر بصمة مخصصة. نحذفها فور حذف الحساب، بينما تتولى سياسة
@@ -5016,331 +3621,6 @@ def firebase_config_js():
     ).encode()
 
 
-# تطبيق 1.2 يستعمل اسم الدالة القديم مباشرة على iOS، كما يستعمل هذا المسار
-# عند التشغيل على الويب/localhost. نبقي العقد نفسه طوال نافذة التوافق، بينما
-# يظل التوليد خارج server.py حتى لا تتكرر أسرار الذكاء الاصطناعي أو منطقها.
-LEGACY_V1_GENERATION_URL = (
-    'https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions'
-)
-
-
-def legacy_v1_generation_url() -> str:
-    configured = os.environ.get('FATINAH_V1_GENERATION_URL', '').strip()
-    if configured:
-        return configured
-    # staging/local لا يستدعيان production ضمنياً. في الإنتاج نحافظ على
-    # الوجهة التاريخية لتطبيق 1.2 ما لم تُضبط وجهة صريحة.
-    return (
-        LEGACY_V1_GENERATION_URL
-        if configured_deployment_environment() == 'production'
-        else ''
-    )
-
-
-def _configured_host_allowlist(name: str) -> set[str]:
-    hosts = set()
-    for raw in os.environ.get(name, '').split(','):
-        host = raw.strip().lower().rstrip('.')
-        if host and re.fullmatch(r'[a-z0-9.-]{1,253}', host):
-            hosts.add(host)
-    return hosts
-
-
-def _legacy_generation_allowed_hosts() -> set[str]:
-    environment = configured_deployment_environment()
-    if environment == 'production':
-        return set(PRODUCTION_GENERATION_HOSTS)
-    configured = _configured_host_allowlist(LEGACY_GENERATION_ALLOWED_HOSTS_ENV)
-    if environment == 'staging':
-        return configured
-    if environment == 'local':
-        return configured | {'127.0.0.1', '::1', 'localhost'}
-    return set()
-
-
-def _hostname_resolves_to_public_ips(hostname: str, port: int) -> bool:
-    try:
-        literal = ipaddress.ip_address(hostname)
-    except ValueError:
-        literal = None
-    if literal is not None:
-        return literal.is_global
-    try:
-        addresses = socket.getaddrinfo(
-            hostname, port, type=socket.SOCK_STREAM)
-    except (OSError, socket.gaierror):
-        return False
-    resolved = set()
-    for address in addresses:
-        try:
-            resolved.add(ipaddress.ip_address(address[4][0]))
-        except (ValueError, IndexError):
-            return False
-    return bool(resolved) and all(address.is_global for address in resolved)
-
-
-def _legacy_generation_endpoint_is_safe(url: str) -> bool:
-    try:
-        parsed = urllib.parse.urlparse(url)
-    except ValueError:
-        return False
-    hostname = (parsed.hostname or '').lower().rstrip('.')
-    if parsed.username or parsed.password or parsed.fragment:
-        return False
-    environment = configured_deployment_environment()
-    if hostname not in _legacy_generation_allowed_hosts():
-        return False
-    try:
-        port = parsed.port or (443 if parsed.scheme == 'https' else 80)
-    except ValueError:
-        return False
-    local_http = (
-        environment == 'local'
-        and parsed.scheme == 'http'
-        and hostname in {'127.0.0.1', '::1', 'localhost'}
-    )
-    if not local_http:
-        if parsed.scheme != 'https' or port != 443:
-            return False
-        if not _hostname_resolves_to_public_ips(hostname, port):
-            return False
-    if environment == 'production':
-        return parsed.path == '/generateQuestions' and not parsed.query
-    return True
-
-
-class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        return None
-
-
-def _open_legacy_generation_request(request, timeout: int):
-    opener = urllib.request.build_opener(_NoRedirectHandler())
-    return opener.open(request, timeout=timeout)
-
-
-def _sanitized_legacy_generation_response(status: int, result: dict,
-                                          count: int) -> tuple[int, dict]:
-    """لا يمرر حقول upstream عمياءً كي لا تتسرب بيانات تشخيصية أو أسرار."""
-    if 200 <= status < 300:
-        questions = result.get('questions')
-        if not isinstance(questions, list):
-            return 502, {'error': 'استجابة خدمة التوليد غير صالحة'}
-        safe_questions = []
-        blocked_candidate = False
-        for question in questions[:count]:
-            if not isinstance(question, dict):
-                continue
-            if legacy_content_is_blocked(question):
-                blocked_candidate = True
-                continue
-            q = str(question.get('q') or '').strip()[:600]
-            answer = str(question.get('answer') or '').strip()[:400]
-            if not q or not answer:
-                continue
-            clean = {'q': q, 'answer': answer}
-            question_id = question.get('id')
-            if isinstance(question_id, (str, int)) and not isinstance(question_id, bool):
-                clean['id'] = str(question_id)[:160]
-            source = question.get('source')
-            if isinstance(source, dict):
-                source_url = str(source.get('url') or '').strip()[:2048]
-                try:
-                    parsed_source = urllib.parse.urlparse(source_url)
-                except ValueError:
-                    parsed_source = None
-                if parsed_source and parsed_source.scheme == 'https' and parsed_source.hostname:
-                    clean['source'] = {
-                        'title': str(source.get('title') or 'مرجع موثوق').strip()[:120],
-                        'url': source_url,
-                    }
-            if legacy_content_is_blocked(clean):
-                blocked_candidate = True
-                continue
-            safe_questions.append(clean)
-        if blocked_candidate and not safe_questions:
-            return 502, {
-                'error': 'تعذّر إنشاء أسئلة مناسبة، حاول لاحقاً',
-                'code': 'generated_content_rejected',
-            }
-        return status, {
-            'questions': safe_questions,
-            'trustedSources': result.get('trustedSources') is True,
-        }
-
-    safe_status = status if 400 <= status <= 599 else 502
-    message = str(result.get('error') or 'تعذّر التوليد، حاول لاحقاً').strip()[:300]
-    if legacy_content_is_blocked(message):
-        message = 'تعذّر التوليد، حاول لاحقاً'
-    payload = {'error': message or 'تعذّر التوليد، حاول لاحقاً'}
-    code = result.get('code')
-    if (isinstance(code, str) and re.fullmatch(r'[a-z0-9_]{1,64}', code)
-            and not legacy_content_is_blocked(code)):
-        payload['code'] = code
-    return safe_status, payload
-
-
-def legacy_generate_questions(data: dict) -> tuple[int, dict]:
-    """يمرر عقد v1 القديم بعد التحقق محلياً؛ لا يعيد 410 أثناء الدعم."""
-    if not legacy_v1_generation_enabled():
-        return 503, {
-            'error': 'التوليد القديم غير متاح مؤقتاً',
-            'code': 'legacy_feature_disabled',
-        }
-    if not isinstance(data, dict):
-        return 400, {'error': 'JSON غير صالح'}
-
-    uid = str(data.get('uid') or '').strip()
-    id_token = str(data.get('idToken') or '').strip()
-    topic = str(data.get('topic') or '').strip()[:200]
-    try:
-        count = int(data.get('count') or 6)
-    except (TypeError, ValueError):
-        return 400, {'error': 'count غير صالح'}
-    count = max(4, min(12, count))
-    if not uid or not id_token:
-        return 401, {'error': 'رمز الدخول مطلوب'}
-    if not topic:
-        return 400, {'error': 'topic مطلوب'}
-    if legacy_content_is_blocked(topic):
-        return 400, {
-            'error': 'الموضوع غير متاح',
-            'code': 'blocked_content',
-        }
-    if not uid_matches_token(uid, id_token):
-        return 401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}
-    # حد أولي بعد إثبات الهوية وقبل أي شبكة. trustedRound قيمة عميل ولا تمنح
-    # حصة أعلى؛ الحد واحد لكل مستخدمي عقد 1.2.
-    if rate_limited(f'legacy-ai:{uid}', 10, 600):
-        return 429, {'error': 'طلبات كثيرة جداً — حاول بعد قليل'}
-    if not subscription_is_active(uid):
-        return 403, {'error': 'اشتراك فعّال مطلوب'}
-
-    trusted_round = data.get('trustedRound') is True
-
-    seen = data.get('seen') or []
-    if not isinstance(seen, list):
-        return 400, {'error': 'seen غير صالح'}
-    safe_seen = []
-    for item in seen[-5000:]:
-        if isinstance(item, (str, int)) and not isinstance(item, bool):
-            safe_seen.append(str(item)[:160])
-
-    endpoint = legacy_v1_generation_url()
-    if not _legacy_generation_endpoint_is_safe(endpoint):
-        return 503, {
-            'error': 'إعداد خدمة التوليد القديم غير صالح',
-            'code': 'legacy_backend_misconfigured',
-        }
-
-    payload = json.dumps({
-        'topic': topic,
-        'count': count,
-        'seen': safe_seen,
-        'uid': uid,
-        'idToken': id_token,
-        'trustedRound': trusted_round,
-    }, ensure_ascii=False).encode()
-    request = urllib.request.Request(
-        endpoint,
-        data=payload,
-        method='POST',
-        headers={
-            'Content-Type': 'application/json; charset=utf-8',
-            API_VERSION_HEADER: '1',
-        },
-    )
-    try:
-        with _open_legacy_generation_request(
-                request, timeout=LEGACY_GENERATION_TIMEOUT_SECONDS) as response:
-            raw = response.read(2 * 1024 * 1024 + 1)
-            status = response.status
-    except urllib.error.HTTPError as exc:
-        status = exc.code
-        raw = exc.read(64 * 1024)
-    except (urllib.error.URLError, TimeoutError, OSError) as exc:
-        print(f'[Legacy AI v1] upstream unavailable: {type(exc).__name__}')
-        return 502, {'error': 'تعذّر التوليد، حاول لاحقاً'}
-
-    if len(raw) > 2 * 1024 * 1024:
-        return 502, {'error': 'استجابة خدمة التوليد أكبر من الحد المسموح'}
-    try:
-        result = json.loads(raw or b'{}')
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        return 502, {'error': 'استجابة خدمة التوليد غير صالحة'}
-    if not isinstance(result, dict):
-        return 502, {'error': 'استجابة خدمة التوليد غير صالحة'}
-    return _sanitized_legacy_generation_response(status, result, count)
-
-# ─── صفحات قانونية عامة (لمتطلبات App Store Connect) ────────────────────────
-PRIVACY_BODY = '''
-<h1>سياسة الخصوصية</h1>
-<p><b>آخر تحديث: 20 أغسطس 2026</b></p>
-<p>تطبيق <b>فطنة</b> يحترم خصوصيتك ويلتزم بحمايتها. نجمع الحد الأدنى اللازم لتشغيل الحساب ومزامنة التقدم وتفعيل الاشتراك وحماية الخدمة وتحسين ثباتها.</p>
-<p><b>البيانات التي نجمعها:</b><br>
-• الاسم والبريد أو رقم الهاتف ومعرّف الحساب بحسب وسيلة الدخول<br>
-• إحصاءات اللعب والأسئلة المشاهدة ومؤشرات الجولات وبلاغات الأسئلة<br>
-• حالة الاشتراك ومعرّفات معاملة مجهّلة عبر Apple وRevenueCat<br>
-• رمز الإشعارات بعد موافقتك، وتقارير الأعطال والتوقفات والأداء<br>
-• رمز سلامة قصير العمر عبر Firebase App Check وApple App Attest</p>
-<p><b>ما لا نجمعه:</b><br>
-لا نبيع بياناتك، ولا نعرض إعلانات، ولا نتتبعك عبر التطبيقات. لا نطلب جهات الاتصال أو الصور أو الموقع الدقيق أو الصحة أو الميكروفون أو الكاميرا.</p>
-<p><b>الخدمات:</b><br>
-نستخدم Firebase Authentication وMessaging وCrashlytics وApp Check، وApple MetricKit وApp Attest، وRevenueCat، بالقدر اللازم للأغراض الموضحة أعلاه.</p>
-<p><b>الاشتراكات:</b><br>
-تُعالَج مدفوعات iOS عبر Apple App Store وتخضع لسياسة خصوصية Apple. لإلغاء الاشتراك: الإعدادات ← اسمك ← الاشتراكات.</p>
-<p><b>الحذف:</b><br>
-يمكنك حذف الحساب وبياناته من داخل شاشة الحساب. حذف حساب فطنة لا يلغي اشتراك App Store تلقائياً.</p>
-<p><b>التواصل:</b><br>
-لأي استفسار: fatinahgame@gmail.com</p>
-'''
-
-TERMS_BODY = '''
-<h1>شروط الاستخدام</h1>
-<p><b>آخر تحديث: 21 أغسطس 2026</b></p>
-<p>باستخدامك تطبيق <b>فطنة</b> فأنت توافق على هذه الشروط.</p>
-<p><b>الاشتراك:</b><br>
-• يعرض App Store السعر الشهري والسنوي بعملتك المحلية قبل تأكيد الشراء<br>
-• يتجدد الاشتراك تلقائياً ما لم يُلغَ قبل 24 ساعة من انتهاء الفترة الحالية<br>
-• يمكن إلغاؤه في أي وقت من إعدادات Apple ID</p>
-<p><b>الاستخدام المقبول:</b><br>
-التطبيق للاستخدام الشخصي والترفيهي. يُحظر نسخ المحتوى أو إعادة توزيعه.</p>
-<p><b>الملكية الفكرية:</b><br>
-جميع محتويات التطبيق محمية بحقوق النشر لصالح مطوّر فطنة.</p>
-<p><b>إخلاء المسؤولية:</b><br>
-التطبيق مقدَّم "كما هو" بدون ضمانات. المطوّر غير مسؤول عن أي أضرار ناجمة عن الاستخدام.</p>
-<p><b>التواصل:</b><br>
-fatinahgame@gmail.com</p>
-'''
-
-def legal_page_html(kind: str) -> bytes:
-    title = 'سياسة الخصوصية' if kind == 'privacy' else 'شروط الاستخدام'
-    content = PRIVACY_BODY if kind == 'privacy' else TERMS_BODY
-    page = f'''<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{title} — فطنة</title>
-<style>
-  body {{ font-family: -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
-         background:#0f1220; color:#e8e6f0; margin:0; padding:24px;
-         line-height:1.9; font-size:16px; }}
-  main {{ max-width:720px; margin:0 auto; background:#191d33;
-          border:1px solid #2a2f4f; border-radius:16px; padding:28px; }}
-  h1 {{ color:#f5c542; font-size:24px; margin-top:0; }}
-  a {{ color:#f5c542; }}
-  footer {{ text-align:center; color:#8a8fa8; font-size:13px; margin-top:20px; }}
-</style>
-</head>
-<body>
-<main>{content}</main>
-<footer>فطنة © 2026 — <a href="/privacy">سياسة الخصوصية</a> · <a href="/terms">شروط الاستخدام</a></footer>
-</body>
-</html>'''
-    return page.encode()
-
-# ─── HTTP handler ─────────────────────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
     _api_version = '1'
 
@@ -5398,7 +3678,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
-    def send_json(self, code, obj):
+    def send_json(self, code, obj, *, extra_headers=None):
         body = json.dumps(obj, ensure_ascii=False).encode()
         self.send_response(code)
         self.send_header('Content-Type',   'application/json; charset=utf-8')
@@ -5411,6 +3691,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header(API_VERSION_HEADER, getattr(self, '_api_version', '1'))
         self.send_header('X-Fatinah-Environment', deployment_environment())
         self.send_header('Vary', API_VERSION_HEADER)
+        for key, value in (extra_headers or {}).items():
+            self.send_header(key, value)
         self.end_headers()
         self.wfile.write(body)
 
@@ -5428,6 +3710,12 @@ class Handler(BaseHTTPRequestHandler):
         return canonical_path
 
     def api_feature_allows(self, path: str) -> bool:
+        if path in REMOVED_CONTENT_ROUTES:
+            self.send_json(410, {
+                'error': 'أزيلت الأسئلة والفئات من تحديث 1.4',
+                'code': 'question_content_removed',
+            })
+            return False
         if self._api_version != '2':
             if path in V2_ONLY_ROUTES:
                 self.send_json(404, {
@@ -5469,6 +3757,37 @@ class Handler(BaseHTTPRequestHandler):
         print(f'[App Check] monitor path={path} reason={reason}')
         return True
 
+    def require_quality_admin(self, *, mutation=False) -> bool:
+        if not admin_session_valid(self.headers):
+            self.send_json(401, {
+                'error': 'جلسة لوحة الجودة مطلوبة',
+                'code': 'admin_session_required',
+            })
+            return False
+        if mutation and not admin_origin_valid(self.headers):
+            self.send_json(403, {
+                'error': 'مصدر طلب لوحة الجودة مرفوض',
+                'code': 'admin_origin_rejected',
+            })
+            return False
+        return True
+
+    def verified_player(self, data):
+        if not isinstance(data, dict):
+            self.send_json(400, {'error': 'JSON غير صالح'})
+            return None
+        uid = str(data.get('uid') or '').strip()
+        id_token = str(
+            data.get('idToken') or bearer_token(self.headers) or '').strip()
+        identity = verified_uid_token(uid, id_token) if uid else None
+        if not identity:
+            self.send_json(401, {
+                'error': 'رمز الدخول غير صالح',
+                'code': 'player_auth_required',
+            })
+            return None
+        return uid, identity
+
     def do_OPTIONS(self):
         parsed = urllib.parse.urlparse(self.path)
         path = self.select_api_contract(parsed.path)
@@ -5506,7 +3825,90 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/admin/promo' or path.startswith('/api/promo/'):
             self.send_json(410, {'error': 'تم إيقاف أكواد التفعيل الخاصة؛ استخدم Apple Offer Codes'}); return
 
-        if path == '/api/version':
+        if path == '/admin/quality':
+            self.send_response(302)
+            self.send_header('Location', '/admin/quality/')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+
+        elif path == '/admin/quality/':
+            full_path = os.path.join(os.path.dirname(__file__), 'admin', 'index.html')
+            try:
+                with open(full_path, 'rb') as file:
+                    self.send_asset(file.read(), 'text/html; charset=utf-8', 'no-store',
+                                    extra_headers={'Content-Security-Policy': WEB_CONTENT_SECURITY_POLICY})
+            except OSError:
+                self.send_response(404); self.end_headers()
+
+        elif path in {'/admin/quality/app.js', '/admin/quality/app.css'}:
+            filename = path.rsplit('/', 1)[-1]
+            full_path = os.path.join(os.path.dirname(__file__), 'admin', filename)
+            try:
+                with open(full_path, 'rb') as file:
+                    content_type = ('application/javascript; charset=utf-8'
+                                    if filename.endswith('.js') else 'text/css; charset=utf-8')
+                    self.send_asset(file.read(), content_type, 'no-store')
+            except OSError:
+                self.send_response(404); self.end_headers()
+
+        elif path == '/api/admin/setup-status':
+            configured = admin_password_configured()
+            self.send_json(200, {
+                'configured': configured,
+                'localSetupAllowed': (
+                    not configured
+                    and deployment_environment() != 'production'
+                    and client_is_loopback(self.client_address)
+                ),
+            })
+
+        elif path == '/api/admin/session':
+            self.send_json(200, {'authenticated': admin_session_valid(self.headers)})
+
+        elif path == '/api/admin/dashboard':
+            if not self.require_quality_admin(): return
+            try:
+                sync_question_platform_questions()
+                self.send_json(200, question_platform.dashboard(DB_PATH))
+            except QuestionPlatformStorageError:
+                self.send_json(503, {'error': 'تعذرت قراءة مخزن الجودة',
+                                     'code': 'question_storage_unavailable'})
+
+        elif path == '/api/admin/questions':
+            if not self.require_quality_admin(): return
+            try:
+                sync_question_platform_questions()
+                level = int((params.get('level') or ['0'])[0])
+                limit = int((params.get('limit') or ['100'])[0])
+                offset = int((params.get('offset') or ['0'])[0])
+            except ValueError:
+                self.send_json(400, {'error': 'معاملات القائمة غير صالحة'}); return
+            except QuestionPlatformStorageError:
+                self.send_json(503, {'error': 'تعذرت قراءة مخزن الجودة',
+                                     'code': 'question_storage_unavailable'}); return
+            self.send_json(200, question_platform.list_questions(
+                DB_PATH,
+                status=str((params.get('status') or [''])[0]),
+                level=level,
+                search=str((params.get('search') or [''])[0]),
+                limit=limit, offset=offset,
+            ))
+
+        elif path == '/api/admin/reports':
+            if not self.require_quality_admin(): return
+            try:
+                sync_question_platform_reports()
+                self.send_json(200, {'items': question_platform.list_reports(DB_PATH)})
+            except QuestionPlatformStorageError:
+                self.send_json(503, {'error': 'تعذرت قراءة البلاغات',
+                                     'code': 'question_storage_unavailable'})
+
+        elif path == '/api/admin/audit':
+            if not self.require_quality_admin(): return
+            self.send_json(200, {'items': question_platform.audit_log(
+                DB_PATH, str((params.get('questionId') or [''])[0]))})
+
+        elif path == '/api/version':
             self.send_json(200, {
                 'apiVersion': self._api_version,
                 'applicationRelease': APPLICATION_RELEASE,
@@ -5519,19 +3921,9 @@ class Handler(BaseHTTPRequestHandler):
                      for name in sorted({value for value in V2_ROUTE_FEATURES.values()
                                          if value is not None})}
                     if self._api_version == '2'
-                    else {'legacyAiGeneration': legacy_v1_generation_enabled()}
+                    else {'questionPlatform': 'v2'}
                 ),
             })
-
-        elif path == '/api/questions/catalog':
-            try:
-                self.send_json(200, server_question_catalog())
-            except (FileNotFoundError, ValueError, OSError) as exc:
-                print(f'[Question Catalog] unavailable: {exception_kind(exc)}')
-                self.send_json(503, {
-                    'error': 'كتالوج بنك الأسئلة غير متاح مؤقتاً',
-                    'code': 'question_catalog_unavailable',
-                })
 
         elif path == '/api/rc-config':
             # مفتاح RevenueCat publishable (iOS) — يُقدَّم من البيئة بدلاً من تضمينه في HTML
@@ -5757,95 +4149,6 @@ class Handler(BaseHTTPRequestHandler):
                          or account_completed)
             self.send_json(200, {'eligible': not completed, 'completed': completed})
 
-        elif path == '/api/questions/seen':
-            uid = (params.get('uid') or [''])[0].strip()
-            if not uid:
-                self.send_json(400, {'error': 'uid مطلوب'}); return
-            if not uid_matches_token(uid, bearer_token(self.headers)):
-                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
-            if firestore_durable_available():
-                try:
-                    documents = firestore_list_documents(f'users/{uid}/question_seen')
-                    if documents:
-                        conn = db_connect()
-                        try:
-                            conn.executemany('''
-                                INSERT INTO question_seen (
-                                    uid, question_id, category, seen_at,
-                                    reserved_by_round, reserved_until_epoch)
-                                VALUES (?, ?, ?, ?, ?, ?)
-                                ON CONFLICT(uid, question_id) DO UPDATE SET
-                                    category=excluded.category,
-                                    seen_at=excluded.seen_at,
-                                    reserved_by_round=excluded.reserved_by_round,
-                                    reserved_until_epoch=excluded.reserved_until_epoch
-                            ''', [(
-                                uid, document.get('question_id') or document['_document_id'],
-                                document.get('category') or 'غير مصنف',
-                                document.get('seen_at') or time.strftime('%Y-%m-%d %H:%M:%S'),
-                                1 if document.get('reserved_by_round') is True else 0,
-                                int(document.get('reserved_until_epoch') or 0),
-                            ) for document in documents])
-                            conn.commit()
-                        finally:
-                            conn.close()
-                except Exception as exc:
-                    print('[Question Seen] Firestore read failed '
-                          f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
-                    if durable_storage_required():
-                        self.send_json(503, {'error': 'تعذّرت مزامنة سجل الأسئلة الآن'}); return
-            conn = db_connect()
-            try:
-                rows = conn.execute(
-                    'SELECT question_id, category, seen_at FROM question_seen '
-                    'WHERE uid=? AND reserved_by_round=0 '
-                    'ORDER BY seen_at DESC LIMIT 10000',
-                    (uid,)
-                ).fetchall()
-            finally:
-                conn.close()
-            self.send_json(200, {
-                'items': [
-                    {'id': row[0], 'category': row[1], 'seenAt': row[2]}
-                    for row in rows
-                ],
-                'bankVersion': 3,
-            })
-
-        elif path.startswith('/assets/question-images/'):
-            relative_path = path[len('/assets/question-images/'):]
-            if _is_blocked_image_asset_path(relative_path):
-                self.send_response(404)
-                self.send_header('Cache-Control', 'no-store')
-                self.send_header('X-Content-Type-Options', 'nosniff')
-                self.end_headers()
-                return
-            image_root = os.path.realpath(QUESTION_IMAGE_DIR)
-            full_path = os.path.realpath(os.path.join(image_root, relative_path))
-            extension = os.path.splitext(full_path)[1].lower()
-            if (not relative_path or not full_path.startswith(image_root + os.sep)
-                    or extension not in ('.avif', '.webp')):
-                self.send_response(404); self.end_headers(); return
-            content_type = ('image/avif' if extension == '.avif' else 'image/webp')
-            try:
-                with open(full_path, 'rb') as image_file:
-                    body = image_file.read()
-                origin = (self.headers.get('Origin') or '').strip()
-                image_headers = {'Cross-Origin-Resource-Policy': 'same-site'}
-                if origin in QUESTION_IMAGE_ALLOWED_ORIGINS:
-                    image_headers.update({
-                        'Access-Control-Allow-Origin': origin,
-                        'Access-Control-Expose-Headers': 'ETag',
-                        'Cross-Origin-Resource-Policy': 'cross-origin',
-                        'Vary': 'Origin',
-                    })
-                self.send_asset(
-                    body, content_type,
-                    'public, max-age=31536000, immutable', compress=False,
-                    extra_headers=image_headers)
-            except FileNotFoundError:
-                self.send_response(404); self.end_headers()
-
         elif path in ('/', '/index.html'):
             # حزمة iOS تحمل ملفات اللعبة محلياً. تقديمها على الويب في
             # production يجعل Boolean داخل JavaScript هو حاجز الاشتراك، وهو
@@ -5858,20 +4161,10 @@ class Handler(BaseHTTPRequestHandler):
                 body, 'text/html; charset=utf-8', 'no-cache',
                 extra_headers={'Content-Security-Policy': WEB_CONTENT_SECURITY_POLICY})
 
-        elif path in ('/app.js', '/app.css', '/question-bank.js', '/approved-question-bank.js',
-                      '/image-assets.js',
-                      '/image-question-bank.js', '/image-question-bank-commons.js',
-                      '/curated-image-options.js', '/reviewed-question-sources.js',
-                      '/reviewed-question-ledger.js',
+        elif path in ('/app.js', '/app.css',
                       '/privacy-policy.html', '/terms-of-service.html'):
             fname = path.lstrip('/')
-            game_assets = {
-                'app.js', 'app.css', 'question-bank.js',
-                'approved-question-bank.js',
-                'image-assets.js', 'image-question-bank.js',
-                'image-question-bank-commons.js', 'curated-image-options.js',
-                'reviewed-question-sources.js', 'reviewed-question-ledger.js',
-            }
+            game_assets = {'app.js', 'app.css'}
             if not public_web_game_enabled() and fname in game_assets:
                 self.send_json(404, {
                     'error': 'اللعبة متاحة من تطبيق فطنة الرسمي على App Store',
@@ -5995,87 +4288,41 @@ class Handler(BaseHTTPRequestHandler):
                     WHERE created_at >= datetime('now', ?)
                     GROUP BY event_name ORDER BY COUNT(*) DESC
                 ''', (f'-{days} days',)).fetchall()
-                report_rows = conn.execute('''
-                    SELECT email_status, COUNT(*)
-                    FROM question_reports
-                    WHERE created_at >= datetime('now', ?)
-                    GROUP BY email_status
-                ''', (f'-{days} days',)).fetchall()
             finally:
                 conn.close()
             self.send_json(200, {
                 'days': days,
                 'events': {name: count for name, count in event_rows},
-                'questionReports': {status: count for status, count in report_rows},
             })
-
-        elif path == '/api/admin/question-inventory':
-            admin_secret = os.environ.get('ADMIN_SECRET', '')
-            auth_header = self.headers.get('X-Admin-Secret', '')
-            if not admin_secret or not secrets.compare_digest(auth_header, admin_secret):
-                self.send_json(403, {'error': 'غير مصرح'}); return
-            try:
-                snapshot = question_inventory_snapshot()
-                conn = db_connect()
-                try:
-                    rows = conn.execute('''
-                        SELECT bank_version, category, threshold,
-                               remaining_rounds, email_status, created_at,
-                               emailed_at
-                        FROM question_inventory_alerts
-                        ORDER BY created_at DESC LIMIT 500
-                    ''').fetchall()
-                finally:
-                    conn.close()
-                self.send_json(200, {
-                    **snapshot,
-                    'thresholds': list(QUESTION_INVENTORY_ALERT_THRESHOLDS),
-                    'alerts': [{
-                        'bankVersion': row[0],
-                        'category': row[1],
-                        'threshold': row[2],
-                        'remainingRounds': row[3],
-                        'emailStatus': row[4],
-                        'createdAt': row[5],
-                        'emailedAt': row[6],
-                    } for row in rows],
-                })
-            except (FileNotFoundError, ValueError, OSError) as exc:
-                print('[Question Inventory] admin snapshot unavailable: '
-                      f'{exception_kind(exc)}')
-                self.send_json(503, {
-                    'error': 'تعذّر حساب مخزون الأسئلة الآن',
-                    'code': 'question_inventory_unavailable',
-                })
 
         else:
             self.send_response(404); self.end_headers()
 
     # حدود حجم body لكل نقطة POST — تُعيد 413 مبكراً قبل قراءة البيانات
     _MAX_BODY: dict = {
-        '/api/generate':                1_024,   # v2 متوقف؛ يرفع max_body_for سقف v1
         '/api/account/delete':          4_096,   # 4 KB   (uid + idToken)
         '/api/revenuecat/webhook':     65_536,   # 64 KB  (حدث RevenueCat)
         '/api/revenuecat/identity':     2_048,   # uid + UUID + token
         '/api/account/profile':         2_048,   # 2 KB   (name + email + provider)
         '/api/app-attest/challenge':     4_096,
         '/api/app-attest/attest':      262_144,  # CBOR x5c + receipt بصيغة Base64
-        '/api/questions/seen':          32_768,  # حتى 100 معرّف في دفعة مزامنة
-        '/api/questions/reservations/release': 16_384,
-        '/api/questions/round':       1_048_576, # حتى 10 آلاف معرّف سابق مع فئات الجولة
-        '/api/questions/reveal':          4_096,
         '/api/free-round/complete':     64_000,  # DeviceCheck + App Attest assertion
-        '/api/questions/report':         8_192,
         '/api/metrics/event':            4_096,
         '/api/ios-diagnostics':        655_360,
+        '/api/admin/login':              4_096,
+        '/api/admin/setup':              4_096,
+        '/api/admin/logout':             1_024,
+        '/api/admin/questions':        131_072,
+        '/api/admin/question-status':    8_192,
+        '/api/admin/report-status':      8_192,
+        '/api/game/packs/ensure':         8_192,
+        '/api/game/packs/start':          4_096,
+        '/api/game/packs/complete':      65_536,
+        '/api/game/questions/report':    32_768,
     }
     _DEFAULT_MAX_BODY = 16_384  # 16 KB للمسارات غير المدرجة
 
     def max_body_for(self, path: str) -> int:
-        # تطبيق 1.2 قد يرسل قائمة seen كبيرة. نبقي سقفاً محكوماً ومتوافقاً،
-        # فيما يظل v2 المتوقف صغيراً ولا يقرأ حمولة غير لازمة.
-        if path == '/api/generate' and self._api_version == '1':
-            return 256 * 1024
         return self._MAX_BODY.get(path, self._DEFAULT_MAX_BODY)
 
     def do_POST(self):
@@ -6108,6 +4355,237 @@ class Handler(BaseHTTPRequestHandler):
 
         if not self.app_integrity_allows(path):
             return
+
+        if path == '/api/admin/setup':
+            if (deployment_environment() == 'production'
+                    or not client_is_loopback(self.client_address)
+                    or not admin_origin_valid(self.headers)):
+                self.send_json(403, {
+                    'error': 'الإعداد الأولي متاح من الجهاز المحلي فقط',
+                    'code': 'local_setup_required',
+                }); return
+            if admin_password_configured():
+                self.send_json(409, {
+                    'error': 'تم إعداد كلمة الدخول مسبقاً',
+                    'code': 'admin_already_configured',
+                }); return
+            try:
+                data = json.loads(body)
+                password = str(data.get('password') or '') if isinstance(data, dict) else ''
+                confirmation = str(data.get('confirmation') or '') if isinstance(data, dict) else ''
+            except Exception:
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
+            if not secrets.compare_digest(password, confirmation):
+                self.send_json(422, {
+                    'error': 'كلمتا الدخول غير متطابقتين',
+                    'code': 'password_confirmation_mismatch',
+                }); return
+            peer = safe_log_reference(self.client_address[0] if self.client_address else '')
+            if rate_limited(f'quality-setup:{peer}', 5, 900):
+                self.send_json(429, {'error': 'محاولات كثيرة — حاول لاحقاً'}); return
+            try:
+                create_local_admin_password(password)
+            except ValueError as exc:
+                self.send_json(422, {
+                    'error': str(exc), 'code': 'weak_admin_password',
+                    'issues': admin_password_issues(password),
+                }); return
+            except RuntimeError as exc:
+                self.send_json(409, {
+                    'error': str(exc), 'code': 'admin_already_configured',
+                }); return
+            self.send_json(201, {'configured': True}); return
+
+        if path == '/api/admin/login':
+            try:
+                data = json.loads(body)
+            except Exception:
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
+            supplied = str(data.get('password') or '') if isinstance(data, dict) else ''
+            peer = safe_log_reference(self.client_address[0] if self.client_address else '')
+            if rate_limited(f'quality-login:{peer}', 8, 900):
+                self.send_json(429, {'error': 'محاولات دخول كثيرة'}); return
+            if not verify_admin_password(supplied):
+                self.send_json(401, {'error': 'كلمة دخول غير صالحة'}); return
+            self.send_json(200, {'authenticated': True}, extra_headers={
+                'Set-Cookie': create_admin_session_cookie(),
+            }); return
+
+        if path == '/api/admin/logout':
+            self.send_json(200, {'authenticated': False}, extra_headers={
+                'Set-Cookie': clear_admin_session_cookie(),
+            }); return
+
+        if path == '/api/admin/questions':
+            if not self.require_quality_admin(mutation=True): return
+            try:
+                sync_question_platform_questions()
+                data = json.loads(body)
+                saved = question_platform.save_question(
+                    DB_PATH, data, actor='quality-admin')
+                try:
+                    persist_question_platform_question(saved)
+                except QuestionPlatformStorageError:
+                    question_platform.set_question_status(
+                        DB_PATH, saved['questionId'], 'paused', actor='storage-failsafe')
+                    raise
+                self.send_json(200, saved)
+            except question_platform.ValidationError as exc:
+                self.send_json(exc.status, {
+                    'error': str(exc), 'code': exc.code, 'issues': exc.issues,
+                })
+            except QuestionPlatformStorageError:
+                self.send_json(503, {'error': 'تعذر حفظ السؤال في المخزن الدائم',
+                                     'code': 'question_storage_unavailable'})
+            return
+
+        if path == '/api/admin/question-status':
+            if not self.require_quality_admin(mutation=True): return
+            try:
+                sync_question_platform_questions()
+                data = json.loads(body)
+                updated = question_platform.set_question_status(
+                    DB_PATH, str(data.get('questionId') or ''),
+                    str(data.get('status') or ''), actor='quality-admin')
+                try:
+                    persist_question_platform_question(updated)
+                except QuestionPlatformStorageError:
+                    question_platform.set_question_status(
+                        DB_PATH, updated['questionId'], 'paused', actor='storage-failsafe')
+                    raise
+                self.send_json(200, updated)
+            except question_platform.QuestionPlatformError as exc:
+                self.send_json(exc.status, {
+                    'error': str(exc), 'code': exc.code,
+                    'issues': getattr(exc, 'issues', []),
+                })
+            except QuestionPlatformStorageError:
+                self.send_json(503, {'error': 'تعذر حفظ حالة السؤال',
+                                     'code': 'question_storage_unavailable'})
+            return
+
+        if path == '/api/admin/report-status':
+            if not self.require_quality_admin(mutation=True): return
+            try:
+                sync_question_platform_reports()
+                data = json.loads(body)
+                updated = question_platform.resolve_report(
+                    DB_PATH, str(data.get('reportId') or ''),
+                    resolved=data.get('resolved') is not False)
+                persist_question_platform_report(updated)
+                self.send_json(200, updated)
+            except question_platform.QuestionPlatformError as exc:
+                self.send_json(exc.status, {'error': str(exc), 'code': exc.code}); return
+            except QuestionPlatformStorageError:
+                self.send_json(503, {'error': 'تعذر حفظ حالة البلاغ',
+                                     'code': 'question_storage_unavailable'}); return
+            return
+
+        if path in {
+            '/api/game/packs/readiness', '/api/game/packs/ensure', '/api/game/packs/start',
+            '/api/game/packs/complete', '/api/game/questions/report',
+        }:
+            try:
+                data = json.loads(body)
+            except Exception:
+                self.send_json(400, {'error': 'JSON غير صالح'}); return
+            verified = self.verified_player(data)
+            if not verified: return
+            uid, identity = verified
+            if rate_limited(f'game-platform:{path}:{safe_log_reference(uid)}', 90, 600):
+                self.send_json(429, {'error': 'طلبات كثيرة — حاول بعد قليل'}); return
+            try:
+                if path == '/api/game/packs/readiness':
+                    # هذا الفحص لا يحجز أسئلة ولا يستهلك الجولة المجانية؛ الغرض
+                    # منع استهلاكها قبل التأكد من اكتمال 100 سؤال لكل مستوى.
+                    sync_question_platform_questions()
+                    readiness = question_platform.dashboard(DB_PATH)
+                    self.send_json(200, {'ready': bool(readiness['launchReady'])})
+                    return
+                if path == '/api/game/packs/ensure':
+                    is_subscriber = subscription_is_active(uid)
+                    if not is_subscriber and not question_access_allowed(uid):
+                        self.send_json(403, {
+                            'error': 'يلزم اشتراك فعّال أو جولة تعريفية',
+                            'code': 'subscription_or_free_round_required',
+                        }); return
+                    guard = acquire_question_platform_guard(uid)
+                    try:
+                        sync_question_platform_questions()
+                        sync_question_platform_user(uid)
+                        result = question_platform.ensure_packs(
+                            DB_PATH, uid, data.get('playerCount'),
+                            data.get('questionsPerPlayer'), data.get('target', 2),
+                            introductory=not is_subscriber)
+                        persist_question_platform_user(uid)
+                    finally:
+                        release_question_platform_guard(guard)
+                    self.send_json(200, result); return
+                if path == '/api/game/packs/start':
+                    guard = acquire_question_platform_guard(uid)
+                    try:
+                        sync_question_platform_user(uid)
+                        result = question_platform.start_pack(
+                            DB_PATH, uid, str(data.get('packId') or ''))
+                        persist_question_platform_user(uid)
+                    finally:
+                        release_question_platform_guard(guard)
+                    self.send_json(200, result); return
+                if path == '/api/game/packs/complete':
+                    guard = acquire_question_platform_guard(uid)
+                    try:
+                        sync_question_platform_user(uid)
+                        result = question_platform.complete_pack(
+                            DB_PATH, uid, str(data.get('packId') or ''),
+                            data.get('usedReplacementIds'), data.get('outcomes'))
+                        persist_question_platform_user(uid)
+                        persist_question_platform_metrics(
+                            item.get('questionId') for item in (data.get('outcomes') or [])
+                            if isinstance(item, dict))
+                    finally:
+                        release_question_platform_guard(guard)
+                    self.send_json(200, result); return
+
+                sync_question_platform_questions()
+                reporter = {
+                    'name': identity.get('displayName') or data.get('reporterName') or '',
+                    'email': identity.get('email') or '',
+                }
+                created = question_platform.create_report(
+                    DB_PATH, uid, reporter, data)
+                report = question_platform.pending_report(DB_PATH, created['reportId'])
+                persist_question_platform_report(report)
+                try:
+                    email_status = deliver_question_report_email(report)
+                except Exception as exc:
+                    email_status = 'failed'
+                    print('[Question Report] email delivery failed '
+                          f'report_ref={safe_log_reference(created["reportId"])}: '
+                          f'{exception_kind(exc)}')
+                question_platform.set_report_email_status(
+                    DB_PATH, created['reportId'], email_status)
+                report = question_platform.pending_report(DB_PATH, created['reportId'])
+                persist_question_platform_report(report)
+                persist_question_platform_metrics([data.get('questionId')])
+                self.send_json(202, {
+                    'ok': True, 'reportId': created['reportId'],
+                }); return
+            except question_platform.BankNotReadyError as exc:
+                self.send_json(exc.status, {
+                    'error': str(exc), 'code': exc.code,
+                    'availability': exc.availability,
+                }); return
+            except question_platform.QuestionPlatformError as exc:
+                self.send_json(exc.status, {
+                    'error': str(exc), 'code': exc.code,
+                    'issues': getattr(exc, 'issues', []),
+                }); return
+            except QuestionPlatformBusyError:
+                self.send_json(409, {'error': 'جهاز آخر يجهّز الجولة، حاول بعد لحظات',
+                                     'code': 'question_pack_busy'}); return
+            except QuestionPlatformStorageError:
+                self.send_json(503, {'error': 'تعذرت مزامنة سجل الأسئلة الآمن',
+                                     'code': 'question_storage_unavailable'}); return
 
         if path in {
             '/api/app-attest/status', '/api/app-attest/challenge',
@@ -6194,144 +4672,7 @@ class Handler(BaseHTTPRequestHandler):
         # بنك 1.3 مراجع مسبقاً ويُسحب عند بدء الجولة؛ لا يوجد توليد AI للاعب.
         # الوصول خاص بمشترك مسجّل ومتحقق الهوية، أو باستحقاق جولة
         # مجانية مثبتة. لا يتحول هذا المسار إلى منفذ عام لاستخراج المحتوى.
-        if path == '/api/questions/round':
-            if self._api_version != '2':
-                self.send_json(404, {
-                    'error': 'بنك الجولات متاح في عقد API v2 فقط',
-                    'code': 'question_bank_v2_only',
-                }); return
-            try:
-                data = json.loads(body)
-            except Exception:
-                self.send_json(400, {'error': 'JSON غير صالح'}); return
-            if not isinstance(data, dict):
-                self.send_json(400, {'error': 'JSON غير صالح'}); return
-            uid = str(data.get('uid') or '').strip()
-            id_token = str(data.get('idToken') or bearer_token(self.headers) or '').strip()
-            if not uid or not uid_matches_token(uid, id_token):
-                self.send_json(401, {
-                    'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى',
-                    'code': 'question_bank_auth_required',
-                }); return
-            if rate_limited(f'question-round:{safe_log_reference(uid)}', 30, 600):
-                self.send_json(429, {'error': 'طلبات كثيرة جداً — حاول بعد قليل'}); return
-            subscribed = subscription_is_active(uid)
-            if not subscribed:
-                # Webhooks تبقى المسار الفوري المعتاد، لكن لا نرفض مشتركاً
-                # صحيحاً إذا تأخر webhook أو فُقد. القرار الاحتياطي يأتي من
-                # RevenueCat مباشرة وبهوية UUID المثبتة في الخادم.
-                refreshed = try_refresh_revenuecat_subscription(uid)
-                subscribed = refreshed is True or subscription_is_active(uid)
-            round_guard = None
-            try:
-                round_guard = acquire_question_round_guard(uid)
-                if not subscribed:
-                    free_grant = load_free_round_question_grant(uid)
-                    if not free_grant.get('entitled'):
-                        self.send_json(403, {
-                            'error': 'بنك الجولات الموسع متاح للمشترك أو الجولة المجانية',
-                            'code': 'subscription_or_free_round_required',
-                        }); return
-                    # الحمولة المثبتة تعاد فقط إن بقيت نسختها
-                    # ومعرفاتها مطابقة للبنك الحالي؛ وإلا تستبدل بأمان.
-                    status, result = select_free_round_question_payload(
-                        uid, data, free_grant)
-                else:
-                    server_seen_ids = load_all_question_seen_ids(uid)
-                    status, result = select_remote_round_questions(
-                        data, additional_excluded_ids=server_seen_ids)
-                if status == 200:
-                    # الحجز قبل الرد يغلق نافذة طلبين متزامنين
-                    # من جهازين للحساب نفسه.
-                    reserve_question_round(uid, result.get('questions') or {})
-            except QuestionRoundBusyError:
-                self.send_json(409, {
-                    'error': 'يجري تجهيز جولة أخرى لهذا الحساب',
-                    'code': 'question_round_busy',
-                }); return
-            except QuestionHistoryUnavailableError as exc:
-                print('[Question Bank] history unavailable '
-                      f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
-                self.send_json(503, {
-                    'error': 'تعذّر التحقق من سجل أسئلتك الآن',
-                    'code': 'question_history_unavailable',
-                }); return
-            except (FileNotFoundError, ValueError, OSError) as exc:
-                print(f'[Question Bank] unavailable: {exception_kind(exc)}')
-                self.send_json(503, {
-                    'error': 'بنك الأسئلة غير متاح مؤقتاً',
-                    'code': 'question_bank_unavailable',
-                }); return
-            finally:
-                if round_guard is not None:
-                    release_question_round_guard(round_guard)
-            self.send_json(status, result)
-            # الرد يصل للاعب أولاً. بعدها نراقب مرة واحدة عند تجهيز الجولة،
-            # لا عند كل سؤال، لتقليل قراءات Firestore وتكلفة autoscale.
-            if (status == 200 or
-                    (status == 409 and
-                     result.get('code') == 'question_pool_incomplete')):
-                try:
-                    monitor_question_inventory(
-                        uid, data.get('categories'),
-                        refresh_history=not subscribed)
-                except Exception as exc:
-                    print('[Question Inventory] round monitor unavailable '
-                          f'uid_ref={safe_log_reference(uid)}: '
-                          f'{exception_kind(exc)}')
-            return
-
-        # لا تُضمّن الإجابة في حمولة الجولة. بعد انتهاء أدوار جميع الفرق
-        # يرسل العميل اختياراتهم (أو -1 عند انتهاء الوقت) ويستلم الحل فقط.
-        if path == '/api/questions/reveal':
-            try:
-                data = json.loads(body)
-            except Exception:
-                self.send_json(400, {'error': 'JSON غير صالح'}); return
-            if not isinstance(data, dict):
-                self.send_json(400, {'error': 'JSON غير صالح'}); return
-            uid = str(data.get('uid') or '').strip()
-            id_token = str(data.get('idToken') or bearer_token(self.headers) or '').strip()
-            question_id = str(data.get('questionId') or '').strip()
-            choices = data.get('teamChoices')
-            if not uid or not uid_matches_token(uid, id_token):
-                self.send_json(401, {'error': 'رمز الدخول غير صالح'}); return
-            if (not re.fullmatch(r'[A-Za-z0-9._-]{1,128}', question_id)
-                    or not isinstance(choices, list)
-                    or not 2 <= len(choices) <= 4
-                    or any(not isinstance(choice, int) or isinstance(choice, bool)
-                           or choice < -1 or choice > 3 for choice in choices)):
-                self.send_json(400, {'error': 'بيانات كشف الإجابة غير صالحة'}); return
-            if rate_limited(f'question-reveal:{safe_log_reference(uid)}', 120, 600):
-                self.send_json(429, {'error': 'طلبات كثيرة جداً — حاول بعد قليل'}); return
-            try:
-                canonical = canonical_question_by_id(question_id)
-            except (FileNotFoundError, ValueError, OSError):
-                self.send_json(503, {'error': 'بنك الأسئلة غير متاح مؤقتاً'}); return
-            if not canonical:
-                self.send_json(404, {'error': 'السؤال غير موجود في البنك الحالي'}); return
-            _, question = canonical
-            self.send_json(200, {
-                'questionId': question_id,
-                'a': question['a'],
-                'answer': question['answer'],
-            }); return
-
-        # ─── عقد التوليد: v1 متوافق، وv2 متوقف صراحةً ───────────────────────
-        if path == '/api/generate':
-            if self._api_version == '2':
-                self.send_json(410, {
-                    'error': 'يستخدم API v2 بنك أسئلة مراجعاً مسبقاً.',
-                    'code': 'ai_generation_retired',
-                }); return
-            try:
-                data = json.loads(body)
-            except Exception:
-                self.send_json(400, {'error': 'JSON غير صالح'}); return
-            status, result = legacy_generate_questions(data)
-            self.send_json(status, result); return
-
-        elif path == '/api/free-round/complete':
+        if path == '/api/free-round/complete':
             try: data = json.loads(body)
             except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
             if not isinstance(data, dict):
@@ -6596,101 +4937,6 @@ class Handler(BaseHTTPRequestHandler):
                 }); return
             self.send_json(200, {'ok': True, 'completed': True})
 
-        elif path == '/api/questions/report':
-            try: data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
-            uid = str(data.get('uid') or '').strip()
-            id_token = str(data.get('idToken') or bearer_token(self.headers) or '').strip()
-            question_id = str(data.get('questionId') or '').strip()
-            reason = str(data.get('reason') or '').strip()
-            details = str(data.get('details') or '').strip()
-            app_version = str(data.get('appVersion') or '').strip()
-            if not uid or not uid_matches_token(uid, id_token):
-                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
-            if rate_limited(f'question-report:{uid}', 6, 3600):
-                self.send_json(429, {'error': 'وصلنا عدد كافٍ من البلاغات الآن — حاول لاحقاً'}); return
-            if (not re.fullmatch(r'[A-Za-z0-9._-]{1,128}', question_id)
-                    or reason not in REPORT_REASONS
-                    or len(details) > 500
-                    or len(app_version) > 40):
-                self.send_json(400, {'error': 'بيانات البلاغ غير صالحة'}); return
-            try:
-                canonical = canonical_question_by_id(question_id)
-            except (FileNotFoundError, ValueError, OSError):
-                self.send_json(503, {'error': 'بنك الأسئلة غير متاح مؤقتاً'}); return
-            if not canonical:
-                self.send_json(404, {'error': 'السؤال غير موجود في البنك الحالي'}); return
-            category, question = canonical
-            question_text = question['q']
-            answer_text = question['answer']
-            source_title = str(question.get('source', {}).get('title') or '')
-            source_url = str(question.get('source', {}).get('url') or '')
-            report_id = str(uuid.uuid4())
-            report_record = {
-                'report_id': report_id,
-                'uid': uid,
-                'question_id': question_id,
-                'category': category,
-                'question_text': question_text,
-                'answer_text': answer_text,
-                'source_title': source_title,
-                'source_url': source_url,
-                'reason': reason,
-                'details': details,
-                'app_version': app_version,
-                'email_status': 'pending',
-                'created_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-            }
-            try:
-                durable_write(f'question_reports/{report_id}', report_record, merge=False)
-            except Exception as exc:
-                print('[Question Report] durable write failed '
-                      f'report_ref={safe_log_reference(report_id)}: '
-                      f'{exception_kind(exc)}')
-                self.send_json(503, {'error': 'تعذّر حفظ البلاغ بأمان — حاول مرة أخرى'}); return
-            conn = db_connect()
-            try:
-                conn.execute('''
-                    INSERT INTO question_reports
-                    (report_id, uid, question_id, category, question_text,
-                     answer_text, source_title, source_url, reason, details,
-                     app_version)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?)
-                ''', (report_id, uid, question_id, category, question_text,
-                      answer_text, source_title, source_url, reason, details,
-                      app_version))
-                conn.commit()
-            finally:
-                conn.close()
-            # الحفظ هو نقطة النجاح؛ فشل البريد لا يعيد الطلب ولا يفقد البلاغ.
-            try:
-                deliver_pending_question_reports(limit=5)
-            except Exception as exc:
-                print('[Question Reports] immediate delivery error: '
-                      f'{exception_kind(exc)}')
-            conn = db_connect()
-            try:
-                row = conn.execute(
-                    'SELECT email_status FROM question_reports WHERE report_id=?',
-                    (report_id,)).fetchone()
-            finally:
-                conn.close()
-            if firestore_durable_available() and row:
-                try:
-                    firestore_set_document(f'question_reports/{report_id}', {
-                        'email_status': row[0],
-                    })
-                except Exception as exc:
-                    # البلاغ نفسه محفوظ بالفعل؛ حالة البريد تحسين يمكن استعادته.
-                    print('[Question Report] email state sync failed '
-                          f'report_ref={safe_log_reference(report_id)}: '
-                          f'{exception_kind(exc)}')
-            self.send_json(201, {
-                'ok': True,
-                'reportId': report_id,
-                'emailStatus': row[0] if row else 'pending',
-            })
-
         elif path == '/api/metrics/event':
             try: data = json.loads(body)
             except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
@@ -6881,119 +5127,6 @@ class Handler(BaseHTTPRequestHandler):
                 conn.close()
             self.send_json(202, {'ok': True, 'reportId': report_id})
 
-        elif path == '/api/questions/seen':
-            try: data = json.loads(body)
-            except Exception: self.send_json(400, {'error': 'JSON غير صالح'}); return
-            uid = str(data.get('uid') or '').strip()
-            id_token = str(data.get('idToken') or bearer_token(self.headers) or '').strip()
-            raw_items = data.get('items') or []
-            if not uid:
-                self.send_json(400, {'error': 'uid مطلوب'}); return
-            if not uid_matches_token(uid, id_token):
-                self.send_json(401, {'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى'}); return
-            if not isinstance(raw_items, list) or not raw_items or len(raw_items) > 100:
-                self.send_json(400, {'error': 'items يجب أن تحتوي من 1 إلى 100 سؤال'}); return
-            if rate_limited(f'question-seen:{uid}', 240, 600):
-                self.send_json(429, {'error': 'طلبات كثيرة جداً — حاول بعد قليل'}); return
-            clean_items = []
-            seen_in_request = set()
-            for item in raw_items:
-                if not isinstance(item, dict):
-                    self.send_json(400, {'error': 'عنصر سؤال غير صالح'}); return
-                question_id = str(item.get('id') or '').strip()
-                category = str(item.get('category') or '').strip()
-                if (not re.fullmatch(r'[A-Za-z0-9._-]{1,128}', question_id)
-                        or not category or len(category) > 80
-                        or any(ord(char) < 32 for char in category)):
-                    self.send_json(400, {'error': 'معرّف سؤال أو فئة غير صالح'}); return
-                if question_id in seen_in_request:
-                    continue
-                seen_in_request.add(question_id)
-                clean_items.append((uid, question_id, category))
-            now_iso = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
-            if firestore_durable_available():
-                try:
-                    firestore_batch_set_documents([
-                        (f'users/{uid}/question_seen/{question_id}', {
-                            'uid': uid,
-                            'question_id': question_id,
-                            'category': category,
-                            'seen_at': now_iso,
-                            # لا يصبح الحجز «مشاهداً» إلا بعد أن يفتح العميل
-                            # السؤال فعلياً ويرسله عبر هذا المسار.
-                            'reserved_by_round': False,
-                            'reserved_until_epoch': 0,
-                        })
-                        for _, question_id, category in clean_items
-                    ])
-                except Exception as exc:
-                    print('[Question Seen] durable batch failed '
-                          f'uid_ref={safe_log_reference(uid)}: {exception_kind(exc)}')
-                    self.send_json(503, {'error': 'تعذّر حفظ سجل الأسئلة بأمان'}); return
-            elif durable_storage_required():
-                self.send_json(503, {'error': 'التخزين الدائم غير مهيأ'}); return
-            conn = db_connect()
-            try:
-                conn.executemany('''
-                    INSERT INTO question_seen (
-                        uid, question_id, category, reserved_by_round,
-                        reserved_until_epoch)
-                    VALUES (?, ?, ?, 0, 0)
-                    ON CONFLICT(uid, question_id) DO UPDATE SET
-                        category=excluded.category,
-                        seen_at=CURRENT_TIMESTAMP,
-                        reserved_by_round=0,
-                        reserved_until_epoch=0
-                ''', clean_items)
-                conn.commit()
-            finally:
-                conn.close()
-            self.send_json(200, {'ok': True, 'saved': len(clean_items)})
-
-        elif path == '/api/questions/reservations/release':
-            try:
-                data = json.loads(body)
-            except Exception:
-                self.send_json(400, {'error': 'JSON غير صالح'}); return
-            if not isinstance(data, dict):
-                self.send_json(400, {'error': 'JSON غير صالح'}); return
-            uid = str(data.get('uid') or '').strip()
-            id_token = str(
-                data.get('idToken') or bearer_token(self.headers) or '').strip()
-            question_ids = data.get('questionIds')
-            if not uid or not uid_matches_token(uid, id_token):
-                self.send_json(401, {
-                    'error': 'رمز الدخول غير صالح — سجّل دخولك مرة أخرى',
-                }); return
-            if (not isinstance(question_ids, list)
-                    or not 1 <= len(question_ids) <= 100
-                    or any(not isinstance(question_id, str)
-                           or not re.fullmatch(
-                               r'[A-Za-z0-9._-]{1,128}', question_id)
-                           for question_id in question_ids)):
-                self.send_json(400, {
-                    'error': 'قائمة حجوزات الجولة غير صالحة',
-                    'code': 'invalid_question_reservations',
-                }); return
-            if rate_limited(
-                    f'question-reservation-release:{safe_log_reference(uid)}',
-                    60, 600):
-                self.send_json(429, {
-                    'error': 'طلبات كثيرة جداً — حاول بعد قليل',
-                }); return
-            try:
-                released = release_question_round_reservations(
-                    uid, question_ids)
-            except QuestionHistoryUnavailableError as exc:
-                print('[Question Reservations] release unavailable '
-                      f'uid_ref={safe_log_reference(uid)}: '
-                      f'{exception_kind(exc)}')
-                self.send_json(503, {
-                    'error': 'تعذّر إنهاء حجز الجولة الآن',
-                    'code': 'question_reservation_release_unavailable',
-                }); return
-            self.send_json(200, {'ok': True, 'released': released})
-
         # ─── حذف الحساب: إزالة كل بيانات المستخدم المرتبطة بالـ uid ──────────
         elif path == '/api/account/delete':
             try:   data = json.loads(body)
@@ -7053,6 +5186,11 @@ class Handler(BaseHTTPRequestHandler):
                     'game_events',
                     'ios_diagnostics',
                     'subscription_outbox',
+                    'player_question_cycles',
+                    'player_question_seen',
+                    'game_packs',
+                    'game_pack_questions',
+                    'player_question_reports',
                 )
                 present = {
                     row[0] for row in conn.execute(
@@ -7711,46 +5849,6 @@ def try_restore_from_firestore():
     combined_err = ' | '.join(filter(None, [fetch_err, upsert_err])) or None
     return count, source_total, combined_err
 
-def restore_pending_question_reports():
-    """استعد outbox البريد من Firestore بعد أي إعادة تشغيل للحاوية."""
-    if not firestore_durable_available():
-        return 0
-    documents = []
-    for status in ('pending', 'pending_configuration', 'failed'):
-        documents.extend(firestore_query_documents(
-            'question_reports', 'email_status', status))
-    if not documents:
-        return 0
-    conn = db_connect()
-    try:
-        for document in documents:
-            report_id = document.get('report_id') or document.get('_document_id')
-            conn.execute('''
-                INSERT OR IGNORE INTO question_reports
-                (report_id, uid, question_id, category, question_text,
-                 answer_text, source_title, source_url, reason, details,
-                 app_version, email_status, created_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
-            ''', (
-                report_id,
-                document.get('uid') or '',
-                document.get('question_id') or '',
-                document.get('category') or '',
-                document.get('question_text') or '',
-                document.get('answer_text') or '',
-                document.get('source_title') or '',
-                document.get('source_url') or '',
-                document.get('reason') or 'other',
-                document.get('details') or '',
-                document.get('app_version') or '',
-                document.get('email_status') or 'pending',
-                document.get('created_at') or time.strftime('%Y-%m-%d %H:%M:%S'),
-            ))
-        conn.commit()
-        return len(documents)
-    finally:
-        conn.close()
-
 def _run_startup_recovery():
     """يُزامن من Firestore عند بدء التشغيل للتعافي من الفقد الجزئي."""
     global _startup_status
@@ -7803,21 +5901,6 @@ def _run_startup_recovery():
         gained = after - before
         print(f'[STARTUP] ✅ {mode} اكتملت: {restored}/{source_total} سجل، '
               f'إجمالي محلي={after} (+{gained} جديد).')
-    try:
-        restored_reports = restore_pending_question_reports()
-        if restored_reports:
-            print(f'[STARTUP] استعيد {restored_reports} بلاغاً بانتظار التسليم.')
-    except Exception as exc:
-        print('[STARTUP] تعذّرت استعادة بلاغات البريد: '
-              f'{exception_kind(exc)}')
-    try:
-        restored_inventory_alerts = restore_pending_question_inventory_alerts()
-        if restored_inventory_alerts:
-            print('[STARTUP] استعيد '
-                  f'{restored_inventory_alerts} تنبيهاً لمخزون الأسئلة.')
-    except Exception as exc:
-        print('[STARTUP] تعذّرت استعادة تنبيهات مخزون الأسئلة: '
-              f'{exception_kind(exc)}')
 
 # ─── تشغيل ───────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
@@ -7825,9 +5908,6 @@ if __name__ == '__main__':
     init_outbox_table()
     _run_startup_recovery()
     _threading.Thread(target=_outbox_worker, daemon=True).start()
-    _threading.Thread(target=_question_report_email_worker, daemon=True).start()
-    _threading.Thread(
-        target=_question_inventory_email_worker, daemon=True).start()
     server = ThreadedHTTPServer(('0.0.0.0', PORT), Handler)
     print(f'فطنة تعمل على http://0.0.0.0:{PORT}')
     server.serve_forever()

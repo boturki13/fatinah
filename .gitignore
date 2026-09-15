@@ -26,10 +26,16 @@ attached_assets/*.log
 # Xcode build products and local archives
 DerivedData/
 build/
+.build/
+output/
 *.xcarchive
 *.ipa
 *.xcresult
 *.dSYM
+
+# Local device-test configuration and duplicate working notes
+capacitor.config.player-test.json
+README 2.md
 
 # Local Swift/Xcode user state
 .swiftpm/

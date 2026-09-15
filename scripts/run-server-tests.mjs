@@ -79,23 +79,16 @@ function findPython(root) {
 
 function createSuites(python) {
   return [
-    [python, 'tests/test_api_version_contract.py'],
-    [process.execPath, 'tests/test_function_version_contract.mjs'],
-    [process.execPath, 'tests/legacy_generation_content_policy_test.mjs'],
-    [python, 'tests/test_legacy_generation_content_policy.py'],
     [python, 'tests/test_revenuecat_webhook.py'],
     [python, 'tests/test_revenuecat_status_refresh.py'],
-    [python, 'tests/test_question_history.py'],
-    [python, 'tests/test_question_inventory_alerts.py'],
-    [python, 'tests/test_remote_question_bank.py'],
     [python, 'tests/test_account_delete.py'],
-    [python, 'tests/test_free_round_reports_metrics.py'],
-    [python, 'tests/test_devicecheck_free_round.py'],
     [python, 'tests/test_app_attest.py'],
     [python, 'tests/test_app_attest_api.py'],
     [python, 'tests/test_firebase_admin_and_durable_firestore.py'],
-    [python, 'tests/test_http_server_limits.py'],
-    [python, 'tests/test_distributed_rate_limit.py'],
+    [python, 'tests/test_admin_password_setup.py'],
+    [python, 'tests/test_question_platform.py'],
+    [python, 'tests/test_question_batch_001.py'],
+    [python, 'tests/test_question_batch_002.py'],
     [python, 'tests/test_production_release_gate.py'],
   ];
 }

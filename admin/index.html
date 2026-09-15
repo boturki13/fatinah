@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>فطنة · مركز الجودة</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="shell">
+    <section id="login-view" class="login-card" aria-labelledby="login-title">
+      <div class="mark" aria-hidden="true">ف</div>
+      <p class="eyebrow">فطنة · داخلي</p>
+      <h1 id="login-title">مركز جودة الأسئلة</h1>
+      <div id="file-guidance" class="notice" hidden>
+        <strong>هذه معاينة ملف فقط</strong>
+        <span>للحفظ الآمن، شغّل خادم فطنة ثم افتح لوحة الجودة من العنوان المحلي.</span>
+        <a class="primary link-button" href="http://127.0.0.1:5050/admin/quality/">افتح اللوحة المحلية</a>
+      </div>
+      <div id="setup-pane" hidden>
+        <h2>أنشئ كلمة الدخول</h2>
+        <p class="muted">هذه الخطوة تظهر مرة واحدة على هذا الجهاز. تُحفظ الكلمة كبصمة مشفّرة ولا تُحفظ كنص.</p>
+        <form id="setup-form">
+          <label for="new-admin-password">كلمة الدخول الجديدة</label>
+          <div class="password-field"><input id="new-admin-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><button class="reveal-password" data-password-target="new-admin-password" type="button" aria-label="إظهار كلمة الدخول">إظهار</button></div>
+          <div class="strength" aria-hidden="true"><i id="password-strength-bar"></i></div>
+          <p id="password-guidance" class="hint">١٢ خانة على الأقل، وتتضمن حرفاً ورقماً ورمزاً.</p>
+          <label for="confirm-admin-password">تأكيد كلمة الدخول</label>
+          <div class="password-field"><input id="confirm-admin-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><button class="reveal-password" data-password-target="confirm-admin-password" type="button" aria-label="إظهار تأكيد كلمة الدخول">إظهار</button></div>
+          <button class="primary" type="submit">حفظ كلمة الدخول</button>
+          <p id="setup-status" class="status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+      <div id="login-pane">
+        <p class="muted">الدخول مخصص لإدارة المحتوى. لا تُحفظ كلمة الدخول في المتصفح.</p>
+        <form id="login-form">
+        <label for="admin-password">كلمة الدخول</label>
+        <div class="password-field"><input id="admin-password" type="password" autocomplete="current-password" required><button class="reveal-password" data-password-target="admin-password" type="button" aria-label="إظهار كلمة الدخول">إظهار</button></div>
+        <button class="primary" type="submit">دخول آمن</button>
+        <p id="login-status" class="status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="dashboard-view" hidden>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">فطنة · المحتوى</p>
+          <h1>مركز الجودة</h1>
+        </div>
+        <div class="top-actions">
+          <button id="refresh-btn" class="quiet" type="button">تحديث</button>
+          <button id="logout-btn" class="quiet danger" type="button">خروج</button>
+        </div>
+      </header>
+
+      <section class="launch-card" aria-labelledby="launch-title">
+        <div>
+          <p class="eyebrow">جاهزية الإطلاق</p>
+          <h2 id="launch-title">الحد الأدنى: 600 سؤال معتمد</h2>
+          <p id="launch-copy" class="muted"></p>
+        </div>
+        <div id="launch-ring" class="ring" aria-label="نسبة الجاهزية"><span>0%</span></div>
+      </section>
+
+      <section id="level-grid" class="metric-grid" aria-label="مخزون المستويات"></section>
+
+      <nav class="tabs" aria-label="أقسام مركز الجودة">
+        <button class="tab active" data-tab="questions" type="button">الأسئلة</button>
+        <button class="tab" data-tab="editor" type="button">إضافة سؤال</button>
+        <button class="tab" data-tab="reports" type="button">البلاغات <span id="report-badge" class="badge">0</span></button>
+      </nav>
+
+      <section id="questions-panel" class="panel">
+        <div class="toolbar">
+          <label class="search"><span class="sr-only">بحث</span><input id="question-search" type="search" placeholder="ابحث بالنص أو المعرّف…"></label>
+          <select id="status-filter" aria-label="الحالة">
+            <option value="">كل الحالات</option><option value="draft">مسودة</option>
+            <option value="review">قيد التدقيق</option><option value="approved">معتمد</option>
+            <option value="paused">موقوف</option><option value="rejected">مرفوض</option>
+            <option value="retired">مؤرشف</option>
+          </select>
+          <select id="level-filter" aria-label="المستوى">
+            <option value="0">كل المستويات</option>
+            <option value="1">100</option><option value="2">200</option><option value="3">300</option>
+            <option value="4">400</option><option value="5">500</option><option value="6">600</option>
+          </select>
+          <button id="new-question-btn" class="primary" type="button">+  سؤال جديد</button>
+        </div>
+        <p id="question-count" class="muted compact"></p>
+        <div id="question-list" class="question-list"></div>
+      </section>
+
+      <section id="editor-panel" class="panel" hidden>
+        <form id="question-form">
+          <div class="editor-heading">
+            <div><p class="eyebrow">ملف التدقيق</p><h2 id="editor-title">سؤال جديد</h2></div>
+            <div id="quality-score" class="score">0%</div>
+          </div>
+          <input id="question-id" type="hidden">
+          <div class="form-grid">
+            <label class="wide">نص السؤال<textarea id="prompt" rows="3" required maxlength="600"></textarea></label>
+            <label>المستوى<select id="level" required><option value="1">100</option><option value="2">200</option><option value="3">300</option><option value="4">400</option><option value="5">500</option><option value="6">600</option></select></label>
+            <label>التصنيف الداخلي<input id="topic" required maxlength="100" placeholder="مثلاً: تاريخ الكويت"></label>
+          </div>
+          <fieldset><legend>الخيارات — حدد إجابة واحدة</legend><div id="options-grid" class="options-grid"></div></fieldset>
+          <label>سبب صحة الإجاب<textarea id="correct-reason" rows="3" required></textarea></label>
+          <fieldset><legend>سبب خطأ كل خيار</legend><div id="reasons-grid" class="options-grid"></div></fieldset>
+          <fieldset>
+            <legend>المصادر الداخلية — لن تظهر للاعب</legend>
+            <div id="sources-grid"></div><button id="add-source-btn" class="quiet" type="button">+  إضافة مصدر</button>
+          </fieldset>
+          <label>ملاحظات التحقق — ملاحظة مستقلة في كل سطر<textarea id="verification-notes" rows="4"></textarea></label>
+          <div class="form-grid">
+            <label>الكاتب<input id="author" required maxlength="100"></label>
+            <label>المدقق المستقل<input id="reviewer" required maxlength="100"></label>
+          </div>
+          <div class="check-grid">
+            <label><input id="language-reviewed" type="checkbox"> تمت المراجعة اللغوية</label>
+            <label><input id="ambiguity-checked" type="checkbox"> تم فحص الغموض</label>
+            <label><input id="player-tested" type="checkbox"> تمت التجربة على لاعبين</label>
+            <label><input id="safety-reviewed" type="checkbox"> اجتاز مراجعة سلامة المحتوى</label>
+            <label><input id="confidence-verified" type="checkbox"> الثقة verified</label>
+          </div>
+          <div id="quality-issues" class="quality-issues" role="status" aria-live="polite"></div>
+          <div class="editor-actions">
+            <button class="quiet" data-save-status="draft" type="submit">حفظ مسودة</button>
+            <button class="quiet" data-save-status="review" type="submit">إرسال للتدقيق</button>
+            <button class="primary" data-save-status="approved" type="submit">اعتماد ونشر</button>
+            <button id="retire-btn" class="quiet danger" type="button" hidden>أرشفة السؤال</button>
+          </div>
+          <p id="editor-status" class="status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="reports-panel" class="panel" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">المراقبة</p><h2>بلاغات اللاعبين</h2></div></div>
+        <div id="report-list" class="question-list"></div>
+      </section>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
