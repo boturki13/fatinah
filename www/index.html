@@ -10,17 +10,18 @@
 <link rel="icon" href="/favicon.ico">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:title" content="فطنة — لعبة الذكاء الجماعية">
-<meta property="og:description" content="لعبة أسئلة جماعية عربية لأجهزة iOS">
+<meta property="og:description" content="لعبة ذكاء جماعية عربية لأجهزة iOS">
 <meta property="og:image" content="https://ata20.com/og-image.png">
 <meta property="og:url" content="https://ata20.com">
 <meta property="og:type" content="website">
 <!-- لا تعتمد شاشة البداية على خطوط من الإنترنت: قد تؤخر WebKit عند فتح التطبيق. -->
 <script src="/firebase-config.js"></script>
 <link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="game-v2.css">
 </head>
 <body>
 <div id="app">
-  <div class="preview-environment-banner" id="preview-environment-banner" role="status" hidden>🧪 وضع معاينة داخلي — أسئلة التحديث غير معتمدة للنشر</div>
+  <div class="preview-environment-banner" id="preview-environment-banner" role="status" hidden>🧪 وضع معاينة داخلي — محتوى الإصدار 1.4</div>
 
   <!-- تسجيل الدخول -->
   <section class="screen" id="s-auth">
@@ -91,18 +92,6 @@
       <p class="pw-subhead pw-rise pw-d2">كل ميزات فطنة، لك ولربعك.</p>
       <ul class="pw-features pw-rise pw-d3">
         <li>
-          <span class="pw-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
-          فئات متجددة تناسب الجميع
-        </li>
-        <li>
-          <span class="pw-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></span>
-          بكل لعبة أسئلة يديدة ما تتكرر
-        </li>
-        <li>
-          <span class="pw-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-          تقدر تستخدم فئة الأسئلة العائلية
-        </li>
-        <li>
           <span class="pw-chip"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 15.5c-2 2-4.5 1.5-5.5 0s-.5-4 1.5-5.5 4.5-1.5 5.5 0l4 4c1 1.5 3.5 2 5.5.5s2.5-4 1.5-5.5-3.5-2-5.5 0l-1 1"/></svg></span>
           جولات بلا حدود
         </li>
@@ -165,7 +154,7 @@
     </div>
     <div class="onb-card-wrap" id="onb-cards">
 
-      <!-- بطاقة ١: اختر فئاتك -->
+      <!-- بطاقة ١: أسماء اللاعبين -->
       <div class="onb-card active" id="onb-card-0" aria-hidden="false">
         <svg class="onb-art" viewBox="0 0 220 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <defs>
@@ -191,8 +180,8 @@
           <line x1="160" y1="112" x2="160" y2="138" stroke="#4FE3C4" stroke-width="1.4"/>
           <line x1="168" y1="112" x2="168" y2="138" stroke="#4FE3C4" stroke-width="1.4"/>
         </svg>
-        <div class="onb-title" data-screen-title role="heading" aria-level="1">اختار فئاتك</div>
-        <div class="onb-desc">أكثر من ٣٠ فئة — رياضة وأفلام وتاريخ وعلوم وأكثر</div>
+        <div class="onb-title" data-screen-title role="heading" aria-level="1">سمّوا اللاعبين</div>
+        <div class="onb-desc">لاعب واحد، لاعبين، أو ثلاثة — كل اسم له دوره ونقاطه</div>
       </div>
 
       <!-- بطاقة ٢: أجب وتحدّى -->
@@ -215,13 +204,13 @@
           <circle cx="178" cy="70" r="26" fill="#2E1A57" stroke="#4FE3C4" stroke-width="2"/>
           <circle cx="178" cy="60" r="10" fill="#4FE3C4" opacity=".85"/>
           <path d="M156,96 Q178,82 200,96" fill="#4FE3C4" opacity=".5"/>
-          <!-- سهم سرقة -->
+          <!-- سهم تناوب -->
           <path d="M78,115 Q110,100 142,115" fill="none" stroke="#FF3D71" stroke-width="2" stroke-dasharray="5,4"/>
           <polygon points="142,115 134,108 136,120" fill="#FF3D71"/>
-          <text x="110" y="138" font-size="11" text-anchor="middle" fill="#FF3D71" font-family="Tajawal,sans-serif">إجابة غلط = سرقة!</text>
+          <text x="110" y="138" font-size="11" text-anchor="middle" fill="#FF3D71" font-family="Tajawal,sans-serif">الدور ينتقل للكل</text>
         </svg>
         <div class="onb-title" data-screen-title role="heading" aria-level="1">أجب وتحدّى</div>
-        <div class="onb-desc">فريق يسأل والثاني يجاوب — الإجابة الغلط تفتح السرقة للخصم</div>
+        <div class="onb-desc">كل لاعب يجاوب بسرّه، والحل ما يظهر إلا بعد آخر لاعب</div>
       </div>
 
       <!-- بطاقة ٣: الفائز يتوّج -->
@@ -280,82 +269,57 @@
     <div class="tag">منو الأفطن في المجلس؟</div>
     <div class="free-round-banner" id="free-round-banner" role="status" aria-live="polite" hidden></div>
     <div style="height:5vh;"></div>
-    <div style="text-align:center; font-size:16px; color:var(--muted); font-weight:700; margin-bottom:14px;">اختار فريقين أو ثلاث فرق</div>
+    <div style="text-align:center; font-size:16px; color:var(--muted); font-weight:700; margin-bottom:14px;">من لاعب واحد إلى ثلاثة</div>
     <button class="btn btn-primary btn-block" data-action="sound-navigate" data-sound="tap" data-screen="s-teams">🎯 يلا نلعب</button>
-    <button class="btn btn-ghost btn-block" data-action="sound-open-family">👨‍👩‍👧‍👦 أسئلة عائلية</button>
     <button class="btn btn-ghost btn-block" data-action="sound-open-stats">📊 إحصاءاتي وإنجازاتي</button>
     <button class="btn btn-ghost btn-block" data-action="sound-navigate" data-sound="tap" data-screen="s-paywall" style="background:linear-gradient(120deg,rgba(255,45,108,.15),rgba(255,122,60,.10)); border-color:rgba(255,45,108,.4); color:var(--hot);">👑 اشترك في فطنة برو</button>
     <button class="btn btn-ghost btn-block" data-action="sound-open-account">⚙️ إعدادات الحساب</button>
   </section>
 
-  <!-- إعداد الفرق -->
+  <!-- إعداد الجولة -->
   <section class="screen" id="s-teams">
-    <h2 class="title">إعداد الفرق</h2>
+    <h2 class="title" data-screen-title>إعداد الجولة</h2>
     <div class="card">
-      <div class="field-label">جم فريق؟</div>
-      <div class="seg" id="seg-teams" role="group" aria-label="عدد الفرق">
-        <button class="on" data-n="2" aria-pressed="true" data-action="set-team-count">فريقين</button>
-        <button data-n="3" aria-pressed="false" data-action="set-team-count">ثلاث فرق</button>
+      <div class="field-label">جم لاعب؟</div>
+      <div class="seg" id="seg-players" role="group" aria-label="عدد اللاعبين">
+        <button data-n="1" aria-pressed="false" data-action="set-modern-player-count">لاعب</button>
+        <button class="on" data-n="2" aria-pressed="true" data-action="set-modern-player-count">لاعبين</button>
+        <button data-n="3" aria-pressed="false" data-action="set-modern-player-count">ثلاثة</button>
       </div>
     </div>
     <div class="card">
-      <div class="field-label">جم فئة؟ <b id="catcount-lbl" style="color:var(--gold)">6</b></div>
-      <div class="seg" id="seg-catcount" role="group" aria-label="عدد الفئات">
-        <button data-n="2" aria-pressed="false" data-action="set-category-count">2 فئات</button>
-        <button data-n="3" aria-pressed="false" data-action="set-category-count">3 فئات</button>
-        <button data-n="4" aria-pressed="false" data-action="set-category-count">4 فئات</button>
-        <button data-n="5" aria-pressed="false" data-action="set-category-count">5 فئات</button>
-        <button class="on" data-n="6" aria-pressed="true" data-action="set-category-count">6 فئات</button>
-        <button data-n="7" aria-pressed="false" data-action="set-category-count">7 فئات</button>
-        <button data-n="8" aria-pressed="false" data-action="set-category-count">8 فئات</button>
-      </div>
-      <div id="catcount-split" style="font-size:12.5px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.6;"></div>
+      <label class="field-label" for="modern-question-count">جم سؤال لكل لاعب؟ <b id="modern-question-count-label" style="color:var(--gold)">١٠</b></label>
+      <input id="modern-question-count" class="modern-range" type="range" min="10" max="30" value="10" step="1" data-input-action="set-modern-question-count" aria-describedby="modern-question-summary">
+      <div id="modern-question-summary" class="modern-setup-note">إجمالي ٢٠ سؤال · ٣٠ ثانية لكل إجابة</div>
     </div>
-    <div class="card">
-      <div class="field-label">مستوى الصعوبة</div>
-      <div class="seg" id="seg-diff" role="group" aria-label="مستوى الصعوبة">
-        <button data-d="easy" aria-pressed="false" data-action="set-difficulty">🟢 سهل</button>
-        <button class="on" data-d="normal" aria-pressed="true" data-action="set-difficulty">🟡 عادي</button>
-        <button data-d="hard" aria-pressed="false" data-action="set-difficulty">🔴 صعب</button>
-      </div>
-      <div id="diff-hint" style="font-size:12.5px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.6;">⏱ وقت الإجابة: 30 ثانية</div>
-    </div>
-    <div class="card" id="team-names"></div>
-    <button class="btn btn-primary" data-action="sound-to-categories">الخطوة الياية: اختار الفئات</button>
+    <div class="card" id="modern-player-names"></div>
+    <button class="btn btn-primary" id="modern-start-btn" data-action="start-modern-game">🎯 ابدأ الجولة</button>
     <button class="btn btn-ghost btn-block" data-action="navigate" data-screen="s-home">رجوع</button>
   </section>
 
-  <!-- اختيار الفئات -->
-  <section class="screen" id="s-cats">
-    <div class="pick-turn-pill" id="pick-turn-pill" data-screen-title role="heading" aria-level="1" aria-live="polite" aria-atomic="true">اختيار الفئات</div>
-    <input class="team-input" id="cat-search" aria-label="البحث في الفئات" placeholder="🔍 دوّر على فئة..." style="width:100%; margin-bottom:12px;" data-input-action="filter-categories">
-    <div class="filter-bar" id="filter-bar" role="group" aria-label="تصفية الفئات"></div>
-    <div class="cat-grid" id="cat-grid"></div>
-    <div class="pick-count" id="pick-count-line"></div>
-    <button class="btn btn-primary cat-start-float" id="start-btn" data-action="sound-start-game" disabled aria-hidden="true" aria-label="يلا نبدأ!">يلا نبدأ!</button>
-    <button class="btn btn-ghost btn-block" data-action="navigate" data-screen="s-teams">رجوع</button>
-  </section>
-
-  <!-- اللوحة -->
-  <section class="screen" id="s-board">
-    <div class="board-top">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <button class="exit-btn" data-action="confirm-exit" title="خروج" aria-label="الخروج من الجولة">✕</button>
-        <div class="brand" data-screen-title role="heading" aria-level="1" style="font-size:26px;">فطنة</div>
-      </div>
-      <div class="turn-pill" id="turn-pill" role="status" aria-live="polite" aria-atomic="true"></div>
+  <!-- الجولة العشوائية -->
+  <section class="screen modern-game-screen" id="s-modern-game">
+    <header class="modern-game-header">
+      <button class="exit-btn" data-action="confirm-modern-exit" aria-label="الخروج من الجولة">✕</button>
+      <div class="modern-progress"><span id="modern-progress-copy">السؤال ١ من ٢٠</span><div><i id="modern-progress-bar"></i></div></div>
+      <div class="modern-level" id="modern-level">١٠٠</div>
+    </header>
+    <div class="modern-scoreboard" id="modern-scoreboard" aria-label="النقاط"></div>
+    <article class="modern-question-card" aria-labelledby="modern-question">
+      <div class="modern-turn-row"><span id="modern-owner-pill"></span><span id="modern-answering-pill" role="status" aria-live="polite"></span></div>
+      <div class="modern-timer" aria-label="الوقت المتبقي"><strong id="modern-timer-value">٣٠</strong><span>ث</span><i id="modern-timer-bar"></i></div>
+      <h2 id="modern-question" data-screen-title></h2>
+      <div id="modern-options" class="modern-options" role="group" aria-label="خيارات الإجابة"></div>
+      <div id="modern-waiting" class="modern-waiting" role="status" hidden></div>
+      <div id="modern-reveal" class="modern-reveal" role="status" aria-live="polite" hidden></div>
+    </article>
+    <div id="modern-lifelines" class="modern-lifelines" aria-label="وسائل المساعدة">
+      <button data-lifeline="phone" data-action="modern-lifeline"><span>📱</span>بحث بالهاتف</button>
+      <button data-lifeline="eliminate" data-action="modern-lifeline"><span>✂️</span>حذف إجابتين</button>
+      <button data-lifeline="change" data-action="modern-lifeline"><span>🔄</span>تغيير السؤال</button>
+      <button data-lifeline="double" data-action="modern-lifeline"><span>×2</span>دبل النقاط</button>
     </div>
-    <div class="bomb-box" id="bomb-box">
-      <button class="bomb-btn" data-action="start-bomb">💣 قنبلة — ارمِها على الخصم</button>
-    </div>
-    <div class="teams-bar" id="teams-bar"></div>
-    <div class="board-scroll" id="board-scroll" role="region" aria-label="لوحة فئات الجولة" aria-describedby="board-hint" tabindex="0">
-      <div class="board-grid" id="board-grid">
-        <div class="cats-head" id="cats-head"></div>
-        <div class="board" id="board"></div>
-      </div>
-    </div>
-    <div class="hint" id="board-hint">اختار خانة من اللوحة · كل خانة فيها سؤال بقيمة نقاطها</div>
+    <button id="modern-next-btn" class="btn btn-primary btn-block" data-action="modern-next" hidden>السؤال الياي</button>
   </section>
 
   <!-- النتيجة -->
@@ -363,9 +327,9 @@
     <div style="height:3vh;"></div>
     <h2 class="title center">خلصت الجولة! 🎊</h2>
     <div class="winner-line" id="winner-line"></div>
-    <div class="podium" id="podium"></div>
-    <button class="btn btn-primary mt" id="result-primary-btn" data-action="sound-result-primary">🔄 جولة جديدة</button>
-    <button class="btn btn-ghost btn-block" data-action="result-home">القائمة الرئيسية</button>
+    <div class="podium" id="modern-podium"></div>
+    <button class="btn btn-primary mt" data-action="modern-new-game">🔄 جولة يديدة</button>
+    <button class="btn btn-ghost btn-block" data-action="modern-result-home">القائمة الرئيسية</button>
   </section>
 
   <!-- الإحصاءات -->
@@ -440,11 +404,9 @@
       • معرّف الحساب، الاسم والبريد عند تسجيل الدخول بـ Apple أو Google<br>
       • النقاط والإنجازات وتقدّم اللعب لمزامنتها بين أجهزتك<br>
       • مؤشرات اللعب الأساسية مثل بدء الجولة وإكمالها ومدتها لتحسين التجربة<br>
-      • نص السؤال وسبب البلاغ عند استخدام زر الإبلاغ، لإجراء المراجعة<br>
       • حالة الاشتراك ومعرّفات المعاملة المجهّلة<br>
       • تقارير الأعطال والتوقفات والأداء عبر Crashlytics وApple MetricKit<br>
-      • رمز سلامة قصير العمر عبر Firebase App Check وApple App Attest لحماية الخدمة<br>
-      • الفئات العائلية التي تكتبها بنفسك وتُحفظ محلياً على جهازك</p>
+      • رمز سلامة قصير العمر عبر Firebase App Check وApple App Attest لحماية الخدمة</p>
       <p><b>ما لا نجمعه:</b><br>
       لا نبيع بياناتك ولا نعرض إعلانات ولا نستخدم التتبع عبر التطبيقات.
       لا نطلب جهات الاتصال أو الصور أو الموقع الدقيق أو الصحة أو الميكروفون أو الكاميرا.</p>
@@ -481,104 +443,6 @@
     <button class="btn btn-ghost btn-block mt" data-action="navigate" data-screen="s-account">رجوع</button>
   </section>
 
-  <!-- أسئلة عائلية -->
-  <section class="screen" id="s-family">
-    <h2 class="title">👨‍👩‍👧‍👦 أسئلة عائلية</h2>
-    <div class="sub">سوّوا فئة خاصة بعائلتكم. الأسئلة تنحفظ على هالجهاز وما تنرسل لأي مزوّد ذكاء اصطناعي.</div>
-
-    <!-- وضع الإدخال اليدوي -->
-    <div id="family-manual">
-      <div class="card">
-        <div class="field-label">اسم الفئة</div>
-        <input class="team-input" id="fm-name" aria-label="اسم الفئة العائلية" placeholder="مثال: أسرار العائلة" maxlength="24" style="width:100%; margin-bottom:6px;">
-      </div>
-      <div class="card">
-        <div class="field-label">السؤال</div>
-        <input class="team-input" id="fm-q" aria-label="السؤال العائلي" placeholder="مثال: جم عمر جدّي؟" maxlength="120" style="width:100%; margin-bottom:12px;">
-        <div class="field-label">الخيارات (اختار الصح)</div>
-        <div id="fm-opts"></div>
-      </div>
-      <button class="btn btn-ghost" data-action="add-manual-question">➕ ضيف السؤال للفئة</button>
-      <div class="hint" id="fm-added">ما ضفت أسئلة للحين</div>
-    </div>
-
-    <!-- الفئات العائلية المحفوظة -->
-    <div id="family-saved"></div>
-
-    <button class="btn btn-ghost btn-block mt" data-action="navigate" data-screen="s-home">رجوع</button>
-  </section>
-
-  <!-- نتيجة التوليد / معاينة -->
-  <section class="screen" id="s-family-preview">
-    <h2 class="title">معاينة الأسئلة</h2>
-    <div class="sub" id="fp-info"></div>
-    <div id="fp-list"></div>
-    <button class="btn btn-primary mt" data-action="save-family-category">💾 احفظ الفئة</button>
-    <button class="btn btn-ghost btn-block" data-action="navigate" data-screen="s-family">رجوع</button>
-  </section>
-
-</div>
-
-<!-- صفحة السؤال الكاملة -->
-<div class="q-wrap" id="q-wrap" role="dialog" aria-modal="true" aria-labelledby="q-text" aria-describedby="phase-pill" aria-hidden="true">
-  <div class="countdown-timer" id="countdown-timer" role="timer" tabindex="0" aria-live="off" aria-label="باقي 60 ثانية">
-    <span class="timer-hourglass" id="timer-hourglass" aria-hidden="true">⌛</span>
-    <span class="timer-num" id="timer-num" aria-hidden="true">60</span>
-  </div>
-  <div class="q-sheet">
-    <div class="q-content">
-      <header class="q-screen-header">
-        <div class="q-brand" aria-hidden="true"><span>فطنة</span><small>سؤال الجولة</small></div>
-        <div class="q-meta">
-          <div class="q-badge" id="q-badge"></div>
-          <div class="q-points" id="q-points"></div>
-        </div>
-      </header>
-      <div class="phase-row">
-        <div class="phase-pill" id="phase-pill" role="status" aria-live="polite" aria-atomic="true"></div>
-        <button class="btn btn-sm btn-ghost" id="pause-btn" data-action="toggle-pause" aria-label="وقّف العداد مؤقتًا">⏸</button>
-      </div>
-      <section class="q-question-card" id="q-question-card" tabindex="-1" aria-label="السؤال">
-        <div class="q-section-label" aria-hidden="true">السؤال</div>
-        <figure class="q-image-wrap" id="q-image-wrap" hidden>
-          <img class="q-image" id="q-image" alt="">
-          <figcaption class="q-image-fallback" id="q-image-fallback" hidden></figcaption>
-        </figure>
-        <div class="q-text" id="q-text"></div>
-        <div class="q-options" id="q-options" role="list" aria-label="خيارات الإجابة" hidden></div>
-        <div class="q-paused" id="q-paused">
-          <div class="qp-icon">⏸️</div>
-          <div class="qp-title" id="q-paused-title">وقفنا الوقت</div>
-          <div class="qp-sub">السؤال مخفي · اضغط كمّل عشان يرجع العداد</div>
-          <button class="btn btn-primary" style="max-width:220px;margin-top:6px;" data-action="toggle-pause" aria-label="كمّل العداد وأظهر السؤال">▶ كمّل</button>
-        </div>
-      </section>
-      <div class="answer-box" id="answer-box" role="status" aria-live="polite" aria-hidden="true" tabindex="-1">
-        <div class="ans-label">الإجابة الصحيحة</div>
-        <div class="ans-text" id="ans-text"></div>
-        <div class="q-attribution" id="q-attribution" aria-label="حقوق الصورة" aria-hidden="true" hidden>
-          <a class="q-source" id="q-source" aria-hidden="true" hidden></a>
-          <div class="q-image-rights" id="q-image-rights" role="group" aria-label="حقوق الصورة" aria-hidden="true" hidden>
-            <div class="q-image-credit" id="q-image-credit"></div>
-            <div class="q-image-rights-links">
-              <a id="q-image-source-page" target="_blank" rel="noopener noreferrer">صفحة الصورة الأصلية</a>
-              <a id="q-image-license" target="_blank" rel="noopener noreferrer">تفاصيل الرخصة</a>
-            </div>
-            <div class="q-image-modifications" id="q-image-modifications"></div>
-          </div>
-        </div>
-        <button class="q-report-btn" id="q-report-btn" data-action="open-question-report">⚑ الإبلاغ عن السؤال</button>
-      </div>
-      <div class="q-controls" id="q-controls">
-        <div class="search-timer" id="search-timer" role="group" aria-label="مهلة البحث بالجوال">
-          <div class="search-timer-label" id="search-timer-label"></div>
-          <button class="btn btn-primary search-stop-btn" id="search-stop-btn" data-action="finish-search-early" aria-label="حصلنا الإجابة، وقف البحث وكمّل السؤال">✅ حصلنا الإجابة</button>
-        </div>
-        <div class="lifelines" id="lifelines"></div>
-        <div class="q-flow" id="q-flow"></div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"><div class="ti" aria-hidden="true">🏆</div><div><div class="tt" id="toast-t"></div><div class="td" id="toast-d"></div></div></div>
@@ -617,54 +481,25 @@
   </div>
 </div>
 
-<!-- نافذة تأكيد حذف فئة عائلية -->
-<div class="modal-wrap" id="delete-family-modal" role="dialog" aria-modal="true" aria-labelledby="delete-family-title" aria-describedby="delete-family-sub" aria-hidden="true">
+<div class="modal-wrap" id="modern-report-modal" role="dialog" aria-modal="true" aria-labelledby="modern-report-title" aria-hidden="true">
   <div class="modal">
-    <div class="modal-icon" aria-hidden="true">🗑️</div>
-    <div class="modal-title" id="delete-family-title">حذف الفئة؟</div>
-    <div class="modal-sub" id="delete-family-sub">راح تنحذف كل أسئلتها نهائياً وما تقدر تتراجع.</div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" data-modal-cancel data-action="close-delete-family-modal">لا، تراجع</button>
-      <button class="btn btn-danger" data-action="delete-family-confirmed">إي، احذف</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-wrap" id="bomb-target-modal" role="dialog" aria-modal="true" aria-labelledby="bomb-target-title" aria-describedby="bomb-target-sub" aria-hidden="true">
-  <div class="modal">
-    <div class="modal-icon" aria-hidden="true">💣</div>
-    <div class="modal-title" id="bomb-target-title">على منو ترمي القنبلة؟</div>
-    <div class="modal-sub" id="bomb-target-sub">سؤال صعب برصيد ±1200 نقطة لهم فقط، بلا أثر عليكم</div>
-    <div class="bomb-target-list" id="bomb-target-list"></div>
-    <button class="btn btn-ghost" data-modal-cancel style="margin-top:12px;" data-action="close-bomb-target-picker">إلغاء</button>
-  </div>
-</div>
-
-<!-- بلاغ السؤال: يُرسل للخادم بعد التحقق من هوية الحساب -->
-<div class="modal-wrap" id="question-report-modal" role="dialog" aria-modal="true" aria-labelledby="question-report-title" aria-describedby="question-report-sub" aria-hidden="true">
-  <div class="modal report-modal">
-    <div class="modal-icon" aria-hidden="true">⚑</div>
-    <div class="modal-title" id="question-report-title">الإبلاغ عن السؤال</div>
-    <div class="modal-sub" id="question-report-sub">اختار المشكلة وبنراجع السؤال ومصدره. لا ترسل معلومات شخصية.</div>
-    <label class="report-label" for="question-report-reason">سبب البلاغ</label>
-    <select class="report-control" id="question-report-reason">
-      <option value="incorrect_answer">الإجابة غير صحيحة</option>
-      <option value="unclear">السؤال غير واضح</option>
-      <option value="outdated">المعلومة قديمة</option>
-      <option value="source">مشكلة في المصدر</option>
-      <option value="duplicate">السؤال مكرر</option>
-      <option value="other">سبب آخر</option>
+    <div class="modal-icon" aria-hidden="true">🚩</div>
+    <div class="modal-title" id="modern-report-title">بلّغنا عن السؤال</div>
+    <div class="modal-sub">بيوصل البلاغ لفريق الجودة مع تفاصيل السؤال.</div>
+    <label class="report-label" for="modern-report-reason">السبب</label>
+    <select class="team-input" id="modern-report-reason">
+      <option value="incorrect_answer">الإجابة الصحيحة غير دقيقة</option><option value="unclear">السؤال غير واضح</option>
+      <option value="outdated">المعلومة قديمة</option><option value="duplicate">سؤال مكرر</option>
+      <option value="inappropriate">محتوى غير مناسب</option><option value="other">سبب آخر</option>
     </select>
-    <label class="report-label" for="question-report-details">تفاصيل إضافية (اختياري)</label>
-    <textarea class="report-control report-details" id="question-report-details" maxlength="500" placeholder="اكتب ملاحظتك باختصار"></textarea>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" data-modal-cancel data-action="close-question-report">إلغاء</button>
-      <button class="btn btn-primary" id="question-report-submit" data-action="submit-question-report">إرسال البلاغ</button>
-    </div>
+    <label class="report-label" for="modern-report-details">التفاصيل وياريت توضّحها</label>
+    <textarea class="team-input" id="modern-report-details" rows="3" maxlength="1000"></textarea>
+    <p id="modern-report-status" role="status"></p>
+    <div class="modal-actions"><button class="btn btn-ghost" data-action="close-modern-report">إلغاء</button><button class="btn btn-primary" data-action="send-modern-report">إرسال البلاغ</button></div>
   </div>
 </div>
 
-<script src="image-assets.js"></script>
 <script src="app.js"></script>
+<script src="game-v2.js"></script>
 </body>
 </html>

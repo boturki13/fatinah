@@ -40,12 +40,6 @@ with sqlite3.connect(tmp_db.name) as schema_conn:
             ach TEXT NOT NULL DEFAULT '{}',
             archived_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
-        CREATE TABLE IF NOT EXISTS family_categories (
-            uid TEXT NOT NULL,
-            name TEXT NOT NULL,
-            questions TEXT NOT NULL DEFAULT '[]',
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
         CREATE TABLE IF NOT EXISTS player_stats (
             uid TEXT PRIMARY KEY,
             games INTEGER NOT NULL DEFAULT 0,
@@ -54,12 +48,6 @@ with sqlite3.connect(tmp_db.name) as schema_conn:
             best_score INTEGER NOT NULL DEFAULT 0,
             wins INTEGER NOT NULL DEFAULT 0,
             ach TEXT NOT NULL DEFAULT '{}',
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
-        CREATE TABLE IF NOT EXISTS seen_questions (
-            uid TEXT NOT NULL,
-            topic_norm TEXT NOT NULL,
-            q_ids TEXT NOT NULL DEFAULT '[]',
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
     """)
@@ -136,22 +124,16 @@ def seed_user():
     ))
     for table, values in (
         ('archived_stats', (uid, 1, 1, 1, 10, 1, '{}')),
-        ('family_categories', (uid, 'عائلية', '[]')),
         ('player_stats', (uid, 1, 1, 1, 10, 1, '{}')),
-        ('seen_questions', (uid, 'رياضة', '[]')),
     ):
         conn.execute(
             f'INSERT INTO "{table}" '
-            f'({", ".join(["uid"] + (["name", "questions"] if table == "family_categories" else ["games", "correct", "total_q", "best_score", "wins", "ach"] if table in ("archived_stats", "player_stats") else ["topic_norm", "q_ids"]))}) '
+            f'({", ".join(["uid", "games", "correct", "total_q", "best_score", "wins", "ach"])}) '
             f'VALUES ({",".join("?" for _ in values)})',
             values,
         )
     conn.execute(
         "INSERT INTO subscription_outbox (uid, payload) VALUES (?, '{}')", (uid,)
-    )
-    conn.execute(
-        "INSERT INTO question_seen (uid, question_id, category) VALUES (?, ?, ?)",
-        (uid, 'q2-account-delete', 'علوم')
     )
     conn.commit()
     conn.close()
@@ -190,9 +172,7 @@ def user_rows():
     for table in (
         'subscriptions', 'promo_redemptions', 'revenuecat_identities',
         'revenuecat_events',
-        'archived_stats', 'family_categories', 'player_stats',
-        'seen_questions', 'subscription_outbox',
-        'question_seen',
+        'archived_stats', 'player_stats', 'subscription_outbox',
     ):
         if table == 'revenuecat_events':
             rows[table] = conn.execute(

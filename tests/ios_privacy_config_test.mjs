@@ -16,13 +16,14 @@ const project = await readFile(path.join(root, 'ios/App/App.xcodeproj/project.pb
 const entitlements = await readFile(path.join(root, 'ios/App/App/App.entitlements'), 'utf8');
 const webApp = await readFile(path.join(root, 'www/index.html'), 'utf8');
 const webLogic = await readFile(path.join(root, 'www/app.js'), 'utf8');
+const gameLogic = await readFile(path.join(root, 'www/game-v2.js'), 'utf8');
 const webStyles = await readFile(path.join(root, 'www/app.css'), 'utf8');
 const privacyPolicy = await readFile(path.join(root, 'www/privacy-policy.html'), 'utf8');
 const termsOfService = await readFile(path.join(root, 'www/terms-of-service.html'), 'utf8');
 const nativeWebApp = await readFile(path.join(root, 'ios/App/App/public/index.html'), 'utf8');
 const nativeWebLogic = await readFile(path.join(root, 'ios/App/App/public/app.js'), 'utf8');
+const nativeGameLogic = await readFile(path.join(root, 'ios/App/App/public/game-v2.js'), 'utf8');
 const nativeWebStyles = await readFile(path.join(root, 'ios/App/App/public/app.css'), 'utf8');
-const cloudFunction = await readFile(path.join(root, 'functions/index.js'), 'utf8');
 const appDelegate = await readFile(path.join(root, 'ios/App/App/AppDelegate.swift'), 'utf8');
 const capacitorConfig = await readFile(path.join(root, 'capacitor.config.ts'), 'utf8');
 const capacitorJsonConfig = JSON.parse(
@@ -82,11 +83,6 @@ assert.doesNotMatch(
   /localizedDescription/,
   'لا تطبع رسالة رفع MetricKit الخام؛ اكتفِ بنوع الخطأ وحالة HTTP.',
 );
-assert.doesNotMatch(
-  cloudFunction,
-  /error\.(?:code|name|message)|String\(error\)/,
-  'سجلات Cloud Functions لا يجوز أن تستقبل رسالة الاستثناء أو حقوله القادمة من مزود خارجي.',
-);
 assert.match(project, /AppTests\.xctest/);
 assert.match(project, /AppUITests\.xctest/);
 assert.match(scheme, /BlueprintName = "AppTests"/);
@@ -106,12 +102,16 @@ for (const dataType of [
   'NSPrivacyCollectedDataTypePhoneNumber',
   'NSPrivacyCollectedDataTypePurchaseHistory',
   'NSPrivacyCollectedDataTypeDeviceID',
-  'NSPrivacyCollectedDataTypeOtherUserContent',
   'NSPrivacyCollectedDataTypeCrashData',
   'NSPrivacyCollectedDataTypeOtherDiagnosticData',
 ]) {
   assert.match(privacyManifest, new RegExp(`<string>${dataType}<\\/string>`));
 }
+assert.match(
+  privacyManifest,
+  /NSPrivacyCollectedDataTypeOtherUserContent/,
+  'بلاغ السؤال يجمع تفاصيل يكتبها اللاعب اختيارياً.',
+);
 
 assert.match(project, /PrivacyInfo\.xcprivacy in Resources/);
 assert.match(
@@ -148,11 +148,6 @@ assert.match(
 assert.match(webApp, /href="https:\/\/apps\.apple\.com\/account\/subscriptions"/);
 assert.match(webApp, /حذف حساب فطنة لا يلغي الاشتراك المتجدد/);
 assert.match(
-  privacyManifest,
-  /NSPrivacyCollectedDataTypeOtherUserContent<\/string>[\s\S]*?NSPrivacyCollectedDataTypeLinked<\/key>\s*<true\/>/,
-  'الفئات العائلية وتقدم اللعب مرتبطان بهوية المستخدم على الخادم.'
-);
-assert.match(
   webLogic,
   /const current = await FA\.getCurrentUser\(\)\.catch\(\(\)=>null\);[\s\S]*?if\(!current \|\| !current\.user\) return '';/,
   'لا تطلب رمز Firebase بعد تسجيل الخروج أو حذف الحساب.'
@@ -179,15 +174,20 @@ assert.match(
 );
 assert.match(webLogic, /function subscriptionCheckIsCurrent\(uid,generation\)/,
   'نتيجة فحص الاشتراك يجب أن تكون مرتبطة بالحساب الحالي فقط.');
-assert.doesNotMatch(webLogic, /const QUESTION_BANK = \{/);
-assert.match(webLogic, /function ensureQuestionBank\(\)[\s\S]*?await refreshRemoteQuestionCatalog\(\)/,
-  'بنك 1.4 يجب أن يحمّل كتالوج الخادم ولا يحمّل ملف أسئلة محلياً.');
+assert.doesNotMatch(webLogic, /\/api\/questions\//,
+  'مسارات البنك القديمة يجب أن تبقى متوقفة.');
 assert.doesNotMatch(webLogic, /script\.src='question-bank\.js'/,
-  'لا يجوز شحن أو تحميل بنك أسئلة احتياطي داخل التطبيق.');
-assert.match(webLogic, /const TEAM_STYLES=\[/);
-assert.match(webLogic, /const FIRE=\[null,/);
-assert.match(webLogic, /const POINTS=\[0,100,200,300,400,500,600\]/);
-assert.match(webLogic, /const API_ORIGIN = window\.Capacitor\?\.isNativePlatform\?\.\(\) === true/);
+  'لا يجوز شحن أو تحميل البنك القديم داخل التطبيق.');
+assert.doesNotMatch(webLogic, /QUESTION_BANK|ALL_CATS|CAT_GROUPS|s-cats|s-board/);
+assert.match(gameLogic, /packs\/readiness/);
+assert.match(gameLogic, /ios-keychain-aesgcm/);
+assert.match(gameLogic, /webcrypto-aesgcm/);
+assert.match(webLogic, /const IS_NATIVE_APP=window\.Capacitor\?\.isNativePlatform\?\.\(\)===true;/);
+assert.match(
+  webLogic,
+  /const API_ORIGIN = IS_NATIVE_APP\s*\? \(IS_NATIVE_LAN_TEST\?window\.location\.origin:'https:\/\/ata20\.com'\)\s*: '';/,
+  'يجب أن تستخدم نسخة iOS خادم الإنتاج، مع قصر استثناء LAN على بيئة Xcode التجريبية.'
+);
 assert.match(webLogic, /const API_CONTRACT_VERSION='2';/);
 assert.match(webLogic, /function versionedApiPath\(path\)/);
 assert.match(webLogic, /`\/api\/v\$\{API_CONTRACT_VERSION\}\$\{value\.slice\(4\)\}`/);
@@ -260,24 +260,10 @@ assert.match(
 );
 assert.equal(nativeWebApp, webApp, 'يجب مزامنة www مع نسخة iOS قبل البناء.');
 assert.equal(nativeWebLogic, webLogic, 'يجب مزامنة JavaScript مع نسخة iOS قبل البناء.');
+assert.equal(nativeGameLogic, gameLogic, 'يجب مزامنة منطق الجولة الجديدة مع نسخة iOS قبل البناء.');
 assert.equal(nativeWebStyles, webStyles, 'يجب مزامنة CSS مع نسخة iOS قبل البناء.');
-assert.match(webLogic, /function normalizeQuestionBank\(bank\)/);
-assert.match(webLogic, /function rememberQuestion\(cat,question\)/);
-assert.match(webLogic, /state\.usedQuestionIds=new Set\(\)/);
 assert.doesNotMatch(webLogic, /api\.anthropic\.com|AI_BACKEND_URL|aiGenerate\(/);
-assert.match(webApp, /id="q-source"/);
-assert.match(webLogic, /source\.dataset\.available='false'/,
-  'مصدر الإجابة يبقى للتدقيق في البيانات ولا يُعرض للاعب.');
-assert.match(
-  cloudFunction,
-  /generateQuestionsV1Handler[\s\S]*?FATINAH_V1_AI_GENERATION_ENABLED[\s\S]*?api\.anthropic\.com/,
-  'التوافق المؤقت مع 1.2 يجب أن يبقى خلف علم v1 صريح ولا يعمل افتراضياً.',
-);
-assert.match(
-  cloudFunction,
-  /generateQuestionsV2Handler[\s\S]*?status\(410\)[\s\S]*?ai_generation_retired/,
-  'عقد 1.3 يجب ألا يصل إلى مزود توليد حي؛ يستخدم بنكاً مراجعاً مسبقاً.',
-);
+assert.doesNotMatch(webApp, /id="q-source"|id="q-wrap"|id="question-report-modal"/);
 
 console.log('✓ لا يوجد طلب تتبع في iOS أو في Privacy Manifest');
 console.log('✓ إفصاحات الخصوصية المعلنة في المشروع موجودة');
@@ -286,5 +272,4 @@ console.log('✓ حذف الحساب لا يعلن نجاحاً قبل التح�
 console.log('✓ الهويات المحلية القديمة تُرقّى إلى Firebase عند توفرها');
 console.log('✓ واجهة الإقلاع لا تنتظر الشبكة قبل الظهور');
 console.log('✓ إعدادا Capacitor متطابقان وApp-Bound Domains غير مفعّل بلا قائمة نطاقات');
-console.log('✓ بنك الأسئلة المراجع مؤجل التحميل ومصادر الإجابات مخفية عن اللاعب');
-console.log('✓ تطبيق 1.3 لا يستدعي توليداً حياً، وعقد 1.2 معزول خلف علم توافق');
+console.log('✓ تطبيق 1.4 بلا فئات أو بنك قديم، وحزمتا المشترك القادمتان مشفرتان');

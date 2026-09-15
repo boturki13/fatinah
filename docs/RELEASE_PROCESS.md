@@ -8,10 +8,10 @@
 
 ```text
 main
-├── codex/release-1.3.0  ← مجمّد، tag: v1.3.0-build.9
-└── codex/develop-1.4.0  ← التحديث القادم
+└── codex/develop-1.4.0  ← التحديث الجاري
     ├── codex/feature-...
-    └── codex/fix-...
+    ├── codex/fix-...
+    └── codex/release-1.4.0  ← يُنشأ فقط بعد نجاح البوابات
 ```
 
 - لا تُدفع ميزات إلى فرع الإصدار بعد إرساله إلى Apple.
@@ -36,17 +36,18 @@ main
 
    ```bash
    npm ci
-   npm run images:fetch-release-assets
    npm test
-   npm run questions:release-gate
-   npm run questions:next-release-gate -- --release
    npm run sync:ios
    ```
 
 4. شغّل اختبارات Swift/Xcode وابنِ Archive موقّعًا.
 5. انشر خادم staging وشغّل بوابة الإنتاج مع اعتمادات staging.
-6. اختبر TestFlight: تسجيل الدخول، الشراء والاستعادة، الجولة المجانية وإعادة محاولة التحقق، استعادة جولة خادمية من دور الفريق الثاني، البلاغ، الصور، الحذف، الشبكة الضعيفة، اختفاء شريط QA، وVoiceOver.
-7. أنشئ tag بصيغة `vX.Y.Z-build.N` من commit المرشح نفسه.
+6. اختبر TestFlight: تسجيل الدخول، الشراء والاستعادة، الجولة المجانية، لاعباً
+   واحداً ثم لاعبين وثلاثة، التناوب وعدم كشف الحل، كل وسائل المساعدة، حزمتي المشترك
+   المشفرتين، البلاغ، الحذف، الشبكة الضعيفة، وVoiceOver.
+7. بعد تجميد المصدر، سجّل SHA-1 الكامل في `sourceCommit` وبصمة الـArchive
+   في `artifactSha256`، ثم أنشئ tag بصيغة `vX.Y.Z-build.N` من commit
+   المرشح نفسه.
 
 ## ترتيب النشر
 

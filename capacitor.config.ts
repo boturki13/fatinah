@@ -1,10 +1,18 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
+const playerTestOrigin = process.env.FATINAH_PLAYER_TEST_ORIGIN?.trim();
+
 const config: CapacitorConfig = {
   appId: 'com.fatinah.game',
   appName: 'فطنة',
   webDir: 'www',
   backgroundColor: '#120B24',
+  ...(playerTestOrigin ? {
+    server: {
+      url: playerTestOrigin,
+      cleartext: playerTestOrigin.startsWith('http://')
+    }
+  } : {}),
   ios: {
     contentInset: 'always',
     backgroundColor: '#120B24',
@@ -13,7 +21,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchAutoHide: false,
+      launchAutoHide: true,
       launchShowDuration: 700,
       backgroundColor: '#120B24',
       showSpinner: false,

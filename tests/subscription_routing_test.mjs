@@ -11,13 +11,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const appSource = fs.readFileSync(new URL('../www/app.js', import.meta.url), 'utf8');
+const gameSource = fs.readFileSync(new URL('../www/game-v2.js', import.meta.url), 'utf8');
 const indexSource = fs.readFileSync(new URL('../www/index.html', import.meta.url), 'utf8');
 assert.doesNotMatch(
   appSource,
   /go\(_freeRoundAvailable\?'s-home':'s-paywall'\)/,
   'شاشة الاشتراك لا تُفتح تلقائياً عند الإقلاع بعد استهلاك الجولة المجانية.',
 );
-assert.match(appSource, /function canStartRound\(\)[\s\S]*?go\('s-paywall'\)/);
+assert.match(gameSource, /function canStartModernRound\(uid,testHarness\)[\s\S]*?go\('s-paywall'\)/);
+assert.match(gameSource, /packs\/readiness[\s\S]*?savePendingPackClaim[\s\S]*?claimFreeRound/,
+  'لا تُستهلك الجولة المجانية قبل جاهزية البنك وحفظ حالة الاستكمال.');
 assert.match(
   appSource,
   /const revenueCatCheck=rcIsActiveWithin\(revenueCatTimeoutMs\);[\s\S]*?await fetchServerSubscriptionStatus/,
@@ -59,23 +62,6 @@ assert.doesNotMatch(
   /for\(let attempt=0; attempt<12 && !serverActive; attempt\+\+\)/,
   'لا يجوز إبقاء المستخدم في انتظار حلقة تحقق ثابتة بعد نجاح StoreKit.',
 );
-assert.match(
-  appSource,
-  /typeof payload\?\.code==='string'[\s\S]*?setRemoteRoundPreparationFailure/,
-  'يجب الاحتفاظ بكود خطأ الجولة الذي أعاده الخادم.',
-);
-assert.match(
-  appSource,
-  /code==='free_round_categories_locked'[\s\S]*?اشتراكك يحتاج مزامنة/,
-  'قفل الجولة الناتج عن اختلاف الاشتراك يجب ألا يظهر كخطأ إنترنت.',
-);
-assert.doesNotMatch(
-  appSource,
-  /showToast\('⚠️','ما قدرنا ننزّل أسئلة الجولة',[\s\S]{0,260}تأكد من الإنترنت/,
-  'خطأ تنزيل الجولة يجب أن يستخدم التصنيف الحقيقي لا رسالة إنترنت عامة.',
-);
-assert.match(appSource, /payload\?\.code==='unsupported_v2_route'[\s\S]*?server_contract_outdated/,
-  'الخادم القديم يجب أن يظهر كعدم توافق عقد، لا كخطأ إنترنت.');
 
 async function checkSubscriptionAndRoute(uid, { go, fetchFn, rcIsActive, freeRoundIsAvailable }) {
   go('s-loading');

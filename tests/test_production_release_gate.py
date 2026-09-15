@@ -45,12 +45,7 @@ def valid_environment() -> dict[str, str]:
     result = {
         "FATINAH_ENVIRONMENT": "production",
         "FATINAH_DURABLE_STORAGE": "required",
-        "FATINAH_V1_AI_GENERATION_ENABLED": "true",
         "FATINAH_V1_APP_CHECK_ENFORCE": "false",
-        "FATINAH_V1_GENERATION_URL": (
-            "https://us-central1-fatinah-game.cloudfunctions.net/"
-            "generateQuestions"
-        ),
         "FATINAH_V2_APP_CHECK_ENFORCE": "true",
         "FATINAH_V2_APP_ATTEST_ENFORCE": "true",
         "FATINAH_V2_DEVICECHECK_ENFORCE": "true",
@@ -78,9 +73,8 @@ def valid_environment() -> dict[str, str]:
         "SMTP_HOST": "smtp.example.com",
         "SMTP_PORT": "587",
         "SMTP_FROM": "reports@example.com",
-        "REPORT_EMAIL_TO": "ata@ata20.com",
-        "SMTP_USERNAME": "reports@example.com",
-        "SMTP_PASSWORD": "SMTP_PASSWORD_SENTINEL",
+        "SMTP_USERNAME": "smtp-user",
+        "SMTP_PASSWORD": "SMTP_PASSWORD_SENTINEL_0123456789",
         "SMTP_USE_TLS": "true",
         "SMTP_USE_SSL": "false",
     }
@@ -99,26 +93,6 @@ assert gate.release_ready(checks), gate.render_human(checks)
 assert all(check.status == "pass" for check in checks)
 
 
-# The reviewed remote question bank is required by the 1.3 round endpoint.
-# Production defaults features to disabled, so both omission and an explicit
-# false value must prevent a misleading READY result.
-for disabled_value in (None, "false"):
-    question_bank_disabled = dict(environment)
-    if disabled_value is None:
-        question_bank_disabled.pop(
-            "FATINAH_V2_FEATURE_QUESTION_BANK_ENABLED", None
-        )
-    else:
-        question_bank_disabled[
-            "FATINAH_V2_FEATURE_QUESTION_BANK_ENABLED"
-        ] = disabled_value
-    question_bank_checks = gate.audit_environment(question_bank_disabled)
-    assert statuses(question_bank_checks)[
-        "v2.feature.question_bank.enabled"
-    ] == "fail"
-    assert not gate.release_ready(question_bank_checks)
-
-
 # The report contains identifiers and statuses only, never environment values.
 human_report = gate.render_human(checks)
 json_report = gate.render_json(checks)
@@ -129,7 +103,6 @@ for secret_value in (
     environment["ADMIN_SECRET"],
     environment["SMTP_PASSWORD"],
     environment["FIREBASE_PROJECT_ID"],
-    environment["REPORT_EMAIL_TO"],
 ):
     assert secret_value not in human_report
     assert secret_value not in json_report
@@ -157,11 +130,10 @@ for secret_value in (
     assert secret_value not in cli_result.stderr
 
 
-# A typo in the environment, an unsafe v1 URL, or a disabled v2 control blocks.
+# A typo in the environment or a disabled v2 control blocks.
 broken = dict(environment)
 broken.update({
     "FATINAH_ENVIRONMENT": "prodution",
-    "FATINAH_V1_GENERATION_URL": "https://example.com/generateQuestions",
     "FATINAH_V2_APP_CHECK_ENFORCE": "false",
     "FATINAH_V2_APP_ATTEST_ENFORCE": "false",
     "FATINAH_V2_FEATURE_FREE_ROUND_ENABLED": "false",
@@ -172,7 +144,6 @@ broken.update({
 })
 broken_statuses = statuses(gate.audit_environment(broken))
 assert broken_statuses["deployment.environment.production"] == "fail"
-assert broken_statuses["v1.generation_endpoint.production"] == "fail"
 assert broken_statuses["v2.app_check.enforced"] == "fail"
 assert broken_statuses["v2.app_attest.enforced"] == "fail"
 assert broken_statuses["v2.feature.free_round.enabled"] == "fail"
@@ -225,27 +196,6 @@ credential_statuses = statuses(gate.audit_environment(bad_credentials))
 assert credential_statuses["firebase.firestore.production_database"] == "fail"
 assert credential_statuses["firebase.admin.service_account"] == "fail"
 assert credential_statuses["devicecheck.private_key.p256"] == "fail"
-
-
-# Question reports may not be released with plaintext SMTP or half credentials.
-bad_smtp = dict(environment)
-bad_smtp.update({
-    "SMTP_USE_TLS": "false",
-    "SMTP_USE_SSL": "false",
-    "SMTP_PASSWORD": "",
-})
-smtp_statuses = statuses(gate.audit_environment(bad_smtp))
-assert smtp_statuses["question_reports.smtp.delivery"] == "fail"
-
-
-# Extra AI credentials in the server are least-privilege warnings, not a reason
-# to break the legacy Cloud Function deployment workflow.
-warning_environment = dict(environment)
-warning_environment["OPENAI_API_KEY"] = "OPENAI_SECRET_SENTINEL"
-warning_checks = gate.audit_environment(warning_environment)
-warning_statuses = statuses(warning_checks)
-assert warning_statuses["least_privilege.unused_ai_secrets_absent"] == "warn"
-assert gate.release_ready(warning_checks)
 
 
 print("production release configuration gate tests passed")

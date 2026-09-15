@@ -19,7 +19,6 @@ import re
 import subprocess
 import sys
 from typing import Mapping
-from urllib.parse import urlparse
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,25 +30,20 @@ import server  # noqa: E402  (the import is deliberately after ROOT setup)
 
 PRODUCTION_FIREBASE_PROJECT_ID = "fatinah-game"
 PRODUCTION_FIRESTORE_DATABASE_ID = "fatinah-native"
-PRODUCTION_V1_GENERATION_URL = (
-    "https://us-central1-fatinah-game.cloudfunctions.net/generateQuestions"
-)
 REQUIRED_V2_FEATURES = (
     "app_attest",
     "free_round",
-    "question_history",
-    "question_bank",
-    "question_reports",
     "metrics",
     "ios_diagnostics",
     "revenuecat_webhook",
+    "game_packs",
+    "question_admin",
+    "question_reports",
 )
 GATE_ENVIRONMENT_NAMES = {
     "FATINAH_ENVIRONMENT",
     "FATINAH_DURABLE_STORAGE",
-    "FATINAH_V1_AI_GENERATION_ENABLED",
     "FATINAH_V1_APP_CHECK_ENFORCE",
-    "FATINAH_V1_GENERATION_URL",
     "FATINAH_V2_APP_CHECK_ENFORCE",
     "FATINAH_V2_APP_ATTEST_ENFORCE",
     "FATINAH_V2_DEVICECHECK_ENFORCE",
@@ -78,13 +72,10 @@ GATE_ENVIRONMENT_NAMES = {
     "SMTP_HOST",
     "SMTP_PORT",
     "SMTP_FROM",
-    "REPORT_EMAIL_TO",
     "SMTP_USERNAME",
     "SMTP_PASSWORD",
     "SMTP_USE_TLS",
     "SMTP_USE_SSL",
-    "OPENAI_API_KEY",
-    "ANTHROPIC_API_KEY",
 } | {
     f"FATINAH_V2_FEATURE_{feature.upper()}_ENABLED"
     for feature in REQUIRED_V2_FEATURES
@@ -135,27 +126,6 @@ def _non_placeholder_secret(env: Mapping[str, str], name: str,
         lowered.startswith(f"{placeholder}_")
         or lowered.startswith(f"{placeholder}-")
         for placeholder in PLACEHOLDER_VALUES
-    )
-
-
-def _safe_production_generation_url(env: Mapping[str, str]) -> bool:
-    raw = _value(env, "FATINAH_V1_GENERATION_URL")
-    candidate = raw or PRODUCTION_V1_GENERATION_URL
-    try:
-        parsed = urlparse(candidate)
-        port = parsed.port
-    except ValueError:
-        return False
-    return bool(
-        parsed.scheme == "https"
-        and (parsed.hostname or "").lower()
-        == "us-central1-fatinah-game.cloudfunctions.net"
-        and (port is None or port == 443)
-        and parsed.path == "/generateQuestions"
-        and not parsed.username
-        and not parsed.password
-        and not parsed.query
-        and not parsed.fragment
     )
 
 
@@ -290,23 +260,6 @@ def _valid_devicecheck_private_key(env: Mapping[str, str]) -> bool:
         return False
 
 
-def _smtp_transport_is_secure(env: Mapping[str, str]) -> bool:
-    use_ssl = _flag(env, "SMTP_USE_SSL") is True
-    tls_flag = _flag(env, "SMTP_USE_TLS")
-    # server.py defaults STARTTLS to true when the variable is omitted.
-    use_tls = tls_flag is not False
-    return use_ssl or use_tls
-
-
-def _valid_smtp_port(env: Mapping[str, str]) -> bool:
-    raw = _value(env, "SMTP_PORT") or "587"
-    try:
-        port = int(raw)
-    except ValueError:
-        return False
-    return 1 <= port <= 65535
-
-
 def _append(checks: list[GateCheck], code: str, passed: bool,
             *, warning: bool = False) -> None:
     checks.append(GateCheck(
@@ -348,22 +301,10 @@ def audit_environment(env: Mapping[str, str] | None = None) -> list[GateCheck]:
 
         _append(
             checks,
-            "v1.ai_generation.enabled",
-            _flag(source, "FATINAH_V1_AI_GENERATION_ENABLED") is True
-            and server.legacy_v1_generation_enabled(),
-        )
-        _append(
-            checks,
             "v1.app_check.compatibility",
             _flag(source, "FATINAH_V1_APP_CHECK_ENFORCE") is False
             and not server.app_check_enforcement_enabled("1"),
         )
-        _append(
-            checks,
-            "v1.generation_endpoint.production",
-            _safe_production_generation_url(source),
-        )
-
         for feature in REQUIRED_V2_FEATURES:
             _append(
                 checks,
@@ -499,41 +440,24 @@ def audit_environment(env: Mapping[str, str] | None = None) -> list[GateCheck]:
             "operations.admin_secret",
             _non_placeholder_secret(source, "ADMIN_SECRET"),
         )
-
-        reports_enabled = server.v2_feature_enabled("question_reports")
-        smtp_identity_ok = (
+        smtp_user = _value(source, "SMTP_USERNAME")
+        smtp_password = _value(source, "SMTP_PASSWORD")
+        smtp_tls = _flag(source, "SMTP_USE_TLS") is True
+        smtp_ssl = _flag(source, "SMTP_USE_SSL") is True
+        try:
+            smtp_port = int(_value(source, "SMTP_PORT"))
+        except ValueError:
+            smtp_port = 0
+        _append(
+            checks,
+            "question_reports.smtp_delivery",
             _valid_hostname(_value(source, "SMTP_HOST"))
-            and _valid_email(_value(source, "SMTP_FROM"))
-            and _valid_email(
-                _value(source, "REPORT_EMAIL_TO") or server.REPORT_EMAIL_TO
-            )
-        )
-        smtp_credentials_ok = bool(
-            _present(source, "SMTP_USERNAME")
-            == _present(source, "SMTP_PASSWORD")
-        )
-        _append(
-            checks,
-            "question_reports.smtp.delivery",
-            not reports_enabled
-            or (
-                smtp_identity_ok
-                and smtp_credentials_ok
-                and _smtp_transport_is_secure(source)
-                and _valid_smtp_port(source)
-            ),
+            and 1 <= smtp_port <= 65535
+            and "@" in _value(source, "SMTP_FROM")
+            and (smtp_tls != smtp_ssl)
+            and bool(smtp_user) == bool(smtp_password),
         )
 
-        # These providers are not used by the production server process in
-        # 1.4. Keeping them there expands blast radius; warn without blocking
-        # because the legacy Cloud Function is deployed separately.
-        _append(
-            checks,
-            "least_privilege.unused_ai_secrets_absent",
-            not _present(source, "OPENAI_API_KEY")
-            and not _present(source, "ANTHROPIC_API_KEY"),
-            warning=True,
-        )
     finally:
         for name in managed_names:
             os.environ.pop(name, None)
