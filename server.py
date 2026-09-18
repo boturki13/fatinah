@@ -12,6 +12,7 @@ from socketserver import ThreadingMixIn
 import re
 
 import question_platform
+import public_site
 
 # ─── ثوابت ─────────────────────────────────────────────────────────────────
 PORT      = int(os.environ.get('PORT', 5000))
@@ -3573,36 +3574,8 @@ def read_html():
 
 
 def production_landing_html() -> bytes:
-    """صفحة عامة آمنة؛ تطبيق اللعبة نفسه موزع داخل حزمة iOS فقط.
-
-    منطق الاشتراك والأسئلة الموجود في JavaScript ليس حاجز صلاحيات صالحًا
-    لمتصفح عام. لذلك لا نخدم حزمة اللعبة من خادم production، ونبقي الموقع
-    العام مقتصرًا على تعريف التطبيق وروابط Apple والوثائق القانونية.
-    """
-    return b'''<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <title>\xd9\x81\xd8\xb7\xd9\x86\xd8\xa9</title>
-  <style>
-    :root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#10091f;color:#fff}
-    main{max-width:42rem;margin:2rem;padding:2.5rem;border:1px solid #ffffff29;border-radius:1.5rem;
-      text-align:center;background:linear-gradient(145deg,#24102f,#10091f)}
-    h1{font-size:3rem;margin:.25rem} p{line-height:1.8;color:#d9cfe7}
-    a{color:#fff} .store{display:inline-block;margin:1rem;padding:.9rem 1.25rem;border-radius:999px;
-      background:#ff356d;text-decoration:none;font-weight:700}
-    nav{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem}
-  </style>
-</head>
-<body><main>
-  <h1>\xd9\x81\xd8\xb7\xd9\x86\xd8\xa9</h1>
-  <p>\xd9\x84\xd8\xb9\xd8\xa8\xd8\xa9 \xd8\xa7\xd9\x84\xd8\xb0\xd9\x83\xd8\xa7\xd8\xa1 \xd9\x88\xd8\xa7\xd9\x84\xd9\x81\xd8\xb7\xd9\x86\xd8\xa9 \xd8\xa7\xd9\x84\xd8\xac\xd9\x85\xd8\xa7\xd8\xb9\xd9\x8a\xd8\xa9. \xd8\xad\xd9\x85\xd9\x91\xd9\x84 \xd8\xa7\xd9\x84\xd8\xaa\xd8\xb7\xd8\xa8\xd9\x8a\xd9\x82 \xd8\xa7\xd9\x84\xd8\xb1\xd8\xb3\xd9\x85\xd9\x8a \xd9\x85\xd9\x86 App Store.</p>
-  <a class="store" href="https://apps.apple.com/app/id6794660419" rel="noopener">App Store</a>
-  <nav><a href="/privacy-policy.html">\xd8\xb3\xd9\x8a\xd8\xa7\xd8\xb3\xd8\xa9 \xd8\xa7\xd9\x84\xd8\xae\xd8\xb5\xd9\x88\xd8\xb5\xd9\x8a\xd8\xa9</a><a href="/terms-of-service.html">\xd8\xb4\xd8\xb1\xd9\x88\xd8\xb7 \xd8\xa7\xd9\x84\xd8\xa7\xd8\xb3\xd8\xaa\xd8\xae\xd8\xaf\xd8\xa7\xd9\x85</a></nav>
-</main></body></html>'''
+    """Public game catalogue; the iOS application remains private."""
+    return public_site.landing_html()
 
 # ─── Firebase config ─────────────────────────────────────────────────────────
 def firebase_config_js():
@@ -3818,6 +3791,9 @@ class Handler(BaseHTTPRequestHandler):
         if not self.api_feature_allows(path):
             return
         if not self.app_integrity_allows(path):
+            return
+
+        if public_site.serve(self, path):
             return
 
         # أزيلت أكواد التفعيل الخاصة امتثالاً لسياسة مشتريات Apple. أي عروض
@@ -4159,7 +4135,8 @@ class Handler(BaseHTTPRequestHandler):
             # الوجهات التي يمكن لأي كود مُدرَج أن يرسل لها بيانات.
             self.send_asset(
                 body, 'text/html; charset=utf-8', 'no-cache',
-                extra_headers={'Content-Security-Policy': WEB_CONTENT_SECURITY_POLICY})
+                extra_headers={'Content-Security-Policy': (WEB_CONTENT_SECURITY_POLICY
+                               if public_web_game_enabled() else public_site.CSP)})
 
         elif path in ('/app.js', '/app.css',
                       '/privacy-policy.html', '/terms-of-service.html'):
