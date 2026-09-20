@@ -10,6 +10,7 @@ CSP = (
     "object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 )
 ROUTES = {
+    "/app-ads.txt": ("app-ads.txt", "text/plain; charset=utf-8"),
     "/site-assets/styles.css": ("styles.css", "text/css; charset=utf-8"),
     "/turn-the-path/": ("turn-the-path/index.html", "text/html; charset=utf-8"),
     "/turn-the-path/support/": ("turn-the-path/support/index.html", "text/html; charset=utf-8"),
