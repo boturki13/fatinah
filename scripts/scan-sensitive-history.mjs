@@ -47,8 +47,13 @@ const contentRules = [
   ['private-key', /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/],
   ['jwt', /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/],
   ['github-token', /\bgh[pousr]_[A-Za-z0-9]{20,}\b/],
+  ['github-fine-grained-token', /\bgithub_pat_[A-Za-z0-9_]{40,}\b/],
   ['aws-access-key', /\bAKIA[0-9A-Z]{16}\b/],
+  ['google-api-key', /\bAIza[0-9A-Za-z_-]{35}\b/],
   ['openai-or-anthropic-key', /\bsk-(?:proj-|ant-)?[A-Za-z0-9_-]{20,}\b/],
+  ['npm-token', /\bnpm_[A-Za-z0-9]{30,}\b/],
+  ['slack-token', /\bxox[baprs]-[A-Za-z0-9-]{20,}\b/],
+  ['sendgrid-key', /\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{20,}\b/],
   ['stripe-secret-key', /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{12,}\b/],
   ['webhook-secret', /\bwhsec_[A-Za-z0-9]{12,}\b/],
   ['oauth-client-secret', /["']client_secret["']\s*:\s*["'][^"']{12,}["']/i],
@@ -230,5 +235,5 @@ if (findings.size > 0) {
 } else {
   const reachableAcknowledgements = baselineDocument.entries.filter(entry =>
     reachableObjects.has(entry.objectId)).length;
-  console.log(`Sensitive repository scan passed; ${reachableAcknowledgements} exact historical object(s) remain acknowledged pending an authorized history rewrite.`);
+  console.log(`Sensitive repository scan passed; ${reachableAcknowledgements} exact public-by-design object(s) are acknowledged in the baseline.`);
 }
