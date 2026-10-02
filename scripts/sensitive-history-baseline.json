@@ -21,6 +21,12 @@
       "objectId": "bcd5bcc06f0ee9bbdcbc38da8c46120b0126f680",
       "path": "subscriptions.db",
       "finding": "runtime-database"
+    },
+    {
+      "objectId": "2c475456178a8b185cb6711d39e92c7eef3565cd",
+      "path": "ios/App/App/GoogleService-Info.plist",
+      "finding": "google-api-key",
+      "classification": "Firebase iOS client configuration is public by design; verify API and bundle restrictions in Google Cloud. Exact blob only."
     }
   ]
 }
