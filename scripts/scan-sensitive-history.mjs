@@ -235,5 +235,5 @@ if (findings.size > 0) {
 } else {
   const reachableAcknowledgements = baselineDocument.entries.filter(entry =>
     reachableObjects.has(entry.objectId)).length;
-  console.log(`Sensitive repository scan passed; ${reachableAcknowledgements} exact historical object(s) remain acknowledged pending an authorized history rewrite.`);
+  console.log(`Sensitive repository scan passed; ${reachableAcknowledgements} exact public-by-design object(s) are acknowledged in the baseline.`);
 }
