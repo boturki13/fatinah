@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>نَفَس — عدّاد الإقلاع عن التدخين</title>
+<meta name="description" content="عدّاد أيام الإقلاع عن التدخين: الفلوس اللي وفرتها، مراحل تعافي جسمك، يوميات الرغبة، بدائل النيكوتين، وتذكيرات يومية.">
+<meta name="theme-color" content="#17795A" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1714" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="نَفَس — عدّاد الإقلاع عن التدخين">
+<meta property="og:description" content="كل يوم بدون تدخين محسوب: صحة وفلوس.">
+<meta property="og:image" content="icons/icon-512.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="نَفَس">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>نَفَس</h1>
+    <div class="top-actions">
+      <button class="btn ghost sm" id="shareBtn" type="button">شارك إنجازك</button>
+      <button class="btn ghost sm" id="openSettings" type="button">الإعدادات</button>
+    </div>
+  </header>
+
+  <div class="banner" id="demoBanner" hidden>هذا مثال توضيحي. افتح «الإعدادات» وحط بياناتك عشان يبدأ عدّادك.</div>
+  <div class="banner install" id="installBanner" hidden>
+    <span>نزّل «نَفَس» على شاشتك الرئيسية، يشتغل حتى بدون نت.</span>
+    <button class="btn primary sm" id="installBtn" type="button">تثبيت</button>
+  </div>
+  <div class="banner install" id="iosHint" hidden>
+    <span>على الآيفون: اضغط زر المشاركة في سفاري ثم «إضافة إلى الشاشة الرئيسية». الإشعارات تشتغل بعد التثبيت.</span>
+    <button class="btn ghost sm" id="iosHintClose" type="button">تمام</button>
+  </div>
+
+  <!-- ================= HOME ================= -->
+  <main class="view" id="view-home" data-view="home">
+    <section class="hero" aria-label="مدة الامتناع">
+      <div class="ring">
+        <svg viewBox="0 0 200 200" aria-hidden="true">
+          <circle class="halo breathe" cx="100" cy="100" r="80"></circle>
+          <circle class="track" cx="100" cy="100" r="92"></circle>
+          <circle class="prog" id="ringProg" cx="100" cy="100" r="92" stroke-dasharray="578" stroke-dashoffset="578"></circle>
+        </svg>
+        <div class="center">
+          <div class="days num" id="days">0</div>
+          <div class="days-lbl">يوم بدون تدخين</div>
+          <div class="clock num" id="clock">00:00:00</div>
+        </div>
+      </div>
+      <div class="next" id="nextMs"></div>
+    </section>
+
+    <section class="stats" aria-label="الإنجاز">
+      <div class="stat money">
+        <span class="lbl">المبلغ اللي وفّرته</span>
+        <span class="val num"><span id="saved">0.000</span><span class="unit" id="cur1">د.ك</span></span>
+        <span class="sub num" id="proj"></span>
+      </div>
+      <div class="stat"><span class="lbl">سجاير ما دخّنتها</span><span class="val num" id="cigs">0</span></div>
+      <div class="stat"><span class="lbl">علب ما اشتريتها</span><span class="val num" id="packs">0</span></div>
+      <div class="stat"><span class="lbl">وقت رجع لعمرك (تقديري)</span><span class="val num" id="life">0</span></div>
+      <div class="stat"><span class="lbl">أطول فترة امتناع</span><span class="val num" id="best">0</span></div>
+    </section>
+
+    <section class="card craving" aria-labelledby="cravingTitle">
+      <div class="craving-head">
+        <div>
+          <h2 id="cravingTitle">جتك رغبة؟</h2>
+          <p class="muted">الرغبة تعدّي عادةً خلال ٣ إلى ٥ دقايق. تنفّس معنا دقيقة.</p>
+        </div>
+        <button class="btn primary" id="cravingBtn" type="button">ابدأ التنفس</button>
+      </div>
+      <div class="craving-stats num">
+        <div><b id="cravToday">0</b><span>رغبة اليوم</span></div>
+        <div><b id="cravWeek">0</b><span>آخر ٧ أيام</span></div>
+        <div><b id="cravTotal">0</b><span>رغبة قاومتها</span></div>
+      </div>
+    </section>
+
+    <section class="card reasons" aria-labelledby="reasonsTitle">
+      <div class="row-head"><h2 id="reasonsTitle">ليش وقفت</h2><button class="btn ghost sm" id="editReasons" type="button">عدّل</button></div>
+      <div class="reasons-body">
+        <img id="reasonPhoto" class="reason-photo" alt="صورة تذكّرك بسببك" hidden>
+        <ul class="reason-list" id="reasonList"></ul>
+      </div>
+      <p class="muted" id="reasonsEmpty" hidden>اكتب أسبابك وحط صورة تهمك، وبتطلع لك وقت الرغبة.</p>
+      <div class="reason-editor" id="reasonEditor" hidden>
+        <label for="reasonText">كل سبب في سطر
+          <textarea id="reasonText" rows="4" maxlength="800" placeholder="عشان صحتي&#10;عشان عيالي&#10;أبي أوفّر فلوس السفرة"></textarea>
+        </label>
+        <div class="actions">
+          <label class="btn file-btn" for="reasonPhotoInput">اختر صورة
+            <input type="file" id="reasonPhotoInput" accept="image/*">
+          </label>
+          <button class="btn ghost" id="removePhoto" type="button">احذف الصورة</button>
+          <button class="btn primary" id="saveReasons" type="button">احفظ</button>
+        </div>
+        <p class="muted small">الصورة تنحفظ على جهازك بس.</p>
+      </div>
+    </section>
+
+    <section class="card" id="goalCard" hidden>
+      <h2 id="goalTitle">هدفك</h2>
+      <div class="bar"><i id="goalBar"></i></div>
+      <div class="row num"><span id="goalPct">0%</span><span id="goalLeft"></span></div>
+    </section>
+
+    <section class="confirm" id="relapseBox" hidden>
+      <div><b>زلّيت؟ عادي، أغلب الناس يحتاجون أكثر من محاولة.</b><br><span class="muted">العدّاد بيبدأ من الحين، وأطول فترة امتناع تنحفظ.</span></div>
+      <div class="actions"><button class="btn danger" id="relapseYes" type="button">ابدأ من جديد</button><button class="btn" id="relapseNo" type="button">إلغاء</button></div>
+    </section>
+    <button class="btn ghost center-btn" id="relapseBtn" type="button">زلّيت؟ ابدأ العدّاد من جديد</button>
+    <p class="foot" id="attempts"></p>
+  </main>
+
+  <!-- ================= JOURNAL ================= -->
+  <main class="view" id="view-journal" data-view="journal" hidden>
+    <div class="row-head">
+      <h2 class="view-title">يوميات الرغبة</h2>
+      <button class="btn primary" id="logCravingBtn" type="button">سجّل رغبة</button>
+    </div>
+    <p class="muted">كل ما سجلت أكثر، عرفت أكثر شنو يحرّك رغبتك ومتى. التحليل لآخر ٣٠ يوم.</p>
+
+    <section class="card">
+      <h2>آخر ١٤ يوم</h2>
+      <div class="spark" aria-hidden="true"><svg id="cravChart" viewBox="0 0 280 70" preserveAspectRatio="none"></svg></div>
+      <div class="spark-lbl"><span>قبل ١٤ يوم</span><span>اليوم</span></div>
+      <p class="muted num" id="trendNote"></p>
+    </section>
+
+    <section class="card">
+      <h2>أكثر المحفزات</h2>
+      <ul class="hbars" id="trigBars"></ul>
+      <p class="muted" id="trigEmpty" hidden>ما في محفزات مسجلة للحين. لما تسجّل رغبة اختار شنو سبّبها.</p>
+      <p class="insight" id="trigInsight" hidden></p>
+    </section>
+
+    <section class="card">
+      <h2>متى تجيك الرغبة</h2>
+      <div class="hours" id="hourBars"></div>
+      <p class="insight" id="hourInsight" hidden></p>
+    </section>
+
+    <section class="card">
+      <div class="row-head"><h2>آخر التسجيلات</h2><span class="muted num" id="entryCount"></span></div>
+      <ul class="entries" id="entries"></ul>
+      <button class="btn ghost sm center-btn" id="moreEntries" type="button" hidden>اعرض أكثر</button>
+    </section>
+  </main>
+
+  <!-- ================= NRT ================= -->
+  <main class="view" id="view-nrt" data-view="nrt" hidden>
+    <h2 class="view-title">بدائل النيكوتين</h2>
+    <p class="muted">إذا تستخدم لزقات أو علك أو أقراص أو فيب، تابع جرعتك وخطة التخفيف هني.</p>
+
+    <section class="card">
+      <h2>إعداد البديل</h2>
+      <div class="seg" role="radiogroup" aria-label="نوع البديل" id="nrtType">
+        <button type="button" role="radio" data-v="none">ما أستخدم</button>
+        <button type="button" role="radio" data-v="patch">لزقات</button>
+        <button type="button" role="radio" data-v="gum">علك</button>
+        <button type="button" role="radio" data-v="lozenge">أقراص مص</button>
+        <button type="button" role="radio" data-v="vape">فيب</button>
+      </div>
+      <form id="nrtForm" class="nrt-form" novalidate hidden>
+        <label for="nrtStart">تاريخ البداية
+          <input type="date" id="nrtStart">
+        </label>
+        <label for="nrtDose" id="nrtDoseWrap">الجرعة
+          <select id="nrtDose"></select>
+        </label>
+        <label for="nrtTarget" id="nrtTargetWrap" hidden>هدفك اليومي (مرات)
+          <input type="number" id="nrtTarget" min="0" max="500" step="1" inputmode="numeric">
+        </label>
+        <div class="actions"><button class="btn primary" type="submit">احفظ</button><span class="status" id="nrtStatus" role="status"></span></div>
+      </form>
+    </section>
+
+    <section class="card" id="nrtPlanCard" hidden>
+      <div class="row-head"><h2>خطتك</h2><span class="pill" id="nrtStepPill"></span></div>
+      <ol class="steps" id="nrtSteps"></ol>
+      <p class="muted" id="nrtPlanNote"></p>
+    </section>
+
+    <section class="card" id="nrtLogCard" hidden>
+      <div class="row-head"><h2 id="nrtLogTitle">اليوم</h2><span class="muted num" id="nrtLogSub"></span></div>
+      <div class="counter">
+        <button class="btn" id="nrtMinus" type="button" aria-label="أنقص واحد">−</button>
+        <div class="counter-val"><b class="num" id="nrtToday">0</b><span id="nrtUnit">مرة</span></div>
+        <button class="btn primary" id="nrtPlus" type="button" aria-label="زِد واحد">+</button>
+      </div>
+      <div class="bar" id="nrtBarWrap"><i id="nrtBar"></i></div>
+      <div class="spark" aria-hidden="true"><svg id="nrtChart" viewBox="0 0 280 60" preserveAspectRatio="none"></svg></div>
+      <div class="spark-lbl"><span>قبل ١٤ يوم</span><span>اليوم</span></div>
+    </section>
+
+    <p class="foot">الخطط مأخوذة من نشرات منتجات بدائل النيكوتين المعتادة. اتبع نشرة منتجك واستشر الصيدلي أو الطبيب، خصوصاً مع الحمل أو أمراض القلب.</p>
+  </main>
+
+  <!-- ================= HEALTH ================= -->
+  <main class="view" id="view-health" data-view="health" hidden>
+    <section class="card" aria-labelledby="badgesTitle">
+      <div class="row-head"><h2 id="badgesTitle">أوسمتك</h2><span class="muted num" id="badgeCount"></span></div>
+      <ul class="badges" id="badges"></ul>
+    </section>
+    <section class="card" aria-labelledby="tlTitle">
+      <h2 id="tlTitle">شنو صار بجسمك</h2>
+      <ol class="tl" id="timeline"></ol>
+      <p class="foot">المراحل مبنية على إرشادات منظمة الصحة العالمية والـCDC، وتختلف من شخص لشخص.</p>
+    </section>
+  </main>
+
+  <!-- ================= SETTINGS ================= -->
+  <main class="view" id="view-settings" data-view="settings" hidden>
+    <div class="row-head"><h2 class="view-title">الإعدادات</h2><button class="btn ghost sm" id="closeSettings" type="button">رجوع</button></div>
+
+    <section class="card">
+      <h2>بياناتك</h2>
+      <form id="form" novalidate>
+        <label class="full" for="f_quit">تاريخ ووقت آخر سيجارة
+          <input type="datetime-local" id="f_quit" required>
+        </label>
+        <label for="f_perDay">كم سيجارة كنت تدخن باليوم
+          <input type="number" id="f_perDay" min="1" max="200" step="1" inputmode="numeric">
+        </label>
+        <label for="f_packSize">كم سيجارة بالعلبة
+          <input type="number" id="f_packSize" min="1" max="100" step="1" inputmode="numeric">
+        </label>
+        <label for="f_price">سعر العلبة
+          <input type="number" id="f_price" min="0" max="1000" step="0.001" inputmode="decimal">
+        </label>
+        <label for="f_cur">العملة
+          <input type="text" id="f_cur" maxlength="6">
+        </label>
+        <label for="f_goalName">شنو تبي تشتري بالفلوس (اختياري)
+          <input type="text" id="f_goalName" maxlength="40" placeholder="مثلاً: سفرة لندن">
+        </label>
+        <label for="f_goalAmt">قيمة الهدف (اختياري)
+          <input type="number" id="f_goalAmt" min="0" max="10000000" step="1" inputmode="decimal">
+        </label>
+        <div class="actions">
+          <button class="btn primary" type="submit">احفظ</button>
+          <span class="status" id="status" role="status"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>التذكيرات</h2>
+      <div class="toggle-row">
+        <div><b>تذكير يومي</b><p class="muted">رسالة تشجيع بعدد أيامك والمبلغ اللي وفرته.</p></div>
+        <label class="switch" for="remOn"><input type="checkbox" id="remOn" role="switch"><span></span><i class="sr">تذكير يومي</i></label>
+      </div>
+      <label for="remTime" class="inline">الوقت
+        <input type="time" id="remTime" value="21:00">
+      </label>
+      <div class="toggle-row">
+        <div><b>إشعار المراحل والأوسمة</b><p class="muted">ينبهك لما توصل مرحلة صحية أو وسام جديد.</p></div>
+        <label class="switch" for="remMs"><input type="checkbox" id="remMs" role="switch"><span></span><i class="sr">إشعار المراحل</i></label>
+      </div>
+      <p class="muted" id="notifState"></p>
+      <div class="divider"></div>
+      <div class="toggle-row">
+        <div><b>التذكير المضمون: أضفه لتقويمك</b><p class="muted">ينزل ملف تقويم فيه التذكير اليومي ومواعيد مراحلك الجاية. يشتغل على الآيفون والأندرويد حتى لو التطبيق مسكّر.</p></div>
+      </div>
+      <div class="actions"><button class="btn" id="icsBtn" type="button">أضف للتقويم</button></div>
+    </section>
+
+    <section class="card">
+      <h2>نسخة احتياطية</h2>
+      <p class="muted">بياناتك محفوظة على هذا الجهاز بس، ما تنرسل لأي سيرفر. احفظ نسخة إذا بتغيّر جوالك.</p>
+      <div class="actions">
+        <button class="btn" id="exportBtn" type="button">نزّل نسخة</button>
+        <label class="btn file-btn" for="importFile">استرجع من نسخة
+          <input type="file" id="importFile" accept="application/json,.json">
+        </label>
+        <span class="status" id="backupStatus" role="status"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>المظهر</h2>
+      <div class="seg" role="radiogroup" aria-label="المظهر" id="themeSeg">
+        <button type="button" role="radio" data-v="system">تلقائي</button>
+        <button type="button" role="radio" data-v="light">فاتح</button>
+        <button type="button" role="radio" data-v="dark">داكن</button>
+      </div>
+    </section>
+
+    <p class="foot">نَفَس · ما يغني عن استشارة الطبيب. إذا تبي مساعدة، اسأل مركزك الصحي عن عيادة الإقلاع عن التدخين.</p>
+  </main>
+</div>
+
+<nav class="tabbar" aria-label="الأقسام">
+  <a href="#home" data-tab="home"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg><span>الرئيسية</span></a>
+  <a href="#journal" data-tab="journal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 10h8M8 14h8M8 18h5"/></svg><span>اليوميات</span></a>
+  <a href="#nrt" data-tab="nrt"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="8" rx="4"/><path d="M12 8v8"/></svg><span>البدائل</span></a>
+  <a href="#health" data-tab="health"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span>صحتي</span></a>
+</nav>
+
+<!-- breathing -->
+<div class="overlay" id="breath" hidden role="dialog" aria-modal="true" aria-labelledby="breathPhase">
+  <div class="sheet breath-box">
+    <img id="breathPhoto" class="breath-photo" alt="" hidden>
+    <div class="breath-circle" id="breathCircle"><span id="breathCount" class="num">4</span></div>
+    <div class="breath-phase" id="breathPhase">شهيق</div>
+    <div class="breath-tip" id="breathTip"></div>
+    <div class="bar thin"><i id="breathBar"></i></div>
+    <div class="actions center">
+      <button class="btn primary" id="breathDone" type="button">عدّت الرغبة</button>
+      <button class="btn ghost" id="breathClose" type="button">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- craving log -->
+<div class="overlay" id="logSheet" hidden role="dialog" aria-modal="true" aria-labelledby="logTitle">
+  <form class="sheet log-sheet" id="logForm" novalidate>
+    <h2 id="logTitle">سجّل الرغبة</h2>
+    <fieldset>
+      <legend>شنو حرّكها؟ (اختار أكثر من وحدة)</legend>
+      <div class="chips" id="trigChips"></div>
+    </fieldset>
+    <fieldset>
+      <legend>قد إيش كانت قوية؟</legend>
+      <div class="scale" id="intScale" role="radiogroup" aria-label="شدة الرغبة"></div>
+      <div class="scale-lbl"><span>خفيفة</span><span>قوية جداً</span></div>
+    </fieldset>
+    <label for="logNote">ملاحظة (اختياري)
+      <input type="text" id="logNote" maxlength="140" placeholder="وين كنت؟ شنو ساعدك؟">
+    </label>
+    <div class="actions center">
+      <button class="btn primary" type="submit">احفظ</button>
+      <button class="btn ghost" id="logCancel" type="button">تخطّى</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="app.js" defer></script>
+</body>
+</html>

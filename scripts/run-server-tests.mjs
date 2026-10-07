@@ -90,6 +90,7 @@ function createSuites(python) {
     [python, 'tests/test_question_batch_001.py'],
     [python, 'tests/test_question_batch_002.py'],
     [python, 'tests/test_production_release_gate.py'],
+    [python, 'tests/test_public_site_nafas.py'],
   ];
 }
 
